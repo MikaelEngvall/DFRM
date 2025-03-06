@@ -56,6 +56,30 @@ const tenantService = {
     const response = await api.get('/tenants/search/resiliated');
     return response.data;
   },
+
+  // Tilldela en lägenhet till en hyresgäst
+  assignApartment: async (tenantId, apartmentId) => {
+    const response = await api.put(`/tenants/${tenantId}/apartment?apartmentId=${apartmentId}`);
+    return response.data;
+  },
+
+  // Tilldela en nyckel till en hyresgäst
+  assignKey: async (tenantId, keyId) => {
+    const response = await api.put(`/tenants/${tenantId}/key?keyId=${keyId}`);
+    return response.data;
+  },
+
+  // Ta bort lägenhet från en hyresgäst
+  removeApartment: async (tenantId) => {
+    const response = await api.delete(`/tenants/${tenantId}/apartment`);
+    return response.data;
+  },
+
+  // Ta bort nyckel från en hyresgäst
+  removeKey: async (tenantId) => {
+    const response = await api.delete(`/tenants/${tenantId}/key`);
+    return response.data;
+  },
 };
 
 export default tenantService; 

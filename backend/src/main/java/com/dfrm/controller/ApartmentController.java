@@ -51,42 +51,6 @@ public class ApartmentController {
                 .orElse(ResponseEntity.notFound().build());
     }
     
-    @PutMapping("/{id}/tenants")
-    public ResponseEntity<Apartment> addTenant(
-            @PathVariable String id,
-            @RequestParam String tenantId) {
-        return apartmentService.addTenant(id, tenantId)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
-    }
-    
-    @PutMapping("/{id}/keys")
-    public ResponseEntity<Apartment> addKey(
-            @PathVariable String id,
-            @RequestParam String keyId) {
-        return apartmentService.addKey(id, keyId)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
-    }
-    
-    @DeleteMapping("/{id}/tenants/{tenantId}")
-    public ResponseEntity<Apartment> removeTenant(
-            @PathVariable String id,
-            @PathVariable String tenantId) {
-        return apartmentService.removeTenant(id, tenantId)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
-    }
-    
-    @DeleteMapping("/{id}/keys/{keyId}")
-    public ResponseEntity<Apartment> removeKey(
-            @PathVariable String id,
-            @PathVariable String keyId) {
-        return apartmentService.removeKey(id, keyId)
-                .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.notFound().build());
-    }
-    
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteApartment(@PathVariable String id) {
         if (apartmentService.getApartmentById(id).isPresent()) {
@@ -117,5 +81,41 @@ public class ApartmentController {
             @RequestParam String number,
             @RequestParam String apartmentNumber) {
         return apartmentService.findByAddress(street, number, apartmentNumber);
+    }
+
+    @PutMapping("/{id}/tenant")
+    public ResponseEntity<Apartment> assignTenant(
+            @PathVariable String id,
+            @RequestParam String tenantId) {
+        return apartmentService.assignTenant(id, tenantId)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PutMapping("/{id}/key")
+    public ResponseEntity<Apartment> assignKey(
+            @PathVariable String id,
+            @RequestParam String keyId) {
+        return apartmentService.assignKey(id, keyId)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @DeleteMapping("/{id}/tenant/{tenantId}")
+    public ResponseEntity<Apartment> removeTenant(
+            @PathVariable String id,
+            @PathVariable String tenantId) {
+        return apartmentService.removeTenant(id, tenantId)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @DeleteMapping("/{id}/key/{keyId}")
+    public ResponseEntity<Apartment> removeKey(
+            @PathVariable String id,
+            @PathVariable String keyId) {
+        return apartmentService.removeKey(id, keyId)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 } 

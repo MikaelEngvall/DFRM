@@ -3,12 +3,14 @@ import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
 import FormInput from '../components/FormInput';
 import { PlusIcon } from '@heroicons/react/24/outline';
-import { tenantService } from '../services';
+import { tenantService, apartmentService, keyService } from '../services';
 
 const Tenants = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTenant, setSelectedTenant] = useState(null);
   const [tenants, setTenants] = useState([]);
+  const [apartments, setApartments] = useState([]);
+  const [keys, setKeys] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [formData, setFormData] = useState({
@@ -22,6 +24,8 @@ const Tenants = () => {
     movedInDate: '',
     resiliationDate: '',
     comment: '',
+    apartmentId: '',
+    keyId: '',
   });
 
   const columns = [
@@ -35,21 +39,37 @@ const Tenants = () => {
       label: 'Uppsägningsdatum',
       render: (value) => value || '-',
     },
+    {
+      key: 'apartment',
+      label: 'Lägenhet',
+      render: (value) => value ? `${value.street} ${value.number}, ${value.apartmentNumber}` : '-',
+    },
+    {
+      key: 'key',
+      label: 'Nyckel',
+      render: (value) => value ? `${value.type} - ${value.serie}-${value.number}` : '-',
+    },
   ];
 
   useEffect(() => {
-    fetchTenants();
+    fetchInitialData();
   }, []);
 
-  const fetchTenants = async () => {
+  const fetchInitialData = async () => {
     try {
       setIsLoading(true);
-      const data = await tenantService.getAllTenants();
-      setTenants(data);
+      const [tenantsData, apartmentsData, keysData] = await Promise.all([
+        tenantService.getAllTenants(),
+        apartmentService.getAllApartments(),
+        keyService.getAllKeys(),
+      ]);
+      setTenants(tenantsData);
+      setApartments(apartmentsData);
+      setKeys(keysData);
       setError(null);
     } catch (err) {
-      setError('Ett fel uppstod när hyresgästerna skulle hämtas');
-      console.error('Error fetching tenants:', err);
+      setError('Ett fel uppstod när data skulle hämtas');
+      console.error('Error fetching initial data:', err);
     } finally {
       setIsLoading(false);
     }
@@ -66,12 +86,34 @@ const Tenants = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      const { apartmentId, keyId, ...tenantData } = formData;
+      let savedTenant;
+      
       if (selectedTenant) {
-        await tenantService.updateTenant(selectedTenant.id, formData);
+        savedTenant = await tenantService.updateTenant(selectedTenant.id, tenantData);
       } else {
-        await tenantService.createTenant(formData);
+        savedTenant = await tenantService.createTenant(tenantData);
       }
-      await fetchTenants();
+
+      // Hantera lägenhet
+      if (apartmentId) {
+        if (selectedTenant?.apartment?.id !== apartmentId) {
+          await tenantService.assignApartment(savedTenant.id, apartmentId);
+        }
+      } else if (selectedTenant?.apartment) {
+        await tenantService.removeApartment(savedTenant.id);
+      }
+
+      // Hantera nyckel
+      if (keyId) {
+        if (selectedTenant?.key?.id !== keyId) {
+          await tenantService.assignKey(savedTenant.id, keyId);
+        }
+      } else if (selectedTenant?.key) {
+        await tenantService.removeKey(savedTenant.id);
+      }
+
+      await fetchInitialData();
       setIsModalOpen(false);
       setSelectedTenant(null);
       setFormData({
@@ -85,6 +127,8 @@ const Tenants = () => {
         movedInDate: '',
         resiliationDate: '',
         comment: '',
+        apartmentId: '',
+        keyId: '',
       });
     } catch (err) {
       setError('Ett fel uppstod när hyresgästen skulle sparas');
@@ -94,7 +138,11 @@ const Tenants = () => {
 
   const handleEdit = (tenant) => {
     setSelectedTenant(tenant);
-    setFormData(tenant);
+    setFormData({
+      ...tenant,
+      apartmentId: tenant.apartment?.id || '',
+      keyId: tenant.key?.id || '',
+    });
     setIsModalOpen(true);
   };
 
@@ -102,7 +150,7 @@ const Tenants = () => {
     if (window.confirm('Är du säker på att du vill ta bort denna hyresgäst?')) {
       try {
         await tenantService.deleteTenant(tenant.id);
-        await fetchTenants();
+        await fetchInitialData();
       } catch (err) {
         setError('Ett fel uppstod när hyresgästen skulle tas bort');
         console.error('Error deleting tenant:', err);
@@ -169,6 +217,8 @@ const Tenants = () => {
             movedInDate: '',
             resiliationDate: '',
             comment: '',
+            apartmentId: '',
+            keyId: '',
           });
         }}
         title={selectedTenant ? 'Redigera hyresgäst' : 'Lägg till hyresgäst'}
@@ -240,6 +290,47 @@ const Tenants = () => {
               value={formData.resiliationDate}
               onChange={handleInputChange}
             />
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Lägenhet
+              </label>
+              <select
+                name="apartmentId"
+                value={formData.apartmentId}
+                onChange={handleInputChange}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
+              >
+                <option value="">Ingen lägenhet</option>
+                {apartments.map((apartment) => (
+                  <option key={apartment.id} value={apartment.id}>
+                    {`${apartment.street} ${apartment.number}, ${apartment.apartmentNumber}`}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Nyckel
+              </label>
+              <select
+                name="keyId"
+                value={formData.keyId}
+                onChange={handleInputChange}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
+              >
+                <option value="">Ingen nyckel</option>
+                {keys.map((key) => (
+                  <option key={key.id} value={key.id}>
+                    {`${key.type} - ${key.serie}-${key.number}`}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             <div className="sm:col-span-2">
               <FormInput
                 label="Kommentar"
@@ -267,6 +358,8 @@ const Tenants = () => {
                   movedInDate: '',
                   resiliationDate: '',
                   comment: '',
+                  apartmentId: '',
+                  keyId: '',
                 });
               }}
               className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"

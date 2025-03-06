@@ -3,12 +3,14 @@ import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
 import FormInput from '../components/FormInput';
 import { PlusIcon } from '@heroicons/react/24/outline';
-import { apartmentService } from '../services';
+import { apartmentService, tenantService, keyService } from '../services';
 
 const Apartments = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedApartment, setSelectedApartment] = useState(null);
   const [apartments, setApartments] = useState([]);
+  const [tenants, setTenants] = useState([]);
+  const [keys, setKeys] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [formData, setFormData] = useState({
@@ -23,6 +25,8 @@ const Apartments = () => {
     electricity: false,
     storage: false,
     internet: false,
+    tenantIds: [],
+    keyIds: [],
   });
 
   const columns = [
@@ -33,21 +37,37 @@ const Apartments = () => {
     { key: 'rooms', label: 'Rum' },
     { key: 'area', label: 'Yta (m²)' },
     { key: 'price', label: 'Hyra (kr)', render: (value) => `${value} kr` },
+    {
+      key: 'tenants',
+      label: 'Hyresgäster',
+      render: (value) => value?.map(t => `${t.firstName} ${t.lastName}`).join(', ') || '-',
+    },
+    {
+      key: 'keys',
+      label: 'Nycklar',
+      render: (value) => value?.map(k => `${k.serie}-${k.number}`).join(', ') || '-',
+    },
   ];
 
   useEffect(() => {
-    fetchApartments();
+    fetchInitialData();
   }, []);
 
-  const fetchApartments = async () => {
+  const fetchInitialData = async () => {
     try {
       setIsLoading(true);
-      const data = await apartmentService.getAllApartments();
-      setApartments(data);
+      const [apartmentsData, tenantsData, keysData] = await Promise.all([
+        apartmentService.getAllApartments(),
+        tenantService.getAllTenants(),
+        keyService.getAllKeys(),
+      ]);
+      setApartments(apartmentsData);
+      setTenants(tenantsData);
+      setKeys(keysData);
       setError(null);
     } catch (err) {
-      setError('Ett fel uppstod när lägenheterna skulle hämtas');
-      console.error('Error fetching apartments:', err);
+      setError('Ett fel uppstod när data skulle hämtas');
+      console.error('Error fetching initial data:', err);
     } finally {
       setIsLoading(false);
     }
@@ -55,21 +75,58 @@ const Apartments = () => {
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value,
-    }));
+    if (type === 'checkbox') {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: checked,
+      }));
+    } else if (name === 'tenantIds' || name === 'keyIds') {
+      const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
+      setFormData(prev => ({
+        ...prev,
+        [name]: selectedOptions,
+      }));
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      const { tenantIds, keyIds, ...apartmentData } = formData;
+      let savedApartment;
+      
       if (selectedApartment) {
-        await apartmentService.updateApartment(selectedApartment.id, formData);
+        savedApartment = await apartmentService.updateApartment(selectedApartment.id, apartmentData);
       } else {
-        await apartmentService.createApartment(formData);
+        savedApartment = await apartmentService.createApartment(apartmentData);
       }
-      await fetchApartments();
+
+      // Hantera hyresgäster
+      const existingTenantIds = selectedApartment?.tenants?.map(t => t.id) || [];
+      const tenantsToAdd = tenantIds.filter(id => !existingTenantIds.includes(id));
+      const tenantsToRemove = existingTenantIds.filter(id => !tenantIds.includes(id));
+
+      await Promise.all([
+        ...tenantsToAdd.map(id => apartmentService.assignTenant(savedApartment.id, id)),
+        ...tenantsToRemove.map(id => apartmentService.removeTenant(savedApartment.id, id)),
+      ]);
+
+      // Hantera nycklar
+      const existingKeyIds = selectedApartment?.keys?.map(k => k.id) || [];
+      const keysToAdd = keyIds.filter(id => !existingKeyIds.includes(id));
+      const keysToRemove = existingKeyIds.filter(id => !keyIds.includes(id));
+
+      await Promise.all([
+        ...keysToAdd.map(id => apartmentService.assignKey(savedApartment.id, id)),
+        ...keysToRemove.map(id => apartmentService.removeKey(savedApartment.id, id)),
+      ]);
+
+      await fetchInitialData();
       setIsModalOpen(false);
       setSelectedApartment(null);
       setFormData({
@@ -84,6 +141,8 @@ const Apartments = () => {
         electricity: false,
         storage: false,
         internet: false,
+        tenantIds: [],
+        keyIds: [],
       });
     } catch (err) {
       setError('Ett fel uppstod när lägenheten skulle sparas');
@@ -93,7 +152,11 @@ const Apartments = () => {
 
   const handleEdit = (apartment) => {
     setSelectedApartment(apartment);
-    setFormData(apartment);
+    setFormData({
+      ...apartment,
+      tenantIds: apartment.tenants?.map(t => t.id) || [],
+      keyIds: apartment.keys?.map(k => k.id) || [],
+    });
     setIsModalOpen(true);
   };
 
@@ -101,7 +164,7 @@ const Apartments = () => {
     if (window.confirm('Är du säker på att du vill ta bort denna lägenhet?')) {
       try {
         await apartmentService.deleteApartment(apartment.id);
-        await fetchApartments();
+        await fetchInitialData();
       } catch (err) {
         setError('Ett fel uppstod när lägenheten skulle tas bort');
         console.error('Error deleting apartment:', err);
@@ -169,6 +232,8 @@ const Apartments = () => {
             electricity: false,
             storage: false,
             internet: false,
+            tenantIds: [],
+            keyIds: [],
           });
         }}
         title={selectedApartment ? 'Redigera lägenhet' : 'Lägg till lägenhet'}
@@ -269,6 +334,52 @@ const Apartments = () => {
             </label>
           </div>
 
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Hyresgäster
+              </label>
+              <select
+                multiple
+                name="tenantIds"
+                value={formData.tenantIds}
+                onChange={handleInputChange}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
+              >
+                {tenants.map((tenant) => (
+                  <option key={tenant.id} value={tenant.id}>
+                    {`${tenant.firstName} ${tenant.lastName}`}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1 text-sm text-gray-500">
+                Håll ner Ctrl (Windows) eller Cmd (Mac) för att välja flera
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Nycklar
+              </label>
+              <select
+                multiple
+                name="keyIds"
+                value={formData.keyIds}
+                onChange={handleInputChange}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
+              >
+                {keys.map((key) => (
+                  <option key={key.id} value={key.id}>
+                    {`${key.type} - ${key.serie}-${key.number}`}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-1 text-sm text-gray-500">
+                Håll ner Ctrl (Windows) eller Cmd (Mac) för att välja flera
+              </p>
+            </div>
+          </div>
+
           <div className="flex justify-end gap-4 mt-6">
             <button
               type="button"
@@ -287,6 +398,8 @@ const Apartments = () => {
                   electricity: false,
                   storage: false,
                   internet: false,
+                  tenantIds: [],
+                  keyIds: [],
                 });
               }}
               className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"

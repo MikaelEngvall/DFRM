@@ -1,15 +1,15 @@
 package com.dfrm.service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.ArrayList;
 
 import org.springframework.stereotype.Service;
 
 import com.dfrm.model.Apartment;
 import com.dfrm.repository.ApartmentRepository;
-import com.dfrm.repository.TenantRepository;
 import com.dfrm.repository.KeyRepository;
+import com.dfrm.repository.TenantRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -33,7 +33,25 @@ public class ApartmentService {
     }
     
     public void deleteApartment(String id) {
-        apartmentRepository.deleteById(id);
+        apartmentRepository.findById(id).ifPresent(apartment -> {
+            // Ta bort lägenhetens referens från alla hyresgäster
+            if (apartment.getTenants() != null) {
+                apartment.getTenants().forEach(tenant -> {
+                    tenant.setApartment(null);
+                    tenantRepository.save(tenant);
+                });
+            }
+            
+            // Ta bort lägenhetens referens från alla nycklar
+            if (apartment.getKeys() != null) {
+                apartment.getKeys().forEach(key -> {
+                    key.setApartment(null);
+                    keyRepository.save(key);
+                });
+            }
+            
+            apartmentRepository.deleteById(id);
+        });
     }
     
     public List<Apartment> findByCity(String city) {
@@ -52,49 +70,75 @@ public class ApartmentService {
         return apartmentRepository.findByStreetAndNumberAndApartmentNumber(street, number, apartmentNumber);
     }
 
-    public Optional<Apartment> addTenant(String apartmentId, String tenantId) {
+    public Optional<Apartment> assignTenant(String apartmentId, String tenantId) {
         return apartmentRepository.findById(apartmentId)
                 .flatMap(apartment -> tenantRepository.findById(tenantId)
                         .map(tenant -> {
+                            // Ta bort hyresgästen från tidigare lägenhet om den finns
+                            if (tenant.getApartment() != null) {
+                                Apartment oldApartment = tenant.getApartment();
+                                oldApartment.getTenants().remove(tenant);
+                                apartmentRepository.save(oldApartment);
+                            }
+
+                            // Lägg till hyresgästen i den nya lägenheten
                             if (apartment.getTenants() == null) {
                                 apartment.setTenants(new ArrayList<>());
                             }
-                            apartment.getTenants().add(tenant);
+                            if (!apartment.getTenants().contains(tenant)) {
+                                apartment.getTenants().add(tenant);
+                            }
+                            tenant.setApartment(apartment);
+
+                            tenantRepository.save(tenant);
                             return apartmentRepository.save(apartment);
                         }));
     }
 
-    public Optional<Apartment> addKey(String apartmentId, String keyId) {
+    public Optional<Apartment> assignKey(String apartmentId, String keyId) {
         return apartmentRepository.findById(apartmentId)
                 .flatMap(apartment -> keyRepository.findById(keyId)
                         .map(key -> {
+                            // Ta bort nyckeln från tidigare lägenhet om den finns
+                            if (key.getApartment() != null) {
+                                Apartment oldApartment = key.getApartment();
+                                oldApartment.getKeys().remove(key);
+                                apartmentRepository.save(oldApartment);
+                            }
+
+                            // Lägg till nyckeln i den nya lägenheten
                             if (apartment.getKeys() == null) {
                                 apartment.setKeys(new ArrayList<>());
                             }
-                            apartment.getKeys().add(key);
+                            if (!apartment.getKeys().contains(key)) {
+                                apartment.getKeys().add(key);
+                            }
+                            key.setApartment(apartment);
+
+                            keyRepository.save(key);
                             return apartmentRepository.save(apartment);
                         }));
     }
 
     public Optional<Apartment> removeTenant(String apartmentId, String tenantId) {
         return apartmentRepository.findById(apartmentId)
-                .map(apartment -> {
-                    if (apartment.getTenants() != null) {
-                        apartment.getTenants().removeIf(tenant -> tenant.getId().equals(tenantId));
-                        return apartmentRepository.save(apartment);
-                    }
-                    return apartment;
-                });
+                .flatMap(apartment -> tenantRepository.findById(tenantId)
+                        .map(tenant -> {
+                            apartment.getTenants().remove(tenant);
+                            tenant.setApartment(null);
+                            tenantRepository.save(tenant);
+                            return apartmentRepository.save(apartment);
+                        }));
     }
 
     public Optional<Apartment> removeKey(String apartmentId, String keyId) {
         return apartmentRepository.findById(apartmentId)
-                .map(apartment -> {
-                    if (apartment.getKeys() != null) {
-                        apartment.getKeys().removeIf(key -> key.getId().equals(keyId));
-                        return apartmentRepository.save(apartment);
-                    }
-                    return apartment;
-                });
+                .flatMap(apartment -> keyRepository.findById(keyId)
+                        .map(key -> {
+                            apartment.getKeys().remove(key);
+                            key.setApartment(null);
+                            keyRepository.save(key);
+                            return apartmentRepository.save(apartment);
+                        }));
     }
 } 

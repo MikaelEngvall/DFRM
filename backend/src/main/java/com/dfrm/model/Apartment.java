@@ -1,10 +1,14 @@
 package com.dfrm.model;
 
-import lombok.Data;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
-import org.springframework.data.mongodb.core.mapping.DBRef;
 import java.util.List;
+
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.DBRef;
+import org.springframework.data.mongodb.core.mapping.Document;
+
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+
+import lombok.Data;
 
 @Data
 @Document(collection = "apartments")
@@ -25,8 +29,10 @@ public class Apartment {
     private Boolean internet;
     
     @DBRef
+    @JsonManagedReference
     private List<Tenant> tenants;
     
     @DBRef
+    @JsonManagedReference
     private List<Key> keys;
 } 

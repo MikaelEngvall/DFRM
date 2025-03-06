@@ -56,6 +56,30 @@ const apartmentService = {
     });
     return response.data;
   },
+
+  // Tilldela en hyresgäst till en lägenhet
+  assignTenant: async (apartmentId, tenantId) => {
+    const response = await api.put(`/apartments/${apartmentId}/tenant?tenantId=${tenantId}`);
+    return response.data;
+  },
+
+  // Tilldela en nyckel till en lägenhet
+  assignKey: async (apartmentId, keyId) => {
+    const response = await api.put(`/apartments/${apartmentId}/key?keyId=${keyId}`);
+    return response.data;
+  },
+
+  // Ta bort en hyresgäst från en lägenhet
+  removeTenant: async (apartmentId, tenantId) => {
+    const response = await api.delete(`/apartments/${apartmentId}/tenant/${tenantId}`);
+    return response.data;
+  },
+
+  // Ta bort en nyckel från en lägenhet
+  removeKey: async (apartmentId, keyId) => {
+    const response = await api.delete(`/apartments/${apartmentId}/key/${keyId}`);
+    return response.data;
+  },
 };
 
 export default apartmentService; 

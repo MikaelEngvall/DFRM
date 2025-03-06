@@ -1,11 +1,14 @@
 package com.dfrm.service;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 
+import com.dfrm.model.Apartment;
+import com.dfrm.model.Key;
 import com.dfrm.model.Tenant;
 import com.dfrm.repository.ApartmentRepository;
 import com.dfrm.repository.KeyRepository;
@@ -37,7 +40,23 @@ public class TenantService {
     }
     
     public void deleteTenant(String id) {
-        tenantRepository.deleteById(id);
+        tenantRepository.findById(id).ifPresent(tenant -> {
+            // Ta bort hyresgästen från lägenheten om den finns
+            if (tenant.getApartment() != null) {
+                Apartment apartment = tenant.getApartment();
+                apartment.getTenants().remove(tenant);
+                apartmentRepository.save(apartment);
+            }
+            
+            // Ta bort hyresgästens referens från nyckeln om den finns
+            if (tenant.getKey() != null) {
+                Key key = tenant.getKey();
+                key.setTenant(null);
+                keyRepository.save(key);
+            }
+            
+            tenantRepository.deleteById(id);
+        });
     }
     
     public List<Tenant> findByLastName(String lastName) {
@@ -56,7 +75,23 @@ public class TenantService {
         return tenantRepository.findById(tenantId)
                 .flatMap(tenant -> apartmentRepository.findById(apartmentId)
                         .map(apartment -> {
+                            // Ta bort hyresgästen från tidigare lägenhet om den finns
+                            if (tenant.getApartment() != null) {
+                                Apartment oldApartment = tenant.getApartment();
+                                oldApartment.getTenants().remove(tenant);
+                                apartmentRepository.save(oldApartment);
+                            }
+
+                            // Lägg till hyresgästen i den nya lägenheten
                             tenant.setApartment(apartment);
+                            if (apartment.getTenants() == null) {
+                                apartment.setTenants(new ArrayList<>());
+                            }
+                            if (!apartment.getTenants().contains(tenant)) {
+                                apartment.getTenants().add(tenant);
+                            }
+
+                            apartmentRepository.save(apartment);
                             return tenantRepository.save(tenant);
                         }));
     }
@@ -65,7 +100,18 @@ public class TenantService {
         return tenantRepository.findById(tenantId)
                 .flatMap(tenant -> keyRepository.findById(keyId)
                         .map(key -> {
+                            // Ta bort nyckeln från tidigare hyresgäst om den finns
+                            if (key.getTenant() != null) {
+                                Tenant oldTenant = key.getTenant();
+                                oldTenant.setKey(null);
+                                tenantRepository.save(oldTenant);
+                            }
+
+                            // Tilldela nyckeln till den nya hyresgästen
                             tenant.setKey(key);
+                            key.setTenant(tenant);
+
+                            keyRepository.save(key);
                             return tenantRepository.save(tenant);
                         }));
     }
@@ -73,6 +119,11 @@ public class TenantService {
     public Optional<Tenant> removeApartment(String tenantId) {
         return tenantRepository.findById(tenantId)
                 .map(tenant -> {
+                    if (tenant.getApartment() != null) {
+                        Apartment apartment = tenant.getApartment();
+                        apartment.getTenants().remove(tenant);
+                        apartmentRepository.save(apartment);
+                    }
                     tenant.setApartment(null);
                     return tenantRepository.save(tenant);
                 });
@@ -81,6 +132,11 @@ public class TenantService {
     public Optional<Tenant> removeKey(String tenantId) {
         return tenantRepository.findById(tenantId)
                 .map(tenant -> {
+                    if (tenant.getKey() != null) {
+                        Key key = tenant.getKey();
+                        key.setTenant(null);
+                        keyRepository.save(key);
+                    }
                     tenant.setKey(null);
                     return tenantRepository.save(tenant);
                 });
