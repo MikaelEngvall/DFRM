@@ -25,7 +25,7 @@ public class Tenant {
     private String postalCode;
     private String city;
     private LocalDate movedInDate;
-    private LocalDate resiliated;
+    private LocalDate resiliationDate;
     private String comment;
     
     @DBRef

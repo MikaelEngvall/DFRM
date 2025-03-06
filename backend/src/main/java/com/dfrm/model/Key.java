@@ -13,7 +13,8 @@ import lombok.Data;
 public class Key {
     @Id
     private String id;
-    private String keyNumber;
+    private String serie;
+    private String number;
     private String type;
     private String description;
     private Boolean isAvailable;
