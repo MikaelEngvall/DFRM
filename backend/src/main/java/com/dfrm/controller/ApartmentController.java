@@ -19,7 +19,7 @@ import com.dfrm.service.ApartmentService;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/apartments")
+@RequestMapping("/api/apartments")
 @RequiredArgsConstructor
 public class ApartmentController {
     private final ApartmentService apartmentService;

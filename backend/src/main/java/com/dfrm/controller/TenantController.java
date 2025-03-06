@@ -21,7 +21,7 @@ import com.dfrm.service.TenantService;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/tenants")
+@RequestMapping("/api/tenants")
 @RequiredArgsConstructor
 public class TenantController {
     private final TenantService tenantService;

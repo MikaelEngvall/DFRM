@@ -1,8 +1,8 @@
 package com.dfrm.controller;
 
-import com.dfrm.model.Admin;
-import com.dfrm.repository.AdminRepository;
-import com.dfrm.service.JwtService;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -13,11 +13,12 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.HashMap;
-import java.util.Map;
+import com.dfrm.model.Admin;
+import com.dfrm.repository.AdminRepository;
+import com.dfrm.service.JwtService;
 
 @RestController
-@RequestMapping("/auth")
+@RequestMapping("/api/auth")
 public class AuthController {
 
     private final AuthenticationManager authenticationManager;

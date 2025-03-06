@@ -9,7 +9,7 @@ const api = axios.create({
 
 // Interceptor för att hantera autentisering
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem('auth_token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -25,7 +25,7 @@ api.interceptors.response.use(
       switch (error.response.status) {
         case 401:
           // Omdirigera till inloggningssidan vid ogiltig token
-          localStorage.removeItem('token');
+          localStorage.removeItem('auth_token');
           window.location.href = '/login';
           break;
         case 403:

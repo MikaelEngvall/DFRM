@@ -10,6 +10,21 @@ import Tenants from './pages/Tenants';
 import Keys from './pages/Keys';
 import Login from './pages/Login';
 
+const PrivateLayout = () => (
+  <div>
+    <Navigation />
+    <main className="pt-16">
+      <Routes>
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/apartments" element={<Apartments />} />
+        <Route path="/tenants" element={<Tenants />} />
+        <Route path="/keys" element={<Keys />} />
+      </Routes>
+    </main>
+  </div>
+);
+
 const App = () => {
   return (
     <Router>
@@ -19,25 +34,13 @@ const App = () => {
             <Routes>
               <Route path="/login" element={<Login />} />
               <Route
-                path="/"
+                path="/*"
                 element={
                   <PrivateRoute>
-                    <div>
-                      <Navigation />
-                      <main className="pt-16">
-                        <Routes>
-                          <Route index element={<Navigate to="/dashboard" replace />} />
-                          <Route path="dashboard" element={<Dashboard />} />
-                          <Route path="apartments" element={<Apartments />} />
-                          <Route path="tenants" element={<Tenants />} />
-                          <Route path="keys" element={<Keys />} />
-                        </Routes>
-                      </main>
-                    </div>
+                    <PrivateLayout />
                   </PrivateRoute>
                 }
               />
-              <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </div>
         </AuthProvider>

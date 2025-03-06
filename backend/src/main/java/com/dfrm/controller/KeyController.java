@@ -19,7 +19,7 @@ import com.dfrm.service.KeyService;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/keys")
+@RequestMapping("/api/keys")
 @RequiredArgsConstructor
 public class KeyController {
     private final KeyService keyService;

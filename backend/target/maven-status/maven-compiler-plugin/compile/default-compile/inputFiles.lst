@@ -14,6 +14,7 @@ C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\service\ApartmentService
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\model\Tenant.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\controller\ApartmentController.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\DfrmApplication.java
+C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\filter\JwtAuthenticationFilter.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\model\Apartment.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\config\MongoConfig.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\config\DataInitializer.java

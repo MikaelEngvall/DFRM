@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
+import React, { createContext, useState, useContext, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authService } from '../services';
 import sessionManager from '../utils/sessionManager';
@@ -12,13 +12,13 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [showSessionWarning, setShowSessionWarning] = useState(false);
   const [sessionRemainingTime, setSessionRemainingTime] = useState(0);
-  const [isCheckingAuth, setIsCheckingAuth] = useState(false);
+  const authCheckRef = useRef(false);
 
   const checkAuthStatus = useCallback(async () => {
-    if (isCheckingAuth) return;
-    
+    if (authCheckRef.current) return;
+    authCheckRef.current = true;
+
     try {
-      setIsCheckingAuth(true);
       const token = localStorage.getItem('auth_token');
       if (!token) {
         setUser(null);
@@ -31,10 +31,9 @@ export const AuthProvider = ({ children }) => {
       setUser(null);
       console.error('Auth check error:', error);
     } finally {
-      setIsCheckingAuth(false);
       setLoading(false);
     }
-  }, [isCheckingAuth]);
+  }, []);
 
   useEffect(() => {
     checkAuthStatus();
@@ -67,6 +66,7 @@ export const AuthProvider = ({ children }) => {
     try {
       const userData = await authService.login(credentials);
       setUser(userData);
+      navigate('/dashboard');
       return userData;
     } catch (error) {
       throw error;
@@ -79,6 +79,7 @@ export const AuthProvider = ({ children }) => {
     } finally {
       setUser(null);
       setShowSessionWarning(false);
+      localStorage.removeItem('auth_token');
       navigate('/login');
     }
   };
