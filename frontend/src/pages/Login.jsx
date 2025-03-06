@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import FormInput from '../components/FormInput';
 import { authService } from '../services';
+import { validateEmail, validatePassword } from '../utils/validation';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -9,8 +10,21 @@ const Login = () => {
     email: '',
     password: '',
   });
-  const [error, setError] = useState(null);
+  const [errors, setErrors] = useState({});
+  const [submitError, setSubmitError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  const validateForm = () => {
+    const newErrors = {};
+    const emailError = validateEmail(formData.email);
+    const passwordError = validatePassword(formData.password);
+
+    if (emailError) newErrors.email = emailError;
+    if (passwordError) newErrors.password = passwordError;
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -18,17 +32,34 @@ const Login = () => {
       ...prev,
       [name]: value,
     }));
+    // Rensa felmeddelande för det aktuella fältet
+    setErrors((prev) => ({
+      ...prev,
+      [name]: null,
+    }));
+    setSubmitError(null);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setSubmitError(null);
+
+    if (!validateForm()) {
+      return;
+    }
+
     try {
       setIsLoading(true);
-      setError(null);
       await authService.login(formData);
       navigate('/dashboard');
     } catch (err) {
-      setError('Felaktiga inloggningsuppgifter');
+      if (err.response?.status === 401) {
+        setSubmitError('Felaktiga inloggningsuppgifter');
+      } else if (err.response?.status === 429) {
+        setSubmitError('För många inloggningsförsök. Försök igen senare.');
+      } else {
+        setSubmitError('Ett fel uppstod vid inloggning. Försök igen senare.');
+      }
       console.error('Login error:', err);
     } finally {
       setIsLoading(false);
@@ -44,7 +75,7 @@ const Login = () => {
           </h2>
         </div>
         
-        {error && (
+        {submitError && (
           <div className="bg-red-50 border-l-4 border-red-400 p-4">
             <div className="flex">
               <div className="flex-shrink-0">
@@ -53,7 +84,7 @@ const Login = () => {
                 </svg>
               </div>
               <div className="ml-3">
-                <p className="text-sm text-red-700">{error}</p>
+                <p className="text-sm text-red-700">{submitError}</p>
               </div>
             </div>
           </div>
@@ -67,6 +98,7 @@ const Login = () => {
               type="email"
               value={formData.email}
               onChange={handleInputChange}
+              error={errors.email}
               required
               autoComplete="email"
             />
@@ -76,6 +108,7 @@ const Login = () => {
               type="password"
               value={formData.password}
               onChange={handleInputChange}
+              error={errors.password}
               required
               autoComplete="current-password"
             />
