@@ -1,15 +1,44 @@
 import React, { createContext, useState, useContext, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { authService } from '../services';
+import sessionManager from '../utils/sessionManager';
+import SessionWarning from '../components/SessionWarning';
 
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
+  const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showSessionWarning, setShowSessionWarning] = useState(false);
+  const [sessionRemainingTime, setSessionRemainingTime] = useState(0);
 
   useEffect(() => {
     checkAuthStatus();
   }, []);
+
+  useEffect(() => {
+    if (user) {
+      initializeSessionManager();
+    }
+    return () => {
+      sessionManager.cleanup();
+    };
+  }, [user]);
+
+  const initializeSessionManager = () => {
+    sessionManager.init(
+      // Varningshanterare
+      (remainingTime) => {
+        setSessionRemainingTime(remainingTime);
+        setShowSessionWarning(true);
+      },
+      // Utloggningshanterare
+      () => {
+        handleLogout();
+      }
+    );
+  };
 
   const checkAuthStatus = async () => {
     try {
@@ -22,15 +51,25 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const login = async (credentials) => {
+  const handleLogin = async (credentials) => {
     const userData = await authService.login(credentials);
     setUser(userData);
     return userData;
   };
 
-  const logout = async () => {
-    await authService.logout();
-    setUser(null);
+  const handleLogout = async () => {
+    try {
+      await authService.logout();
+    } finally {
+      setUser(null);
+      setShowSessionWarning(false);
+      navigate('/login');
+    }
+  };
+
+  const extendSession = () => {
+    sessionManager.handleUserActivity();
+    setShowSessionWarning(false);
   };
 
   if (loading) {
@@ -42,8 +81,15 @@ export const AuthProvider = ({ children }) => {
   }
 
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={{ user, login: handleLogin, logout: handleLogout }}>
       {children}
+      {showSessionWarning && (
+        <SessionWarning
+          remainingTime={sessionRemainingTime}
+          onExtend={extendSession}
+          onLogout={handleLogout}
+        />
+      )}
     </AuthContext.Provider>
   );
 };

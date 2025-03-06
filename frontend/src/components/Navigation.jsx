@@ -8,9 +8,12 @@ import {
   ArrowRightOnRectangleIcon,
 } from '@heroicons/react/24/outline';
 import { useAuth } from '../contexts/AuthContext';
+import { useLocale } from '../contexts/LocaleContext';
+import LanguageSelector from './LanguageSelector';
 
 const Navigation = () => {
   const { user, logout } = useAuth();
+  const { t } = useLocale();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -25,22 +28,22 @@ const Navigation = () => {
 
   const navigation = [
     {
-      name: 'Översikt',
+      name: t('navigation.dashboard'),
       href: '/dashboard',
       icon: ChartBarIcon,
     },
     {
-      name: 'Lägenheter',
+      name: t('navigation.apartments'),
       href: '/apartments',
       icon: HomeIcon,
     },
     {
-      name: 'Hyresgäster',
+      name: t('navigation.tenants'),
       href: '/tenants',
       icon: UserGroupIcon,
     },
     {
-      name: 'Nycklar',
+      name: t('navigation.keys'),
       href: '/keys',
       icon: KeyIcon,
     },
@@ -71,7 +74,8 @@ const Navigation = () => {
               ))}
             </div>
           </div>
-          <div className="flex items-center">
+          <div className="flex items-center space-x-4">
+            <LanguageSelector />
             <div className="flex-shrink-0">
               <span className="text-sm text-gray-500 mr-4">{user?.email}</span>
               <button
@@ -79,7 +83,7 @@ const Navigation = () => {
                 className="relative inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary hover:bg-secondary focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
               >
                 <ArrowRightOnRectangleIcon className="h-5 w-5 mr-2" />
-                Logga ut
+                {t('navigation.logout')}
               </button>
             </div>
           </div>
