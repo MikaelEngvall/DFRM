@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import FormInput from '../components/FormInput';
-import { authService } from '../services';
+import { useAuth } from '../contexts/AuthContext';
 import { validateEmail, validatePassword } from '../utils/validation';
 
 const Login = () => {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -50,17 +51,17 @@ const Login = () => {
 
     try {
       setIsLoading(true);
-      await authService.login(formData);
+      await login(formData);
       navigate('/dashboard');
     } catch (err) {
-      if (err.response?.status === 401) {
+      console.error('Login error:', err);
+      if (err.statusCode === 401) {
         setSubmitError('Felaktiga inloggningsuppgifter');
-      } else if (err.response?.status === 429) {
+      } else if (err.statusCode === 429) {
         setSubmitError('För många inloggningsförsök. Försök igen senare.');
       } else {
         setSubmitError('Ett fel uppstod vid inloggning. Försök igen senare.');
       }
-      console.error('Login error:', err);
     } finally {
       setIsLoading(false);
     }

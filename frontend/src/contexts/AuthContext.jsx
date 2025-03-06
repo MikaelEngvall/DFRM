@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authService } from '../services';
 import sessionManager from '../utils/sessionManager';
@@ -12,10 +12,33 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [showSessionWarning, setShowSessionWarning] = useState(false);
   const [sessionRemainingTime, setSessionRemainingTime] = useState(0);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(false);
+
+  const checkAuthStatus = useCallback(async () => {
+    if (isCheckingAuth) return;
+    
+    try {
+      setIsCheckingAuth(true);
+      const token = localStorage.getItem('auth_token');
+      if (!token) {
+        setUser(null);
+        return;
+      }
+
+      const userData = await authService.getCurrentUser();
+      setUser(userData);
+    } catch (error) {
+      setUser(null);
+      console.error('Auth check error:', error);
+    } finally {
+      setIsCheckingAuth(false);
+      setLoading(false);
+    }
+  }, [isCheckingAuth]);
 
   useEffect(() => {
     checkAuthStatus();
-  }, []);
+  }, [checkAuthStatus]);
 
   useEffect(() => {
     if (user) {
@@ -35,29 +58,22 @@ export const AuthProvider = ({ children }) => {
       },
       // Utloggningshanterare
       () => {
-        handleLogout();
+        logout();
       }
     );
   };
 
-  const checkAuthStatus = async () => {
+  const login = async (credentials) => {
     try {
-      const userData = await authService.getCurrentUser();
+      const userData = await authService.login(credentials);
       setUser(userData);
+      return userData;
     } catch (error) {
-      setUser(null);
-    } finally {
-      setLoading(false);
+      throw error;
     }
   };
 
-  const handleLogin = async (credentials) => {
-    const userData = await authService.login(credentials);
-    setUser(userData);
-    return userData;
-  };
-
-  const handleLogout = async () => {
+  const logout = async () => {
     try {
       await authService.logout();
     } finally {
@@ -80,14 +96,21 @@ export const AuthProvider = ({ children }) => {
     );
   }
 
+  const value = {
+    user,
+    login,
+    logout,
+    extendSession,
+  };
+
   return (
-    <AuthContext.Provider value={{ user, login: handleLogin, logout: handleLogout }}>
+    <AuthContext.Provider value={value}>
       {children}
       {showSessionWarning && (
         <SessionWarning
           remainingTime={sessionRemainingTime}
           onExtend={extendSession}
-          onLogout={handleLogout}
+          onLogout={logout}
         />
       )}
     </AuthContext.Provider>

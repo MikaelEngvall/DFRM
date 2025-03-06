@@ -23,24 +23,28 @@ const removeToken = () => {
 const handleApiError = (error) => {
   if (error.response) {
     const { status, data } = error.response;
-    switch (status) {
-      case 400:
-        throw new AuthError('Ogiltig förfrågan', status);
-      case 401:
-        throw new AuthError('Felaktiga inloggningsuppgifter', status);
-      case 403:
-        throw new AuthError('Åtkomst nekad', status);
-      case 404:
-        throw new AuthError('Resursen hittades inte', status);
-      case 429:
-        throw new AuthError('För många försök. Försök igen senare.', status);
-      case 500:
-        throw new AuthError('Serverfel. Försök igen senare.', status);
-      default:
-        throw new AuthError(data.message || 'Ett okänt fel uppstod', status);
-    }
+    throw new AuthError(data.message || getDefaultErrorMessage(status), status);
   }
   throw new AuthError('Kunde inte ansluta till servern', 0);
+};
+
+const getDefaultErrorMessage = (status) => {
+  switch (status) {
+    case 400:
+      return 'Ogiltig förfrågan';
+    case 401:
+      return 'Felaktiga inloggningsuppgifter';
+    case 403:
+      return 'Åtkomst nekad';
+    case 404:
+      return 'Resursen hittades inte';
+    case 429:
+      return 'För många försök. Försök igen senare.';
+    case 500:
+      return 'Serverfel. Försök igen senare.';
+    default:
+      return 'Ett okänt fel uppstod';
+  }
 };
 
 const login = async (credentials) => {
