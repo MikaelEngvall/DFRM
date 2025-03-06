@@ -21,7 +21,7 @@ import com.dfrm.service.TenantService;
 import lombok.RequiredArgsConstructor;
 
 @RestController
-@RequestMapping("/api/tenants")
+@RequestMapping("/tenants")
 @RequiredArgsConstructor
 public class TenantController {
     private final TenantService tenantService;
@@ -57,6 +57,38 @@ public class TenantController {
                     tenant.setId(id);
                     return ResponseEntity.ok(tenantService.saveTenant(tenant));
                 })
+                .orElse(ResponseEntity.notFound().build());
+    }
+    
+    @PutMapping("/{id}/apartment")
+    public ResponseEntity<Tenant> assignApartment(
+            @PathVariable String id,
+            @RequestParam String apartmentId) {
+        return tenantService.assignApartment(id, apartmentId)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+    
+    @PutMapping("/{id}/key")
+    public ResponseEntity<Tenant> assignKey(
+            @PathVariable String id,
+            @RequestParam String keyId) {
+        return tenantService.assignKey(id, keyId)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+    
+    @DeleteMapping("/{id}/apartment")
+    public ResponseEntity<Tenant> removeApartment(@PathVariable String id) {
+        return tenantService.removeApartment(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+    
+    @DeleteMapping("/{id}/key")
+    public ResponseEntity<Tenant> removeKey(@PathVariable String id) {
+        return tenantService.removeKey(id)
+                .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
     
