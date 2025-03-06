@@ -1,12 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
 import FormInput from '../components/FormInput';
 import { PlusIcon } from '@heroicons/react/24/outline';
+import { keyService, apartmentService, tenantService } from '../services';
 
 const Keys = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedKey, setSelectedKey] = useState(null);
+  const [keys, setKeys] = useState([]);
+  const [apartments, setApartments] = useState([]);
+  const [tenants, setTenants] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [formData, setFormData] = useState({
     type: '',
     serie: '',
@@ -31,25 +37,29 @@ const Keys = () => {
     },
   ];
 
-  // Exempel på data (ersätt med API-anrop)
-  const keys = [
-    {
-      id: '1',
-      type: 'Huvudnyckel',
-      serie: 'A123',
-      number: '456',
-      apartment: {
-        street: 'Storgatan',
-        number: '1',
-        apartmentNumber: 'A101',
-      },
-      tenant: {
-        firstName: 'Anna',
-        lastName: 'Andersson',
-      },
-    },
-    // Fler nycklar...
-  ];
+  useEffect(() => {
+    fetchInitialData();
+  }, []);
+
+  const fetchInitialData = async () => {
+    try {
+      setIsLoading(true);
+      const [keysData, apartmentsData, tenantsData] = await Promise.all([
+        keyService.getAllKeys(),
+        apartmentService.getAllApartments(),
+        tenantService.getAllTenants(),
+      ]);
+      setKeys(keysData);
+      setApartments(apartmentsData);
+      setTenants(tenantsData);
+      setError(null);
+    } catch (err) {
+      setError('Ett fel uppstod när data skulle hämtas');
+      console.error('Error fetching initial data:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -59,19 +69,28 @@ const Keys = () => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Här implementerar vi API-anrop för att spara data
-    console.log('Form data:', formData);
-    setIsModalOpen(false);
-    setSelectedKey(null);
-    setFormData({
-      type: '',
-      serie: '',
-      number: '',
-      apartmentId: '',
-      tenantId: '',
-    });
+    try {
+      if (selectedKey) {
+        await keyService.updateKey(selectedKey.id, formData);
+      } else {
+        await keyService.createKey(formData);
+      }
+      await fetchInitialData();
+      setIsModalOpen(false);
+      setSelectedKey(null);
+      setFormData({
+        type: '',
+        serie: '',
+        number: '',
+        apartmentId: '',
+        tenantId: '',
+      });
+    } catch (err) {
+      setError('Ett fel uppstod när nyckeln skulle sparas');
+      console.error('Error saving key:', err);
+    }
   };
 
   const handleEdit = (key) => {
@@ -84,21 +103,27 @@ const Keys = () => {
     setIsModalOpen(true);
   };
 
-  const handleDelete = (key) => {
-    // Här implementerar vi API-anrop för att ta bort nyckel
-    console.log('Delete key:', key);
+  const handleDelete = async (key) => {
+    if (window.confirm('Är du säker på att du vill ta bort denna nyckel?')) {
+      try {
+        await keyService.deleteKey(key.id);
+        await fetchInitialData();
+      } catch (err) {
+        setError('Ett fel uppstod när nyckeln skulle tas bort');
+        console.error('Error deleting key:', err);
+      }
+    }
   };
 
-  // Exempel på data för select-listor (ersätt med API-anrop)
   const keyTypes = ['Huvudnyckel', 'Lägenhetsnyckel', 'Förrådsnyckel', 'Portnyckel'];
-  const apartments = [
-    { id: '1', label: 'Storgatan 1, A101' },
-    { id: '2', label: 'Storgatan 1, A102' },
-  ];
-  const tenants = [
-    { id: '1', label: 'Anna Andersson' },
-    { id: '2', label: 'Erik Eriksson' },
-  ];
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-full">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -113,6 +138,21 @@ const Keys = () => {
         </button>
       </div>
 
+      {error && (
+        <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-4">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-red-700">{error}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <DataTable
         columns={columns}
         data={keys}
@@ -125,6 +165,13 @@ const Keys = () => {
         onClose={() => {
           setIsModalOpen(false);
           setSelectedKey(null);
+          setFormData({
+            type: '',
+            serie: '',
+            number: '',
+            apartmentId: '',
+            tenantId: '',
+          });
         }}
         title={selectedKey ? 'Redigera nyckel' : 'Lägg till nyckel'}
       >
@@ -188,7 +235,7 @@ const Keys = () => {
                 <option value="">Välj lägenhet</option>
                 {apartments.map((apartment) => (
                   <option key={apartment.id} value={apartment.id}>
-                    {apartment.label}
+                    {`${apartment.street} ${apartment.number}, ${apartment.apartmentNumber}`}
                   </option>
                 ))}
               </select>
@@ -211,7 +258,7 @@ const Keys = () => {
                 <option value="">Ingen hyresgäst</option>
                 {tenants.map((tenant) => (
                   <option key={tenant.id} value={tenant.id}>
-                    {tenant.label}
+                    {`${tenant.firstName} ${tenant.lastName}`}
                   </option>
                 ))}
               </select>
@@ -224,6 +271,13 @@ const Keys = () => {
               onClick={() => {
                 setIsModalOpen(false);
                 setSelectedKey(null);
+                setFormData({
+                  type: '',
+                  serie: '',
+                  number: '',
+                  apartmentId: '',
+                  tenantId: '',
+                });
               }}
               className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
             >

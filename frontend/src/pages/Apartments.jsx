@@ -1,12 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
 import FormInput from '../components/FormInput';
 import { PlusIcon } from '@heroicons/react/24/outline';
+import { apartmentService } from '../services';
 
 const Apartments = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedApartment, setSelectedApartment] = useState(null);
+  const [apartments, setApartments] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [formData, setFormData] = useState({
     street: '',
     number: '',
@@ -31,24 +35,23 @@ const Apartments = () => {
     { key: 'price', label: 'Hyra (kr)', render: (value) => `${value} kr` },
   ];
 
-  // Exempel på data (ersätt med API-anrop)
-  const apartments = [
-    {
-      id: '1',
-      street: 'Storgatan',
-      number: '1',
-      apartmentNumber: 'A101',
-      postalCode: '12345',
-      city: 'Stockholm',
-      rooms: 3,
-      area: 75,
-      price: 8500,
-      electricity: true,
-      storage: true,
-      internet: true,
-    },
-    // Fler lägenheter...
-  ];
+  useEffect(() => {
+    fetchApartments();
+  }, []);
+
+  const fetchApartments = async () => {
+    try {
+      setIsLoading(true);
+      const data = await apartmentService.getAllApartments();
+      setApartments(data);
+      setError(null);
+    } catch (err) {
+      setError('Ett fel uppstod när lägenheterna skulle hämtas');
+      console.error('Error fetching apartments:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -58,25 +61,34 @@ const Apartments = () => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Här implementerar vi API-anrop för att spara data
-    console.log('Form data:', formData);
-    setIsModalOpen(false);
-    setSelectedApartment(null);
-    setFormData({
-      street: '',
-      number: '',
-      apartmentNumber: '',
-      postalCode: '',
-      city: '',
-      rooms: '',
-      area: '',
-      price: '',
-      electricity: false,
-      storage: false,
-      internet: false,
-    });
+    try {
+      if (selectedApartment) {
+        await apartmentService.updateApartment(selectedApartment.id, formData);
+      } else {
+        await apartmentService.createApartment(formData);
+      }
+      await fetchApartments();
+      setIsModalOpen(false);
+      setSelectedApartment(null);
+      setFormData({
+        street: '',
+        number: '',
+        apartmentNumber: '',
+        postalCode: '',
+        city: '',
+        rooms: '',
+        area: '',
+        price: '',
+        electricity: false,
+        storage: false,
+        internet: false,
+      });
+    } catch (err) {
+      setError('Ett fel uppstod när lägenheten skulle sparas');
+      console.error('Error saving apartment:', err);
+    }
   };
 
   const handleEdit = (apartment) => {
@@ -85,10 +97,25 @@ const Apartments = () => {
     setIsModalOpen(true);
   };
 
-  const handleDelete = (apartment) => {
-    // Här implementerar vi API-anrop för att ta bort lägenhet
-    console.log('Delete apartment:', apartment);
+  const handleDelete = async (apartment) => {
+    if (window.confirm('Är du säker på att du vill ta bort denna lägenhet?')) {
+      try {
+        await apartmentService.deleteApartment(apartment.id);
+        await fetchApartments();
+      } catch (err) {
+        setError('Ett fel uppstod när lägenheten skulle tas bort');
+        console.error('Error deleting apartment:', err);
+      }
+    }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-full">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -103,6 +130,21 @@ const Apartments = () => {
         </button>
       </div>
 
+      {error && (
+        <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-4">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-red-700">{error}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <DataTable
         columns={columns}
         data={apartments}
@@ -115,6 +157,19 @@ const Apartments = () => {
         onClose={() => {
           setIsModalOpen(false);
           setSelectedApartment(null);
+          setFormData({
+            street: '',
+            number: '',
+            apartmentNumber: '',
+            postalCode: '',
+            city: '',
+            rooms: '',
+            area: '',
+            price: '',
+            electricity: false,
+            storage: false,
+            internet: false,
+          });
         }}
         title={selectedApartment ? 'Redigera lägenhet' : 'Lägg till lägenhet'}
       >
@@ -220,6 +275,19 @@ const Apartments = () => {
               onClick={() => {
                 setIsModalOpen(false);
                 setSelectedApartment(null);
+                setFormData({
+                  street: '',
+                  number: '',
+                  apartmentNumber: '',
+                  postalCode: '',
+                  city: '',
+                  rooms: '',
+                  area: '',
+                  price: '',
+                  electricity: false,
+                  storage: false,
+                  internet: false,
+                });
               }}
               className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
             >
