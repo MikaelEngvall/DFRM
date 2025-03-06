@@ -106,25 +106,30 @@ const Apartments = () => {
         savedApartment = await apartmentService.createApartment(apartmentData);
       }
 
-      // Hantera hyresgäster
-      const existingTenantIds = selectedApartment?.tenants?.map(t => t.id) || [];
-      const tenantsToAdd = tenantIds.filter(id => !existingTenantIds.includes(id));
-      const tenantsToRemove = existingTenantIds.filter(id => !tenantIds.includes(id));
+      if (selectedApartment) {
+        const existingTenantIds = selectedApartment.tenants?.map(t => t.id) || [];
+        const tenantsToAdd = tenantIds.filter(id => !existingTenantIds.includes(id));
+        const tenantsToRemove = existingTenantIds.filter(id => !tenantIds.includes(id));
 
-      await Promise.all([
-        ...tenantsToAdd.map(id => apartmentService.assignTenant(savedApartment.id, id)),
-        ...tenantsToRemove.map(id => apartmentService.removeTenant(savedApartment.id, id)),
-      ]);
+        await Promise.all([
+          ...tenantsToAdd.map(id => apartmentService.assignTenant(savedApartment.id, id)),
+          ...tenantsToRemove.map(id => apartmentService.removeTenant(savedApartment.id, id))
+        ]);
 
-      // Hantera nycklar
-      const existingKeyIds = selectedApartment?.keys?.map(k => k.id) || [];
-      const keysToAdd = keyIds.filter(id => !existingKeyIds.includes(id));
-      const keysToRemove = existingKeyIds.filter(id => !keyIds.includes(id));
+        const existingKeyIds = selectedApartment.keys?.map(k => k.id) || [];
+        const keysToAdd = keyIds.filter(id => !existingKeyIds.includes(id));
+        const keysToRemove = existingKeyIds.filter(id => !keyIds.includes(id));
 
-      await Promise.all([
-        ...keysToAdd.map(id => apartmentService.assignKey(savedApartment.id, id)),
-        ...keysToRemove.map(id => apartmentService.removeKey(savedApartment.id, id)),
-      ]);
+        await Promise.all([
+          ...keysToAdd.map(id => apartmentService.assignKey(savedApartment.id, id)),
+          ...keysToRemove.map(id => apartmentService.removeKey(savedApartment.id, id))
+        ]);
+      } else if (tenantIds.length > 0 || keyIds.length > 0) {
+        await Promise.all([
+          ...tenantIds.map(id => apartmentService.assignTenant(savedApartment.id, id)),
+          ...keyIds.map(id => apartmentService.assignKey(savedApartment.id, id))
+        ]);
+      }
 
       await fetchInitialData();
       setIsModalOpen(false);
