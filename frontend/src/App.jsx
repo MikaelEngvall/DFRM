@@ -18,7 +18,6 @@ const App = () => {
           <div className="min-h-screen bg-gray-100">
             <Routes>
               <Route path="/login" element={<Login />} />
-              
               <Route
                 path="/"
                 element={
@@ -27,17 +26,18 @@ const App = () => {
                       <Navigation />
                       <main className="pt-16">
                         <Routes>
-                          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-                          <Route path="/dashboard" element={<Dashboard />} />
-                          <Route path="/apartments" element={<Apartments />} />
-                          <Route path="/tenants" element={<Tenants />} />
-                          <Route path="/keys" element={<Keys />} />
+                          <Route index element={<Navigate to="/dashboard" replace />} />
+                          <Route path="dashboard" element={<Dashboard />} />
+                          <Route path="apartments" element={<Apartments />} />
+                          <Route path="tenants" element={<Tenants />} />
+                          <Route path="keys" element={<Keys />} />
                         </Routes>
                       </main>
                     </div>
                   </PrivateRoute>
                 }
               />
+              <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </div>
         </AuthProvider>

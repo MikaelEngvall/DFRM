@@ -6,10 +6,10 @@ C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\repository\KeyRepository
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\config\SecurityConfig.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\repository\TenantRepository.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\service\TenantService.java
-C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\config\WebConfig.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\controller\TenantController.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\model\Admin.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\repository\ApartmentRepository.java
+C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\service\JwtService.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\service\ApartmentService.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\model\Tenant.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\controller\ApartmentController.java
@@ -19,3 +19,5 @@ C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\config\MongoConfig.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\config\DataInitializer.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\service\KeyService.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\config\DotenvConfig.java
+C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\controller\AuthController.java
+C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\service\AdminUserDetailsService.java
