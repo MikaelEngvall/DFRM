@@ -18,7 +18,7 @@ import com.dfrm.repository.AdminRepository;
 import com.dfrm.service.JwtService;
 
 @RestController
-@RequestMapping("/auth")
+@RequestMapping("/api/auth")
 public class AuthController {
 
     private final AuthenticationManager authenticationManager;

@@ -49,7 +49,7 @@ const getDefaultErrorMessage = (status) => {
 
 const login = async (credentials) => {
   try {
-    const response = await api.post('/auth/login', credentials);
+    const response = await api.post('/api/auth/login', credentials);
     const { token, user } = response.data;
     setToken(token);
     return user;
@@ -60,7 +60,7 @@ const login = async (credentials) => {
 
 const logout = async () => {
   try {
-    await api.post('/auth/logout');
+    await api.post('/api/auth/logout');
   } catch (error) {
     console.error('Logout error:', error);
   } finally {
@@ -76,7 +76,7 @@ const getCurrentUser = async () => {
     }
     
     api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-    const response = await api.get('/auth/me');
+    const response = await api.get('/api/auth/me');
     return response.data;
   } catch (error) {
     removeToken();
@@ -86,7 +86,7 @@ const getCurrentUser = async () => {
 
 const register = async (userData) => {
   try {
-    const response = await api.post('/auth/register', userData);
+    const response = await api.post('/api/auth/register', userData);
     const { token, user } = response.data;
     setToken(token);
     return user;
@@ -97,7 +97,7 @@ const register = async (userData) => {
 
 const updateProfile = async (userData) => {
   try {
-    const response = await api.put('/auth/profile', userData);
+    const response = await api.put('/api/auth/profile', userData);
     return response.data;
   } catch (error) {
     handleApiError(error);
@@ -106,7 +106,7 @@ const updateProfile = async (userData) => {
 
 const changePassword = async (currentPassword, newPassword) => {
   try {
-    const response = await api.post('/auth/change-password', {
+    const response = await api.post('/api/auth/change-password', {
       currentPassword,
       newPassword,
     });
@@ -118,7 +118,7 @@ const changePassword = async (currentPassword, newPassword) => {
 
 const requestPasswordReset = async (email) => {
   try {
-    const response = await api.post('/auth/reset-password-request', { email });
+    const response = await api.post('/api/auth/reset-password-request', { email });
     return response.data;
   } catch (error) {
     handleApiError(error);
@@ -127,7 +127,7 @@ const requestPasswordReset = async (email) => {
 
 const resetPassword = async (token, newPassword) => {
   try {
-    const response = await api.post('/auth/reset-password', {
+    const response = await api.post('/api/auth/reset-password', {
       token,
       newPassword,
     });

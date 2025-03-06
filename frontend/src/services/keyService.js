@@ -3,19 +3,19 @@ import api from './api';
 const keyService = {
   // Hämta alla nycklar
   getAllKeys: async () => {
-    const response = await api.get('/keys');
+    const response = await api.get('/api/keys');
     return response.data;
   },
 
   // Hämta en specifik nyckel
   getKeyById: async (id) => {
-    const response = await api.get(`/keys/${id}`);
+    const response = await api.get(`/api/keys/${id}`);
     return response.data;
   },
 
   // Hämta nyckel via serie och nummer
   findBySerieAndNumber: async (serie, number) => {
-    const response = await api.get('/keys/search', {
+    const response = await api.get('/api/keys/search', {
       params: { serie, number },
     });
     return response.data;
@@ -23,21 +23,21 @@ const keyService = {
 
   // Skapa en ny nyckel
   createKey: async (keyData) => {
-    const response = await api.post('/keys', keyData);
+    const response = await api.post('/api/keys', keyData);
     return response.data;
   },
 
   // Uppdatera en nyckel
   updateKey: async (id, keyData) => {
     const { apartmentId, tenantId, ...rest } = keyData;
-    const response = await api.put(`/keys/${id}`, rest);
+    const response = await api.put(`/api/keys/${id}`, rest);
     
     if (apartmentId) {
-      await api.put(`/keys/${id}/apartment?apartmentId=${apartmentId}`);
+      await api.put(`/api/keys/${id}/apartment?apartmentId=${apartmentId}`);
     }
     
     if (tenantId) {
-      await api.put(`/keys/${id}/tenant?tenantId=${tenantId}`);
+      await api.put(`/api/keys/${id}/tenant?tenantId=${tenantId}`);
     }
     
     return response.data;
@@ -45,49 +45,49 @@ const keyService = {
 
   // Ta bort en nyckel
   deleteKey: async (id) => {
-    const response = await api.delete(`/keys/${id}`);
+    const response = await api.delete(`/api/keys/${id}`);
     return response.data;
   },
 
   // Sök nycklar efter typ
   findByType: async (type) => {
-    const response = await api.get(`/keys/search/type/${type}`);
+    const response = await api.get(`/api/keys/search/type/${type}`);
     return response.data;
   },
 
   // Hämta nycklar för en specifik lägenhet
   findByApartmentId: async (apartmentId) => {
-    const response = await api.get(`/keys/search/apartment/${apartmentId}`);
+    const response = await api.get(`/api/keys/search/apartment/${apartmentId}`);
     return response.data;
   },
 
   // Hämta nycklar för en specifik hyresgäst
   findByTenantId: async (tenantId) => {
-    const response = await api.get(`/keys/search/tenant/${tenantId}`);
+    const response = await api.get(`/api/keys/search/tenant/${tenantId}`);
     return response.data;
   },
 
   // Tilldela en lägenhet till en nyckel
   assignApartment: async (keyId, apartmentId) => {
-    const response = await api.put(`/keys/${keyId}/apartment?apartmentId=${apartmentId}`);
+    const response = await api.put(`/api/keys/${keyId}/apartment?apartmentId=${apartmentId}`);
     return response.data;
   },
 
   // Tilldela en hyresgäst till en nyckel
   assignTenant: async (keyId, tenantId) => {
-    const response = await api.put(`/keys/${keyId}/tenant?tenantId=${tenantId}`);
+    const response = await api.put(`/api/keys/${keyId}/tenant?tenantId=${tenantId}`);
     return response.data;
   },
 
   // Ta bort lägenhet från en nyckel
   removeApartment: async (keyId) => {
-    const response = await api.delete(`/keys/${keyId}/apartment`);
+    const response = await api.delete(`/api/keys/${keyId}/apartment`);
     return response.data;
   },
 
   // Ta bort hyresgäst från en nyckel
   removeTenant: async (keyId) => {
-    const response = await api.delete(`/keys/${keyId}/tenant`);
+    const response = await api.delete(`/api/keys/${keyId}/tenant`);
     return response.data;
   },
 };
