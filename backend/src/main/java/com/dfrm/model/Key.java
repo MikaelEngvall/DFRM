@@ -4,7 +4,9 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.DBRef;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.JsonIdentityReference;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 
 import lombok.Data;
 
@@ -20,10 +22,18 @@ public class Key {
     private Boolean isAvailable;
     
     @DBRef
-    @JsonBackReference
+    @JsonIdentityInfo(
+        generator = ObjectIdGenerators.PropertyGenerator.class,
+        property = "id"
+    )
+    @JsonIdentityReference(alwaysAsId = true)
     private Apartment apartment;
     
     @DBRef
-    @JsonBackReference
+    @JsonIdentityInfo(
+        generator = ObjectIdGenerators.PropertyGenerator.class,
+        property = "id"
+    )
+    @JsonIdentityReference(alwaysAsId = true)
     private Tenant tenant;
 } 
