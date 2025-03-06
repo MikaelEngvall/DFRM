@@ -60,6 +60,38 @@ public class KeyController {
                 .orElse(ResponseEntity.notFound().build());
     }
     
+    @PutMapping("/{id}/apartment")
+    public ResponseEntity<Key> assignApartment(
+            @PathVariable String id,
+            @RequestParam String apartmentId) {
+        return keyService.assignApartment(id, apartmentId)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+    
+    @PutMapping("/{id}/tenant")
+    public ResponseEntity<Key> assignTenant(
+            @PathVariable String id,
+            @RequestParam String tenantId) {
+        return keyService.assignTenant(id, tenantId)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+    
+    @DeleteMapping("/{id}/apartment")
+    public ResponseEntity<Key> removeApartment(@PathVariable String id) {
+        return keyService.removeApartment(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+    
+    @DeleteMapping("/{id}/tenant")
+    public ResponseEntity<Key> removeTenant(@PathVariable String id) {
+        return keyService.removeTenant(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+    
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteKey(@PathVariable String id) {
         if (keyService.getKeyById(id).isPresent()) {
