@@ -229,9 +229,7 @@ const Apartments = () => {
 
   const handleDelete = async (apartment) => {
     setApartmentToDelete(apartment);
-    // Stäng redigeringsmodalen först för att undvika överlappande modaler
-    setIsModalOpen(false);
-    // Visa bekräftelsemodalen
+    // Visa bekräftelsemodalen (utan att stänga redigeringsmodalen)
     setIsAlertOpen(true);
   };
 
@@ -239,9 +237,11 @@ const Apartments = () => {
     try {
       await apartmentService.deleteApartment(apartmentToDelete.id);
       await fetchInitialData();
-      // Stäng modalen efter radering
+      // Stäng båda modalerna efter radering
       setIsModalOpen(false);
+      setIsAlertOpen(false);
       setSelectedApartment(null);
+      setApartmentToDelete(null);
       setFormData({
         street: '',
         number: '',
@@ -257,12 +257,10 @@ const Apartments = () => {
         tenantIds: [],
         keyIds: [],
       });
-      // Stäng alertmodalen
-      setIsAlertOpen(false);
-      setApartmentToDelete(null);
     } catch (err) {
       setError('Ett fel uppstod när lägenheten skulle tas bort');
       console.error('Error deleting apartment:', err);
+      // Behåll redigeringsmodalen öppen vid fel, stäng bara alertmodalen
       setIsAlertOpen(false);
       setApartmentToDelete(null);
     }

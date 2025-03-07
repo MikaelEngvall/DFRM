@@ -171,7 +171,7 @@ const Keys = () => {
 
   const handleDelete = async (key) => {
     setKeyToDelete(key);
-    setIsModalOpen(false);
+    // Visa bekräftelsemodalen (utan att stänga redigeringsmodalen)
     setIsAlertOpen(true);
   };
 
@@ -179,9 +179,11 @@ const Keys = () => {
     try {
       await keyService.deleteKey(keyToDelete.id);
       await fetchInitialData();
-      // Stäng modalen efter radering
+      // Stäng båda modalerna efter radering
       setIsModalOpen(false);
+      setIsAlertOpen(false);
       setSelectedKey(null);
+      setKeyToDelete(null);
       setFormData({
         type: '',
         serie: '',
@@ -189,12 +191,10 @@ const Keys = () => {
         apartmentId: '',
         tenantId: '',
       });
-      // Stäng alertmodalen
-      setIsAlertOpen(false);
-      setKeyToDelete(null);
     } catch (err) {
       setError('Ett fel uppstod när nyckeln skulle tas bort');
       console.error('Error deleting key:', err);
+      // Behåll redigeringsmodalen öppen vid fel, stäng bara alertmodalen
       setIsAlertOpen(false);
       setKeyToDelete(null);
     }

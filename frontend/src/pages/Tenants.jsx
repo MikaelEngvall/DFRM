@@ -196,7 +196,7 @@ const Tenants = () => {
 
   const handleDelete = async (tenant) => {
     setTenantToDelete(tenant);
-    setIsModalOpen(false);
+    // Visa bekräftelsemodalen (utan att stänga redigeringsmodalen)
     setIsAlertOpen(true);
   };
 
@@ -204,9 +204,11 @@ const Tenants = () => {
     try {
       await tenantService.deleteTenant(tenantToDelete.id);
       await fetchInitialData();
-      // Stäng modalen efter radering
+      // Stäng båda modalerna efter radering
       setIsModalOpen(false);
+      setIsAlertOpen(false);
       setSelectedTenant(null);
+      setTenantToDelete(null);
       setFormData({
         firstName: '',
         lastName: '',
@@ -221,12 +223,10 @@ const Tenants = () => {
         apartmentId: '',
         keyId: '',
       });
-      // Stäng alertmodalen
-      setIsAlertOpen(false);
-      setTenantToDelete(null);
     } catch (err) {
       setError('Ett fel uppstod när hyresgästen skulle tas bort');
       console.error('Error deleting tenant:', err);
+      // Behåll redigeringsmodalen öppen vid fel, stäng bara alertmodalen
       setIsAlertOpen(false);
       setTenantToDelete(null);
     }
