@@ -1,7 +1,6 @@
 import React from 'react';
-import { PencilIcon, TrashIcon } from '@heroicons/react/24/outline';
 
-const DataTable = ({ columns, data, onEdit, onDelete }) => {
+const DataTable = ({ columns, data, onEdit }) => {
   return (
     <div className="overflow-x-auto">
       <table className="min-w-full divide-y divide-gray-200">
@@ -16,14 +15,15 @@ const DataTable = ({ columns, data, onEdit, onDelete }) => {
                 {column.label}
               </th>
             ))}
-            <th scope="col" className="relative px-6 py-3">
-              <span className="sr-only">Åtgärder</span>
-            </th>
           </tr>
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
           {data.map((item) => (
-            <tr key={item.id}>
+            <tr 
+              key={item.id} 
+              className="hover:bg-gray-50 cursor-pointer transition-colors"
+              onClick={() => onEdit(item)}
+            >
               {columns.map((column) => (
                 <td
                   key={`${item.id}-${column.key}`}
@@ -32,22 +32,6 @@ const DataTable = ({ columns, data, onEdit, onDelete }) => {
                   {column.render ? column.render(item[column.key]) : item[column.key]}
                 </td>
               ))}
-              <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                <button
-                  onClick={() => onEdit(item)}
-                  className="text-primary hover:text-secondary mr-4"
-                >
-                  <PencilIcon className="h-5 w-5" />
-                  <span className="sr-only">Redigera</span>
-                </button>
-                <button
-                  onClick={() => onDelete(item)}
-                  className="text-red-600 hover:text-red-900"
-                >
-                  <TrashIcon className="h-5 w-5" />
-                  <span className="sr-only">Ta bort</span>
-                </button>
-              </td>
             </tr>
           ))}
         </tbody>

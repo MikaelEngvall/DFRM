@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
+import AlertModal from '../components/AlertModal';
 import FormInput from '../components/FormInput';
 import { PlusIcon } from '@heroicons/react/24/outline';
 import { tenantService, apartmentService, keyService } from '../services';
@@ -13,6 +14,8 @@ const Tenants = () => {
   const [keys, setKeys] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isAlertOpen, setIsAlertOpen] = useState(false);
+  const [tenantToDelete, setTenantToDelete] = useState(null);
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -31,23 +34,34 @@ const Tenants = () => {
   const columns = [
     { key: 'firstName', label: 'Förnamn' },
     { key: 'lastName', label: 'Efternamn' },
-    { key: 'personnummer', label: 'Personnummer' },
     { key: 'phoneNumber', label: 'Telefon' },
-    { key: 'movedInDate', label: 'Inflyttningsdatum' },
+    { key: 'movedInDate', label: 'IN' },
     {
       key: 'resiliationDate',
-      label: 'Uppsägningsdatum',
+      label: 'UPS',
       render: (value) => value || '-',
     },
     {
       key: 'apartment',
       label: 'Lägenhet',
-      render: (value) => value ? `${value.street} ${value.number}, ${value.apartmentNumber}` : '-',
+      render: (apartmentId) => {
+        if (!apartmentId) return '-';
+        const apartment = apartments.find(a => a.id === apartmentId);
+        return apartment 
+          ? `${apartment.street} ${apartment.number}, LGH ${apartment.apartmentNumber}` 
+          : '-';
+      }
     },
     {
       key: 'key',
       label: 'Nyckel',
-      render: (value) => value ? `${value.type} - ${value.serie}-${value.number}` : '-',
+      render: (keyId) => {
+        if (!keyId) return '-';
+        const key = keys.find(k => k.id === keyId);
+        return key 
+          ? `${key.type} (${key.serie}-${key.number})` 
+          : '-';
+      }
     },
   ];
 
@@ -91,6 +105,11 @@ const Tenants = () => {
       // Säkerställ att vi har giltiga värden
       apartmentId = apartmentId || null;
       keyId = keyId || null;
+      
+      // Rensa adressfält som ska ärvas från lägenheten
+      tenantData.street = '';
+      tenantData.postalCode = '';
+      tenantData.city = '';
       
       let savedTenant;
       
@@ -176,14 +195,40 @@ const Tenants = () => {
   };
 
   const handleDelete = async (tenant) => {
-    if (window.confirm('Är du säker på att du vill ta bort denna hyresgäst?')) {
-      try {
-        await tenantService.deleteTenant(tenant.id);
-        await fetchInitialData();
-      } catch (err) {
-        setError('Ett fel uppstod när hyresgästen skulle tas bort');
-        console.error('Error deleting tenant:', err);
-      }
+    setTenantToDelete(tenant);
+    setIsModalOpen(false);
+    setIsAlertOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    try {
+      await tenantService.deleteTenant(tenantToDelete.id);
+      await fetchInitialData();
+      // Stäng modalen efter radering
+      setIsModalOpen(false);
+      setSelectedTenant(null);
+      setFormData({
+        firstName: '',
+        lastName: '',
+        personnummer: '',
+        phoneNumber: '',
+        street: '',
+        postalCode: '',
+        city: '',
+        movedInDate: '',
+        resiliationDate: '',
+        comment: '',
+        apartmentId: '',
+        keyId: '',
+      });
+      // Stäng alertmodalen
+      setIsAlertOpen(false);
+      setTenantToDelete(null);
+    } catch (err) {
+      setError('Ett fel uppstod när hyresgästen skulle tas bort');
+      console.error('Error deleting tenant:', err);
+      setIsAlertOpen(false);
+      setTenantToDelete(null);
     }
   };
 
@@ -227,7 +272,6 @@ const Tenants = () => {
         columns={columns}
         data={tenants}
         onEdit={handleEdit}
-        onDelete={handleDelete}
       />
 
       <Modal
@@ -284,28 +328,7 @@ const Tenants = () => {
               required
             />
             <FormInput
-              label="Gata"
-              name="street"
-              value={formData.street}
-              onChange={handleInputChange}
-              required
-            />
-            <FormInput
-              label="Postnummer"
-              name="postalCode"
-              value={formData.postalCode}
-              onChange={handleInputChange}
-              required
-            />
-            <FormInput
-              label="Stad"
-              name="city"
-              value={formData.city}
-              onChange={handleInputChange}
-              required
-            />
-            <FormInput
-              label="Inflyttningsdatum"
+              label="IN"
               name="movedInDate"
               type="date"
               value={formData.movedInDate}
@@ -313,7 +336,7 @@ const Tenants = () => {
               required
             />
             <FormInput
-              label="Uppsägningsdatum"
+              label="UPS"
               name="resiliationDate"
               type="date"
               value={formData.resiliationDate}
@@ -370,40 +393,61 @@ const Tenants = () => {
             </div>
           </div>
 
-          <div className="flex justify-end gap-4 mt-6">
-            <button
-              type="button"
-              onClick={() => {
-                setIsModalOpen(false);
-                setSelectedTenant(null);
-                setFormData({
-                  firstName: '',
-                  lastName: '',
-                  personnummer: '',
-                  phoneNumber: '',
-                  street: '',
-                  postalCode: '',
-                  city: '',
-                  movedInDate: '',
-                  resiliationDate: '',
-                  comment: '',
-                  apartmentId: '',
-                  keyId: '',
-                });
-              }}
-              className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-            >
-              Avbryt
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 bg-primary text-white rounded-md hover:bg-secondary"
-            >
-              {selectedTenant ? 'Spara ändringar' : 'Lägg till'}
-            </button>
+          <div className="flex justify-between gap-4 mt-6">
+            {selectedTenant && (
+              <button
+                type="button"
+                onClick={() => handleDelete(selectedTenant)}
+                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+              >
+                Ta bort
+              </button>
+            )}
+            <div className="flex gap-4 ml-auto">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsModalOpen(false);
+                  setSelectedTenant(null);
+                  setFormData({
+                    firstName: '',
+                    lastName: '',
+                    personnummer: '',
+                    phoneNumber: '',
+                    street: '',
+                    postalCode: '',
+                    city: '',
+                    movedInDate: '',
+                    resiliationDate: '',
+                    comment: '',
+                    apartmentId: '',
+                    keyId: '',
+                  });
+                }}
+                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+              >
+                Avbryt
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 bg-primary text-white rounded-md hover:bg-secondary"
+              >
+                {selectedTenant ? 'Spara ändringar' : 'Lägg till'}
+              </button>
+            </div>
           </div>
         </form>
       </Modal>
+
+      <AlertModal
+        isOpen={isAlertOpen}
+        onClose={() => setIsAlertOpen(false)}
+        onConfirm={confirmDelete}
+        title="Ta bort hyresgäst"
+        message={tenantToDelete ? `Är du säker på att du vill ta bort hyresgästen ${tenantToDelete.firstName} ${tenantToDelete.lastName}? Detta går inte att ångra.` : ''}
+        confirmText="Ta bort"
+        cancelText="Avbryt"
+      />
     </div>
   );
 };

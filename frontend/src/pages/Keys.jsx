@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
+import AlertModal from '../components/AlertModal';
 import FormInput from '../components/FormInput';
 import { PlusIcon } from '@heroicons/react/24/outline';
 import { keyService, apartmentService, tenantService } from '../services';
@@ -13,6 +14,8 @@ const Keys = () => {
   const [tenants, setTenants] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isAlertOpen, setIsAlertOpen] = useState(false);
+  const [keyToDelete, setKeyToDelete] = useState(null);
   const [formData, setFormData] = useState({
     type: '',
     serie: '',
@@ -28,12 +31,24 @@ const Keys = () => {
     { 
       key: 'apartment',
       label: 'Lägenhet',
-      render: (value) => value ? `${value.street} ${value.number}, ${value.apartmentNumber}` : '-',
+      render: (apartmentId) => {
+        if (!apartmentId) return '-';
+        const apartment = apartments.find(a => a.id === apartmentId);
+        return apartment 
+          ? `${apartment.street} ${apartment.number}, LGH ${apartment.apartmentNumber}` 
+          : '-';
+      }
     },
     {
       key: 'tenant',
       label: 'Hyresgäst',
-      render: (value) => value ? `${value.firstName} ${value.lastName}` : '-',
+      render: (tenantId) => {
+        if (!tenantId) return '-';
+        const tenant = tenants.find(t => t.id === tenantId);
+        return tenant 
+          ? `${tenant.firstName} ${tenant.lastName}` 
+          : '-';
+      }
     },
   ];
 
@@ -155,14 +170,33 @@ const Keys = () => {
   };
 
   const handleDelete = async (key) => {
-    if (window.confirm('Är du säker på att du vill ta bort denna nyckel?')) {
-      try {
-        await keyService.deleteKey(key.id);
-        await fetchInitialData();
-      } catch (err) {
-        setError('Ett fel uppstod när nyckeln skulle tas bort');
-        console.error('Error deleting key:', err);
-      }
+    setKeyToDelete(key);
+    setIsModalOpen(false);
+    setIsAlertOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    try {
+      await keyService.deleteKey(keyToDelete.id);
+      await fetchInitialData();
+      // Stäng modalen efter radering
+      setIsModalOpen(false);
+      setSelectedKey(null);
+      setFormData({
+        type: '',
+        serie: '',
+        number: '',
+        apartmentId: '',
+        tenantId: '',
+      });
+      // Stäng alertmodalen
+      setIsAlertOpen(false);
+      setKeyToDelete(null);
+    } catch (err) {
+      setError('Ett fel uppstod när nyckeln skulle tas bort');
+      console.error('Error deleting key:', err);
+      setIsAlertOpen(false);
+      setKeyToDelete(null);
     }
   };
 
@@ -208,7 +242,6 @@ const Keys = () => {
         columns={columns}
         data={keys}
         onEdit={handleEdit}
-        onDelete={handleDelete}
       />
 
       <Modal
@@ -316,33 +349,54 @@ const Keys = () => {
             </div>
           </div>
 
-          <div className="flex justify-end gap-4 mt-6">
-            <button
-              type="button"
-              onClick={() => {
-                setIsModalOpen(false);
-                setSelectedKey(null);
-                setFormData({
-                  type: '',
-                  serie: '',
-                  number: '',
-                  apartmentId: '',
-                  tenantId: '',
-                });
-              }}
-              className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-            >
-              Avbryt
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 bg-primary text-white rounded-md hover:bg-secondary"
-            >
-              {selectedKey ? 'Spara ändringar' : 'Lägg till'}
-            </button>
+          <div className="flex justify-between gap-4 mt-6">
+            {selectedKey && (
+              <button
+                type="button"
+                onClick={() => handleDelete(selectedKey)}
+                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+              >
+                Ta bort
+              </button>
+            )}
+            <div className="flex gap-4 ml-auto">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsModalOpen(false);
+                  setSelectedKey(null);
+                  setFormData({
+                    type: '',
+                    serie: '',
+                    number: '',
+                    apartmentId: '',
+                    tenantId: '',
+                  });
+                }}
+                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+              >
+                Avbryt
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 bg-primary text-white rounded-md hover:bg-secondary"
+              >
+                {selectedKey ? 'Spara ändringar' : 'Lägg till'}
+              </button>
+            </div>
           </div>
         </form>
       </Modal>
+
+      <AlertModal
+        isOpen={isAlertOpen}
+        onClose={() => setIsAlertOpen(false)}
+        onConfirm={confirmDelete}
+        title="Ta bort nyckel"
+        message={keyToDelete ? `Är du säker på att du vill ta bort nyckeln ${keyToDelete.type} (${keyToDelete.serie}-${keyToDelete.number})? Detta går inte att ångra.` : ''}
+        confirmText="Ta bort"
+        cancelText="Avbryt"
+      />
     </div>
   );
 };

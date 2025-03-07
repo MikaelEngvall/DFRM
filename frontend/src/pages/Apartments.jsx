@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
+import AlertModal from '../components/AlertModal';
 import FormInput from '../components/FormInput';
 import { PlusIcon } from '@heroicons/react/24/outline';
 import { apartmentService, tenantService, keyService } from '../services';
@@ -13,6 +14,8 @@ const Apartments = () => {
   const [keys, setKeys] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isAlertOpen, setIsAlertOpen] = useState(false);
+  const [apartmentToDelete, setApartmentToDelete] = useState(null);
   const [formData, setFormData] = useState({
     street: '',
     number: '',
@@ -32,7 +35,7 @@ const Apartments = () => {
   const columns = [
     { key: 'street', label: 'Gata' },
     { key: 'number', label: 'Nummer' },
-    { key: 'apartmentNumber', label: 'Lägenhetsnummer' },
+    { key: 'apartmentNumber', label: 'LGH' },
     { key: 'city', label: 'Stad' },
     { key: 'rooms', label: 'Rum' },
     { key: 'area', label: 'Yta (m²)' },
@@ -40,12 +43,24 @@ const Apartments = () => {
     {
       key: 'tenants',
       label: 'Hyresgäster',
-      render: (value) => value?.map(t => `${t.firstName} ${t.lastName}`).join(', ') || '-',
+      render: (tenantIds) => {
+        if (!tenantIds || tenantIds.length === 0) return '-';
+        return tenantIds.map(id => {
+          const tenant = tenants.find(t => t.id === id);
+          return tenant ? `${tenant.firstName} ${tenant.lastName}` : '';
+        }).filter(Boolean).join(', ') || '-';
+      }
     },
     {
       key: 'keys',
       label: 'Nycklar',
-      render: (value) => value?.map(k => `${k.serie}-${k.number}`).join(', ') || '-',
+      render: (keyIds) => {
+        if (!keyIds || keyIds.length === 0) return '-';
+        return keyIds.map(id => {
+          const key = keys.find(k => k.id === id);
+          return key ? `${key.type} (${key.serie}-${key.number})` : '';
+        }).filter(Boolean).join(', ') || '-';
+      }
     },
   ];
 
@@ -213,14 +228,43 @@ const Apartments = () => {
   };
 
   const handleDelete = async (apartment) => {
-    if (window.confirm('Är du säker på att du vill ta bort denna lägenhet?')) {
-      try {
-        await apartmentService.deleteApartment(apartment.id);
-        await fetchInitialData();
-      } catch (err) {
-        setError('Ett fel uppstod när lägenheten skulle tas bort');
-        console.error('Error deleting apartment:', err);
-      }
+    setApartmentToDelete(apartment);
+    // Stäng redigeringsmodalen först för att undvika överlappande modaler
+    setIsModalOpen(false);
+    // Visa bekräftelsemodalen
+    setIsAlertOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    try {
+      await apartmentService.deleteApartment(apartmentToDelete.id);
+      await fetchInitialData();
+      // Stäng modalen efter radering
+      setIsModalOpen(false);
+      setSelectedApartment(null);
+      setFormData({
+        street: '',
+        number: '',
+        apartmentNumber: '',
+        postalCode: '',
+        city: '',
+        rooms: '',
+        area: '',
+        price: '',
+        electricity: false,
+        storage: false,
+        internet: false,
+        tenantIds: [],
+        keyIds: [],
+      });
+      // Stäng alertmodalen
+      setIsAlertOpen(false);
+      setApartmentToDelete(null);
+    } catch (err) {
+      setError('Ett fel uppstod när lägenheten skulle tas bort');
+      console.error('Error deleting apartment:', err);
+      setIsAlertOpen(false);
+      setApartmentToDelete(null);
     }
   };
 
@@ -264,7 +308,6 @@ const Apartments = () => {
         columns={columns}
         data={apartments}
         onEdit={handleEdit}
-        onDelete={handleDelete}
       />
 
       <Modal
@@ -307,7 +350,7 @@ const Apartments = () => {
               required
             />
             <FormInput
-              label="Lägenhetsnummer"
+              label="LGH"
               name="apartmentNumber"
               value={formData.apartmentNumber}
               onChange={handleInputChange}
@@ -432,41 +475,62 @@ const Apartments = () => {
             </div>
           </div>
 
-          <div className="flex justify-end gap-4 mt-6">
-            <button
-              type="button"
-              onClick={() => {
-                setIsModalOpen(false);
-                setSelectedApartment(null);
-                setFormData({
-                  street: '',
-                  number: '',
-                  apartmentNumber: '',
-                  postalCode: '',
-                  city: '',
-                  rooms: '',
-                  area: '',
-                  price: '',
-                  electricity: false,
-                  storage: false,
-                  internet: false,
-                  tenantIds: [],
-                  keyIds: [],
-                });
-              }}
-              className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
-            >
-              Avbryt
-            </button>
-            <button
-              type="submit"
-              className="px-4 py-2 bg-primary text-white rounded-md hover:bg-secondary"
-            >
-              {selectedApartment ? 'Spara ändringar' : 'Lägg till'}
-            </button>
+          <div className="flex justify-between gap-4 mt-6">
+            {selectedApartment && (
+              <button
+                type="button"
+                onClick={() => handleDelete(selectedApartment)}
+                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+              >
+                Ta bort
+              </button>
+            )}
+            <div className="flex gap-4 ml-auto">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsModalOpen(false);
+                  setSelectedApartment(null);
+                  setFormData({
+                    street: '',
+                    number: '',
+                    apartmentNumber: '',
+                    postalCode: '',
+                    city: '',
+                    rooms: '',
+                    area: '',
+                    price: '',
+                    electricity: false,
+                    storage: false,
+                    internet: false,
+                    tenantIds: [],
+                    keyIds: [],
+                  });
+                }}
+                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+              >
+                Avbryt
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 bg-primary text-white rounded-md hover:bg-secondary"
+              >
+                {selectedApartment ? 'Spara ändringar' : 'Lägg till'}
+              </button>
+            </div>
           </div>
         </form>
       </Modal>
+
+      <AlertModal
+        isOpen={isAlertOpen}
+        onClose={() => setIsAlertOpen(false)}
+        onConfirm={confirmDelete}
+        title="Ta bort lägenhet"
+        message={apartmentToDelete ? `Är du säker på att du vill ta bort lägenheten ${apartmentToDelete.street} ${apartmentToDelete.number}, LGH ${apartmentToDelete.apartmentNumber}? Detta går inte att ångra.` : ''}
+        confirmText="Ta bort"
+        cancelText="Avbryt"
+      />
     </div>
   );
 };

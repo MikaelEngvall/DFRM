@@ -1,10 +1,7 @@
 package com.dfrm.config;
 
-import org.springframework.boot.CommandLineRunner;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import com.dfrm.model.Admin;
 import com.dfrm.service.AdminService;
 
 import lombok.RequiredArgsConstructor;
@@ -15,7 +12,7 @@ public class DataInitializer {
 
     private final AdminService adminService;
 
-    @Bean
+    /* @Bean
     public CommandLineRunner initializeData() {
         return args -> {
             // Skapa standardadmin om den inte redan finns
@@ -33,5 +30,5 @@ public class DataInitializer {
                 System.out.println("Standardadministratör har skapats.");
             }
         };
-    }
+    } */
 } 
