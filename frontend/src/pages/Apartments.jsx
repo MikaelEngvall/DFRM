@@ -97,38 +97,85 @@ const Apartments = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const { tenantIds, keyIds, ...apartmentData } = formData;
+      let { tenantIds, keyIds, ...apartmentData } = formData;
+      // Säkerställ att vi har giltiga arrayer och filtrera bort eventuella falsy-värden (null, undefined, etc.)
+      tenantIds = (tenantIds || []).filter(Boolean);
+      keyIds = (keyIds || []).filter(Boolean);
+      
       let savedApartment;
       
       if (selectedApartment) {
+        // Uppdatera grundläggande information om lägenheten
         savedApartment = await apartmentService.updateApartment(selectedApartment.id, apartmentData);
-      } else {
-        savedApartment = await apartmentService.createApartment(apartmentData);
-      }
-
-      if (selectedApartment) {
+        
+        // Hantera hyresgäst-relationer
         const existingTenantIds = selectedApartment.tenants?.map(t => t.id) || [];
         const tenantsToAdd = tenantIds.filter(id => !existingTenantIds.includes(id));
         const tenantsToRemove = existingTenantIds.filter(id => !tenantIds.includes(id));
-
-        await Promise.all([
-          ...tenantsToAdd.map(id => apartmentService.assignTenant(savedApartment.id, id)),
-          ...tenantsToRemove.map(id => apartmentService.removeTenant(savedApartment.id, id))
-        ]);
-
+        
+        // Hantera nyckel-relationer
         const existingKeyIds = selectedApartment.keys?.map(k => k.id) || [];
         const keysToAdd = keyIds.filter(id => !existingKeyIds.includes(id));
         const keysToRemove = existingKeyIds.filter(id => !keyIds.includes(id));
-
-        await Promise.all([
-          ...keysToAdd.map(id => apartmentService.assignKey(savedApartment.id, id)),
-          ...keysToRemove.map(id => apartmentService.removeKey(savedApartment.id, id))
-        ]);
-      } else if (tenantIds.length > 0 || keyIds.length > 0) {
-        await Promise.all([
-          ...tenantIds.map(id => apartmentService.assignTenant(savedApartment.id, id)),
-          ...keyIds.map(id => apartmentService.assignKey(savedApartment.id, id))
-        ]);
+        
+        // Kör alla uppdateringar parallellt
+        const updateOperations = [];
+        
+        // Lägg till hyresgäster
+        for (const id of tenantsToAdd) {
+          if (id) { // Säkerställ att id:t är giltigt
+            updateOperations.push(apartmentService.assignTenant(savedApartment.id, id));
+          }
+        }
+        
+        // Ta bort hyresgäster
+        for (const id of tenantsToRemove) {
+          if (id) { // Säkerställ att id:t är giltigt
+            updateOperations.push(apartmentService.removeTenant(savedApartment.id, id));
+          }
+        }
+        
+        // Lägg till nycklar
+        for (const id of keysToAdd) {
+          if (id) { // Säkerställ att id:t är giltigt
+            updateOperations.push(apartmentService.assignKey(savedApartment.id, id));
+          }
+        }
+        
+        // Ta bort nycklar
+        for (const id of keysToRemove) {
+          if (id) { // Säkerställ att id:t är giltigt
+            updateOperations.push(apartmentService.removeKey(savedApartment.id, id));
+          }
+        }
+        
+        if (updateOperations.length > 0) {
+          await Promise.all(updateOperations);
+        }
+      } else {
+        // Skapa en ny lägenhet
+        savedApartment = await apartmentService.createApartment(apartmentData);
+        
+        // Hantera relationer för ny lägenhet
+        const assignOperations = [];
+        
+        // Lägg till hyresgäster till ny lägenhet
+        for (const id of tenantIds) {
+          if (id) { // Säkerställ att id:t är giltigt
+            assignOperations.push(apartmentService.assignTenant(savedApartment.id, id));
+          }
+        }
+        
+        // Lägg till nycklar till ny lägenhet
+        for (const id of keyIds) {
+          if (id) { // Säkerställ att id:t är giltigt
+            assignOperations.push(apartmentService.assignKey(savedApartment.id, id));
+          }
+        }
+        
+        if (assignOperations.length > 0) {
+          await Promise.all(assignOperations);
+        }
       }
 
       await fetchInitialData();

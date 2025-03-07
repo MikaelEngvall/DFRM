@@ -86,31 +86,60 @@ const Tenants = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const { apartmentId, keyId, ...tenantData } = formData;
+      let { apartmentId, keyId, ...tenantData } = formData;
+      
+      // Säkerställ att vi har giltiga värden
+      apartmentId = apartmentId || null;
+      keyId = keyId || null;
+      
       let savedTenant;
       
       if (selectedTenant) {
+        // Uppdatera grundläggande information om hyresgästen
         savedTenant = await tenantService.updateTenant(selectedTenant.id, tenantData);
+        
+        // Hantera lägenhet och nyckel separat efter att hyresgästen har uppdaterats
+        const updateOperations = [];
+        
+        // Hantera lägenhet
+        const currentApartmentId = selectedTenant?.apartment?.id || null;
+        if (apartmentId && apartmentId !== currentApartmentId) {
+          updateOperations.push(tenantService.assignApartment(savedTenant.id, apartmentId));
+        } else if (!apartmentId && currentApartmentId) {
+          updateOperations.push(tenantService.removeApartment(savedTenant.id));
+        }
+        
+        // Hantera nyckel
+        const currentKeyId = selectedTenant?.key?.id || null;
+        if (keyId && keyId !== currentKeyId) {
+          updateOperations.push(tenantService.assignKey(savedTenant.id, keyId));
+        } else if (!keyId && currentKeyId) {
+          updateOperations.push(tenantService.removeKey(savedTenant.id));
+        }
+        
+        if (updateOperations.length > 0) {
+          await Promise.all(updateOperations);
+        }
       } else {
+        // Skapa en ny hyresgäst
         savedTenant = await tenantService.createTenant(tenantData);
-      }
-
-      // Hantera lägenhet
-      if (apartmentId) {
-        if (selectedTenant?.apartment?.id !== apartmentId) {
-          await tenantService.assignApartment(savedTenant.id, apartmentId);
+        
+        // Hantera relationer för ny hyresgäst
+        const assignOperations = [];
+        
+        // Tilldela lägenhet om vald
+        if (apartmentId) {
+          assignOperations.push(tenantService.assignApartment(savedTenant.id, apartmentId));
         }
-      } else if (selectedTenant?.apartment) {
-        await tenantService.removeApartment(savedTenant.id);
-      }
-
-      // Hantera nyckel
-      if (keyId) {
-        if (selectedTenant?.key?.id !== keyId) {
-          await tenantService.assignKey(savedTenant.id, keyId);
+        
+        // Tilldela nyckel om vald
+        if (keyId) {
+          assignOperations.push(tenantService.assignKey(savedTenant.id, keyId));
         }
-      } else if (selectedTenant?.key) {
-        await tenantService.removeKey(savedTenant.id);
+        
+        if (assignOperations.length > 0) {
+          await Promise.all(assignOperations);
+        }
       }
 
       await fetchInitialData();

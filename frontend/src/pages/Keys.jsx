@@ -72,11 +72,62 @@ const Keys = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      let { apartmentId, tenantId, ...keyData } = formData;
+      
+      // Säkerställ att vi har giltiga värden
+      apartmentId = apartmentId || null;
+      tenantId = tenantId || null;
+      
+      let savedKey;
+      
       if (selectedKey) {
-        await keyService.updateKey(selectedKey.id, formData);
+        // Uppdatera grundläggande information om nyckeln
+        savedKey = await keyService.updateKey(selectedKey.id, keyData);
+        
+        // Hantera lägenhet och hyresgäst separat efter att nyckeln har uppdaterats
+        const updateOperations = [];
+        
+        // Hantera lägenhet
+        const currentApartmentId = selectedKey?.apartment?.id || null;
+        if (apartmentId && apartmentId !== currentApartmentId) {
+          updateOperations.push(keyService.assignApartment(savedKey.id, apartmentId));
+        } else if (!apartmentId && currentApartmentId) {
+          updateOperations.push(keyService.removeApartment(savedKey.id));
+        }
+        
+        // Hantera hyresgäst
+        const currentTenantId = selectedKey?.tenant?.id || null;
+        if (tenantId && tenantId !== currentTenantId) {
+          updateOperations.push(keyService.assignTenant(savedKey.id, tenantId));
+        } else if (!tenantId && currentTenantId) {
+          updateOperations.push(keyService.removeTenant(savedKey.id));
+        }
+        
+        if (updateOperations.length > 0) {
+          await Promise.all(updateOperations);
+        }
       } else {
-        await keyService.createKey(formData);
+        // Skapa en ny nyckel
+        savedKey = await keyService.createKey(keyData);
+        
+        // Hantera relationer för ny nyckel
+        const assignOperations = [];
+        
+        // Tilldela lägenhet om vald
+        if (apartmentId) {
+          assignOperations.push(keyService.assignApartment(savedKey.id, apartmentId));
+        }
+        
+        // Tilldela hyresgäst om vald
+        if (tenantId) {
+          assignOperations.push(keyService.assignTenant(savedKey.id, tenantId));
+        }
+        
+        if (assignOperations.length > 0) {
+          await Promise.all(assignOperations);
+        }
       }
+      
       await fetchInitialData();
       setIsModalOpen(false);
       setSelectedKey(null);
