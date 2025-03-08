@@ -6,6 +6,8 @@ import {
   KeyIcon,
   ChartBarIcon,
   ArrowRightOnRectangleIcon,
+  Bars3Icon,
+  XMarkIcon,
 } from '@heroicons/react/24/outline';
 import { useAuth } from '../contexts/AuthContext';
 import { useLocale } from '../contexts/LocaleContext';
@@ -19,6 +21,8 @@ const Navigation = () => {
   // States för tooltip-synlighet
   const [tooltips, setTooltips] = useState({});
   const [logoutTooltipVisible, setLogoutTooltipVisible] = useState(false);
+  // State för mobilmenyn
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleLogout = async () => {
     try {
@@ -40,6 +44,10 @@ const Navigation = () => {
 
   const hideTooltip = (itemName) => {
     setTooltips(prev => ({ ...prev, [itemName]: false }));
+  };
+
+  const toggleMobileMenu = () => {
+    setMobileMenuOpen(!mobileMenuOpen);
   };
 
   const navigation = [
@@ -84,6 +92,7 @@ const Navigation = () => {
             <div className="flex-shrink-0 flex items-center">
               <span className="text-xl font-cinzel text-primary">DFRM</span>
             </div>
+            {/* Desktop navigation */}
             <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
               {navigation.map((item) => (
                 <Link
@@ -103,6 +112,22 @@ const Navigation = () => {
               ))}
             </div>
           </div>
+          
+          {/* Mobile menu button */}
+          <div className="flex items-center sm:hidden">
+            <button
+              onClick={toggleMobileMenu}
+              className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary"
+            >
+              <span className="sr-only">{mobileMenuOpen ? 'Stäng meny' : 'Öppna meny'}</span>
+              {mobileMenuOpen ? (
+                <XMarkIcon className="block h-6 w-6" aria-hidden="true" />
+              ) : (
+                <Bars3Icon className="block h-6 w-6" aria-hidden="true" />
+              )}
+            </button>
+          </div>
+          
           <div className="flex items-center space-x-4">
             <LanguageSelector />
             <div className="flex-shrink-0">
@@ -120,6 +145,29 @@ const Navigation = () => {
           </div>
         </div>
       </div>
+
+      {/* Mobile menu, show/hide based on state */}
+      {mobileMenuOpen && (
+        <div className="sm:hidden bg-white border-t border-gray-200">
+          <div className="pt-2 pb-3 space-y-1">
+            {navigation.map((item) => (
+              <Link
+                key={item.name}
+                to={item.href}
+                className={`${
+                  location.pathname === item.href
+                    ? 'bg-primary-50 border-primary text-primary'
+                    : 'border-transparent text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-800'
+                } block pl-3 pr-4 py-2 border-l-4 text-base font-medium flex items-center`}
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                <item.icon className="h-5 w-5 mr-2" />
+                {item.name}
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
     </nav>
   );
 };
