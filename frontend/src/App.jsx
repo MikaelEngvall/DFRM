@@ -10,37 +10,68 @@ import Tenants from './pages/Tenants';
 import Keys from './pages/Keys';
 import Login from './pages/Login';
 
-const PrivateLayout = () => (
+// Wrapper-komponent för sidor som kräver navigation
+const NavigationWrapper = ({ children }) => (
   <div>
     <Navigation />
     <main className="pt-16">
-      <Routes>
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/apartments" element={<Apartments />} />
-        <Route path="/tenants" element={<Tenants />} />
-        <Route path="/keys" element={<Keys />} />
-      </Routes>
+      {children}
     </main>
   </div>
 );
 
 const App = () => {
   return (
-    <Router>
+    <Router future={{ 
+      v7_relativeSplatPath: true,
+      v7_startTransition: true 
+    }}>
       <LocaleProvider>
         <AuthProvider>
           <div className="min-h-screen bg-gray-100">
             <Routes>
               <Route path="/login" element={<Login />} />
-              <Route
-                path="/*"
-                element={
-                  <PrivateRoute>
-                    <PrivateLayout />
-                  </PrivateRoute>
-                }
-              />
+              
+              {/* Skyddade rutter med navigation */}
+              <Route path="/" element={
+                <PrivateRoute>
+                  <NavigationWrapper>
+                    <Navigate to="/dashboard" replace />
+                  </NavigationWrapper>
+                </PrivateRoute>
+              } />
+              
+              <Route path="/dashboard" element={
+                <PrivateRoute>
+                  <NavigationWrapper>
+                    <Dashboard />
+                  </NavigationWrapper>
+                </PrivateRoute>
+              } />
+              
+              <Route path="/apartments" element={
+                <PrivateRoute>
+                  <NavigationWrapper>
+                    <Apartments />
+                  </NavigationWrapper>
+                </PrivateRoute>
+              } />
+              
+              <Route path="/tenants" element={
+                <PrivateRoute>
+                  <NavigationWrapper>
+                    <Tenants />
+                  </NavigationWrapper>
+                </PrivateRoute>
+              } />
+              
+              <Route path="/keys" element={
+                <PrivateRoute>
+                  <NavigationWrapper>
+                    <Keys />
+                  </NavigationWrapper>
+                </PrivateRoute>
+              } />
             </Routes>
           </div>
         </AuthProvider>

@@ -89,12 +89,20 @@ public class ApartmentService {
                                 apartment.setTenants(new ArrayList<>());
                             }
                             
-                            // Kontrollera om hyresgästen redan finns i lägenheten (undvik dubbletter)
+                            // Först ta bort hyresgästen om den redan finns för att undvika duplicering
+                            // Detta är en extra säkerhetsåtgärd utöver kontroll av dubbletter
+                            apartment.getTenants().removeIf(t -> t.getId().equals(tenant.getId()));
+                            
+                            // Kontrollera om hyresgästen (med samma ID) redan finns i lägenheten (undvik dubbletter)
                             boolean alreadyExists = apartment.getTenants().stream()
                                 .anyMatch(t -> t.getId().equals(tenant.getId()));
                                 
                             if (!alreadyExists) {
                                 apartment.getTenants().add(tenant);
+                            } else {
+                                // Logga varning om dubbletter upptäcks
+                                System.out.println("VARNING: Försök att lägga till hyresgäst " + tenant.getId() + 
+                                    " i lägenhet " + apartment.getId() + " misslyckades eftersom hyresgästen redan finns.");
                             }
                             
                             tenant.setApartment(apartment);

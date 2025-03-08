@@ -5,6 +5,7 @@ import AlertModal from '../components/AlertModal';
 import FormInput from '../components/FormInput';
 import { PlusIcon } from '@heroicons/react/24/outline';
 import { apartmentService, tenantService, keyService } from '../services';
+import { useLocation } from 'react-router-dom';
 
 // Definiera nyckeltyper
 const keyTypes = [
@@ -24,6 +25,7 @@ const renderKeyType = (typeValue) => {
 };
 
 const Apartments = () => {
+  const location = useLocation();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedApartment, setSelectedApartment] = useState(null);
   const [apartments, setApartments] = useState([]);
@@ -33,6 +35,7 @@ const Apartments = () => {
   const [error, setError] = useState(null);
   const [isAlertOpen, setIsAlertOpen] = useState(false);
   const [apartmentToDelete, setApartmentToDelete] = useState(null);
+  const [showOnlyVacant, setShowOnlyVacant] = useState(false);
   const [formData, setFormData] = useState({
     street: '',
     number: '',
@@ -48,6 +51,7 @@ const Apartments = () => {
     tenantIds: [],
     keyIds: [],
   });
+  const [activeTab, setActiveTab] = useState('all'); // 'all' eller 'vacant'
 
   const columns = [
     { key: 'street', label: 'Gata' },
@@ -57,6 +61,19 @@ const Apartments = () => {
     { key: 'rooms', label: 'Rum' },
     { key: 'area', label: 'Yta (m²)' },
     { key: 'price', label: 'Hyra (kr)', render: (value) => `${value} kr` },
+    { 
+      key: 'status', 
+      label: 'Status',
+      render: (_, apartment) => isApartmentVacant(apartment) ? (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+          Ledig
+        </span>
+      ) : (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+          Uthyrd
+        </span>
+      )
+    },
     {
       key: 'tenants',
       label: 'Hyresgäster',
@@ -113,7 +130,14 @@ const Apartments = () => {
 
   useEffect(() => {
     fetchInitialData();
-  }, []);
+    
+    // Kontrollera om filter=vacant finns i URL:en
+    const params = new URLSearchParams(location.search);
+    const filterParam = params.get('filter');
+    if (filterParam === 'vacant') {
+      setShowOnlyVacant(true);
+    }
+  }, [location.search]);
 
   const fetchInitialData = async () => {
     try {
@@ -128,8 +152,10 @@ const Apartments = () => {
       console.log('Original tenants data:', tenantsData);
       console.log('Original keys data:', keysData);
       
-      // Processera lägenhetsdata för att säkerställa att vi har fullständiga references
+      // Processera lägenhetsdata för att säkerställa att vi har fullständiga references 
+      // och rensa bort eventuella dubletter av hyresgäster
       const processedApartments = apartmentsData.map(apartment => {
+        // Först processera lägenheten enligt normalt
         const processedApartment = { ...apartment };
         
         // Hantera tenant-relationen - kolla format och konvertera vid behov
@@ -160,6 +186,9 @@ const Apartments = () => {
           processedApartment.tenants = [];
         }
         
+        // Rensa eventuella dubletter av hyresgäster
+        const cleanedApartment = cleanupDuplicateTenants(processedApartment);
+        
         // Hantera key-relationen - kolla format och konvertera vid behov
         if (apartment.keys) {
           console.log('Processing keys for apartment:', apartment.id, apartment.keys);
@@ -176,24 +205,24 @@ const Apartments = () => {
               }
               return key; // Behåll oförändrad om okänt format
             });
-            processedApartment.keys = processedKeys;
+            cleanedApartment.keys = processedKeys;
           } else {
             // Om keys inte är en array, men ändå existerar (okänt format)
             // Skapa en tom array
-            processedApartment.keys = [];
+            cleanedApartment.keys = [];
             console.warn('Unexpected keys format for apartment:', apartment.id, apartment.keys);
           }
         } else {
           // Om keys saknas, skapa en tom array
-          processedApartment.keys = [];
+          cleanedApartment.keys = [];
         }
         
-        console.log('Processed apartment:', processedApartment.id, {
-          tenants: processedApartment.tenants,
-          keys: processedApartment.keys
+        console.log('Processed apartment:', cleanedApartment.id, {
+          tenants: cleanedApartment.tenants,
+          keys: cleanedApartment.keys
         });
         
-        return processedApartment;
+        return cleanedApartment;
       });
       
       console.log('All processed apartments:', processedApartments);
@@ -250,6 +279,9 @@ const Apartments = () => {
       // Säkerställ att vi har giltiga arrayer och filtrera bort eventuella falsy-värden (null, undefined, etc.)
       tenantIds = (tenantIds || []).filter(Boolean);
       keyIds = (keyIds || []).filter(Boolean);
+      
+      // Säkerställ att vi inte har dubbletter i tenant-IDs
+      tenantIds = [...new Set(tenantIds)]; // Tar bort eventuella dubbletter med hjälp av Set
       
       let savedApartment;
       
@@ -367,21 +399,27 @@ const Apartments = () => {
   const handleEdit = (apartment) => {
     console.log('Editing apartment:', apartment);
     
-    setSelectedApartment(apartment);
+    // Rensa bort eventuella dubletter av hyresgäster innan redigering
+    const cleanedApartment = cleanupDuplicateTenants(apartment);
+    
+    setSelectedApartment(cleanedApartment);
     
     // Extrahera tenant IDs, oavsett om tenants är en array av objekt eller ID-strängar
     let tenantIds = [];
-    if (apartment.tenants && Array.isArray(apartment.tenants)) {
-      tenantIds = apartment.tenants.map(tenant => {
+    if (cleanedApartment.tenants && Array.isArray(cleanedApartment.tenants)) {
+      tenantIds = cleanedApartment.tenants.map(tenant => {
         if (typeof tenant === 'string') return tenant;
         return tenant.id;
       }).filter(Boolean);
+      
+      // Säkerställ att inga dubletter finns
+      tenantIds = [...new Set(tenantIds)];
     }
     
     // Extrahera key IDs, oavsett om keys är en array av objekt eller ID-strängar
     let keyIds = [];
-    if (apartment.keys && Array.isArray(apartment.keys)) {
-      keyIds = apartment.keys.map(key => {
+    if (cleanedApartment.keys && Array.isArray(cleanedApartment.keys)) {
+      keyIds = cleanedApartment.keys.map(key => {
         if (typeof key === 'string') return key;
         return key.id;
       }).filter(Boolean);
@@ -391,17 +429,17 @@ const Apartments = () => {
     console.log('Extracted key IDs:', keyIds);
     
     setFormData({
-      street: apartment.street || '',
-      number: apartment.number || '',
-      apartmentNumber: apartment.apartmentNumber || '',
-      postalCode: apartment.postalCode || '',
-      city: apartment.city || '',
-      rooms: apartment.rooms || '',
-      area: apartment.area || '',
-      price: apartment.price || '',
-      electricity: apartment.electricity || false,
-      storage: apartment.storage || false,
-      internet: apartment.internet || false,
+      street: cleanedApartment.street || '',
+      number: cleanedApartment.number || '',
+      apartmentNumber: cleanedApartment.apartmentNumber || '',
+      postalCode: cleanedApartment.postalCode || '',
+      city: cleanedApartment.city || '',
+      rooms: cleanedApartment.rooms || '',
+      area: cleanedApartment.area || '',
+      price: cleanedApartment.price || '',
+      electricity: cleanedApartment.electricity || false,
+      storage: cleanedApartment.storage || false,
+      internet: cleanedApartment.internet || false,
       tenantIds: tenantIds,
       keyIds: keyIds,
     });
@@ -466,7 +504,17 @@ const Apartments = () => {
   // Hjälpfunktion för att kontrollera om en lägenhet är ledig (har inga hyresgäster)
   const isApartmentVacant = (apartment) => {
     // En lägenhet är ledig om den inte har några hyresgäster
-    return !apartment.tenants || apartment.tenants.length === 0;
+    if (!apartment.tenants) {
+      return true;
+    }
+    
+    if (!Array.isArray(apartment.tenants)) {
+      return true; // Om tenants inte är en array, anta att den är ledig
+    }
+    
+    // Filtrera bort tomma värden och kontrollera antalet
+    const validTenants = apartment.tenants.filter(t => t && (typeof t === 'string' || t.id));
+    return validTenants.length === 0;
   };
 
   // Filtrera och ge oss bara lediga lägenheter
@@ -477,6 +525,36 @@ const Apartments = () => {
   // Räkna antalet lediga lägenheter
   const countVacantApartments = (apartmentList) => {
     return getVacantApartments(apartmentList).length;
+  };
+
+  // Hjälpfunktion för att rensa bort dubletter från tenant arrays
+  const cleanupDuplicateTenants = (apartment) => {
+    if (!apartment || !apartment.tenants) return apartment;
+    
+    // Clona objektet för att inte ändra originalet
+    const cleanedApartment = { ...apartment };
+    
+    if (Array.isArray(cleanedApartment.tenants)) {
+      // Skapa en map för att spåra tenant ID:n vi redan har
+      const seenIds = new Map();
+      
+      // Filtrera bort dubletter baserat på tenant ID
+      cleanedApartment.tenants = cleanedApartment.tenants.filter(tenant => {
+        if (!tenant) return false;
+        
+        const id = typeof tenant === 'string' ? tenant : tenant.id;
+        if (!id) return false;
+        
+        // Om id:t redan setts, filtrera bort denna tenant
+        if (seenIds.has(id)) return false;
+        
+        // Annars markera den som sedd och behåll den
+        seenIds.set(id, true);
+        return true;
+      });
+    }
+    
+    return cleanedApartment;
   };
 
   if (isLoading) {
@@ -515,9 +593,36 @@ const Apartments = () => {
         </div>
       )}
 
+      <div className="mb-6">
+        <div className="flex items-center justify-between">
+          <div className="flex space-x-2">
+            <button
+              onClick={() => setShowOnlyVacant(false)}
+              className={`px-4 py-2 text-sm font-medium rounded-md ${
+                !showOnlyVacant
+                  ? 'bg-primary text-white'
+                  : 'bg-white text-gray-700 border border-gray-300'
+              }`}
+            >
+              Alla lägenheter
+            </button>
+            <button
+              onClick={() => setShowOnlyVacant(true)}
+              className={`px-4 py-2 text-sm font-medium rounded-md ${
+                showOnlyVacant
+                  ? 'bg-primary text-white'
+                  : 'bg-white text-gray-700 border border-gray-300'
+              }`}
+            >
+              Lediga lägenheter ({countVacantApartments(apartments)})
+            </button>
+          </div>
+        </div>
+      </div>
+
       <DataTable
         columns={columns}
-        data={apartments}
+        data={showOnlyVacant ? getVacantApartments(apartments) : apartments}
         onEdit={handleEdit}
       />
 

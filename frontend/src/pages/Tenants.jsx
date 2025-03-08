@@ -5,6 +5,7 @@ import AlertModal from '../components/AlertModal';
 import FormInput from '../components/FormInput';
 import { PlusIcon } from '@heroicons/react/24/outline';
 import { tenantService, apartmentService, keyService } from '../services';
+import { formatShortDate, formatDateForInput } from '../utils/formatters';
 
 // Definiera nyckeltyper
 const keyTypes = [
@@ -71,11 +72,15 @@ const Tenants = () => {
         </span>
       )
     },
-    { key: 'movedInDate', label: 'IN' },
+    {
+      key: 'movedInDate',
+      label: 'IN',
+      render: (value) => formatShortDate(value)
+    },
     {
       key: 'resiliationDate',
       label: 'UPS',
-      render: (value) => value || '-',
+      render: (value) => formatShortDate(value)
     },
     {
       key: 'apartment',
@@ -388,7 +393,7 @@ const Tenants = () => {
               label="IN"
               name="movedInDate"
               type="date"
-              value={formData.movedInDate}
+              value={formatDateForInput(formData.movedInDate)}
               onChange={handleInputChange}
               required
             />
@@ -396,7 +401,7 @@ const Tenants = () => {
               label="UPS"
               name="resiliationDate"
               type="date"
-              value={formData.resiliationDate}
+              value={formatDateForInput(formData.resiliationDate)}
               onChange={handleInputChange}
             />
           </div>

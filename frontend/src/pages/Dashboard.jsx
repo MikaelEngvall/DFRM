@@ -77,7 +77,7 @@ const Dashboard = () => {
       value: stats.vacantApartments,
       icon: ChartBarIcon,
       color: 'bg-purple-500',
-      link: '/apartments',
+      link: '/apartments?filter=vacant',
     },
   ];
 
