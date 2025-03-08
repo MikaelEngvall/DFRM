@@ -1,6 +1,6 @@
 import React from 'react';
 
-const DataTable = ({ columns, data, onEdit }) => {
+const DataTable = ({ columns, data, onEdit, rowClassName }) => {
   return (
     <div className="overflow-x-auto">
       <table className="min-w-full divide-y divide-gray-200">
@@ -21,7 +21,7 @@ const DataTable = ({ columns, data, onEdit }) => {
           {data.map((item) => (
             <tr 
               key={item.id} 
-              className="hover:bg-gray-50 cursor-pointer transition-colors"
+              className={`hover:bg-gray-50 cursor-pointer transition-colors ${rowClassName ? rowClassName(item) : ''}`}
               onClick={() => onEdit(item)}
             >
               {columns.map((column) => (

@@ -448,6 +448,37 @@ const Apartments = () => {
     }
   };
 
+  // Filtrera ut lediga hyresgäster (utan lägenhet)
+  const getAvailableTenants = (tenantList, selectedApartmentTenants = []) => {
+    // Hämta ID:n för hyresgäster som redan är associerade med lägenheten
+    const selectedTenantIds = selectedApartmentTenants.map(t => 
+      typeof t === 'object' ? t.id : t
+    );
+    
+    return tenantList.filter(tenant => 
+      // Inkludera hyresgäster som antingen:
+      // 1. Redan är kopplade till denna lägenhet (finns i selectedTenantIds)
+      // 2. Inte har någon lägenhet alls (tenant.apartment är null/undefined)
+      selectedTenantIds.includes(tenant.id) || !tenant.apartment
+    );
+  };
+
+  // Hjälpfunktion för att kontrollera om en lägenhet är ledig (har inga hyresgäster)
+  const isApartmentVacant = (apartment) => {
+    // En lägenhet är ledig om den inte har några hyresgäster
+    return !apartment.tenants || apartment.tenants.length === 0;
+  };
+
+  // Filtrera och ge oss bara lediga lägenheter
+  const getVacantApartments = (apartmentList) => {
+    return apartmentList.filter(isApartmentVacant);
+  };
+
+  // Räkna antalet lediga lägenheter
+  const countVacantApartments = (apartmentList) => {
+    return getVacantApartments(apartmentList).length;
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-full">
@@ -622,14 +653,14 @@ const Apartments = () => {
                 onChange={handleInputChange}
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
               >
-                {tenants.map((tenant) => (
+                {getAvailableTenants(tenants, selectedApartment?.tenants).map((tenant) => (
                   <option key={tenant.id} value={tenant.id}>
                     {`${tenant.firstName} ${tenant.lastName}`}
                   </option>
                 ))}
               </select>
               <p className="mt-1 text-sm text-gray-500">
-                Välj alla hyresgäster som bor i lägenheten. Håll ner Ctrl (Windows) eller Cmd (Mac) för att välja flera.
+                Välj alla hyresgäster som står på kontraktet för denna lägenhet. Du kan bara välja hyresgäster som antingen redan bor i lägenheten eller som inte har någon lägenhet. Håll ner Ctrl (Windows) eller Cmd (Mac) för att välja flera.
               </p>
             </div>
 

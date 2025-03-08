@@ -48,10 +48,29 @@ const Tenants = () => {
     keyId: '',
   });
 
+  // Hjälpfunktion för att kontrollera om en hyresgäst har lägenhet
+  const hasTenantApartment = (tenant) => {
+    // Kontrollera om apartment finns som objekt eller ID
+    return Boolean(tenant.apartment); // Detta returnerar false för null, undefined och tomma strängar
+  };
+
   const columns = [
     { key: 'firstName', label: 'Förnamn' },
     { key: 'lastName', label: 'Efternamn' },
     { key: 'phone', label: 'Telefon' },
+    { 
+      key: 'status', 
+      label: 'Status',
+      render: (_, tenant) => hasTenantApartment(tenant) ? (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+          Boende
+        </span>
+      ) : (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+          Ej boende
+        </span>
+      )
+    },
     { key: 'movedInDate', label: 'IN' },
     {
       key: 'resiliationDate',
@@ -262,6 +281,13 @@ const Tenants = () => {
     }
   };
 
+  // Filtrera ut lediga hyresgäster (utan lägenhet)
+  const getAvailableTenants = (tenantList) => {
+    return selectedTenant 
+      ? tenantList.filter(t => !hasTenantApartment(t) || t.id === selectedTenant.id)
+      : tenantList.filter(t => !hasTenantApartment(t));
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-full">
@@ -302,6 +328,7 @@ const Tenants = () => {
         columns={columns}
         data={tenants}
         onEdit={handleEdit}
+        rowClassName={(tenant) => hasTenantApartment(tenant) ? 'opacity-60' : ''}
       />
 
       <Modal
@@ -392,6 +419,9 @@ const Tenants = () => {
                   </option>
                 ))}
               </select>
+              <p className="mt-1 text-sm text-gray-500">
+                En hyresgäst kan endast vara kopplad till en lägenhet, men en lägenhet kan ha flera hyresgäster.
+              </p>
             </div>
 
             <div>

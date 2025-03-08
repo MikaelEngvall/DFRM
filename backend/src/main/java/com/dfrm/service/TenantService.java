@@ -87,10 +87,17 @@ public class TenantService {
 
                             // Lägg till hyresgästen i den nya lägenheten
                             tenant.setApartment(apartment);
+                            
+                            // Säkerställ att lägenheten har en lista med hyresgäster
                             if (apartment.getTenants() == null) {
                                 apartment.setTenants(new ArrayList<>());
                             }
-                            if (!apartment.getTenants().contains(tenant)) {
+                            
+                            // Kontrollera om hyresgästen redan finns i lägenheten (undvik dubbletter)
+                            boolean alreadyExists = apartment.getTenants().stream()
+                                .anyMatch(t -> t.getId().equals(tenant.getId()));
+                                
+                            if (!alreadyExists) {
                                 apartment.getTenants().add(tenant);
                             }
 
