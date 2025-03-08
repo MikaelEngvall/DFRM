@@ -81,6 +81,9 @@ public class KeyService {
                                 apartmentRepository.save(oldApartment);
                             }
                             
+                            // Spara referensen till hyresgästen om nyckeln har en
+                            Tenant keyTenant = key.getTenant();
+                            
                             // Lägg till nyckeln i den nya lägenheten
                             key.setApartment(apartment);
                             if (apartment.getKeys() == null) {
@@ -88,6 +91,32 @@ public class KeyService {
                             }
                             if (!apartment.getKeys().contains(key)) {
                                 apartment.getKeys().add(key);
+                            }
+                            
+                            // Om nyckeln har en hyresgäst, se till att hyresgästen också läggs till i lägenheten
+                            if (keyTenant != null) {
+                                // Om hyresgästen redan har en lägenhet som är ANNAN än den nya
+                                if (keyTenant.getApartment() != null && !keyTenant.getApartment().getId().equals(apartment.getId())) {
+                                    // Ta bort hyresgästen från den gamla lägenheten
+                                    Apartment oldTenantApartment = keyTenant.getApartment();
+                                    if (oldTenantApartment.getTenants() != null) {
+                                        oldTenantApartment.getTenants().remove(keyTenant);
+                                        apartmentRepository.save(oldTenantApartment);
+                                    }
+                                }
+                                
+                                // Sätt den nya lägenheten som hyresgästens lägenhet
+                                keyTenant.setApartment(apartment);
+                                
+                                // Lägg till hyresgästen i lägenhetens hyresgästlista om den inte redan finns där
+                                if (apartment.getTenants() == null) {
+                                    apartment.setTenants(new ArrayList<>());
+                                }
+                                if (!apartment.getTenants().contains(keyTenant)) {
+                                    apartment.getTenants().add(keyTenant);
+                                }
+                                
+                                tenantRepository.save(keyTenant);
                             }
                             
                             apartmentRepository.save(apartment);
@@ -106,9 +135,46 @@ public class KeyService {
                                 tenantRepository.save(oldTenant);
                             }
                             
+                            // Spara referensen till lägenheten om nyckeln har en
+                            Apartment keyApartment = key.getApartment();
+                            
                             // Tilldela nyckeln till den nya hyresgästen
                             key.setTenant(tenant);
+                            
+                            // Ta bort tidigare nyckel från hyresgästen om den finns
+                            if (tenant.getKey() != null) {
+                                Key oldKey = tenant.getKey();
+                                oldKey.setTenant(null);
+                                keyRepository.save(oldKey);
+                            }
+                            
                             tenant.setKey(key);
+                            
+                            // Om hyresgästen inte redan är associerad med nyckelns lägenhet
+                            // och nyckeln har en lägenhet, uppdatera dessa relationer också
+                            if (keyApartment != null) {
+                                // Om hyresgästen redan har en lägenhet som är ANNAN än nyckelns
+                                if (tenant.getApartment() != null && !tenant.getApartment().getId().equals(keyApartment.getId())) {
+                                    // Ta bort hyresgästen från den gamla lägenheten
+                                    Apartment oldApartment = tenant.getApartment();
+                                    if (oldApartment.getTenants() != null) {
+                                        oldApartment.getTenants().remove(tenant);
+                                        apartmentRepository.save(oldApartment);
+                                    }
+                                }
+                                
+                                // Sätt nyckelns lägenhet som hyresgästens lägenhet
+                                tenant.setApartment(keyApartment);
+                                
+                                // Lägg till hyresgästen i lägenhetens hyresgästlista om den inte redan finns där
+                                if (keyApartment.getTenants() == null) {
+                                    keyApartment.setTenants(new ArrayList<>());
+                                }
+                                if (!keyApartment.getTenants().contains(tenant)) {
+                                    keyApartment.getTenants().add(tenant);
+                                    apartmentRepository.save(keyApartment);
+                                }
+                            }
                             
                             tenantRepository.save(tenant);
                             return keyRepository.save(key);

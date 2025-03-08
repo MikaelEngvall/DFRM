@@ -152,59 +152,79 @@ const Keys = () => {
       
       if (selectedKey) {
         console.log('Uppdaterar befintlig nyckel med ID:', selectedKey.id);
-        savedKey = await keyService.updateKey(selectedKey.id, keyData);
+        
+        // Identifiera ändrade fält genom att jämföra med selectedKey
+        const changedFields = {};
+        for (const key in keyData) {
+          // Jämför värdena och lägg endast till ändrade fält
+          if (keyData[key] !== selectedKey[key]) {
+            changedFields[key] = keyData[key];
+          }
+        }
+        
+        console.log("Ändrade fält:", changedFields);
+        
+        // Uppdatera grundläggande information om nyckeln (endast ändrade fält)
+        savedKey = Object.keys(changedFields).length > 0 
+          ? await keyService.patchKey(selectedKey.id, changedFields)
+          : selectedKey;
+        
         console.log('Nyckel uppdaterad:', savedKey);
         
-        const updateOperations = [];
+        // Utför relationsuppdateringar sekventiellt istället för parallellt
         
+        // Uppdatera lägenhet om nödvändigt
         const currentApartmentId = (selectedKey.apartment && selectedKey.apartment.id) || null;
         console.log('Nuvarande Apartment ID:', currentApartmentId, 'Ny Apartment ID:', apartmentId);
         
         if (apartmentId && apartmentId !== currentApartmentId) {
           console.log('Tilldelar ny lägenhet:', apartmentId);
-          updateOperations.push(keyService.assignApartment(savedKey.id, apartmentId));
+          const apartmentResult = await keyService.assignApartment(savedKey.id, apartmentId);
+          console.log('Resultat av lägenhetstilldelning:', apartmentResult);
+          // Uppdatera savedKey med senaste versionen som har lägenhet kopplad
+          savedKey = await keyService.getKeyById(savedKey.id);
         } else if (!apartmentId && currentApartmentId) {
           console.log('Tar bort lägenhet från nyckel');
-          updateOperations.push(keyService.removeApartment(savedKey.id));
+          const apartmentRemovalResult = await keyService.removeApartment(savedKey.id);
+          console.log('Resultat av lägenhets-borttagning:', apartmentRemovalResult);
+          // Uppdatera savedKey efter borttagning
+          savedKey = await keyService.getKeyById(savedKey.id);
         }
         
+        // Uppdatera hyresgäst (efter lägenhet) om nödvändigt
         const currentTenantId = (selectedKey.tenant && selectedKey.tenant.id) || null;
         console.log('Nuvarande Tenant ID:', currentTenantId, 'Ny Tenant ID:', tenantId);
         
         if (tenantId && tenantId !== currentTenantId) {
           console.log('Tilldelar ny hyresgäst:', tenantId);
-          updateOperations.push(keyService.assignTenant(savedKey.id, tenantId));
+          const tenantResult = await keyService.assignTenant(savedKey.id, tenantId);
+          console.log('Resultat av hyresgästtilldelning:', tenantResult);
         } else if (!tenantId && currentTenantId) {
           console.log('Tar bort hyresgäst från nyckel');
-          updateOperations.push(keyService.removeTenant(savedKey.id));
-        }
-        
-        if (updateOperations.length > 0) {
-          console.log('Utför', updateOperations.length, 'uppdateringsoperationer');
-          const results = await Promise.all(updateOperations);
-          console.log('Resultat av uppdateringar:', results);
+          const tenantRemovalResult = await keyService.removeTenant(savedKey.id);
+          console.log('Resultat av hyresgäst-borttagning:', tenantRemovalResult);
         }
       } else {
         console.log('Skapar ny nyckel');
         savedKey = await keyService.createKey(keyData);
         console.log('Nyckel skapad:', savedKey);
         
-        const assignOperations = [];
+        // Utför tilldelning av relationer sekventiellt istället för parallellt
         
+        // Steg 1: Tilldela lägenhet först (om det finns)
         if (apartmentId) {
           console.log('Tilldelar lägenhet till ny nyckel:', apartmentId);
-          assignOperations.push(keyService.assignApartment(savedKey.id, apartmentId));
+          const apartmentResult = await keyService.assignApartment(savedKey.id, apartmentId);
+          console.log('Resultat av lägenhetstilldelning:', apartmentResult);
+          // Uppdatera savedKey med senaste versionen som har lägenhet kopplad
+          savedKey = await keyService.getKeyById(savedKey.id);
         }
         
+        // Steg 2: Tilldela hyresgäst efter att lägenhet har tilldelats (om det finns)
         if (tenantId) {
           console.log('Tilldelar hyresgäst till ny nyckel:', tenantId);
-          assignOperations.push(keyService.assignTenant(savedKey.id, tenantId));
-        }
-        
-        if (assignOperations.length > 0) {
-          console.log('Utför', assignOperations.length, 'tilldelningsoperationer');
-          const results = await Promise.all(assignOperations);
-          console.log('Resultat av tilldelningar:', results);
+          const tenantResult = await keyService.assignTenant(savedKey.id, tenantId);
+          console.log('Resultat av hyresgästtilldelning:', tenantResult);
         }
       }
       

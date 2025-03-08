@@ -114,8 +114,21 @@ const Tenants = () => {
       let savedTenant;
       
       if (selectedTenant) {
-        // Uppdatera grundläggande information om hyresgästen
-        savedTenant = await tenantService.updateTenant(selectedTenant.id, tenantData);
+        // Identifiera ändrade fält genom att jämföra med selectedTenant
+        const changedFields = {};
+        for (const key in tenantData) {
+          // Jämför värdena och lägg endast till ändrade fält som inte är tomma eller null
+          if (tenantData[key] !== selectedTenant[key] && tenantData[key] !== '' && tenantData[key] !== null) {
+            changedFields[key] = tenantData[key];
+          }
+        }
+        
+        console.log("Ändrade fält:", changedFields);
+        
+        // Uppdatera grundläggande information om hyresgästen (endast ändrade fält)
+        savedTenant = Object.keys(changedFields).length > 0 
+          ? await tenantService.patchTenant(selectedTenant.id, changedFields)
+          : selectedTenant;
         
         // Hantera lägenhet och nyckel separat efter att hyresgästen har uppdaterats
         const updateOperations = [];

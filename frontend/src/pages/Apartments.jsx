@@ -43,23 +43,53 @@ const Apartments = () => {
     {
       key: 'tenants',
       label: 'Hyresgäster',
-      render: (tenantIds) => {
-        if (!tenantIds || tenantIds.length === 0) return '-';
-        return tenantIds.map(id => {
-          const tenant = tenants.find(t => t.id === id);
-          return tenant ? `${tenant.firstName} ${tenant.lastName}` : '';
-        }).filter(Boolean).join(', ') || '-';
+      render: (tenantsValue, apartment) => {
+        console.log('Rendering tenants column:', tenantsValue, apartment);
+        
+        if (!tenantsValue || (Array.isArray(tenantsValue) && tenantsValue.length === 0)) return '-';
+        
+        // Om tenants är en array av objekt eller ID-strängar
+        if (Array.isArray(tenantsValue)) {
+          return tenantsValue.map(tenant => {
+            if (typeof tenant === 'string') {
+              // Om tenant är ett ID, hitta motsvarande objekt
+              const tenantObj = tenants.find(t => t.id === tenant);
+              return tenantObj ? `${tenantObj.firstName} ${tenantObj.lastName}` : tenant;
+            } else if (tenant && tenant.id) {
+              // Om tenant är ett objekt
+              return `${tenant.firstName} ${tenant.lastName}`;
+            }
+            return '';
+          }).filter(Boolean).join(', ') || '-';
+        }
+        
+        return '-';
       }
     },
     {
       key: 'keys',
       label: 'Nycklar',
-      render: (keyIds) => {
-        if (!keyIds || keyIds.length === 0) return '-';
-        return keyIds.map(id => {
-          const key = keys.find(k => k.id === id);
-          return key ? `${key.type} (${key.serie}-${key.number})` : '';
-        }).filter(Boolean).join(', ') || '-';
+      render: (keysValue, apartment) => {
+        console.log('Rendering keys column:', keysValue, apartment);
+        
+        if (!keysValue || (Array.isArray(keysValue) && keysValue.length === 0)) return '-';
+        
+        // Om keys är en array av objekt eller ID-strängar
+        if (Array.isArray(keysValue)) {
+          return keysValue.map(key => {
+            if (typeof key === 'string') {
+              // Om key är ett ID, hitta motsvarande objekt
+              const keyObj = keys.find(k => k.id === key);
+              return keyObj ? `${keyObj.type} (${keyObj.serie}-${keyObj.number})` : key;
+            } else if (key && key.id) {
+              // Om key är ett objekt
+              return `${key.type} (${key.serie}-${key.number})`;
+            }
+            return '';
+          }).filter(Boolean).join(', ') || '-';
+        }
+        
+        return '-';
       }
     },
   ];
@@ -76,7 +106,82 @@ const Apartments = () => {
         tenantService.getAllTenants(),
         keyService.getAllKeys(),
       ]);
-      setApartments(apartmentsData);
+      
+      console.log('Original apartments data:', apartmentsData);
+      console.log('Original tenants data:', tenantsData);
+      console.log('Original keys data:', keysData);
+      
+      // Processera lägenhetsdata för att säkerställa att vi har fullständiga references
+      const processedApartments = apartmentsData.map(apartment => {
+        const processedApartment = { ...apartment };
+        
+        // Hantera tenant-relationen - kolla format och konvertera vid behov
+        if (apartment.tenants) {
+          console.log('Processing tenants for apartment:', apartment.id, apartment.tenants);
+          
+          if (Array.isArray(apartment.tenants)) {
+            // I vissa fall kan tenants vara en array av ID-strängar eller objekt med ID
+            const processedTenants = apartment.tenants.map(tenant => {
+              if (typeof tenant === 'string') {
+                // Om tenant är ett ID, hämta hela tenant-objektet
+                return tenantsData.find(t => t.id === tenant) || tenant;
+              } else if (tenant && tenant.id) {
+                // Om tenant är ett objekt med ID
+                return tenant;
+              }
+              return tenant; // Behåll oförändrad om okänt format
+            });
+            processedApartment.tenants = processedTenants;
+          } else {
+            // Om tenants inte är en array, men ändå existerar (okänt format)
+            // Skapa en tom array
+            processedApartment.tenants = [];
+            console.warn('Unexpected tenants format for apartment:', apartment.id, apartment.tenants);
+          }
+        } else {
+          // Om tenants saknas, skapa en tom array
+          processedApartment.tenants = [];
+        }
+        
+        // Hantera key-relationen - kolla format och konvertera vid behov
+        if (apartment.keys) {
+          console.log('Processing keys for apartment:', apartment.id, apartment.keys);
+          
+          if (Array.isArray(apartment.keys)) {
+            // I vissa fall kan keys vara en array av ID-strängar eller objekt med ID
+            const processedKeys = apartment.keys.map(key => {
+              if (typeof key === 'string') {
+                // Om key är ett ID, hämta hela key-objektet
+                return keysData.find(k => k.id === key) || key;
+              } else if (key && key.id) {
+                // Om key är ett objekt med ID
+                return key;
+              }
+              return key; // Behåll oförändrad om okänt format
+            });
+            processedApartment.keys = processedKeys;
+          } else {
+            // Om keys inte är en array, men ändå existerar (okänt format)
+            // Skapa en tom array
+            processedApartment.keys = [];
+            console.warn('Unexpected keys format for apartment:', apartment.id, apartment.keys);
+          }
+        } else {
+          // Om keys saknas, skapa en tom array
+          processedApartment.keys = [];
+        }
+        
+        console.log('Processed apartment:', processedApartment.id, {
+          tenants: processedApartment.tenants,
+          keys: processedApartment.keys
+        });
+        
+        return processedApartment;
+      });
+      
+      console.log('All processed apartments:', processedApartments);
+      
+      setApartments(processedApartments);
       setTenants(tenantsData);
       setKeys(keysData);
       setError(null);
@@ -90,17 +195,29 @@ const Apartments = () => {
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
+    
     if (type === 'checkbox') {
       setFormData((prev) => ({
         ...prev,
         [name]: checked,
       }));
     } else if (name === 'tenantIds' || name === 'keyIds') {
-      const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
+      // Hantera multival för tenant och key selects
+      console.log(`Handling multiselect for ${name}:`, e.target.selectedOptions);
+      
+      const selectedOptions = Array.from(
+        e.target.selectedOptions || [], 
+        option => option.value
+      );
+      
+      console.log(`Selected ${name}:`, selectedOptions);
+      
       setFormData(prev => ({
         ...prev,
         [name]: selectedOptions,
       }));
+      
+      console.log(`Updated formData for ${name}:`, selectedOptions);
     } else {
       setFormData((prev) => ({
         ...prev,
@@ -120,8 +237,21 @@ const Apartments = () => {
       let savedApartment;
       
       if (selectedApartment) {
-        // Uppdatera grundläggande information om lägenheten
-        savedApartment = await apartmentService.updateApartment(selectedApartment.id, apartmentData);
+        // Identifiera ändrade fält genom att jämföra med selectedApartment
+        const changedFields = {};
+        for (const key in apartmentData) {
+          // Jämför värdena och lägg endast till ändrade fält
+          if (apartmentData[key] !== selectedApartment[key]) {
+            changedFields[key] = apartmentData[key];
+          }
+        }
+        
+        console.log("Ändrade fält:", changedFields);
+        
+        // Uppdatera grundläggande information om lägenheten (endast ändrade fält)
+        savedApartment = Object.keys(changedFields).length > 0 
+          ? await apartmentService.patchApartment(selectedApartment.id, changedFields)
+          : selectedApartment;
         
         // Hantera hyresgäst-relationer
         const existingTenantIds = selectedApartment.tenants?.map(t => t.id) || [];
@@ -218,12 +348,47 @@ const Apartments = () => {
   };
 
   const handleEdit = (apartment) => {
+    console.log('Editing apartment:', apartment);
+    
     setSelectedApartment(apartment);
+    
+    // Extrahera tenant IDs, oavsett om tenants är en array av objekt eller ID-strängar
+    let tenantIds = [];
+    if (apartment.tenants && Array.isArray(apartment.tenants)) {
+      tenantIds = apartment.tenants.map(tenant => {
+        if (typeof tenant === 'string') return tenant;
+        return tenant.id;
+      }).filter(Boolean);
+    }
+    
+    // Extrahera key IDs, oavsett om keys är en array av objekt eller ID-strängar
+    let keyIds = [];
+    if (apartment.keys && Array.isArray(apartment.keys)) {
+      keyIds = apartment.keys.map(key => {
+        if (typeof key === 'string') return key;
+        return key.id;
+      }).filter(Boolean);
+    }
+    
+    console.log('Extracted tenant IDs:', tenantIds);
+    console.log('Extracted key IDs:', keyIds);
+    
     setFormData({
-      ...apartment,
-      tenantIds: apartment.tenants?.map(t => t.id) || [],
-      keyIds: apartment.keys?.map(k => k.id) || [],
+      street: apartment.street || '',
+      number: apartment.number || '',
+      apartmentNumber: apartment.apartmentNumber || '',
+      postalCode: apartment.postalCode || '',
+      city: apartment.city || '',
+      rooms: apartment.rooms || '',
+      area: apartment.area || '',
+      price: apartment.price || '',
+      electricity: apartment.electricity || false,
+      storage: apartment.storage || false,
+      internet: apartment.internet || false,
+      tenantIds: tenantIds,
+      keyIds: keyIds,
     });
+    
     setIsModalOpen(true);
   };
 
@@ -434,8 +599,9 @@ const Apartments = () => {
               </label>
               <select
                 multiple
+                size="5"
                 name="tenantIds"
-                value={formData.tenantIds}
+                value={formData.tenantIds || []}
                 onChange={handleInputChange}
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
               >
@@ -446,7 +612,7 @@ const Apartments = () => {
                 ))}
               </select>
               <p className="mt-1 text-sm text-gray-500">
-                Håll ner Ctrl (Windows) eller Cmd (Mac) för att välja flera
+                Välj alla hyresgäster som bor i lägenheten. Håll ner Ctrl (Windows) eller Cmd (Mac) för att välja flera.
               </p>
             </div>
 
@@ -456,8 +622,9 @@ const Apartments = () => {
               </label>
               <select
                 multiple
+                size="5"
                 name="keyIds"
-                value={formData.keyIds}
+                value={formData.keyIds || []}
                 onChange={handleInputChange}
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
               >
@@ -468,7 +635,7 @@ const Apartments = () => {
                 ))}
               </select>
               <p className="mt-1 text-sm text-gray-500">
-                Håll ner Ctrl (Windows) eller Cmd (Mac) för att välja flera
+                Välj alla nycklar som tillhör lägenheten. Håll ner Ctrl (Windows) eller Cmd (Mac) för att välja flera.
               </p>
             </div>
           </div>

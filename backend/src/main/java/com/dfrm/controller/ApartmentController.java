@@ -1,6 +1,7 @@
 package com.dfrm.controller;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -8,6 +9,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -15,6 +17,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.dfrm.model.Apartment;
 import com.dfrm.service.ApartmentService;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import org.springframework.http.HttpStatus;
 
 import lombok.RequiredArgsConstructor;
 
@@ -116,6 +121,47 @@ public class ApartmentController {
             @PathVariable String keyId) {
         return apartmentService.removeKey(id, keyId)
                 .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PatchMapping("/{id}")
+    public ResponseEntity<Apartment> partialUpdateApartment(@PathVariable String id, @RequestBody Map<String, Object> updates) {
+        return apartmentService.getApartmentById(id)
+                .map(existingApartment -> {
+                    try {
+                        // Vi gör en partiell uppdatering genom att endast uppdatera angivna fält
+                        ObjectMapper objectMapper = new ObjectMapper();
+                        objectMapper.registerModule(new JavaTimeModule()); // Stöd för LocalDate
+                        
+                        // Konvertera existerande lägenhet till Map
+                        Map<String, Object> apartmentMap = objectMapper.convertValue(existingApartment, Map.class);
+                        
+                        // Applicera endast de fält som skickats in
+                        for (Map.Entry<String, Object> entry : updates.entrySet()) {
+                            // Ignorera ID-fältet (kan inte uppdateras)
+                            if (!entry.getKey().equals("id") && !entry.getKey().equals("tenants") && !entry.getKey().equals("keys")) {
+                                apartmentMap.put(entry.getKey(), entry.getValue());
+                            }
+                        }
+                        
+                        // Konvertera tillbaka till Apartment-objekt med uppdaterade fält
+                        Apartment updatedApartment = objectMapper.convertValue(apartmentMap, Apartment.class);
+                        
+                        // Behåll original-ID
+                        updatedApartment.setId(id);
+                        
+                        // Behåll originalrelationer
+                        updatedApartment.setTenants(existingApartment.getTenants());
+                        updatedApartment.setKeys(existingApartment.getKeys());
+                        
+                        // Spara och returnera uppdaterad lägenhet
+                        Apartment savedApartment = apartmentService.saveApartment(updatedApartment);
+                        return ResponseEntity.ok(savedApartment);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+                    }
+                })
                 .orElse(ResponseEntity.notFound().build());
     }
 } 

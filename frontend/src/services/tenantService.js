@@ -25,9 +25,15 @@ const tenantService = {
     return response.data;
   },
 
-  // Uppdatera en hyresgäst
+  // Uppdatera en hyresgäst (fullständig ersättning)
   updateTenant: async (id, tenantData) => {
     const response = await api.put(`/api/tenants/${id}`, tenantData);
+    return response.data;
+  },
+
+  // Partiell uppdatering av en hyresgäst (endast ändrade fält)
+  patchTenant: async (id, partialData) => {
+    const response = await api.patch(`/api/tenants/${id}`, partialData);
     return response.data;
   },
 

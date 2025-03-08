@@ -25,6 +25,12 @@ const apartmentService = {
     return response.data;
   },
 
+  // Partiell uppdatering av en lägenhet (endast ändrade fält)
+  patchApartment: async (id, partialData) => {
+    const response = await api.patch(`/api/apartments/${id}`, partialData);
+    return response.data;
+  },
+
   // Ta bort en lägenhet
   deleteApartment: async (id) => {
     const response = await api.delete(`/api/apartments/${id}`);

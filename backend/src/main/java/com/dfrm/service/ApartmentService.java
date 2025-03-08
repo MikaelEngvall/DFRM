@@ -81,13 +81,19 @@ public class ApartmentService {
                                 apartmentRepository.save(oldApartment);
                             }
 
-                            // Lägg till hyresgästen i den nya lägenheten
+                            // Lägg till hyresgästen i den nya lägenheten - säkerställ att vi inte får dubbletter
                             if (apartment.getTenants() == null) {
                                 apartment.setTenants(new ArrayList<>());
                             }
-                            if (!apartment.getTenants().contains(tenant)) {
+                            
+                            // Kontrollera om hyresgästen redan finns i lägenheten (undvik dubbletter)
+                            boolean alreadyExists = apartment.getTenants().stream()
+                                .anyMatch(t -> t.getId().equals(tenant.getId()));
+                                
+                            if (!alreadyExists) {
                                 apartment.getTenants().add(tenant);
                             }
+                            
                             tenant.setApartment(apartment);
 
                             tenantRepository.save(tenant);
@@ -106,13 +112,19 @@ public class ApartmentService {
                                 apartmentRepository.save(oldApartment);
                             }
 
-                            // Lägg till nyckeln i den nya lägenheten
+                            // Lägg till nyckeln i den nya lägenheten - säkerställ att vi inte får dubbletter
                             if (apartment.getKeys() == null) {
                                 apartment.setKeys(new ArrayList<>());
                             }
-                            if (!apartment.getKeys().contains(key)) {
+                            
+                            // Kontrollera om nyckeln redan finns i lägenheten (undvik dubbletter)
+                            boolean alreadyExists = apartment.getKeys().stream()
+                                .anyMatch(k -> k.getId().equals(key.getId()));
+                                
+                            if (!alreadyExists) {
                                 apartment.getKeys().add(key);
                             }
+                            
                             key.setApartment(apartment);
 
                             keyRepository.save(key);

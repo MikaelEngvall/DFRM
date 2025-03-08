@@ -48,18 +48,16 @@ const keyService = {
     }
   },
 
-  // Uppdatera en nyckel
+  // Uppdatera en nyckel (fullständig ersättning)
   updateKey: async (id, keyData) => {
-    try {
-      console.log(`Anropar API: PUT /api/keys/${id} med data:`, keyData);
-      const { apartmentId, tenantId, ...rest } = keyData;
-      const response = await api.put(`/api/keys/${id}`, rest);
-      console.log('Svar från updateKey:', response.data);
-      return response.data;
-    } catch (error) {
-      console.error(`Fel vid uppdatering av nyckel ${id}:`, error);
-      throw error;
-    }
+    const response = await api.put(`/api/keys/${id}`, keyData);
+    return response.data;
+  },
+
+  // Partiell uppdatering av en nyckel (endast ändrade fält)
+  patchKey: async (id, partialData) => {
+    const response = await api.patch(`/api/keys/${id}`, partialData);
+    return response.data;
   },
 
   // Ta bort en nyckel
@@ -112,6 +110,11 @@ const keyService = {
       console.log(`Anropar API: PUT /api/keys/${keyId}/tenant?tenantId=${tenantId}`);
       const response = await api.put(`/api/keys/${keyId}/tenant?tenantId=${tenantId}`);
       console.log('Svar från assignTenant:', response.data);
+      
+      // Efter att ha tilldelat hyresgäst till nyckel, hämta den uppdaterade nyckeln
+      const updatedKey = await api.get(`/api/keys/${keyId}`);
+      console.log('Hämtad uppdaterad nyckel efter tenant-association:', updatedKey.data);
+      
       return response.data;
     } catch (error) {
       console.error(`Fel vid tilldelning av hyresgäst ${tenantId} till nyckel ${keyId}:`, error);
