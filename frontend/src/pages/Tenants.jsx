@@ -353,8 +353,20 @@ const Tenants = () => {
       personnummer: tenant.personnummer || '',
       email: tenant.email || '',
       phone: tenant.phone || '',
-      movedInDate: tenant.movedInDate ? tenant.movedInDate.substring(0, 10) : '',
-      resiliationDate: tenant.resiliationDate ? tenant.resiliationDate.substring(0, 10) : '',
+      movedInDate: tenant.movedInDate 
+        ? (typeof tenant.movedInDate === 'string' 
+           ? tenant.movedInDate.substring(0, 10) 
+           : tenant.movedInDate instanceof Date 
+             ? tenant.movedInDate.toISOString().substring(0, 10)
+             : '')
+        : '',
+      resiliationDate: tenant.resiliationDate 
+        ? (typeof tenant.resiliationDate === 'string' 
+           ? tenant.resiliationDate.substring(0, 10) 
+           : tenant.resiliationDate instanceof Date 
+             ? tenant.resiliationDate.toISOString().substring(0, 10)
+             : '')
+        : '',
       comment: tenant.comment || '',
       apartmentId: apartmentId,
       keyIds: keyIds,
@@ -417,7 +429,7 @@ const Tenants = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-cinzel">Hyresgäster</h1>
+        <h1 className="text-3xl font-cinzel dark:text-white">Hyresgäster</h1>
         <button
           onClick={() => setIsModalOpen(true)}
           className="bg-primary text-white px-4 py-2 rounded-md hover:bg-secondary transition-colors flex items-center"

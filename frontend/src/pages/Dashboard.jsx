@@ -113,7 +113,7 @@ const Dashboard = () => {
           <Link
             key={stat.name}
             to={stat.link}
-            className="bg-white dark:bg-gray-900 overflow-hidden shadow rounded-lg hover:shadow-lg transition-shadow"
+            className="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg hover:shadow-lg transition-shadow dark:border dark:border-gray-700"
           >
             <div className="p-5">
               <div className="flex items-center">
@@ -136,7 +136,7 @@ const Dashboard = () => {
 
       <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Senaste aktiviteter */}
-        <div className="bg-white dark:bg-gray-900 shadow rounded-lg p-6">
+        <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 dark:border dark:border-gray-700">
           <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
             Senaste aktiviteter
           </h2>
@@ -147,7 +147,7 @@ const Dashboard = () => {
         </div>
 
         {/* Kommande händelser */}
-        <div className="bg-white dark:bg-gray-900 shadow rounded-lg p-6">
+        <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 dark:border dark:border-gray-700">
           <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
             Kommande händelser
           </h2>
