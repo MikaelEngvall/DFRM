@@ -6,11 +6,11 @@ const SessionWarning = ({ remainingTime, onExtend, onLogout }) => {
 
   return (
     <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-      <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+      <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white dark:bg-gray-800 dark:border-gray-700">
         <div className="mt-3 text-center">
-          <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100">
+          <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100 dark:bg-yellow-900">
             <svg
-              className="h-6 w-6 text-yellow-600"
+              className="h-6 w-6 text-yellow-600 dark:text-yellow-400"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -23,11 +23,11 @@ const SessionWarning = ({ remainingTime, onExtend, onLogout }) => {
               />
             </svg>
           </div>
-          <h3 className="text-lg leading-6 font-medium text-gray-900 mt-4">
+          <h3 className="text-lg leading-6 font-medium text-gray-900 dark:text-white mt-4">
             {t('auth.session.warning.title')}
           </h3>
           <div className="mt-2 px-7 py-3">
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-gray-500 dark:text-gray-300">
               {t('auth.session.warning.message', { minutes: remainingTime, plural: remainingTime })}
               {' '}
               {t('auth.session.warning.question')}
@@ -36,13 +36,13 @@ const SessionWarning = ({ remainingTime, onExtend, onLogout }) => {
           <div className="flex justify-center gap-4 px-4 py-3">
             <button
               onClick={onExtend}
-              className="px-4 py-2 bg-primary text-white text-base font-medium rounded-md shadow-sm hover:bg-secondary focus:outline-none focus:ring-2 focus:ring-primary"
+              className="px-4 py-2 bg-primary text-white text-base font-medium rounded-md shadow-sm hover:bg-secondary focus:outline-none focus:ring-2 focus:ring-primary dark:focus:ring-offset-gray-800"
             >
               {t('auth.session.warning.extend')}
             </button>
             <button
               onClick={onLogout}
-              className="px-4 py-2 bg-gray-100 text-gray-700 text-base font-medium rounded-md shadow-sm hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300"
+              className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 text-base font-medium rounded-md shadow-sm hover:bg-gray-200 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-300 dark:focus:ring-gray-500 dark:focus:ring-offset-gray-800"
             >
               {t('auth.session.warning.logout')}
             </button>

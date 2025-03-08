@@ -29,7 +29,7 @@ const LanguageSelector = () => {
     <div className="relative inline-block text-left" ref={dropdownRef}>
       <button
         type="button"
-        className="inline-flex items-center justify-center w-full rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+        className="inline-flex items-center justify-center w-full rounded-md border border-gray-300 dark:border-gray-600 shadow-sm px-4 py-2 bg-white dark:bg-gray-700 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary dark:focus:ring-offset-gray-800"
         onClick={() => setIsOpen(!isOpen)}
       >
         <FlagIcon code={currentLocale} className="mr-2" />
@@ -50,15 +50,15 @@ const LanguageSelector = () => {
       </button>
 
       {isOpen && (
-        <div className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 divide-y divide-gray-100">
+        <div className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 divide-y divide-gray-100 dark:divide-gray-700">
           <div className="py-1" role="menu" aria-orientation="vertical">
             {Object.entries(availableLocales).map(([code, { name }]) => (
               <button
                 key={code}
                 className={`${
                   currentLocale === code
-                    ? 'bg-gray-100 text-gray-900'
-                    : 'text-gray-700 hover:bg-gray-50'
+                    ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
                 } group flex items-center w-full px-4 py-2 text-sm`}
                 role="menuitem"
                 onClick={() => handleLanguageChange(code)}

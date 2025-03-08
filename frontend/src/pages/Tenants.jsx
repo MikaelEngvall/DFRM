@@ -61,11 +61,11 @@ const Tenants = () => {
       key: 'status', 
       label: 'Status',
       render: (_, tenant) => hasTenantApartment(tenant) ? (
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
           Boende
         </span>
       ) : (
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
           Ej boende
         </span>
       )
@@ -95,24 +95,72 @@ const Tenants = () => {
       key: 'keys',
       label: 'Nycklar',
       render: (keysValue, tenant) => {
+        // Om keys inte finns eller är en tom array
         if (!tenant.keys || (Array.isArray(tenant.keys) && tenant.keys.length === 0)) {
           return '-';
         }
         
+        // Om keys är en array, räkna antalet nycklar och typer
         if (Array.isArray(tenant.keys)) {
-          return tenant.keys.map(key => {
-            if (typeof key === 'string') {
-              // Om key är ett ID, hitta motsvarande objekt
-              const keyObj = keys.find(k => k.id === key);
-              return keyObj 
-                ? `${renderKeyType(keyObj.type)} (${keyObj.serie}-${keyObj.number}${keyObj.copyNumber ? ' ' + keyObj.copyNumber : ''})` 
-                : key;
-            } else if (key && key.id) {
-              // Om key är ett objekt
-              return `${renderKeyType(key.type)} (${key.serie}-${key.number}${key.copyNumber ? ' ' + key.copyNumber : ''})`;
+          // Filtrera bort ogiltiga nycklar
+          const validKeys = tenant.keys.filter(key => key && (typeof key === 'string' || key.id));
+          
+          // Räkna antalet typer (unique serie-number kombinationer)
+          const keyTypes = new Set();
+          
+          // För fullständiga nyckelobjekt (där vi har tillgång till alla egenskaper)
+          const fullKeyObjects = validKeys.filter(key => typeof key === 'object' && key.id && key.serie && key.number);
+          
+          // För nyckel-IDs, hämta motsvarande objekt från keys-listan
+          const keyIdsWithObjects = validKeys
+            .filter(key => typeof key === 'string')
+            .map(keyId => keys.find(k => k.id === keyId))
+            .filter(Boolean);
+          
+          // Kombinera alla giltiga nyckelobjekt
+          const allKeyObjects = [...fullKeyObjects, ...keyIdsWithObjects];
+          
+          // Räkna typer
+          allKeyObjects.forEach(key => {
+            keyTypes.add(`${key.type}-${key.serie}-${key.number}`);
+          });
+          
+          // Räkna det faktiska antalet nycklar baserat på kopienummer
+          let totalKeyCount = 0;
+          
+          allKeyObjects.forEach(key => {
+            if (key.copyNumber) {
+              // Om copyNumber representerar ett antal (t.ex. "3") eller en lista (t.ex. "L1,L2,L3")
+              if (key.copyNumber.includes(',')) {
+                // Räkna antalet separata kopior om flera är listade
+                totalKeyCount += key.copyNumber.split(',').length;
+              } else if (key.copyNumber.match(/^L\d+$/)) {
+                // Om copyNumber är på formen "L1", "L2" etc. räknar vi det som 1 nyckel
+                totalKeyCount += 1;
+              } else if (!isNaN(key.copyNumber)) {
+                // Om copyNumber är ett nummer, t.ex. "3", representerar det antalet kopior
+                totalKeyCount += parseInt(key.copyNumber, 10);
+              } else {
+                // Annars räknar vi det som en nyckel
+                totalKeyCount += 1;
+              }
+            } else {
+              // Om ingen copyNumber angetts, antar vi att det är 1 nyckel
+              totalKeyCount += 1;
             }
-            return '';
-          }).filter(Boolean).join(', ') || '-';
+          });
+          
+          // Om vi inte kunde beräkna antalet (inga kopienummer finns), använd antal typer
+          if (totalKeyCount === 0) {
+            totalKeyCount = allKeyObjects.length;
+          }
+          
+          // Visa både totala antalet nycklar och antalet typer
+          return (
+            <span className="inline-flex items-center justify-center min-w-[24px] px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">
+              {totalKeyCount}{keyTypes.size > 0 ? `(${keyTypes.size})` : ''}
+            </span>
+          );
         }
         
         return '-';
@@ -477,14 +525,14 @@ const Tenants = () => {
 
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Lägenhet
               </label>
               <select
                 name="apartmentId"
                 value={formData.apartmentId}
                 onChange={handleInputChange}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
+                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-primary focus:ring-primary dark:bg-gray-700 dark:text-white sm:text-sm"
               >
                 <option value="">Ingen lägenhet</option>
                 {apartments.map((apartment) => (
@@ -493,7 +541,7 @@ const Tenants = () => {
                   </option>
                 ))}
               </select>
-              <p className="mt-1 text-sm text-gray-500">
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                 En hyresgäst kan endast vara kopplad till en lägenhet, men en lägenhet kan ha flera hyresgäster.
               </p>
             </div>
@@ -501,7 +549,7 @@ const Tenants = () => {
             <div>
               <label
                 htmlFor="keyIds"
-                className="block text-sm font-medium text-gray-700 mb-1"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
               >
                 Nycklar
               </label>
@@ -511,7 +559,7 @@ const Tenants = () => {
                 multiple
                 value={formData.keyIds}
                 onChange={handleInputChange}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
+                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-primary focus:ring-primary dark:bg-gray-700 dark:text-white sm:text-sm"
                 size={Math.min(5, keys.length)}
               >
                 {keys.map((key) => (
@@ -520,7 +568,7 @@ const Tenants = () => {
                   </option>
                 ))}
               </select>
-              <p className="mt-1 text-xs text-gray-500">Håll ned Ctrl (Cmd på Mac) för att välja flera nycklar</p>
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Håll ned Ctrl (Cmd på Mac) för att välja flera nycklar</p>
             </div>
 
             <div className="sm:col-span-2">
@@ -538,7 +586,7 @@ const Tenants = () => {
               <button
                 type="button"
                 onClick={() => handleDelete(selectedTenant)}
-                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800"
               >
                 Ta bort
               </button>
@@ -562,13 +610,13 @@ const Tenants = () => {
                     keyIds: [],
                   });
                 }}
-                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
               >
                 Avbryt
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 bg-primary text-white rounded-md hover:bg-secondary"
+                className="px-4 py-2 bg-primary text-white rounded-md hover:bg-secondary dark:bg-primary dark:hover:bg-secondary"
               >
                 {selectedTenant ? 'Spara ändringar' : 'Lägg till'}
               </button>
