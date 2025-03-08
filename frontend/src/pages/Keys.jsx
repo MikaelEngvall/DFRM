@@ -31,23 +31,27 @@ const Keys = () => {
     { 
       key: 'apartment',
       label: 'Lägenhet',
-      render: (apartmentId) => {
-        if (!apartmentId) return '-';
-        const apartment = apartments.find(a => a.id === apartmentId);
-        return apartment 
-          ? `${apartment.street} ${apartment.number}, LGH ${apartment.apartmentNumber}` 
-          : '-';
+      render: (apartmentObj) => {
+        if (apartmentObj === undefined || apartmentObj === null) return '-';
+        
+        if (typeof apartmentObj === 'object' && apartmentObj.id) {
+          return `${apartmentObj.street} ${apartmentObj.number}, LGH ${apartmentObj.apartmentNumber}`;
+        }
+        
+        return '-';
       }
     },
     {
       key: 'tenant',
       label: 'Hyresgäst',
-      render: (tenantId) => {
-        if (!tenantId) return '-';
-        const tenant = tenants.find(t => t.id === tenantId);
-        return tenant 
-          ? `${tenant.firstName} ${tenant.lastName}` 
-          : '-';
+      render: (tenantObj) => {
+        if (tenantObj === undefined || tenantObj === null) return '-';
+        
+        if (typeof tenantObj === 'object' && tenantObj.id) {
+          return `${tenantObj.firstName} ${tenantObj.lastName}`;
+        }
+        
+        return '-';
       }
     },
   ];
@@ -64,6 +68,11 @@ const Keys = () => {
         apartmentService.getAllApartments(),
         tenantService.getAllTenants(),
       ]);
+      
+      console.log('Nycklar från API:', keysData);
+      console.log('Lägenheter från API:', apartmentsData);
+      console.log('Hyresgäster från API:', tenantsData);
+      
       setKeys(keysData);
       setApartments(apartmentsData);
       setTenants(tenantsData);
@@ -89,60 +98,75 @@ const Keys = () => {
     try {
       let { apartmentId, tenantId, ...keyData } = formData;
       
-      // Säkerställ att vi har giltiga värden
+      console.log('Form data före sparande:', formData);
+      
       apartmentId = apartmentId || null;
       tenantId = tenantId || null;
+      
+      console.log('Apartment ID att spara:', apartmentId);
+      console.log('Tenant ID att spara:', tenantId);
       
       let savedKey;
       
       if (selectedKey) {
-        // Uppdatera grundläggande information om nyckeln
+        console.log('Uppdaterar befintlig nyckel med ID:', selectedKey.id);
         savedKey = await keyService.updateKey(selectedKey.id, keyData);
+        console.log('Nyckel uppdaterad:', savedKey);
         
-        // Hantera lägenhet och hyresgäst separat efter att nyckeln har uppdaterats
         const updateOperations = [];
         
-        // Hantera lägenhet
-        const currentApartmentId = selectedKey?.apartment?.id || null;
+        const currentApartmentId = (selectedKey.apartment && selectedKey.apartment.id) || null;
+        console.log('Nuvarande Apartment ID:', currentApartmentId, 'Ny Apartment ID:', apartmentId);
+        
         if (apartmentId && apartmentId !== currentApartmentId) {
+          console.log('Tilldelar ny lägenhet:', apartmentId);
           updateOperations.push(keyService.assignApartment(savedKey.id, apartmentId));
         } else if (!apartmentId && currentApartmentId) {
+          console.log('Tar bort lägenhet från nyckel');
           updateOperations.push(keyService.removeApartment(savedKey.id));
         }
         
-        // Hantera hyresgäst
-        const currentTenantId = selectedKey?.tenant?.id || null;
+        const currentTenantId = (selectedKey.tenant && selectedKey.tenant.id) || null;
+        console.log('Nuvarande Tenant ID:', currentTenantId, 'Ny Tenant ID:', tenantId);
+        
         if (tenantId && tenantId !== currentTenantId) {
+          console.log('Tilldelar ny hyresgäst:', tenantId);
           updateOperations.push(keyService.assignTenant(savedKey.id, tenantId));
         } else if (!tenantId && currentTenantId) {
+          console.log('Tar bort hyresgäst från nyckel');
           updateOperations.push(keyService.removeTenant(savedKey.id));
         }
         
         if (updateOperations.length > 0) {
-          await Promise.all(updateOperations);
+          console.log('Utför', updateOperations.length, 'uppdateringsoperationer');
+          const results = await Promise.all(updateOperations);
+          console.log('Resultat av uppdateringar:', results);
         }
       } else {
-        // Skapa en ny nyckel
+        console.log('Skapar ny nyckel');
         savedKey = await keyService.createKey(keyData);
+        console.log('Nyckel skapad:', savedKey);
         
-        // Hantera relationer för ny nyckel
         const assignOperations = [];
         
-        // Tilldela lägenhet om vald
         if (apartmentId) {
+          console.log('Tilldelar lägenhet till ny nyckel:', apartmentId);
           assignOperations.push(keyService.assignApartment(savedKey.id, apartmentId));
         }
         
-        // Tilldela hyresgäst om vald
         if (tenantId) {
+          console.log('Tilldelar hyresgäst till ny nyckel:', tenantId);
           assignOperations.push(keyService.assignTenant(savedKey.id, tenantId));
         }
         
         if (assignOperations.length > 0) {
-          await Promise.all(assignOperations);
+          console.log('Utför', assignOperations.length, 'tilldelningsoperationer');
+          const results = await Promise.all(assignOperations);
+          console.log('Resultat av tilldelningar:', results);
         }
       }
       
+      console.log('Uppdaterar data efter sparande/uppdatering');
       await fetchInitialData();
       setIsModalOpen(false);
       setSelectedKey(null);
@@ -160,18 +184,28 @@ const Keys = () => {
   };
 
   const handleEdit = (key) => {
+    console.log('Redigerar nyckel:', key);
+    
     setSelectedKey(key);
+    
+    const apartmentId = (key.apartment && key.apartment.id) || '';
+    const tenantId = (key.tenant && key.tenant.id) || '';
+    
+    console.log('Lägenhet ID:', apartmentId, 'Hyresgäst ID:', tenantId);
+    
     setFormData({
-      ...key,
-      apartmentId: key.apartment?.id || '',
-      tenantId: key.tenant?.id || '',
+      type: key.type || '',
+      serie: key.serie || '',
+      number: key.number || '',
+      apartmentId: apartmentId,
+      tenantId: tenantId
     });
+    
     setIsModalOpen(true);
   };
 
   const handleDelete = async (key) => {
     setKeyToDelete(key);
-    // Visa bekräftelsemodalen (utan att stänga redigeringsmodalen)
     setIsAlertOpen(true);
   };
 
@@ -179,7 +213,6 @@ const Keys = () => {
     try {
       await keyService.deleteKey(keyToDelete.id);
       await fetchInitialData();
-      // Stäng båda modalerna efter radering
       setIsModalOpen(false);
       setIsAlertOpen(false);
       setSelectedKey(null);
@@ -194,7 +227,6 @@ const Keys = () => {
     } catch (err) {
       setError('Ett fel uppstod när nyckeln skulle tas bort');
       console.error('Error deleting key:', err);
-      // Behåll redigeringsmodalen öppen vid fel, stäng bara alertmodalen
       setIsAlertOpen(false);
       setKeyToDelete(null);
     }
