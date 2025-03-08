@@ -389,9 +389,10 @@ const Keys = () => {
           });
         }}
         title={selectedKey ? 'Redigera nyckel' : 'Lägg till nyckel'}
+        size="small"
       >
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <label
                 htmlFor="type"
@@ -433,7 +434,7 @@ const Keys = () => {
             />
 
             <FormInput
-              label="Kopienummer (t.ex. L1, L2)"
+              label="Kopienummer"
               name="copyNumber"
               value={formData.copyNumber}
               onChange={handleInputChange}

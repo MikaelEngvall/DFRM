@@ -480,9 +480,10 @@ const Tenants = () => {
           });
         }}
         title={selectedTenant ? 'Redigera hyresgäst' : 'Lägg till hyresgäst'}
+        size="small"
       >
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-2 gap-4">
             <FormInput
               label="Förnamn"
               name="firstName"
@@ -553,9 +554,6 @@ const Tenants = () => {
                   </option>
                 ))}
               </select>
-              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                En hyresgäst kan endast vara kopplad till en lägenhet, men en lägenhet kan ha flera hyresgäster.
-              </p>
             </div>
 
             <div>
@@ -580,10 +578,9 @@ const Tenants = () => {
                   </option>
                 ))}
               </select>
-              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">Håll ned Ctrl (Cmd på Mac) för att välja flera nycklar</p>
             </div>
 
-            <div className="sm:col-span-2">
+            <div className="col-span-2">
               <FormInput
                 label="Kommentar"
                 name="comment"
