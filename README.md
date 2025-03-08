@@ -1,6 +1,7 @@
 # DFRM (Digital Fastighets- och Resurshantering)
 
 Ett modernt system för hantering av lägenheter, hyresgäster och nycklar.
+![image](https://github.com/user-attachments/assets/b5f2d656-3e36-4ade-b0cc-ec721e5afedc)
 
 ## Teknisk Stack
 
