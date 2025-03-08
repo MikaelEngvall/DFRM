@@ -698,69 +698,74 @@ const Apartments = () => {
         size="small"
       >
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 gap-4">
-            <FormInput
-              label="Gata"
-              name="street"
-              value={formData.street}
-              onChange={handleInputChange}
-              required
-            />
-            <FormInput
-              label="Nummer"
-              name="number"
-              value={formData.number}
-              onChange={handleInputChange}
-              required
-            />
-            <FormInput
-              label="LGH"
-              name="apartmentNumber"
-              value={formData.apartmentNumber}
-              onChange={handleInputChange}
-              required
-            />
-            <FormInput
-              label="Postnummer"
-              name="postalCode"
-              value={formData.postalCode}
-              onChange={handleInputChange}
-              required
-            />
-            <FormInput
-              label="Stad"
-              name="city"
-              value={formData.city}
-              onChange={handleInputChange}
-              required
-            />
-            <FormInput
-              label="Antal rum"
-              name="rooms"
-              type="number"
-              value={formData.rooms}
-              onChange={handleInputChange}
-              required
-            />
-            <FormInput
-              label="Yta (m²)"
-              name="area"
-              type="number"
-              value={formData.area}
-              onChange={handleInputChange}
-              required
-            />
-            <FormInput
-              label="Hyra (kr)"
-              name="price"
-              type="number"
-              value={formData.price}
-              onChange={handleInputChange}
-              required
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-4">
+              <FormInput
+                label="Gata"
+                name="street"
+                value={formData.street}
+                onChange={handleInputChange}
+                required
+              />
+              <FormInput
+                label="LGH"
+                name="apartmentNumber"
+                value={formData.apartmentNumber}
+                onChange={handleInputChange}
+                required
+              />
+              <FormInput
+                label="Stad"
+                name="city"
+                value={formData.city}
+                onChange={handleInputChange}
+                required
+              />
+              <FormInput
+                label="Yta (m²)"
+                name="area"
+                type="number"
+                value={formData.area}
+                onChange={handleInputChange}
+                required
+              />
+            </div>
+            
+            <div className="space-y-4">
+              <FormInput
+                label="Nummer"
+                name="number"
+                value={formData.number}
+                onChange={handleInputChange}
+                required
+              />
+              <FormInput
+                label="Postnummer"
+                name="postalCode"
+                value={formData.postalCode}
+                onChange={handleInputChange}
+                required
+              />
+              <FormInput
+                label="Antal rum"
+                name="rooms"
+                type="number"
+                value={formData.rooms}
+                onChange={handleInputChange}
+                required
+              />
+              <FormInput
+                label="Hyra (kr)"
+                name="price"
+                type="number"
+                value={formData.price}
+                onChange={handleInputChange}
+                required
+              />
+            </div>
           </div>
 
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-row gap-6">
             <label className="flex items-center">
               <input
                 type="checkbox"
@@ -769,7 +774,7 @@ const Apartments = () => {
                 onChange={handleInputChange}
                 className="rounded border-gray-300 dark:border-gray-600 text-primary focus:ring-primary dark:bg-gray-700"
               />
-              <span className="ml-2 dark:text-gray-300">El ingår</span>
+              <span className="ml-2 dark:text-gray-300">El</span>
             </label>
             <label className="flex items-center">
               <input
@@ -779,7 +784,7 @@ const Apartments = () => {
                 onChange={handleInputChange}
                 className="rounded border-gray-300 dark:border-gray-600 text-primary focus:ring-primary dark:bg-gray-700"
               />
-              <span className="ml-2 dark:text-gray-300">Förråd ingår</span>
+              <span className="ml-2 dark:text-gray-300">Förråd</span>
             </label>
             <label className="flex items-center">
               <input
@@ -789,7 +794,7 @@ const Apartments = () => {
                 onChange={handleInputChange}
                 className="rounded border-gray-300 dark:border-gray-600 text-primary focus:ring-primary dark:bg-gray-700"
               />
-              <span className="ml-2 dark:text-gray-300">Internet ingår</span>
+              <span className="ml-2 dark:text-gray-300">Internet</span>
             </label>
           </div>
 
@@ -812,9 +817,6 @@ const Apartments = () => {
                   </option>
                 ))}
               </select>
-              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                Välj alla hyresgäster som står på kontraktet för denna lägenhet. Du kan bara välja hyresgäster som antingen redan bor i lägenheten eller som inte har någon lägenhet. Håll ner Ctrl (Windows) eller Cmd (Mac) för att välja flera.
-              </p>
             </div>
 
             <div>
@@ -835,9 +837,6 @@ const Apartments = () => {
                   </option>
                 ))}
               </select>
-              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                Välj alla nycklar som tillhör lägenheten. Håll ner Ctrl (Windows) eller Cmd (Mac) för att välja flera.
-              </p>
             </div>
           </div>
 
