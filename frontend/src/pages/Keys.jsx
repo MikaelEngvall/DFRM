@@ -395,7 +395,7 @@ const Keys = () => {
             <div>
               <label
                 htmlFor="type"
-                className="block text-sm font-medium text-gray-700 mb-1"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
               >
                 Typ
               </label>
@@ -404,7 +404,7 @@ const Keys = () => {
                 name="type"
                 value={formData.type}
                 onChange={handleInputChange}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
+                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-primary focus:ring-primary dark:bg-gray-700 dark:text-white sm:text-sm"
                 required
               >
                 <option value="">Välj typ</option>
@@ -443,7 +443,7 @@ const Keys = () => {
             <div>
               <label
                 htmlFor="apartmentId"
-                className="block text-sm font-medium text-gray-700 mb-1"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
               >
                 Lägenhet
               </label>
@@ -452,7 +452,7 @@ const Keys = () => {
                 name="apartmentId"
                 value={formData.apartmentId}
                 onChange={handleInputChange}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
+                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-primary focus:ring-primary dark:bg-gray-700 dark:text-white sm:text-sm"
                 required
               >
                 <option value="">Välj lägenhet</option>
@@ -467,7 +467,7 @@ const Keys = () => {
             <div>
               <label
                 htmlFor="tenantId"
-                className="block text-sm font-medium text-gray-700 mb-1"
+                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
               >
                 Hyresgäst
               </label>
@@ -476,7 +476,7 @@ const Keys = () => {
                 name="tenantId"
                 value={formData.tenantId}
                 onChange={handleInputChange}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
+                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-primary focus:ring-primary dark:bg-gray-700 dark:text-white sm:text-sm"
               >
                 <option value="">Ingen hyresgäst</option>
                 {tenants.map((tenant) => (
@@ -493,7 +493,7 @@ const Keys = () => {
               <button
                 type="button"
                 onClick={() => handleDelete(selectedKey)}
-                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800"
               >
                 Ta bort
               </button>
@@ -513,13 +513,13 @@ const Keys = () => {
                     tenantId: '',
                   });
                 }}
-                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
               >
                 Avbryt
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 bg-primary text-white rounded-md hover:bg-secondary"
+                className="px-4 py-2 bg-primary text-white rounded-md hover:bg-secondary dark:bg-primary dark:hover:bg-secondary"
               >
                 {selectedKey ? 'Spara ändringar' : 'Lägg till'}
               </button>

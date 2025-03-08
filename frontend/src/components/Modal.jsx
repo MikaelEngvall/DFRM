@@ -1,8 +1,17 @@
 import React from 'react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 
-const Modal = ({ isOpen, onClose, title, children }) => {
+const Modal = ({ isOpen, onClose, title, children, size = 'large' }) => {
   if (!isOpen) return null;
+
+  // Avgör vilken breddinställning som ska användas baserat på size-prop
+  const sizeClasses = {
+    small: 'sm:max-w-lg',
+    medium: 'sm:max-w-2xl',
+    large: 'sm:max-w-4xl'
+  };
+
+  const maxWidthClass = sizeClasses[size] || sizeClasses.large;
 
   return (
     <div className="fixed inset-0 z-40 overflow-y-auto">
@@ -14,7 +23,7 @@ const Modal = ({ isOpen, onClose, title, children }) => {
         {/* Centrerad modal */}
         <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
         
-        <div className="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full">
+        <div className={`inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle ${maxWidthClass} sm:w-full`}>
           <div className="flex justify-between items-start px-6 pt-5 pb-4 sm:p-6 sm:pb-4">
             <h3 className="text-lg leading-6 font-bold text-gray-900 dark:text-white">
               {title}

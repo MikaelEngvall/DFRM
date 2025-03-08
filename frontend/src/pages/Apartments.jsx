@@ -695,9 +695,10 @@ const Apartments = () => {
           });
         }}
         title={selectedApartment ? 'Redigera lägenhet' : 'Lägg till lägenhet'}
+        size="small"
       >
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4">
             <FormInput
               label="Gata"
               name="street"
@@ -766,9 +767,9 @@ const Apartments = () => {
                 name="electricity"
                 checked={formData.electricity}
                 onChange={handleInputChange}
-                className="rounded border-gray-300 text-primary focus:ring-primary"
+                className="rounded border-gray-300 dark:border-gray-600 text-primary focus:ring-primary dark:bg-gray-700"
               />
-              <span className="ml-2">El ingår</span>
+              <span className="ml-2 dark:text-gray-300">El ingår</span>
             </label>
             <label className="flex items-center">
               <input
@@ -776,9 +777,9 @@ const Apartments = () => {
                 name="storage"
                 checked={formData.storage}
                 onChange={handleInputChange}
-                className="rounded border-gray-300 text-primary focus:ring-primary"
+                className="rounded border-gray-300 dark:border-gray-600 text-primary focus:ring-primary dark:bg-gray-700"
               />
-              <span className="ml-2">Förråd ingår</span>
+              <span className="ml-2 dark:text-gray-300">Förråd ingår</span>
             </label>
             <label className="flex items-center">
               <input
@@ -786,15 +787,15 @@ const Apartments = () => {
                 name="internet"
                 checked={formData.internet}
                 onChange={handleInputChange}
-                className="rounded border-gray-300 text-primary focus:ring-primary"
+                className="rounded border-gray-300 dark:border-gray-600 text-primary focus:ring-primary dark:bg-gray-700"
               />
-              <span className="ml-2">Internet ingår</span>
+              <span className="ml-2 dark:text-gray-300">Internet ingår</span>
             </label>
           </div>
 
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Hyresgäster
               </label>
               <select
@@ -803,7 +804,7 @@ const Apartments = () => {
                 name="tenantIds"
                 value={formData.tenantIds || []}
                 onChange={handleInputChange}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
+                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-primary focus:ring-primary dark:bg-gray-700 dark:text-white sm:text-sm"
               >
                 {getAvailableTenants(tenants, selectedApartment?.tenants).map((tenant) => (
                   <option key={tenant.id} value={tenant.id}>
@@ -811,13 +812,13 @@ const Apartments = () => {
                   </option>
                 ))}
               </select>
-              <p className="mt-1 text-sm text-gray-500">
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                 Välj alla hyresgäster som står på kontraktet för denna lägenhet. Du kan bara välja hyresgäster som antingen redan bor i lägenheten eller som inte har någon lägenhet. Håll ner Ctrl (Windows) eller Cmd (Mac) för att välja flera.
               </p>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Nycklar
               </label>
               <select
@@ -826,7 +827,7 @@ const Apartments = () => {
                 name="keyIds"
                 value={formData.keyIds || []}
                 onChange={handleInputChange}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
+                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-primary focus:ring-primary dark:bg-gray-700 dark:text-white sm:text-sm"
               >
                 {keys.map((key) => (
                   <option key={key.id} value={key.id}>
@@ -834,7 +835,7 @@ const Apartments = () => {
                   </option>
                 ))}
               </select>
-              <p className="mt-1 text-sm text-gray-500">
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
                 Välj alla nycklar som tillhör lägenheten. Håll ner Ctrl (Windows) eller Cmd (Mac) för att välja flera.
               </p>
             </div>
@@ -845,7 +846,7 @@ const Apartments = () => {
               <button
                 type="button"
                 onClick={() => handleDelete(selectedApartment)}
-                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800"
               >
                 Ta bort
               </button>
@@ -872,13 +873,13 @@ const Apartments = () => {
                     keyIds: [],
                   });
                 }}
-                className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
               >
                 Avbryt
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 bg-primary text-white rounded-md hover:bg-secondary"
+                className="px-4 py-2 bg-primary text-white rounded-md hover:bg-secondary dark:bg-primary dark:hover:bg-secondary"
               >
                 {selectedApartment ? 'Spara ändringar' : 'Lägg till'}
               </button>
