@@ -14,6 +14,7 @@ const AVAILABLE_LOCALES = {
   uk: { name: 'Українська', translations: uk },
 };
 
+// Denna funktion används inte längre som standard men behålls för framtida flexibilitet
 const detectBrowserLanguage = () => {
   const languages = navigator.languages || [navigator.language || navigator.userLanguage];
   
@@ -24,8 +25,8 @@ const detectBrowserLanguage = () => {
     }
   }
 
-  // Fallback till engelska om inget matchande språk hittas
-  return 'en';
+  // Fallback till svenska om inget matchande språk hittas
+  return DEFAULT_LOCALE;
 };
 
 const LocaleContext = createContext();
@@ -36,7 +37,8 @@ export const LocaleProvider = ({ children }) => {
     if (stored && AVAILABLE_LOCALES[stored]) {
       return stored;
     }
-    return detectBrowserLanguage();
+    // Använd alltid DEFAULT_LOCALE (svenska) istället för detectBrowserLanguage
+    return DEFAULT_LOCALE;
   });
 
   useEffect(() => {
