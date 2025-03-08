@@ -51,11 +51,13 @@ public class TenantService {
                 apartmentRepository.save(apartment);
             }
             
-            // Ta bort hyresgästens referens från nyckeln om den finns
-            if (tenant.getKey() != null) {
-                Key key = tenant.getKey();
-                key.setTenant(null);
-                keyRepository.save(key);
+            // Ta bort hyresgästens referens från alla nycklar om de finns
+            if (tenant.getKeys() != null && !tenant.getKeys().isEmpty()) {
+                for (Key key : new ArrayList<>(tenant.getKeys())) {
+                    key.setTenant(null);
+                    keyRepository.save(key);
+                }
+                tenant.getKeys().clear();
             }
             
             tenantRepository.deleteById(id);
@@ -113,12 +115,24 @@ public class TenantService {
                             // Ta bort nyckeln från tidigare hyresgäst om den finns
                             if (key.getTenant() != null) {
                                 Tenant oldTenant = key.getTenant();
-                                oldTenant.setKey(null);
-                                tenantRepository.save(oldTenant);
+                                // Säkerställ att nyckelreferensen tas bort från gamla hyresgästens lista
+                                if (oldTenant.getKeys() != null) {
+                                    oldTenant.getKeys().removeIf(k -> k.getId().equals(key.getId()));
+                                    tenantRepository.save(oldTenant);
+                                }
                             }
 
                             // Tilldela nyckeln till den nya hyresgästen
-                            tenant.setKey(key);
+                            // Initiera keys-listan om den är null
+                            if (tenant.getKeys() == null) {
+                                tenant.setKeys(new ArrayList<>());
+                            }
+                            
+                            // Lägg bara till nyckeln om den inte redan finns i listan
+                            if (tenant.getKeys().stream().noneMatch(k -> k.getId().equals(key.getId()))) {
+                                tenant.getKeys().add(key);
+                            }
+                            
                             key.setTenant(tenant);
 
                             keyRepository.save(key);
@@ -139,15 +153,37 @@ public class TenantService {
                 });
     }
 
-    public Optional<Tenant> removeKey(String tenantId) {
+    public Optional<Tenant> removeKey(String tenantId, String keyId) {
+        return tenantRepository.findById(tenantId)
+                .flatMap(tenant -> keyRepository.findById(keyId)
+                        .map(key -> {
+                            // Ta bort nyckeln från hyresgästens lista
+                            if (tenant.getKeys() != null) {
+                                tenant.getKeys().removeIf(k -> k.getId().equals(key.getId()));
+                            }
+                            
+                            // Återställ tenant-referensen i nyckeln
+                            if (key.getTenant() != null && key.getTenant().getId().equals(tenant.getId())) {
+                                key.setTenant(null);
+                                keyRepository.save(key);
+                            }
+                            
+                            return tenantRepository.save(tenant);
+                        }));
+    }
+
+    public Optional<Tenant> removeAllKeys(String tenantId) {
         return tenantRepository.findById(tenantId)
                 .map(tenant -> {
-                    if (tenant.getKey() != null) {
-                        Key key = tenant.getKey();
-                        key.setTenant(null);
-                        keyRepository.save(key);
+                    if (tenant.getKeys() != null && !tenant.getKeys().isEmpty()) {
+                        // Ta bort tenant-referensen från alla nycklar
+                        for (Key key : tenant.getKeys()) {
+                            key.setTenant(null);
+                            keyRepository.save(key);
+                        }
+                        // Rensa nyckel-listan
+                        tenant.getKeys().clear();
                     }
-                    tenant.setKey(null);
                     return tenantRepository.save(tenant);
                 });
     }
@@ -177,7 +213,7 @@ public class TenantService {
                         // Behåll original-ID och relationer
                         updatedTenant.setId(id);
                         updatedTenant.setApartment(existingTenant.getApartment());
-                        updatedTenant.setKey(existingTenant.getKey());
+                        updatedTenant.setKeys(existingTenant.getKeys());
                         
                         // Spara och returnera uppdaterad hyresgäst
                         return tenantRepository.save(updatedTenant);
@@ -186,5 +222,36 @@ public class TenantService {
                         return existingTenant; // Vid fel, returnera originalet
                     }
                 });
+    }
+
+    public Optional<Tenant> assignTenant(String keyId, String tenantId) {
+        return tenantRepository.findById(tenantId)
+                .flatMap(tenant -> keyRepository.findById(keyId)
+                        .map(key -> {
+                            // Ta bort nyckeln från tidigare hyresgäst om den finns
+                            if (key.getTenant() != null) {
+                                Tenant oldTenant = key.getTenant();
+                                if (oldTenant.getKeys() != null) {
+                                    oldTenant.getKeys().removeIf(k -> k.getId().equals(key.getId()));
+                                    tenantRepository.save(oldTenant);
+                                }
+                            }
+                            
+                            // Tilldela nyckeln till den nya hyresgästen
+                            key.setTenant(tenant);
+                            
+                            // Initiera keys-listan om den är null
+                            if (tenant.getKeys() == null) {
+                                tenant.setKeys(new ArrayList<>());
+                            }
+                            
+                            // Lägg bara till nyckeln om den inte redan finns i listan
+                            if (tenant.getKeys().stream().noneMatch(k -> k.getId().equals(key.getId()))) {
+                                tenant.getKeys().add(key);
+                            }
+                            
+                            keyRepository.save(key);
+                            return tenant;
+                        }));
     }
 } 

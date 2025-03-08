@@ -38,15 +38,13 @@ const Tenants = () => {
     firstName: '',
     lastName: '',
     personnummer: '',
+    email: '',
     phone: '',
-    street: '',
-    postalCode: '',
-    city: '',
     movedInDate: '',
     resiliationDate: '',
     comment: '',
     apartmentId: '',
-    keyId: '',
+    keyIds: [],
   });
 
   // Hjälpfunktion för att kontrollera om en hyresgäst har lägenhet
@@ -94,14 +92,30 @@ const Tenants = () => {
       }
     },
     {
-      key: 'key',
-      label: 'Nyckel',
-      render: (keyId) => {
-        if (!keyId) return '-';
-        const key = keys.find(k => k.id === keyId);
-        return key 
-          ? `${renderKeyType(key.type)} (${key.serie}-${key.number})` 
-          : '-';
+      key: 'keys',
+      label: 'Nycklar',
+      render: (keysValue, tenant) => {
+        if (!tenant.keys || (Array.isArray(tenant.keys) && tenant.keys.length === 0)) {
+          return '-';
+        }
+        
+        if (Array.isArray(tenant.keys)) {
+          return tenant.keys.map(key => {
+            if (typeof key === 'string') {
+              // Om key är ett ID, hitta motsvarande objekt
+              const keyObj = keys.find(k => k.id === key);
+              return keyObj 
+                ? `${renderKeyType(keyObj.type)} (${keyObj.serie}-${keyObj.number}${keyObj.copyNumber ? ' ' + keyObj.copyNumber : ''})` 
+                : key;
+            } else if (key && key.id) {
+              // Om key är ett objekt
+              return `${renderKeyType(key.type)} (${key.serie}-${key.number}${key.copyNumber ? ' ' + key.copyNumber : ''})`;
+            }
+            return '';
+          }).filter(Boolean).join(', ') || '-';
+        }
+        
+        return '-';
       }
     },
   ];
@@ -131,21 +145,34 @@ const Tenants = () => {
   };
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    const { name, value, type } = e.target;
+    
+    if (name === 'keyIds') {
+      // Hantera flervalslista för nycklar
+      const selectedKeyIds = Array.from(
+        e.target.selectedOptions || [],
+        option => option.value
+      );
+      setFormData(prev => ({
+        ...prev,
+        keyIds: selectedKeyIds
+      }));
+    } else {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      let { apartmentId, keyId, ...tenantData } = formData;
+      let { apartmentId, keyIds, ...tenantData } = formData;
       
       // Säkerställ att vi har giltiga värden
       apartmentId = apartmentId || null;
-      keyId = keyId || null;
+      keyIds = keyIds || [];
       
       // Rensa adressfält som ska ärvas från lägenheten
       tenantData.street = '';
@@ -171,7 +198,7 @@ const Tenants = () => {
           ? await tenantService.patchTenant(selectedTenant.id, changedFields)
           : selectedTenant;
         
-        // Hantera lägenhet och nyckel separat efter att hyresgästen har uppdaterats
+        // Hantera lägenhet och nycklar separat efter att hyresgästen har uppdaterats
         const updateOperations = [];
         
         // Hantera lägenhet
@@ -182,12 +209,25 @@ const Tenants = () => {
           updateOperations.push(tenantService.removeApartment(savedTenant.id));
         }
         
-        // Hantera nyckel
-        const currentKeyId = selectedTenant?.key?.id || null;
-        if (keyId && keyId !== currentKeyId) {
+        // Hantera nycklar - mer komplext med flera nycklar
+        const currentKeyIds = Array.isArray(selectedTenant?.keys) 
+          ? selectedTenant.keys.map(k => typeof k === 'object' ? k.id : k) 
+          : [];
+        
+        // Nycklar att lägga till (finns i keyIds men inte i currentKeyIds)
+        const keysToAdd = keyIds.filter(id => !currentKeyIds.includes(id));
+        
+        // Nycklar att ta bort (finns i currentKeyIds men inte i keyIds)
+        const keysToRemove = currentKeyIds.filter(id => !keyIds.includes(id));
+        
+        // Lägg till nya nycklar
+        for (const keyId of keysToAdd) {
           updateOperations.push(tenantService.assignKey(savedTenant.id, keyId));
-        } else if (!keyId && currentKeyId) {
-          updateOperations.push(tenantService.removeKey(savedTenant.id));
+        }
+        
+        // Ta bort nycklar som inte längre ska vara kopplade
+        for (const keyId of keysToRemove) {
+          updateOperations.push(tenantService.removeKey(savedTenant.id, keyId));
         }
         
         if (updateOperations.length > 0) {
@@ -205,8 +245,8 @@ const Tenants = () => {
           assignOperations.push(tenantService.assignApartment(savedTenant.id, apartmentId));
         }
         
-        // Tilldela nyckel om vald
-        if (keyId) {
+        // Hantera nycklar för ny hyresgäst
+        for (const keyId of keyIds) {
           assignOperations.push(tenantService.assignKey(savedTenant.id, keyId));
         }
         
@@ -222,15 +262,13 @@ const Tenants = () => {
         firstName: '',
         lastName: '',
         personnummer: '',
+        email: '',
         phone: '',
-        street: '',
-        postalCode: '',
-        city: '',
         movedInDate: '',
         resiliationDate: '',
         comment: '',
         apartmentId: '',
-        keyId: '',
+        keyIds: [],
       });
     } catch (err) {
       setError('Ett fel uppstod när hyresgästen skulle sparas');
@@ -240,11 +278,40 @@ const Tenants = () => {
 
   const handleEdit = (tenant) => {
     setSelectedTenant(tenant);
+    
+    let apartmentId = '';
+    if (tenant.apartment) {
+      if (typeof tenant.apartment === 'object') {
+        apartmentId = tenant.apartment.id || '';
+      } else if (typeof tenant.apartment === 'string') {
+        apartmentId = tenant.apartment;
+      }
+    }
+    
+    // Extrahera nyckel-ID från tenant.keys
+    let keyIds = [];
+    if (Array.isArray(tenant.keys)) {
+      keyIds = tenant.keys.map(key => {
+        if (typeof key === 'object' && key.id) {
+          return key.id;
+        }
+        return key;
+      }).filter(Boolean);
+    }
+    
     setFormData({
-      ...tenant,
-      apartmentId: tenant.apartment?.id || '',
-      keyId: tenant.key?.id || '',
+      firstName: tenant.firstName || '',
+      lastName: tenant.lastName || '',
+      personnummer: tenant.personnummer || '',
+      email: tenant.email || '',
+      phone: tenant.phone || '',
+      movedInDate: tenant.movedInDate ? tenant.movedInDate.substring(0, 10) : '',
+      resiliationDate: tenant.resiliationDate ? tenant.resiliationDate.substring(0, 10) : '',
+      comment: tenant.comment || '',
+      apartmentId: apartmentId,
+      keyIds: keyIds,
     });
+    
     setIsModalOpen(true);
   };
 
@@ -267,15 +334,13 @@ const Tenants = () => {
         firstName: '',
         lastName: '',
         personnummer: '',
+        email: '',
         phone: '',
-        street: '',
-        postalCode: '',
-        city: '',
         movedInDate: '',
         resiliationDate: '',
         comment: '',
         apartmentId: '',
-        keyId: '',
+        keyIds: [],
       });
     } catch (err) {
       setError('Ett fel uppstod när hyresgästen skulle tas bort');
@@ -345,15 +410,13 @@ const Tenants = () => {
             firstName: '',
             lastName: '',
             personnummer: '',
+            email: '',
             phone: '',
-            street: '',
-            postalCode: '',
-            city: '',
             movedInDate: '',
             resiliationDate: '',
             comment: '',
             apartmentId: '',
-            keyId: '',
+            keyIds: [],
           });
         }}
         title={selectedTenant ? 'Redigera hyresgäst' : 'Lägg till hyresgäst'}
@@ -381,6 +444,12 @@ const Tenants = () => {
               onChange={handleInputChange}
               placeholder="ÅÅÅÅMMDDXXXX"
               required
+            />
+            <FormInput
+              label="E-post"
+              name="email"
+              value={formData.email}
+              onChange={handleInputChange}
             />
             <FormInput
               label="Telefon"
@@ -430,22 +499,28 @@ const Tenants = () => {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Nyckel
+              <label
+                htmlFor="keyIds"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Nycklar
               </label>
               <select
-                name="keyId"
-                value={formData.keyId}
+                id="keyIds"
+                name="keyIds"
+                multiple
+                value={formData.keyIds}
                 onChange={handleInputChange}
                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary focus:ring-primary sm:text-sm"
+                size={Math.min(5, keys.length)}
               >
-                <option value="">Ingen nyckel</option>
                 {keys.map((key) => (
                   <option key={key.id} value={key.id}>
-                    {`${renderKeyType(key.type)} - ${key.serie}-${key.number}`}
+                    {renderKeyType(key.type)} ({key.serie}-{key.number}{key.copyNumber ? ' ' + key.copyNumber : ''})
                   </option>
                 ))}
               </select>
+              <p className="mt-1 text-xs text-gray-500">Håll ned Ctrl (Cmd på Mac) för att välja flera nycklar</p>
             </div>
 
             <div className="sm:col-span-2">
@@ -478,15 +553,13 @@ const Tenants = () => {
                     firstName: '',
                     lastName: '',
                     personnummer: '',
+                    email: '',
                     phone: '',
-                    street: '',
-                    postalCode: '',
-                    city: '',
                     movedInDate: '',
                     resiliationDate: '',
                     comment: '',
                     apartmentId: '',
-                    keyId: '',
+                    keyIds: [],
                   });
                 }}
                 className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"

@@ -20,6 +20,7 @@ const Keys = () => {
     type: '',
     serie: '',
     number: '',
+    copyNumber: '',
     apartmentId: '',
     tenantId: '',
   });
@@ -35,6 +36,7 @@ const Keys = () => {
     },
     { key: 'serie', label: 'Serie' },
     { key: 'number', label: 'Nummer' },
+    { key: 'copyNumber', label: 'Kopia' },
     { 
       key: 'apartment',
       label: 'Lägenhet',
@@ -243,6 +245,7 @@ const Keys = () => {
         type: '',
         serie: '',
         number: '',
+        copyNumber: '',
         apartmentId: '',
         tenantId: '',
       });
@@ -282,6 +285,7 @@ const Keys = () => {
       type: key.type || '',
       serie: key.serie || '',
       number: key.number || '',
+      copyNumber: key.copyNumber || '',
       apartmentId: apartmentId,
       tenantId: tenantId
     });
@@ -306,6 +310,7 @@ const Keys = () => {
         type: '',
         serie: '',
         number: '',
+        copyNumber: '',
         apartmentId: '',
         tenantId: '',
       });
@@ -378,6 +383,7 @@ const Keys = () => {
             type: '',
             serie: '',
             number: '',
+            copyNumber: '',
             apartmentId: '',
             tenantId: '',
           });
@@ -424,6 +430,14 @@ const Keys = () => {
               value={formData.number}
               onChange={handleInputChange}
               required
+            />
+
+            <FormInput
+              label="Kopienummer (t.ex. L1, L2)"
+              name="copyNumber"
+              value={formData.copyNumber}
+              onChange={handleInputChange}
+              placeholder="Valfritt"
             />
 
             <div>
@@ -494,6 +508,7 @@ const Keys = () => {
                     type: '',
                     serie: '',
                     number: '',
+                    copyNumber: '',
                     apartmentId: '',
                     tenantId: '',
                   });

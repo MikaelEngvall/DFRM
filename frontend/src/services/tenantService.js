@@ -81,9 +81,15 @@ const tenantService = {
     return response.data;
   },
 
-  // Ta bort nyckel från en hyresgäst
-  removeKey: async (tenantId) => {
-    const response = await api.delete(`/api/tenants/${tenantId}/key`);
+  // Ta bort en specifik nyckel från en hyresgäst
+  removeKey: async (tenantId, keyId) => {
+    const response = await api.delete(`/api/tenants/${tenantId}/key/${keyId}`);
+    return response.data;
+  },
+
+  // Ta bort alla nycklar från en hyresgäst
+  removeAllKeys: async (tenantId) => {
+    const response = await api.delete(`/api/tenants/${tenantId}/keys`);
     return response.data;
   },
 };

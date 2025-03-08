@@ -104,26 +104,73 @@ const Apartments = () => {
       key: 'keys',
       label: 'Nycklar',
       render: (keysValue, apartment) => {
-        console.log('Rendering keys column:', keysValue, apartment);
+        // Om keys inte finns eller är en tom array
+        if (!keysValue || (Array.isArray(keysValue) && keysValue.length === 0)) return '0';
         
-        if (!keysValue || (Array.isArray(keysValue) && keysValue.length === 0)) return '-';
-        
-        // Om keys är en array av objekt eller ID-strängar
+        // Om keys är en array, räkna antalet nycklar
         if (Array.isArray(keysValue)) {
-          return keysValue.map(key => {
-            if (typeof key === 'string') {
-              // Om key är ett ID, hitta motsvarande objekt
-              const keyObj = keys.find(k => k.id === key);
-              return keyObj ? `${renderKeyType(keyObj.type)} (${keyObj.serie}-${keyObj.number})` : key;
-            } else if (key && key.id) {
-              // Om key är ett objekt
-              return `${renderKeyType(key.type)} (${key.serie}-${key.number})`;
+          // Filtrera bort ogiltiga nycklar
+          const validKeys = keysValue.filter(key => key && (typeof key === 'string' || key.id));
+          
+          // Räkna antalet typer (unique serie-number kombinationer)
+          const keyTypes = new Set();
+          
+          // För fullständiga nyckelobjekt (där vi har tillgång till alla egenskaper)
+          const fullKeyObjects = validKeys.filter(key => typeof key === 'object' && key.id && key.serie && key.number);
+          
+          // För nyckel-IDs, hämta motsvarande objekt från keys-listan
+          const keyIdsWithObjects = validKeys
+            .filter(key => typeof key === 'string')
+            .map(keyId => keys.find(k => k.id === keyId))
+            .filter(Boolean);
+          
+          // Kombinera alla giltiga nyckelobjekt
+          const allKeyObjects = [...fullKeyObjects, ...keyIdsWithObjects];
+          
+          // Räkna typer
+          allKeyObjects.forEach(key => {
+            keyTypes.add(`${key.type}-${key.serie}-${key.number}`);
+          });
+          
+          // Räkna det faktiska antalet nycklar baserat på kopienummer
+          let totalKeyCount = 0;
+          
+          allKeyObjects.forEach(key => {
+            if (key.copyNumber) {
+              // Om copyNumber representerar ett antal (t.ex. "3") eller en lista (t.ex. "L1,L2,L3")
+              if (key.copyNumber.includes(',')) {
+                // Räkna antalet separata kopior om flera är listade
+                totalKeyCount += key.copyNumber.split(',').length;
+              } else if (key.copyNumber.match(/^L\d+$/)) {
+                // Om copyNumber är på formen "L1", "L2" etc. räknar vi det som 1 nyckel
+                totalKeyCount += 1;
+              } else if (!isNaN(key.copyNumber)) {
+                // Om copyNumber är ett nummer, t.ex. "3", representerar det antalet kopior
+                totalKeyCount += parseInt(key.copyNumber, 10);
+              } else {
+                // Annars räknar vi det som en nyckel
+                totalKeyCount += 1;
+              }
+            } else {
+              // Om ingen copyNumber angetts, antar vi att det är 1 nyckel
+              totalKeyCount += 1;
             }
-            return '';
-          }).filter(Boolean).join(', ') || '-';
+          });
+          
+          // Om vi inte kunde beräkna antalet (inga kopienummer finns), använd antal typer
+          if (totalKeyCount === 0) {
+            totalKeyCount = allKeyObjects.length;
+          }
+          
+          // Visa både totala antalet nycklar och antalet typer
+          return (
+            <span className="inline-flex items-center justify-center min-w-[24px] px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+              {totalKeyCount}{keyTypes.size > 0 ? `(${keyTypes.size})` : ''}
+            </span>
+          );
         }
         
-        return '-';
+        return '0';
       }
     },
   ];
@@ -783,7 +830,7 @@ const Apartments = () => {
               >
                 {keys.map((key) => (
                   <option key={key.id} value={key.id}>
-                    {`${renderKeyType(key.type)} - ${key.serie}-${key.number}`}
+                    {`${renderKeyType(key.type)} - ${key.serie}-${key.number}${key.copyNumber ? ' ' + key.copyNumber : ''}`}
                   </option>
                 ))}
               </select>

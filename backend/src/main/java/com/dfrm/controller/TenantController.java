@@ -87,9 +87,18 @@ public class TenantController {
                 .orElse(ResponseEntity.notFound().build());
     }
     
-    @DeleteMapping("/{id}/key")
-    public ResponseEntity<Tenant> removeKey(@PathVariable String id) {
-        return tenantService.removeKey(id)
+    @DeleteMapping("/{id}/key/{keyId}")
+    public ResponseEntity<Tenant> removeKey(
+            @PathVariable String id,
+            @PathVariable String keyId) {
+        return tenantService.removeKey(id, keyId)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+    
+    @DeleteMapping("/{id}/keys")
+    public ResponseEntity<Tenant> removeAllKeys(@PathVariable String id) {
+        return tenantService.removeAllKeys(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }

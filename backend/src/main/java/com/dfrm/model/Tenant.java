@@ -1,6 +1,8 @@
 package com.dfrm.model;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.DBRef;
@@ -44,5 +46,5 @@ public class Tenant {
         property = "id"
     )
     @JsonIdentityReference(alwaysAsId = true)
-    private Key key;
+    private List<Key> keys = new ArrayList<>();
 } 
