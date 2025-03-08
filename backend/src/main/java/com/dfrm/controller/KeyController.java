@@ -150,8 +150,10 @@ public class KeyController {
                         updatedKey.setTenant(existingKey.getTenant());
                         
                         // Spara och returnera uppdaterad nyckel
-                        return ResponseEntity.ok(keyService.saveKey(updatedKey));
+                        Key savedKey = keyService.saveKey(updatedKey);
+                        return ResponseEntity.ok(savedKey);
                     } catch (Exception e) {
+                        e.printStackTrace();
                         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
                     }
                 })
