@@ -25,7 +25,14 @@ const Keys = () => {
   });
 
   const columns = [
-    { key: 'type', label: 'Typ' },
+    { 
+      key: 'type', 
+      label: 'Typ',
+      render: (typeValue) => {
+        const typeOption = keyTypes.find(t => t.value === typeValue);
+        return typeOption ? typeOption.label : typeValue;
+      }
+    },
     { key: 'serie', label: 'Serie' },
     { key: 'number', label: 'Nummer' },
     { 
@@ -310,7 +317,15 @@ const Keys = () => {
     }
   };
 
-  const keyTypes = ['Huvudnyckel', 'Lägenhetsnyckel', 'Förrådsnyckel', 'Portnyckel'];
+  const keyTypes = [
+    { value: 'D', label: 'Dörr (D)' },
+    { value: 'P', label: 'Post (P)' },
+    { value: 'T', label: 'Tvätt (T)' },
+    { value: 'F', label: 'Förråd (F)' },
+    { value: 'G', label: 'Garage (G)' },
+    { value: 'HN', label: 'Huvudnyckel (HN)' },
+    { value: 'Ö', label: 'Övrigt (Ö)' }
+  ];
 
   if (isLoading) {
     return (
@@ -388,8 +403,8 @@ const Keys = () => {
               >
                 <option value="">Välj typ</option>
                 {keyTypes.map((type) => (
-                  <option key={type} value={type}>
-                    {type}
+                  <option key={type.value} value={type.value}>
+                    {type.label}
                   </option>
                 ))}
               </select>

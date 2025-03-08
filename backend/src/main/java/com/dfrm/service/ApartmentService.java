@@ -2,6 +2,7 @@ package com.dfrm.service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.stereotype.Service;
@@ -10,6 +11,8 @@ import com.dfrm.model.Apartment;
 import com.dfrm.repository.ApartmentRepository;
 import com.dfrm.repository.KeyRepository;
 import com.dfrm.repository.TenantRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import lombok.RequiredArgsConstructor;
 
@@ -152,5 +155,41 @@ public class ApartmentService {
                             keyRepository.save(key);
                             return apartmentRepository.save(apartment);
                         }));
+    }
+
+    public Optional<Apartment> partialUpdate(String id, Map<String, Object> updates) {
+        return apartmentRepository.findById(id)
+                .map(existingApartment -> {
+                    // Applicera uppdateringarna till lägenheten, men ignorera relations-fält
+                    try {
+                        ObjectMapper objectMapper = new ObjectMapper();
+                        objectMapper.registerModule(new JavaTimeModule()); // Stöd för LocalDate
+                        
+                        // Konvertera existerande lägenhet till Map
+                        Map<String, Object> apartmentMap = objectMapper.convertValue(existingApartment, Map.class);
+                        
+                        // Applicera endast de fält som skickats in
+                        for (Map.Entry<String, Object> entry : updates.entrySet()) {
+                            // Ignorera ID-fältet och relationsfält
+                            if (!entry.getKey().equals("id") && !entry.getKey().equals("tenants") && !entry.getKey().equals("keys")) {
+                                apartmentMap.put(entry.getKey(), entry.getValue());
+                            }
+                        }
+                        
+                        // Konvertera tillbaka till Apartment-objekt med uppdaterade fält
+                        Apartment updatedApartment = objectMapper.convertValue(apartmentMap, Apartment.class);
+                        
+                        // Behåll original-ID och relationer
+                        updatedApartment.setId(id);
+                        updatedApartment.setTenants(existingApartment.getTenants());
+                        updatedApartment.setKeys(existingApartment.getKeys());
+                        
+                        // Spara och returnera uppdaterad lägenhet
+                        return apartmentRepository.save(updatedApartment);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        return existingApartment; // Vid fel, returnera originalet
+                    }
+                });
     }
 } 

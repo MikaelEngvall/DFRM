@@ -3,6 +3,7 @@ package com.dfrm.service;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.stereotype.Service;
@@ -13,6 +14,8 @@ import com.dfrm.model.Tenant;
 import com.dfrm.repository.ApartmentRepository;
 import com.dfrm.repository.KeyRepository;
 import com.dfrm.repository.TenantRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import lombok.RequiredArgsConstructor;
 
@@ -139,6 +142,42 @@ public class TenantService {
                     }
                     tenant.setKey(null);
                     return tenantRepository.save(tenant);
+                });
+    }
+
+    public Optional<Tenant> partialUpdate(String id, Map<String, Object> updates) {
+        return tenantRepository.findById(id)
+                .map(existingTenant -> {
+                    // Applicera uppdateringarna till hyresgästen, men ignorera relations-fält
+                    try {
+                        ObjectMapper objectMapper = new ObjectMapper();
+                        objectMapper.registerModule(new JavaTimeModule()); // Stöd för LocalDate
+                        
+                        // Konvertera existerande hyresgäst till Map
+                        Map<String, Object> tenantMap = objectMapper.convertValue(existingTenant, Map.class);
+                        
+                        // Applicera endast de fält som skickats in
+                        for (Map.Entry<String, Object> entry : updates.entrySet()) {
+                            // Ignorera ID-fältet och relationsfält
+                            if (!entry.getKey().equals("id") && !entry.getKey().equals("apartment") && !entry.getKey().equals("key")) {
+                                tenantMap.put(entry.getKey(), entry.getValue());
+                            }
+                        }
+                        
+                        // Konvertera tillbaka till Tenant-objekt med uppdaterade fält
+                        Tenant updatedTenant = objectMapper.convertValue(tenantMap, Tenant.class);
+                        
+                        // Behåll original-ID och relationer
+                        updatedTenant.setId(id);
+                        updatedTenant.setApartment(existingTenant.getApartment());
+                        updatedTenant.setKey(existingTenant.getKey());
+                        
+                        // Spara och returnera uppdaterad hyresgäst
+                        return tenantRepository.save(updatedTenant);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        return existingTenant; // Vid fel, returnera originalet
+                    }
                 });
     }
 } 

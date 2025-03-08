@@ -6,6 +6,23 @@ import FormInput from '../components/FormInput';
 import { PlusIcon } from '@heroicons/react/24/outline';
 import { apartmentService, tenantService, keyService } from '../services';
 
+// Definiera nyckeltyper
+const keyTypes = [
+  { value: 'D', label: 'Dörr (D)' },
+  { value: 'P', label: 'Post (P)' },
+  { value: 'T', label: 'Tvätt (T)' },
+  { value: 'F', label: 'Förråd (F)' },
+  { value: 'G', label: 'Garage (G)' },
+  { value: 'HN', label: 'Huvudnyckel (HN)' },
+  { value: 'Ö', label: 'Övrigt (Ö)' }
+];
+
+// Hjälpfunktion för att rendera nyckeltyp
+const renderKeyType = (typeValue) => {
+  const typeOption = keyTypes.find(t => t.value === typeValue);
+  return typeOption ? typeOption.label : typeValue;
+};
+
 const Apartments = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedApartment, setSelectedApartment] = useState(null);
@@ -80,10 +97,10 @@ const Apartments = () => {
             if (typeof key === 'string') {
               // Om key är ett ID, hitta motsvarande objekt
               const keyObj = keys.find(k => k.id === key);
-              return keyObj ? `${keyObj.type} (${keyObj.serie}-${keyObj.number})` : key;
+              return keyObj ? `${renderKeyType(keyObj.type)} (${keyObj.serie}-${keyObj.number})` : key;
             } else if (key && key.id) {
               // Om key är ett objekt
-              return `${key.type} (${key.serie}-${key.number})`;
+              return `${renderKeyType(key.type)} (${key.serie}-${key.number})`;
             }
             return '';
           }).filter(Boolean).join(', ') || '-';
@@ -630,7 +647,7 @@ const Apartments = () => {
               >
                 {keys.map((key) => (
                   <option key={key.id} value={key.id}>
-                    {`${key.type} - ${key.serie}-${key.number}`}
+                    {`${renderKeyType(key.type)} - ${key.serie}-${key.number}`}
                   </option>
                 ))}
               </select>

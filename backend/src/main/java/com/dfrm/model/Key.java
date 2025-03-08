@@ -17,7 +17,7 @@ public class Key {
     private String id;
     private String serie;
     private String number;
-    private String type;
+    private KeyType type;
     private String description;
     private Boolean isAvailable;
     

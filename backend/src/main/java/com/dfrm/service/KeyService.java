@@ -2,6 +2,7 @@ package com.dfrm.service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.stereotype.Service;
@@ -12,6 +13,7 @@ import com.dfrm.model.Tenant;
 import com.dfrm.repository.ApartmentRepository;
 import com.dfrm.repository.KeyRepository;
 import com.dfrm.repository.TenantRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
 
@@ -204,6 +206,41 @@ public class KeyService {
                     }
                     key.setTenant(null);
                     return keyRepository.save(key);
+                });
+    }
+
+    public Optional<Key> partialUpdate(String id, Map<String, Object> updates) {
+        return keyRepository.findById(id)
+                .map(existingKey -> {
+                    // Applicera uppdateringarna till nyckeln, men ignorera relations-fält
+                    try {
+                        ObjectMapper objectMapper = new ObjectMapper();
+                        
+                        // Konvertera existerande nyckel till Map
+                        Map<String, Object> keyMap = objectMapper.convertValue(existingKey, Map.class);
+                        
+                        // Applicera endast de fält som skickats in
+                        for (Map.Entry<String, Object> entry : updates.entrySet()) {
+                            // Ignorera ID-fältet och relationsfält
+                            if (!entry.getKey().equals("id") && !entry.getKey().equals("apartment") && !entry.getKey().equals("tenant")) {
+                                keyMap.put(entry.getKey(), entry.getValue());
+                            }
+                        }
+                        
+                        // Konvertera tillbaka till Key-objekt med uppdaterade fält
+                        Key updatedKey = objectMapper.convertValue(keyMap, Key.class);
+                        
+                        // Behåll original-ID och relationer
+                        updatedKey.setId(id);
+                        updatedKey.setApartment(existingKey.getApartment());
+                        updatedKey.setTenant(existingKey.getTenant());
+                        
+                        // Spara och returnera uppdaterad nyckel
+                        return keyRepository.save(updatedKey);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        return existingKey; // Vid fel, returnera originalet
+                    }
                 });
     }
 } 

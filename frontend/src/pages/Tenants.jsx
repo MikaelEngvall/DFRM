@@ -6,6 +6,23 @@ import FormInput from '../components/FormInput';
 import { PlusIcon } from '@heroicons/react/24/outline';
 import { tenantService, apartmentService, keyService } from '../services';
 
+// Definiera nyckeltyper
+const keyTypes = [
+  { value: 'D', label: 'Dörr (D)' },
+  { value: 'P', label: 'Post (P)' },
+  { value: 'T', label: 'Tvätt (T)' },
+  { value: 'F', label: 'Förråd (F)' },
+  { value: 'G', label: 'Garage (G)' },
+  { value: 'HN', label: 'Huvudnyckel (HN)' },
+  { value: 'Ö', label: 'Övrigt (Ö)' }
+];
+
+// Hjälpfunktion för att rendera nyckeltyp
+const renderKeyType = (typeValue) => {
+  const typeOption = keyTypes.find(t => t.value === typeValue);
+  return typeOption ? typeOption.label : typeValue;
+};
+
 const Tenants = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTenant, setSelectedTenant] = useState(null);
@@ -20,7 +37,7 @@ const Tenants = () => {
     firstName: '',
     lastName: '',
     personnummer: '',
-    phoneNumber: '',
+    phone: '',
     street: '',
     postalCode: '',
     city: '',
@@ -34,7 +51,7 @@ const Tenants = () => {
   const columns = [
     { key: 'firstName', label: 'Förnamn' },
     { key: 'lastName', label: 'Efternamn' },
-    { key: 'phoneNumber', label: 'Telefon' },
+    { key: 'phone', label: 'Telefon' },
     { key: 'movedInDate', label: 'IN' },
     {
       key: 'resiliationDate',
@@ -59,7 +76,7 @@ const Tenants = () => {
         if (!keyId) return '-';
         const key = keys.find(k => k.id === keyId);
         return key 
-          ? `${key.type} (${key.serie}-${key.number})` 
+          ? `${renderKeyType(key.type)} (${key.serie}-${key.number})` 
           : '-';
       }
     },
@@ -181,7 +198,7 @@ const Tenants = () => {
         firstName: '',
         lastName: '',
         personnummer: '',
-        phoneNumber: '',
+        phone: '',
         street: '',
         postalCode: '',
         city: '',
@@ -226,7 +243,7 @@ const Tenants = () => {
         firstName: '',
         lastName: '',
         personnummer: '',
-        phoneNumber: '',
+        phone: '',
         street: '',
         postalCode: '',
         city: '',
@@ -296,7 +313,7 @@ const Tenants = () => {
             firstName: '',
             lastName: '',
             personnummer: '',
-            phoneNumber: '',
+            phone: '',
             street: '',
             postalCode: '',
             city: '',
@@ -335,8 +352,8 @@ const Tenants = () => {
             />
             <FormInput
               label="Telefon"
-              name="phoneNumber"
-              value={formData.phoneNumber}
+              name="phone"
+              value={formData.phone}
               onChange={handleInputChange}
               required
             />
@@ -390,7 +407,7 @@ const Tenants = () => {
                 <option value="">Ingen nyckel</option>
                 {keys.map((key) => (
                   <option key={key.id} value={key.id}>
-                    {`${key.type} - ${key.serie}-${key.number}`}
+                    {`${renderKeyType(key.type)} - ${key.serie}-${key.number}`}
                   </option>
                 ))}
               </select>
@@ -426,7 +443,7 @@ const Tenants = () => {
                     firstName: '',
                     lastName: '',
                     personnummer: '',
-                    phoneNumber: '',
+                    phone: '',
                     street: '',
                     postalCode: '',
                     city: '',
