@@ -31,11 +31,20 @@ const Keys = () => {
     { 
       key: 'apartment',
       label: 'Lägenhet',
-      render: (apartmentObj) => {
-        if (apartmentObj === undefined || apartmentObj === null) return '-';
+      render: (apartmentValue, row) => {
+        console.log("Rendering apartment column:", apartmentValue, row);
         
-        if (typeof apartmentObj === 'object' && apartmentObj.id) {
-          return `${apartmentObj.street} ${apartmentObj.number}, LGH ${apartmentObj.apartmentNumber}`;
+        if (apartmentValue === undefined || apartmentValue === null) return '-';
+        
+        if (typeof apartmentValue === 'object' && apartmentValue.id) {
+          return `${apartmentValue.street} ${apartmentValue.number}, LGH ${apartmentValue.apartmentNumber}`;
+        }
+        
+        if (typeof apartmentValue === 'string') {
+          const apartmentObj = apartments.find(a => a.id === apartmentValue);
+          if (apartmentObj) {
+            return `${apartmentObj.street} ${apartmentObj.number}, LGH ${apartmentObj.apartmentNumber}`;
+          }
         }
         
         return '-';
@@ -44,11 +53,20 @@ const Keys = () => {
     {
       key: 'tenant',
       label: 'Hyresgäst',
-      render: (tenantObj) => {
-        if (tenantObj === undefined || tenantObj === null) return '-';
+      render: (tenantValue, row) => {
+        console.log("Rendering tenant column:", tenantValue, row);
         
-        if (typeof tenantObj === 'object' && tenantObj.id) {
-          return `${tenantObj.firstName} ${tenantObj.lastName}`;
+        if (tenantValue === undefined || tenantValue === null) return '-';
+        
+        if (typeof tenantValue === 'object' && tenantValue.id) {
+          return `${tenantValue.firstName} ${tenantValue.lastName}`;
+        }
+        
+        if (typeof tenantValue === 'string') {
+          const tenantObj = tenants.find(t => t.id === tenantValue);
+          if (tenantObj) {
+            return `${tenantObj.firstName} ${tenantObj.lastName}`;
+          }
         }
         
         return '-';
@@ -73,7 +91,31 @@ const Keys = () => {
       console.log('Lägenheter från API:', apartmentsData);
       console.log('Hyresgäster från API:', tenantsData);
       
-      setKeys(keysData);
+      const processedKeys = keysData.map(key => {
+        const processedKey = { ...key };
+        
+        if (typeof key.tenant === 'string') {
+          const tenant = tenantsData.find(t => t.id === key.tenant);
+          if (tenant) {
+            console.log(`Hittade tenant för ID ${key.tenant}:`, tenant);
+            processedKey.tenant = tenant;
+          }
+        }
+        
+        if (typeof key.apartment === 'string') {
+          const apartment = apartmentsData.find(a => a.id === key.apartment);
+          if (apartment) {
+            console.log(`Hittade apartment för ID ${key.apartment}:`, apartment);
+            processedKey.apartment = apartment;
+          }
+        }
+        
+        return processedKey;
+      });
+      
+      console.log('Processade nycklar med referenser:', processedKeys);
+      
+      setKeys(processedKeys);
       setApartments(apartmentsData);
       setTenants(tenantsData);
       setError(null);
@@ -188,8 +230,24 @@ const Keys = () => {
     
     setSelectedKey(key);
     
-    const apartmentId = (key.apartment && key.apartment.id) || '';
-    const tenantId = (key.tenant && key.tenant.id) || '';
+    let apartmentId = '';
+    let tenantId = '';
+    
+    if (key.tenant) {
+      if (typeof key.tenant === 'object') {
+        tenantId = key.tenant.id || '';
+      } else if (typeof key.tenant === 'string') {
+        tenantId = key.tenant;
+      }
+    }
+    
+    if (key.apartment) {
+      if (typeof key.apartment === 'object') {
+        apartmentId = key.apartment.id || '';
+      } else if (typeof key.apartment === 'string') {
+        apartmentId = key.apartment;
+      }
+    }
     
     console.log('Lägenhet ID:', apartmentId, 'Hyresgäst ID:', tenantId);
     
