@@ -28,6 +28,9 @@ export default {
     viewAll: 'Visa alla',
     clear: 'Rensa',
     apply: 'Tillämpa',
+    filter: 'Filter',
+    filters: 'Filter',
+    noResults: 'Inga resultat',
   },
 
   navigation: {
@@ -226,7 +229,7 @@ export default {
 
   tasks: {
     title: 'Uppgifter',
-    addNew: 'Lägg till uppgift',
+    add: 'Lägg till uppgift',
     edit: 'Redigera uppgift',
     relatedTasks: 'Relaterade uppgifter',
     noRelatedTasks: 'Inga relaterade uppgifter',

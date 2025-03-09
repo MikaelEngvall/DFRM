@@ -11,12 +11,17 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import com.dfrm.service.JwtService;
+import io.jsonwebtoken.Claims;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+
+import java.util.Collection;
+import java.util.Collections;
 
 @Component
 @RequiredArgsConstructor
@@ -51,11 +56,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
             
-            if (jwtService.validateToken(jwt, userDetails.getUsername())) {
+            if (jwtService.validateToken(jwt, userEmail)) {
+                Collection<SimpleGrantedAuthority> authorities = extractAuthorities(jwt);
+                
                 UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                     userDetails,
                     null,
-                    userDetails.getAuthorities()
+                    authorities.isEmpty() ? userDetails.getAuthorities() : authorities
                 );
                 
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
@@ -64,5 +71,22 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         filterChain.doFilter(request, response);
+    }
+    
+    // Hjälpmetod för att extrahera behörigheter från token
+    private Collection<SimpleGrantedAuthority> extractAuthorities(String token) {
+        try {
+            Claims claims = jwtService.extractAllClaims(token);
+            Object roleObj = claims.get("role");
+            
+            if (roleObj != null) {
+                String role = roleObj.toString();
+                return Collections.singletonList(new SimpleGrantedAuthority(role));
+            }
+        } catch (Exception e) {
+            logger.error("Kunde inte extrahera roller från token", e);
+        }
+        
+        return Collections.emptyList();
     }
 } 

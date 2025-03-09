@@ -17,4 +17,9 @@ public interface TaskRepository extends MongoRepository<Task, String> {
     List<Task> findByDueDateBetween(LocalDate startDate, LocalDate endDate);
     List<Task> findByStatus(TaskStatus status);
     List<Task> findByDueDateBeforeAndStatusNot(LocalDate date, TaskStatus status);
+    List<Task> findByStatus(String status);
+    List<Task> findByPriority(String priority);
+    List<Task> findByDueDateBeforeAndStatusNotIn(LocalDate date, List<String> statuses);
+    List<Task> findByIsRecurring(boolean isRecurring);
+    List<Task> findByRecurringPattern(String pattern);
 } 

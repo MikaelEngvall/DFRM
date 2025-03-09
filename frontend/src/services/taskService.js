@@ -3,22 +3,18 @@ import api from './api';
 // Lägg till sökparametrar till alla förfrågningar
 const withQueryParams = (params) => {
   if (!params) return '';
-  const searchParams = new URLSearchParams();
   
-  Object.entries(params).forEach(([key, value]) => {
-    if (value !== undefined && value !== null && value !== '') {
-      searchParams.append(key, value);
-    }
-  });
+  const queryParams = Object.entries(params)
+    .filter(([_, value]) => value !== undefined && value !== null && value !== '')
+    .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
+    .join('&');
   
-  const queryString = searchParams.toString();
-  return queryString ? `?${queryString}` : '';
+  return queryParams ? `?${queryParams}` : '';
 };
 
 export const getAllTasks = async (params) => {
   try {
-    const queryString = withQueryParams(params);
-    const response = await api.get(`/tasks${queryString}`);
+    const response = await api.get(`/api/tasks${withQueryParams(params)}`);
     return response.data;
   } catch (error) {
     console.error('Error fetching tasks:', error);
@@ -28,17 +24,17 @@ export const getAllTasks = async (params) => {
 
 export const getTaskById = async (id) => {
   try {
-    const response = await api.get(`/tasks/${id}`);
+    const response = await api.get(`/api/tasks/${id}`);
     return response.data;
   } catch (error) {
-    console.error(`Error fetching task with id ${id}:`, error);
+    console.error(`Error fetching task with ID ${id}:`, error);
     throw error;
   }
 };
 
 export const createTask = async (taskData) => {
   try {
-    const response = await api.post('/tasks', taskData);
+    const response = await api.post('/api/tasks', taskData);
     return response.data;
   } catch (error) {
     console.error('Error creating task:', error);
@@ -48,77 +44,80 @@ export const createTask = async (taskData) => {
 
 export const updateTask = async (id, taskData) => {
   try {
-    const response = await api.put(`/tasks/${id}`, taskData);
+    const response = await api.put(`/api/tasks/${id}`, taskData);
     return response.data;
   } catch (error) {
-    console.error(`Error updating task with id ${id}:`, error);
+    console.error(`Error updating task with ID ${id}:`, error);
     throw error;
   }
 };
 
 export const deleteTask = async (id) => {
   try {
-    const response = await api.delete(`/tasks/${id}`);
+    const response = await api.delete(`/api/tasks/${id}`);
     return response.data;
   } catch (error) {
-    console.error(`Error deleting task with id ${id}:`, error);
+    console.error(`Error deleting task with ID ${id}:`, error);
     throw error;
   }
 };
 
 export const updateTaskStatus = async (id, status) => {
   try {
-    const response = await api.patch(`/tasks/${id}/status`, { status });
+    const response = await api.patch(`/api/tasks/${id}/status`, { status });
     return response.data;
   } catch (error) {
-    console.error(`Error updating status for task with id ${id}:`, error);
+    console.error(`Error updating status for task with ID ${id}:`, error);
     throw error;
   }
 };
 
 export const getTasksByAssignedUser = async (userId) => {
   try {
-    const response = await api.get(`/tasks/assignedTo/${userId}`);
+    const response = await api.get(`/api/tasks/assigned/${userId}`);
     return response.data;
   } catch (error) {
-    console.error(`Error fetching tasks for user with id ${userId}:`, error);
+    console.error(`Error fetching tasks for user with ID ${userId}:`, error);
     throw error;
   }
 };
 
 export const getTasksByApartment = async (apartmentId) => {
   try {
-    const response = await api.get(`/tasks/apartment/${apartmentId}`);
+    const response = await api.get(`/api/tasks/apartment/${apartmentId}`);
     return response.data;
   } catch (error) {
-    console.error(`Error fetching tasks for apartment with id ${apartmentId}:`, error);
+    console.error(`Error fetching tasks for apartment with ID ${apartmentId}:`, error);
     throw error;
   }
 };
 
 export const getTasksByTenant = async (tenantId) => {
   try {
-    const response = await api.get(`/tasks/tenant/${tenantId}`);
+    const response = await api.get(`/api/tasks/tenant/${tenantId}`);
     return response.data;
   } catch (error) {
-    console.error(`Error fetching tasks for tenant with id ${tenantId}:`, error);
+    console.error(`Error fetching tasks for tenant with ID ${tenantId}:`, error);
     throw error;
   }
 };
 
 export const getTasksByDateRange = async (startDate, endDate) => {
   try {
-    const response = await api.get(`/tasks/date-range?startDate=${startDate}&endDate=${endDate}`);
+    const params = new URLSearchParams();
+    params.append('startDate', startDate);
+    params.append('endDate', endDate);
+    const response = await api.get(`/api/tasks/date-range?${params.toString()}`);
     return response.data;
   } catch (error) {
-    console.error(`Error fetching tasks between ${startDate} and ${endDate}:`, error);
+    console.error('Error fetching tasks by date range:', error);
     throw error;
   }
 };
 
 export const getTasksByStatus = async (status) => {
   try {
-    const response = await api.get(`/tasks/status/${status}`);
+    const response = await api.get(`/api/tasks/status/${status}`);
     return response.data;
   } catch (error) {
     console.error(`Error fetching tasks with status ${status}:`, error);
@@ -128,7 +127,7 @@ export const getTasksByStatus = async (status) => {
 
 export const getOverdueTasks = async () => {
   try {
-    const response = await api.get('/tasks/overdue');
+    const response = await api.get('/api/tasks/overdue');
     return response.data;
   } catch (error) {
     console.error('Error fetching overdue tasks:', error);
@@ -139,7 +138,7 @@ export const getOverdueTasks = async () => {
 // För återkommande uppgifter
 export const createRecurringTask = async (taskData) => {
   try {
-    const response = await api.post('/tasks/recurring', taskData);
+    const response = await api.post('/api/tasks/recurring', taskData);
     return response.data;
   } catch (error) {
     console.error('Error creating recurring task:', error);
@@ -149,10 +148,10 @@ export const createRecurringTask = async (taskData) => {
 
 export const updateRecurringPattern = async (id, pattern) => {
   try {
-    const response = await api.patch(`/tasks/${id}/recurring-pattern`, { pattern });
+    const response = await api.patch(`/api/tasks/${id}/recurring`, { recurringPattern: pattern });
     return response.data;
   } catch (error) {
-    console.error(`Error updating recurring pattern for task with id ${id}:`, error);
+    console.error(`Error updating recurring pattern for task with ID ${id}:`, error);
     throw error;
   }
 };

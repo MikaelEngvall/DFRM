@@ -39,7 +39,7 @@ public class PendingTaskService {
     }
     
     public PendingTask createPendingTask(Task task, Admin requestedBy, String comments) {
-        task.setStatus(TaskStatus.PENDING);
+        task.setStatus(TaskStatus.PENDING.name());
         Task savedTask = taskRepository.save(task);
         
         PendingTask pendingTask = new PendingTask();
@@ -60,7 +60,7 @@ public class PendingTaskService {
             pendingTask.setReviewComments(reviewComments);
             
             Task task = pendingTask.getTask();
-            task.setStatus(TaskStatus.APPROVED);
+            task.setStatus(TaskStatus.APPROVED.name());
             taskRepository.save(task);
             
             return pendingTaskRepository.save(pendingTask);
@@ -77,7 +77,7 @@ public class PendingTaskService {
             pendingTask.setReviewComments(reviewComments);
             
             Task task = pendingTask.getTask();
-            task.setStatus(TaskStatus.REJECTED);
+            task.setStatus(TaskStatus.REJECTED.name());
             taskRepository.save(task);
             
             return pendingTaskRepository.save(pendingTask);

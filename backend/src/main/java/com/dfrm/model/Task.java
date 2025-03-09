@@ -10,9 +10,15 @@ import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonIdentityReference;
 import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 @Document(collection = "tasks")
 public class Task {
     @Id
@@ -22,34 +28,34 @@ public class Task {
     private String description;
     private LocalDate dueDate;
     private LocalDate completedDate;
-    private TaskPriority priority;
-    private TaskStatus status;
+    private String status; // "PENDING", "IN_PROGRESS", "COMPLETED", "APPROVED", "REJECTED"
+    private String priority; // "LOW", "MEDIUM", "HIGH", "URGENT"
+    private String comments;
+    
+    private boolean isRecurring;
+    private String recurringPattern; // "DAILY", "WEEKLY", "BIWEEKLY", "MONTHLY", "QUARTERLY", "YEARLY"
     
     @DBRef
     @JsonIdentityInfo(
-        generator = ObjectIdGenerators.PropertyGenerator.class,
-        property = "id"
+            generator = ObjectIdGenerators.PropertyGenerator.class,
+            property = "id"
     )
     @JsonIdentityReference(alwaysAsId = true)
     private Admin assignedUser;
     
     @DBRef
     @JsonIdentityInfo(
-        generator = ObjectIdGenerators.PropertyGenerator.class,
-        property = "id"
+            generator = ObjectIdGenerators.PropertyGenerator.class,
+            property = "id"
     )
     @JsonIdentityReference(alwaysAsId = true)
     private Apartment apartment;
     
     @DBRef
     @JsonIdentityInfo(
-        generator = ObjectIdGenerators.PropertyGenerator.class,
-        property = "id"
+            generator = ObjectIdGenerators.PropertyGenerator.class,
+            property = "id"
     )
     @JsonIdentityReference(alwaysAsId = true)
     private Tenant tenant;
-    
-    private String comments;
-    private boolean isRecurring;
-    private String recurringPattern; // t.ex. "WEEKLY", "MONTHLY"
 } 

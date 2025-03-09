@@ -2,11 +2,14 @@ package com.dfrm.controller;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -37,31 +40,61 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody Map<String, String> credentials) {
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        credentials.get("email"),
-                        credentials.get("password")
-                )
-        );
+        String email = credentials.get("email");
+        String password = credentials.get("password");
 
-        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-        String token = jwtService.generateToken(userDetails.getUsername());
+        try {
+            Authentication authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(email, password)
+            );
 
-        Admin admin = adminRepository.findByEmail(userDetails.getUsername())
-                .orElseThrow(() -> new RuntimeException("Användare hittades inte"));
+            Optional<Admin> adminOpt = adminRepository.findByEmail(email);
+            if (adminOpt.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Invalid credentials"));
+            }
 
-        Map<String, Object> response = new HashMap<>();
-        response.put("token", token);
-        response.put("user", admin);
+            Admin admin = adminOpt.get();
+            String token = jwtService.generateToken(admin);
 
-        return ResponseEntity.ok(response);
+            Map<String, Object> response = new HashMap<>();
+            response.put("token", token);
+            response.put("user", Map.of(
+                "id", admin.getId(),
+                "email", admin.getEmail(),
+                "firstName", admin.getFirstName(),
+                "lastName", admin.getLastName(),
+                "role", admin.getRole()
+            ));
+
+            return ResponseEntity.ok(response);
+        } catch (AuthenticationException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Invalid credentials"));
+        }
     }
 
     @GetMapping("/me")
     public ResponseEntity<?> getCurrentUser(Authentication authentication) {
-        String email = authentication.getName();
-        Admin admin = adminRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Användare hittades inte"));
-        return ResponseEntity.ok(admin);
+        if (authentication == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Not authenticated"));
+        }
+
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+        String email = userDetails.getUsername();
+
+        Optional<Admin> adminOpt = adminRepository.findByEmail(email);
+        if (adminOpt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", "User not found"));
+        }
+
+        Admin admin = adminOpt.get();
+        Map<String, Object> user = Map.of(
+            "id", admin.getId(),
+            "email", admin.getEmail(),
+            "firstName", admin.getFirstName(),
+            "lastName", admin.getLastName(),
+            "role", admin.getRole()
+        );
+
+        return ResponseEntity.ok(user);
     }
 } 
