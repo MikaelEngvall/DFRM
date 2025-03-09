@@ -41,7 +41,7 @@ public class Task {
             property = "id"
     )
     @JsonIdentityReference(alwaysAsId = true)
-    private Admin assignedUser;
+    private User assignedUser;
     
     @DBRef
     @JsonIdentityInfo(

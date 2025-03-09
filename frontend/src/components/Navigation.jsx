@@ -165,8 +165,8 @@ const Navigation = () => {
   // Lägg till admin-länk endast för administratörer
   if (user && user.role === 'ADMIN') {
     navigation.push({
-      name: t('navigation.admins'),
-      href: '/admins',
+      name: t('navigation.staff'),
+      href: '/staff',
       icon: UserIcon,
     });
   }

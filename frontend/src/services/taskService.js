@@ -104,10 +104,7 @@ export const getTasksByTenant = async (tenantId) => {
 
 export const getTasksByDateRange = async (startDate, endDate) => {
   try {
-    const params = new URLSearchParams();
-    params.append('startDate', startDate);
-    params.append('endDate', endDate);
-    const response = await api.get(`/api/tasks/date-range?${params.toString()}`);
+    const response = await api.get(`/api/tasks/date-range/${startDate}/${endDate}`);
     return response.data;
   } catch (error) {
     console.error('Error fetching tasks by date range:', error);

@@ -4,7 +4,7 @@ import Modal from '../components/Modal';
 import AlertModal from '../components/AlertModal';
 import FormInput from '../components/FormInput';
 import { PlusIcon } from '@heroicons/react/24/outline';
-import { taskService, apartmentService, tenantService } from '../services';
+import { taskService, apartmentService, tenantService, userService } from '../services';
 import { useLocale } from '../contexts/LocaleContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
@@ -21,7 +21,7 @@ const Tasks = () => {
   const [tasks, setTasks] = useState([]);
   const [apartments, setApartments] = useState([]);
   const [tenants, setTenants] = useState([]);
-  const [admins, setAdmins] = useState([]);
+  const [users, setUsers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isAlertOpen, setIsAlertOpen] = useState(false);
@@ -46,6 +46,12 @@ const Tasks = () => {
     priority: queryParams.get('priority') || '',
   });
 
+  const renderAssignedUser = (assignedUser) => {
+    if (!assignedUser) return '-';
+    const user = users.find(u => u.id === (typeof assignedUser === 'object' ? assignedUser.id : assignedUser));
+    return user ? `${user.firstName} ${user.lastName}` : '-';
+  };
+
   const columns = [
     {
       key: 'title',
@@ -69,11 +75,7 @@ const Tasks = () => {
     {
       key: 'assignedUser',
       label: t('tasks.fields.assignedUser'),
-      render: (assignedUser) => {
-        if (!assignedUser) return '-';
-        const admin = admins.find(a => a.id === (typeof assignedUser === 'object' ? assignedUser.id : assignedUser));
-        return admin ? `${admin.firstName} ${admin.lastName}` : '-';
-      }
+      render: renderAssignedUser
     },
     {
       key: 'apartment',
@@ -98,18 +100,16 @@ const Tasks = () => {
       const tasksData = await taskService.getAllTasks(filters);
       
       // Hämta referensdata för att visa detaljer
-      const [apartmentsData, tenantsData, adminsData] = await Promise.all([
+      const [apartmentsData, tenantsData, usersData] = await Promise.all([
         apartmentService.getAllApartments(),
         tenantService.getAllTenants(),
-        // Här behöver vi hämta admin-data också. Anpassa enligt ditt API
-        // adminService.getAllAdmins(),
-        Promise.resolve([]), // Tillfällig tom lista för admins
+        userService.getAllUsers(),
       ]);
       
       setTasks(tasksData);
       setApartments(apartmentsData);
       setTenants(tenantsData);
-      setAdmins(adminsData);
+      setUsers(usersData);
       setError(null);
     } catch (err) {
       setError(t('common.error'));
@@ -265,7 +265,7 @@ const Tasks = () => {
   };
 
   const handleRowClick = (task) => {
-    navigate(`/tasks/${task.id}`);
+    handleEdit(task);
   };
 
   if (isLoading) {
@@ -412,17 +412,7 @@ const Tasks = () => {
         columns={columns}
         data={tasks}
         isLoading={isLoading}
-        onEdit={handleEdit}
-        onDelete={handleDelete}
         onRowClick={handleRowClick}
-        actions={[
-          {
-            label: t('tasks.actions.markComplete'),
-            condition: (task) => task.status !== 'COMPLETED',
-            onClick: (task) => handleStatusChange(task.id, 'COMPLETED'),
-            className: 'text-green-600 hover:text-green-800'
-          }
-        ]}
       />
       
       {/* Modalform för att lägga till/redigera uppgifter */}
@@ -521,9 +511,9 @@ const Tasks = () => {
                 className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               >
                 <option value="">{t('common.select')}</option>
-                {admins.map((admin) => (
-                  <option key={admin.id} value={admin.id}>
-                    {admin.firstName} {admin.lastName}
+                {users.map((user) => (
+                  <option key={user.id} value={user.id}>
+                    {user.firstName} {user.lastName}
                   </option>
                 ))}
               </select>

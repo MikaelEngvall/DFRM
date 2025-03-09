@@ -7,94 +7,87 @@ import java.util.Optional;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.dfrm.model.Admin;
-import com.dfrm.repository.AdminRepository;
+import com.dfrm.model.User;
+import com.dfrm.repository.UserRepository;
 import com.dfrm.service.JwtService;
+
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/auth")
+@RequiredArgsConstructor
 public class AuthController {
 
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
-    private final AdminRepository adminRepository;
-
-    public AuthController(
-            AuthenticationManager authenticationManager,
-            JwtService jwtService,
-            AdminRepository adminRepository) {
-        this.authenticationManager = authenticationManager;
-        this.jwtService = jwtService;
-        this.adminRepository = adminRepository;
-    }
+    private final UserRepository userRepository;
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody Map<String, String> credentials) {
-        String email = credentials.get("email");
-        String password = credentials.get("password");
-
+    public ResponseEntity<?> login(@RequestBody Map<String, String> loginRequest) {
+        String email = loginRequest.get("email");
+        String password = loginRequest.get("password");
+        
         try {
             Authentication authentication = authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(email, password)
-            );
-
-            Optional<Admin> adminOpt = adminRepository.findByEmail(email);
-            if (adminOpt.isEmpty()) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Invalid credentials"));
+                    new UsernamePasswordAuthenticationToken(email, password));
+            
+            Optional<User> userOpt = userRepository.findByEmail(email);
+            if (userOpt.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(Map.of("message", "Fel användarnamn eller lösenord"));
             }
-
-            Admin admin = adminOpt.get();
-            String token = jwtService.generateToken(admin);
-
+            
+            User user = userOpt.get();
+            String token = jwtService.generateToken(user.getEmail());
+            
             Map<String, Object> response = new HashMap<>();
             response.put("token", token);
             response.put("user", Map.of(
-                "id", admin.getId(),
-                "email", admin.getEmail(),
-                "firstName", admin.getFirstName(),
-                "lastName", admin.getLastName(),
-                "role", admin.getRole()
+                "id", user.getId(),
+                "email", user.getEmail(),
+                "firstName", user.getFirstName(),
+                "lastName", user.getLastName(),
+                "role", user.getRole()
             ));
-
+            
             return ResponseEntity.ok(response);
-        } catch (AuthenticationException e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Invalid credentials"));
+        } catch (BadCredentialsException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("message", "Fel användarnamn eller lösenord"));
         }
     }
-
+    
     @GetMapping("/me")
     public ResponseEntity<?> getCurrentUser(Authentication authentication) {
-        if (authentication == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("message", "Not authenticated"));
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-
-        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
-        String email = userDetails.getUsername();
-
-        Optional<Admin> adminOpt = adminRepository.findByEmail(email);
-        if (adminOpt.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", "User not found"));
+        
+        String email = authentication.getName();
+        Optional<User> userOpt = userRepository.findByEmail(email);
+        
+        if (userOpt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
-
-        Admin admin = adminOpt.get();
-        Map<String, Object> user = Map.of(
-            "id", admin.getId(),
-            "email", admin.getEmail(),
-            "firstName", admin.getFirstName(),
-            "lastName", admin.getLastName(),
-            "role", admin.getRole()
+        
+        User user = userOpt.get();
+        Map<String, Object> response = Map.of(
+            "id", user.getId(),
+            "email", user.getEmail(),
+            "firstName", user.getFirstName(),
+            "lastName", user.getLastName(),
+            "role", user.getRole()
         );
-
-        return ResponseEntity.ok(user);
+        
+        return ResponseEntity.ok(response);
     }
 } 

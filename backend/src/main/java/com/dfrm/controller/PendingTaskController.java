@@ -12,11 +12,12 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.dfrm.model.Admin;
 import com.dfrm.model.PendingTask;
 import com.dfrm.model.Task;
-import com.dfrm.service.AdminService;
+import com.dfrm.model.User;
 import com.dfrm.service.PendingTaskService;
+import com.dfrm.service.TaskService;
+import com.dfrm.service.UserService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -26,7 +27,8 @@ import lombok.RequiredArgsConstructor;
 public class PendingTaskController {
 
     private final PendingTaskService pendingTaskService;
-    private final AdminService adminService;
+    private final TaskService taskService;
+    private final UserService userService;
 
     @GetMapping
     public List<PendingTask> getAllPendingTasks() {
@@ -50,72 +52,75 @@ public class PendingTaskController {
         return pendingTaskService.findPendingTasksForReview();
     }
 
-    @PostMapping
-    public ResponseEntity<PendingTask> createPendingTask(
-            @RequestBody Map<String, Object> request) {
+    @PostMapping("/request-approval")
+    public ResponseEntity<PendingTask> requestApproval(
+            @RequestBody Map<String, String> requestData) {
+        
+        String taskId = requestData.get("taskId");
+        String requestedById = requestData.get("requestedById");
+        String comment = requestData.get("comment");
+        
+        if (taskId == null || requestedById == null) {
+            return ResponseEntity.badRequest().build();
+        }
         
         try {
-            // Extrahera task från request
-            Map<String, Object> taskMap = (Map<String, Object>) request.get("task");
-            Task task = new Task();
-            // Sätt task-fält från taskMap här...
+            Task task = taskService.getTaskById(taskId)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid task ID"));
             
-            // Hämta requestedBy admin
-            String requestedById = (String) request.get("requestedById");
-            Admin requestedBy = adminService.getAdminById(requestedById)
-                    .orElseThrow(() -> new IllegalArgumentException("Invalid admin ID"));
+            // Hämta requestedBy användare
+            User requestedBy = userService.getUserById(requestedById)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid user ID"));
             
-            String comments = (String) request.get("comments");
-            
-            PendingTask pendingTask = pendingTaskService.createPendingTask(task, requestedBy, comments);
+            PendingTask pendingTask = pendingTaskService.createPendingTask(task, requestedBy, comment);
             return ResponseEntity.ok(pendingTask);
-        } catch (Exception e) {
+        } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();
         }
     }
-
+    
     @PostMapping("/{id}/approve")
-    public ResponseEntity<PendingTask> approvePendingTask(
+    public ResponseEntity<Task> approveTask(
             @PathVariable String id,
-            @RequestBody Map<String, String> request) {
+            @RequestBody Map<String, String> approvalData) {
+        
+        String reviewedById = approvalData.get("reviewedById");
+        String comment = approvalData.get("comment");
+        
+        if (reviewedById == null) {
+            return ResponseEntity.badRequest().build();
+        }
         
         try {
-            String reviewedById = request.get("reviewedById");
-            Admin reviewedBy = adminService.getAdminById(reviewedById)
-                    .orElseThrow(() -> new IllegalArgumentException("Invalid admin ID"));
+            User reviewedBy = userService.getUserById(reviewedById)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid user ID"));
             
-            String comments = request.get("comments");
-            
-            PendingTask pendingTask = pendingTaskService.approvePendingTask(id, reviewedBy, comments);
-            if (pendingTask != null) {
-                return ResponseEntity.ok(pendingTask);
-            } else {
-                return ResponseEntity.notFound().build();
-            }
-        } catch (Exception e) {
+            Task task = pendingTaskService.approveTask(id, reviewedBy, comment);
+            return ResponseEntity.ok(task);
+        } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();
         }
     }
-
+    
     @PostMapping("/{id}/reject")
-    public ResponseEntity<PendingTask> rejectPendingTask(
+    public ResponseEntity<PendingTask> rejectTask(
             @PathVariable String id,
-            @RequestBody Map<String, String> request) {
+            @RequestBody Map<String, String> rejectionData) {
+        
+        String reviewedById = rejectionData.get("reviewedById");
+        String comment = rejectionData.get("comment");
+        
+        if (reviewedById == null) {
+            return ResponseEntity.badRequest().build();
+        }
         
         try {
-            String reviewedById = request.get("reviewedById");
-            Admin reviewedBy = adminService.getAdminById(reviewedById)
-                    .orElseThrow(() -> new IllegalArgumentException("Invalid admin ID"));
+            User reviewedBy = userService.getUserById(reviewedById)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid user ID"));
             
-            String comments = request.get("comments");
-            
-            PendingTask pendingTask = pendingTaskService.rejectPendingTask(id, reviewedBy, comments);
-            if (pendingTask != null) {
-                return ResponseEntity.ok(pendingTask);
-            } else {
-                return ResponseEntity.notFound().build();
-            }
-        } catch (Exception e) {
+            PendingTask pendingTask = pendingTaskService.rejectTask(id, reviewedBy, comment);
+            return ResponseEntity.ok(pendingTask);
+        } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();
         }
     }

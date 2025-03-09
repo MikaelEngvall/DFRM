@@ -9,7 +9,7 @@ import java.util.function.Function;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import com.dfrm.model.Admin;
+import com.dfrm.model.User;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -30,11 +30,11 @@ public class JwtService {
         return createToken(claims, username);
     }
 
-    public String generateToken(Admin admin) {
+    public String generateToken(User user) {
         Map<String, Object> claims = new HashMap<>();
-        String roleWithPrefix = admin.getRole().startsWith("ROLE_") ? admin.getRole() : "ROLE_" + admin.getRole();
+        String roleWithPrefix = user.getRole().startsWith("ROLE_") ? user.getRole() : "ROLE_" + user.getRole();
         claims.put("role", roleWithPrefix);
-        return createToken(claims, admin.getEmail());
+        return createToken(claims, user.getEmail());
     }
 
     private String createToken(Map<String, Object> claims, String subject) {

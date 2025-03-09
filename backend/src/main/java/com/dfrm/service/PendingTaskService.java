@@ -6,10 +6,10 @@ import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 
-import com.dfrm.model.Admin;
 import com.dfrm.model.PendingTask;
 import com.dfrm.model.Task;
 import com.dfrm.model.TaskStatus;
+import com.dfrm.model.User;
 import com.dfrm.repository.PendingTaskRepository;
 import com.dfrm.repository.TaskRepository;
 
@@ -38,7 +38,7 @@ public class PendingTaskService {
         return pendingTaskRepository.findByReviewedByIsNull();
     }
     
-    public PendingTask createPendingTask(Task task, Admin requestedBy, String comments) {
+    public PendingTask createPendingTask(Task task, User requestedBy, String comments) {
         task.setStatus(TaskStatus.PENDING.name());
         Task savedTask = taskRepository.save(task);
         
@@ -51,38 +51,41 @@ public class PendingTaskService {
         return pendingTaskRepository.save(pendingTask);
     }
     
-    public PendingTask approvePendingTask(String id, Admin reviewedBy, String reviewComments) {
+    public Task approveTask(String id, User reviewedBy, String reviewComments) {
         Optional<PendingTask> pendingTaskOpt = pendingTaskRepository.findById(id);
-        if (pendingTaskOpt.isPresent()) {
-            PendingTask pendingTask = pendingTaskOpt.get();
-            pendingTask.setReviewedBy(reviewedBy);
-            pendingTask.setReviewedAt(LocalDateTime.now());
-            pendingTask.setReviewComments(reviewComments);
-            
-            Task task = pendingTask.getTask();
-            task.setStatus(TaskStatus.APPROVED.name());
-            taskRepository.save(task);
-            
-            return pendingTaskRepository.save(pendingTask);
+        if (pendingTaskOpt.isEmpty()) {
+            throw new IllegalArgumentException("Pending task not found");
         }
-        return null;
+        
+        PendingTask pendingTask = pendingTaskOpt.get();
+        pendingTask.setReviewedBy(reviewedBy);
+        pendingTask.setReviewedAt(LocalDateTime.now());
+        pendingTask.setReviewComments(reviewComments);
+        
+        Task task = pendingTask.getTask();
+        task.setStatus(TaskStatus.APPROVED.name());
+        Task savedTask = taskRepository.save(task);
+        
+        pendingTaskRepository.save(pendingTask);
+        return savedTask;
     }
     
-    public PendingTask rejectPendingTask(String id, Admin reviewedBy, String reviewComments) {
+    public PendingTask rejectTask(String id, User reviewedBy, String reviewComments) {
         Optional<PendingTask> pendingTaskOpt = pendingTaskRepository.findById(id);
-        if (pendingTaskOpt.isPresent()) {
-            PendingTask pendingTask = pendingTaskOpt.get();
-            pendingTask.setReviewedBy(reviewedBy);
-            pendingTask.setReviewedAt(LocalDateTime.now());
-            pendingTask.setReviewComments(reviewComments);
-            
-            Task task = pendingTask.getTask();
-            task.setStatus(TaskStatus.REJECTED.name());
-            taskRepository.save(task);
-            
-            return pendingTaskRepository.save(pendingTask);
+        if (pendingTaskOpt.isEmpty()) {
+            throw new IllegalArgumentException("Pending task not found");
         }
-        return null;
+        
+        PendingTask pendingTask = pendingTaskOpt.get();
+        pendingTask.setReviewedBy(reviewedBy);
+        pendingTask.setReviewedAt(LocalDateTime.now());
+        pendingTask.setReviewComments(reviewComments);
+        
+        Task task = pendingTask.getTask();
+        task.setStatus(TaskStatus.REJECTED.name());
+        taskRepository.save(task);
+        
+        return pendingTaskRepository.save(pendingTask);
     }
     
     public void deletePendingTask(String id) {

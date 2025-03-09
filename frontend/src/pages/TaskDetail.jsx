@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLocale } from '../contexts/LocaleContext';
-import { taskService, apartmentService, tenantService } from '../services';
+import { taskService, apartmentService, tenantService, userService } from '../services';
 import {
   ClockIcon,
   CheckCircleIcon,
@@ -23,7 +23,7 @@ const TaskDetail = () => {
   const [task, setTask] = useState(null);
   const [apartments, setApartments] = useState([]);
   const [tenants, setTenants] = useState([]);
-  const [admins, setAdmins] = useState([]);
+  const [users, setUsers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   
@@ -45,54 +45,29 @@ const TaskDetail = () => {
 
   useEffect(() => {
     if (id) {
-      fetchTaskData();
+      fetchData();
     }
   }, [id]);
 
-  const fetchTaskData = async () => {
+  const fetchData = async () => {
     try {
       setIsLoading(true);
-      const [taskData, apartmentsData, tenantsData, adminsData] = await Promise.all([
+      const [taskData, apartmentsData, tenantsData, usersData] = await Promise.all([
         taskService.getTaskById(id),
         apartmentService.getAllApartments(),
         tenantService.getAllTenants(),
-        // adminService.getAllAdmins(), // Ersätt med din faktiska admin-service
-        Promise.resolve([]), // Tillfällig tom lista för admins
+        userService.getAllUsers(),
       ]);
       
       setTask(taskData);
+      setFormData(taskData);
       setApartments(apartmentsData);
       setTenants(tenantsData);
-      setAdmins(adminsData);
-      
-      // Fyll i formulärdata från uppgiften
-      const assignedUserId = taskData.assignedUser ? 
-        (typeof taskData.assignedUser === 'object' ? taskData.assignedUser.id : taskData.assignedUser) : '';
-      
-      const apartmentId = taskData.apartment ? 
-        (typeof taskData.apartment === 'object' ? taskData.apartment.id : taskData.apartment) : '';
-      
-      const tenantId = taskData.tenant ? 
-        (typeof taskData.tenant === 'object' ? taskData.tenant.id : taskData.tenant) : '';
-      
-      setFormData({
-        title: taskData.title || '',
-        description: taskData.description || '',
-        dueDate: taskData.dueDate ? new Date(taskData.dueDate).toISOString().split('T')[0] : '',
-        priority: taskData.priority || '',
-        status: taskData.status || '',
-        assignedUserId,
-        apartmentId,
-        tenantId,
-        comments: taskData.comments || '',
-        isRecurring: taskData.isRecurring || false,
-        recurringPattern: taskData.recurringPattern || '',
-      });
-      
+      setUsers(usersData);
       setError(null);
     } catch (err) {
       setError(t('common.error'));
-      console.error('Error fetching task data:', err);
+      console.error('Error fetching data:', err);
     } finally {
       setIsLoading(false);
     }
@@ -116,7 +91,7 @@ const TaskDetail = () => {
       }
       
       await taskService.updateTask(id, formData);
-      await fetchTaskData();
+      await fetchData();
       setIsEditMode(false);
     } catch (err) {
       setError(t('tasks.messages.saveError'));
@@ -137,7 +112,7 @@ const TaskDetail = () => {
   const handleStatusChange = async (newStatus) => {
     try {
       await taskService.updateTaskStatus(id, newStatus);
-      await fetchTaskData();
+      await fetchData();
     } catch (err) {
       setError(t('tasks.messages.statusUpdateError'));
       console.error('Error updating task status:', err);
@@ -193,10 +168,10 @@ const TaskDetail = () => {
     return tenant ? `${tenant.firstName} ${tenant.lastName}` : '-';
   };
 
-  const getUserName = (userId) => {
+  const renderUser = (userId) => {
     if (!userId) return '-';
-    const admin = admins.find(a => a.id === (typeof userId === 'object' ? userId.id : userId));
-    return admin ? `${admin.firstName} ${admin.lastName}` : userId;
+    const user = users.find(u => u.id === (typeof userId === 'object' ? userId.id : userId));
+    return user ? `${user.firstName} ${user.lastName}` : '-';
   };
 
   if (isLoading) {
@@ -347,7 +322,7 @@ const TaskDetail = () => {
                     {t('tasks.fields.assignedUser')}
                   </p>
                   <p className="mt-1 text-sm text-gray-900 dark:text-white">
-                    {getUserName(task.assignedUser)}
+                    {renderUser(task.assignedUser)}
                   </p>
                 </div>
                 
@@ -486,9 +461,9 @@ const TaskDetail = () => {
                 className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               >
                 <option value="">{t('common.select')}</option>
-                {admins.map((admin) => (
-                  <option key={admin.id} value={admin.id}>
-                    {admin.firstName} {admin.lastName}
+                {users.map((user) => (
+                  <option key={user.id} value={user.id}>
+                    {user.firstName} {user.lastName}
                   </option>
                 ))}
               </select>

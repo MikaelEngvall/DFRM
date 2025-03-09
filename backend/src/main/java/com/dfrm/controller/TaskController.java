@@ -142,4 +142,11 @@ public class TaskController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
         return taskService.getTasksByDateRange(startDate, endDate);
     }
+
+    @GetMapping("/date-range/{startDate}/{endDate}")
+    public List<Task> getTasksByDateRangePath(
+            @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+        return taskService.getTasksByDateRange(startDate, endDate);
+    }
 } 

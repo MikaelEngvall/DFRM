@@ -2,7 +2,7 @@ import apartmentService from './apartmentService';
 import tenantService from './tenantService';
 import keyService from './keyService';
 import taskService from './taskService';
-import adminService from './adminService';
+import userService from './userService';
 import authService from './authService';
 import pendingTaskService from './pendingTaskService';
 
@@ -11,7 +11,7 @@ export {
   tenantService,
   keyService,
   taskService,
-  adminService,
+  userService,
   authService,
   pendingTaskService
 }; 

@@ -27,7 +27,7 @@ public class PendingTask {
         property = "id"
     )
     @JsonIdentityReference(alwaysAsId = true)
-    private Admin requestedBy;
+    private User requestedBy;
     
     private LocalDateTime requestedAt;
     private String requestComments;
@@ -38,7 +38,7 @@ public class PendingTask {
         property = "id"
     )
     @JsonIdentityReference(alwaysAsId = true)
-    private Admin reviewedBy;
+    private User reviewedBy;
     
     private LocalDateTime reviewedAt;
     private String reviewComments;

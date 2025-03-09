@@ -39,8 +39,13 @@ const RelatedTasks = ({ entityType, entityId, limit = 5, showAddButton = true })
       setTasks(data);
       setError(null);
     } catch (err) {
-      setError(t('common.error'));
-      console.error(`Error fetching ${entityType} tasks:`, err);
+      if (err.response && err.response.status === 403) {
+        setError(t('common.accessDenied'));
+        console.error(`Åtkomst nekad för ${entityType} tasks:`, err);
+      } else {
+        setError(t('common.error'));
+        console.error(`Error fetching ${entityType} tasks:`, err);
+      }
     } finally {
       setIsLoading(false);
     }

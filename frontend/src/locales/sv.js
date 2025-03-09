@@ -46,7 +46,7 @@ export default {
     settings: 'Inställningar',
     darkMode: 'Mörkt läge',
     lightMode: 'Ljust läge',
-    admins: 'Administratörer',
+    staff: 'Personal',
   },
 
   auth: {
@@ -374,13 +374,10 @@ export default {
     },
   },
 
-  admins: {
-    title: 'Administratörer',
-    add: 'Lägg till administratör',
-    edit: 'Redigera administratör',
-    confirmDelete: 'Radera administratör',
-    confirmDeleteMessage: 'Är du säker på att du vill radera administratören',
-    leaveBlankToKeep: 'Lämna tomt för att behålla nuvarande lösenord',
+  staff: {
+    title: 'Personal',
+    add: 'Lägg till personal',
+    edit: 'Redigera personal',
     fields: {
       firstName: 'Förnamn',
       lastName: 'Efternamn',
@@ -388,18 +385,24 @@ export default {
       password: 'Lösenord',
       role: 'Roll',
       active: 'Aktiv',
-      lastLogin: 'Senaste inloggning'
+      lastLogin: 'Senaste inloggning',
     },
     roles: {
       user: 'Användare',
-      admin: 'Administratör'
+      admin: 'Administratör',
+      superadmin: 'Superadministratör',
     },
+    leaveBlankToKeep: 'Lämna tomt för att behålla nuvarande lösenord',
     messages: {
-      saveSuccess: 'Administratören har sparats',
-      saveError: 'Ett fel uppstod när administratören skulle sparas',
-      deleteSuccess: 'Administratören har raderats',
-      deleteError: 'Ett fel uppstod när administratören skulle raderas',
-      cannotDeleteSelf: 'Du kan inte radera ditt eget konto'
-    }
+      saveSuccess: 'Personalen har sparats',
+      saveError: 'Ett fel uppstod när personalen skulle sparas',
+      deleteSuccess: 'Personalen har tagits bort',
+      deleteError: 'Ett fel uppstod när personalen skulle tas bort',
+      cannotDeleteSelf: 'Du kan inte ta bort ditt eget konto',
+    },
+    delete: {
+      title: 'Ta bort personal',
+      message: 'Är du säker på att du vill ta bort {name}? Detta går inte att ångra.',
+    },
   },
 }; 

@@ -5,6 +5,7 @@ import java.util.List;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -45,14 +46,37 @@ public class SecurityConfig {
                         // Publika endpoints (ingen autentisering krävs)
                         .requestMatchers("/api/auth/**", "/api-docs/**", "/swagger-ui/**").permitAll()
                         
-                        // Tasks endpoints - tillgängliga för alla autentiserade användare
-                        .requestMatchers("/api/tasks/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_USER", "ROLE_SUPERADMIN")
+                        // Lösenordsåterställning och e-postbekräftelse - ingen autentisering krävs
+                        .requestMatchers("/api/security/request-password-reset", "/api/security/reset-password", "/api/security/confirm-email").permitAll()
                         
-                        // Pending tasks endpoints - tillgängliga för administratörer
+                        // Kalender - tillgänglig för alla autentiserade användare (även USER)
+                        .requestMatchers("/api/tasks/date-range/**", "/api/tasks/assigned/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_USER", "ROLE_SUPERADMIN")
+                        
+                        // E-postbyte för autentiserade användare
+                        .requestMatchers("/api/security/request-email-change").authenticated()
+                        
+                        // Tasks - endast för ADMIN och SUPERADMIN
+                        .requestMatchers("/api/tasks/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_SUPERADMIN")
+                        
+                        // Pending tasks - endast för ADMIN och SUPERADMIN
                         .requestMatchers("/api/pending-tasks/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_SUPERADMIN")
                         
-                        // Admin endpoints - endast för administratörer
-                        .requestMatchers("/api/admins/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_SUPERADMIN")
+                        // CRUD för användare - endast ADMIN och SUPERADMIN kan lista/visa/skapa/uppdatera
+                        .requestMatchers(
+                            HttpMethod.GET, 
+                            "/api/users/**"
+                        ).hasAnyAuthority("ROLE_ADMIN", "ROLE_SUPERADMIN")
+                        .requestMatchers(
+                            HttpMethod.POST,
+                            "/api/users/**"
+                        ).hasAnyAuthority("ROLE_ADMIN", "ROLE_SUPERADMIN")
+                        .requestMatchers(
+                            HttpMethod.PUT,
+                            "/api/users/**"
+                        ).hasAnyAuthority("ROLE_ADMIN", "ROLE_SUPERADMIN")
+                        
+                        // Läggenheter, hyresgäster, nycklar - endast för ADMIN och SUPERADMIN
+                        .requestMatchers("/api/apartments/**", "/api/tenants/**", "/api/keys/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_SUPERADMIN")
                         
                         // Övriga endpoints - kräver autentisering
                         .anyRequest().authenticated()

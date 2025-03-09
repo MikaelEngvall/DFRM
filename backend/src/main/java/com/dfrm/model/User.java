@@ -13,8 +13,8 @@ import lombok.Builder;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Document(collection = "admins")
-public class Admin {
+@Document(collection = "users")
+public class User {
     @Id
     private String id;
     

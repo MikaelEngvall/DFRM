@@ -1,10 +1,5 @@
-com\dfrm\service\AdminService.class
-com\dfrm\repository\AdminRepository.class
 com\dfrm\model\KeyType.class
 com\dfrm\model\Tenant.class
-com\dfrm\service\AdminUserDetailsService.class
-com\dfrm\model\Admin.class
-com\dfrm\model\Admin$AdminBuilder.class
 com\dfrm\controller\KeyController.class
 com\dfrm\service\ApartmentService.class
 com\dfrm\repository\KeyRepository.class

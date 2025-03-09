@@ -7,7 +7,7 @@ import Keys from '../pages/Keys';
 import Tasks from '../pages/Tasks';
 import TaskDetail from '../pages/TaskDetail';
 import PendingTasks from '../pages/PendingTasks';
-import Admins from '../pages/Admins';
+import Staff from '../pages/Staff';
 import PrivateRoute from '../components/PrivateRoute';
 
 const routes = [
@@ -44,8 +44,8 @@ const routes = [
     element: <PrivateRoute><PendingTasks /></PrivateRoute>,
   },
   {
-    path: '/admins',
-    element: <PrivateRoute><Admins /></PrivateRoute>,
+    path: '/staff',
+    element: <PrivateRoute><Staff /></PrivateRoute>,
   },
 ];
 

@@ -2,7 +2,7 @@ package com.dfrm.config;
 
 import org.springframework.context.annotation.Configuration;
 
-import com.dfrm.service.AdminService;
+import com.dfrm.service.UserService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -10,14 +10,14 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class DataInitializer {
 
-    private final AdminService adminService;
+    private final UserService userService;
 
     /* @Bean
     public CommandLineRunner initializeData() {
         return args -> {
-            // Skapa standardadmin om den inte redan finns
-            if (!adminService.existsByEmail("mikael.engvall.me@gmail.com")) {
-                Admin admin = Admin.builder()
+            // Skapa standardanvändare om den inte redan finns
+            if (!userService.existsByEmail("mikael.engvall.me@gmail.com")) {
+                User user = User.builder()
                         .email("mikael.engvall.me@gmail.com")
                         .password("Admin123!")
                         .firstName("Mikael")
@@ -26,8 +26,8 @@ public class DataInitializer {
                         .active(true)
                         .build();
                 
-                adminService.createAdmin(admin);
-                System.out.println("Standardadministratör har skapats.");
+                userService.createUser(user);
+                System.out.println("Standardanvändare har skapats.");
             }
         };
     } */
