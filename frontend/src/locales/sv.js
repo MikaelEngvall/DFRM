@@ -23,6 +23,8 @@ export default {
     none: 'Ingen',
     all: 'Alla',
     optional: 'Valfri',
+    status: 'Status',
+    rooms: 'rum',
   },
 
   navigation: {
@@ -61,6 +63,7 @@ export default {
   },
 
   dashboard: {
+    title: 'Översikt',
     stats: {
       totalApartments: 'Totalt antal lägenheter',
       activeTenantsCount: 'Aktiva hyresgäster',

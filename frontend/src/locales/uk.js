@@ -23,6 +23,8 @@ export default {
     none: 'Немає',
     all: 'Усі',
     optional: 'Необов\'язково',
+    status: 'Статус',
+    rooms: 'кімн.',
   },
 
   navigation: {
@@ -61,6 +63,7 @@ export default {
   },
 
   dashboard: {
+    title: 'Панель керування',
     stats: {
       totalApartments: 'Загальна кількість квартир',
       activeTenantsCount: 'Активні орендарі',

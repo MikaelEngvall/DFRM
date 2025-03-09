@@ -5,8 +5,10 @@ import AlertModal from '../components/AlertModal';
 import FormInput from '../components/FormInput';
 import { PlusIcon } from '@heroicons/react/24/outline';
 import { keyService, apartmentService, tenantService } from '../services';
+import { useLocale } from '../contexts/LocaleContext';
 
 const Keys = () => {
+  const { t } = useLocale();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedKey, setSelectedKey] = useState(null);
   const [keys, setKeys] = useState([]);
@@ -26,59 +28,43 @@ const Keys = () => {
   });
 
   const columns = [
-    { 
-      key: 'type', 
-      label: 'Typ',
-      render: (typeValue) => {
-        const typeOption = keyTypes.find(t => t.value === typeValue);
-        return typeOption ? typeOption.label : typeValue;
-      }
+    {
+      key: 'type',
+      label: t('keys.fields.type'),
+      render: (type) => t(`keys.types.${type}`)
     },
-    { key: 'serie', label: 'Serie' },
-    { key: 'number', label: 'Nummer' },
-    { key: 'copyNumber', label: 'Kopia' },
-    { 
+    {
+      key: 'serie',
+      label: t('keys.fields.serie')
+    },
+    {
+      key: 'number',
+      label: t('keys.fields.number')
+    },
+    {
+      key: 'copyNumber',
+      label: t('keys.fields.copyNumber')
+    },
+    {
       key: 'apartment',
-      label: 'Lägenhet',
-      render: (apartmentValue, row) => {
-        console.log("Rendering apartment column:", apartmentValue, row);
-        
-        if (apartmentValue === undefined || apartmentValue === null) return '-';
-        
-        if (typeof apartmentValue === 'object' && apartmentValue.id) {
-          return `${apartmentValue.street} ${apartmentValue.number}, LGH ${apartmentValue.apartmentNumber}`;
-        }
-        
-        if (typeof apartmentValue === 'string') {
-          const apartmentObj = apartments.find(a => a.id === apartmentValue);
-          if (apartmentObj) {
-            return `${apartmentObj.street} ${apartmentObj.number}, LGH ${apartmentObj.apartmentNumber}`;
-          }
-        }
-        
-        return '-';
+      label: t('keys.fields.apartment'),
+      render: (apartmentId) => {
+        if (!apartmentId) return '-';
+        const apartment = apartments.find(a => a.id === apartmentId);
+        return apartment 
+          ? `${apartment.street} ${apartment.number}, LGH ${apartment.apartmentNumber}` 
+          : '-';
       }
     },
     {
       key: 'tenant',
-      label: 'Hyresgäst',
-      render: (tenantValue, row) => {
-        console.log("Rendering tenant column:", tenantValue, row);
-        
-        if (tenantValue === undefined || tenantValue === null) return '-';
-        
-        if (typeof tenantValue === 'object' && tenantValue.id) {
-          return `${tenantValue.firstName} ${tenantValue.lastName}`;
-        }
-        
-        if (typeof tenantValue === 'string') {
-          const tenantObj = tenants.find(t => t.id === tenantValue);
-          if (tenantObj) {
-            return `${tenantObj.firstName} ${tenantObj.lastName}`;
-          }
-        }
-        
-        return '-';
+      label: t('keys.fields.tenant'),
+      render: (tenantId) => {
+        if (!tenantId) return '-';
+        const tenant = tenants.find(t => t.id === tenantId);
+        return tenant 
+          ? `${tenant.firstName} ${tenant.lastName}` 
+          : '-';
       }
     },
   ];
@@ -341,202 +327,160 @@ const Keys = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-cinzel dark:text-white">Nycklar</h1>
+    <div className="container mx-auto px-4 py-8">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">{t('keys.title')}</h1>
         <button
-          onClick={() => setIsModalOpen(true)}
-          className="bg-primary text-white px-4 py-2 rounded-md hover:bg-secondary transition-colors flex items-center"
+          onClick={() => {
+            setSelectedKey(null);
+            setFormData({
+              type: '',
+              serie: '',
+              number: '',
+              copyNumber: '',
+              apartmentId: '',
+              tenantId: ''
+            });
+            setIsModalOpen(true);
+          }}
+          className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
         >
           <PlusIcon className="h-5 w-5 mr-2" />
-          Lägg till nyckel
+          {t('keys.addNew')}
         </button>
       </div>
 
-      {error && (
-        <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-4">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-              </svg>
-            </div>
-            <div className="ml-3">
-              <p className="text-sm text-red-700">{error}</p>
-            </div>
-          </div>
-        </div>
+      {isLoading ? (
+        <div className="text-center py-4">{t('common.loading')}</div>
+      ) : error ? (
+        <div className="text-center py-4 text-red-600 dark:text-red-400">{error}</div>
+      ) : (
+        <DataTable
+          columns={columns}
+          data={keys}
+          onEdit={handleEdit}
+          rowClassName={() => "cursor-pointer"}
+        />
       )}
-
-      <DataTable
-        columns={columns}
-        data={keys}
-        onEdit={handleEdit}
-      />
 
       <Modal
         isOpen={isModalOpen}
-        onClose={() => {
-          setIsModalOpen(false);
-          setSelectedKey(null);
-          setFormData({
-            type: '',
-            serie: '',
-            number: '',
-            copyNumber: '',
-            apartmentId: '',
-            tenantId: '',
-          });
-        }}
-        title={selectedKey ? 'Redigera nyckel' : 'Lägg till nyckel'}
-        size="small"
+        onClose={() => setIsModalOpen(false)}
+        title={selectedKey ? t('keys.edit') : t('keys.addNew')}
+        onSubmit={handleSubmit}
       >
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label
-                htmlFor="type"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >
-                Typ
-              </label>
-              <select
-                id="type"
-                name="type"
-                value={formData.type}
-                onChange={handleInputChange}
-                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-primary focus:ring-primary dark:bg-gray-700 dark:text-white sm:text-sm"
-                required
-              >
-                <option value="">Välj typ</option>
-                {keyTypes.map((type) => (
-                  <option key={type.value} value={type.value}>
-                    {type.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <FormInput
-              label="Serie"
-              name="serie"
-              value={formData.serie}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              {t('keys.fields.type')}
+            </label>
+            <select
+              name="type"
+              value={formData.type}
               onChange={handleInputChange}
+              className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               required
-            />
-
-            <FormInput
-              label="Nummer"
-              name="number"
-              value={formData.number}
-              onChange={handleInputChange}
-              required
-            />
-
-            <FormInput
-              label="Kopienummer"
-              name="copyNumber"
-              value={formData.copyNumber}
-              onChange={handleInputChange}
-              placeholder="Valfritt"
-            />
-
-            <div>
-              <label
-                htmlFor="apartmentId"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >
-                Lägenhet
-              </label>
-              <select
-                id="apartmentId"
-                name="apartmentId"
-                value={formData.apartmentId}
-                onChange={handleInputChange}
-                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-primary focus:ring-primary dark:bg-gray-700 dark:text-white sm:text-sm"
-                required
-              >
-                <option value="">Välj lägenhet</option>
-                {apartments.map((apartment) => (
-                  <option key={apartment.id} value={apartment.id}>
-                    {`${apartment.street} ${apartment.number}, ${apartment.apartmentNumber}`}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label
-                htmlFor="tenantId"
-                className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
-              >
-                Hyresgäst
-              </label>
-              <select
-                id="tenantId"
-                name="tenantId"
-                value={formData.tenantId}
-                onChange={handleInputChange}
-                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-primary focus:ring-primary dark:bg-gray-700 dark:text-white sm:text-sm"
-              >
-                <option value="">Ingen hyresgäst</option>
-                {tenants.map((tenant) => (
-                  <option key={tenant.id} value={tenant.id}>
-                    {`${tenant.firstName} ${tenant.lastName}`}
-                  </option>
-                ))}
-              </select>
-            </div>
+            >
+              <option value="">{t('keys.types.selectType')}</option>
+              <option value="D">{t('keys.types.D')}</option>
+              <option value="P">{t('keys.types.P')}</option>
+              <option value="T">{t('keys.types.T')}</option>
+              <option value="F">{t('keys.types.F')}</option>
+              <option value="G">{t('keys.types.G')}</option>
+              <option value="HN">{t('keys.types.HN')}</option>
+              <option value="Ö">{t('keys.types.Ö')}</option>
+            </select>
           </div>
+          <FormInput
+            label={t('keys.fields.serie')}
+            name="serie"
+            type="text"
+            value={formData.serie}
+            onChange={handleInputChange}
+            required
+          />
+        </div>
 
-          <div className="flex justify-between gap-4 mt-6">
-            {selectedKey && (
-              <button
-                type="button"
-                onClick={() => handleDelete(selectedKey)}
-                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800"
-              >
-                Ta bort
-              </button>
-            )}
-            <div className="flex gap-4 ml-auto">
-              <button
-                type="button"
-                onClick={() => {
-                  setIsModalOpen(false);
-                  setSelectedKey(null);
-                  setFormData({
-                    type: '',
-                    serie: '',
-                    number: '',
-                    copyNumber: '',
-                    apartmentId: '',
-                    tenantId: '',
-                  });
-                }}
-                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
-              >
-                Avbryt
-              </button>
-              <button
-                type="submit"
-                className="px-4 py-2 bg-primary text-white rounded-md hover:bg-secondary dark:bg-primary dark:hover:bg-secondary"
-              >
-                {selectedKey ? 'Spara ändringar' : 'Lägg till'}
-              </button>
-            </div>
-          </div>
-        </form>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+          <FormInput
+            label={t('keys.fields.number')}
+            name="number"
+            type="text"
+            value={formData.number}
+            onChange={handleInputChange}
+            required
+          />
+          <FormInput
+            label={t('keys.fields.copyNumber')}
+            name="copyNumber"
+            type="text"
+            value={formData.copyNumber}
+            onChange={handleInputChange}
+          />
+        </div>
+
+        <div className="mt-4">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            {t('keys.fields.apartment')}
+          </label>
+          <select
+            name="apartmentId"
+            value={formData.apartmentId}
+            onChange={handleInputChange}
+            className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+          >
+            <option value="">{t('keys.fields.noApartment')}</option>
+            {apartments.map((apartment) => (
+              <option key={apartment.id} value={apartment.id}>
+                {apartment.street} {apartment.number}, LGH {apartment.apartmentNumber}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="mt-4">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            {t('keys.fields.tenant')}
+          </label>
+          <select
+            name="tenantId"
+            value={formData.tenantId}
+            onChange={handleInputChange}
+            className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+          >
+            <option value="">{t('keys.fields.noTenant')}</option>
+            {tenants.map((tenant) => (
+              <option key={tenant.id} value={tenant.id}>
+                {tenant.firstName} {tenant.lastName}
+              </option>
+            ))}
+          </select>
+        </div>
       </Modal>
 
       <AlertModal
         isOpen={isAlertOpen}
         onClose={() => setIsAlertOpen(false)}
-        onConfirm={confirmDelete}
-        title="Ta bort nyckel"
-        message={keyToDelete ? `Är du säker på att du vill ta bort nyckeln ${keyToDelete.type} (${keyToDelete.serie}-${keyToDelete.number})? Detta går inte att ångra.` : ''}
-        confirmText="Ta bort"
-        cancelText="Avbryt"
+        title={t('keys.confirmDelete')}
+        message={
+          keyToDelete ? 
+          t('keys.deleteMessage', { 
+            type: t(`keys.types.${keyToDelete.type}`),
+            serie: keyToDelete.serie,
+            number: keyToDelete.number
+          }) : ''
+        }
+        buttons={[
+          {
+            label: t('common.delete'),
+            onClick: handleDelete,
+            variant: 'danger'
+          },
+          {
+            label: t('common.cancel'),
+            onClick: () => setIsAlertOpen(false)
+          }
+        ]}
       />
     </div>
   );

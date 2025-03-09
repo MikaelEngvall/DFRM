@@ -6,16 +6,17 @@ import FormInput from '../components/FormInput';
 import { PlusIcon } from '@heroicons/react/24/outline';
 import { tenantService, apartmentService, keyService } from '../services';
 import { formatShortDate, formatDateForInput } from '../utils/formatters';
+import { useLocale } from '../contexts/LocaleContext';
 
 // Definiera nyckeltyper
 const keyTypes = [
-  { value: 'D', label: 'Dörr (D)' },
-  { value: 'P', label: 'Post (P)' },
-  { value: 'T', label: 'Tvätt (T)' },
-  { value: 'F', label: 'Förråd (F)' },
-  { value: 'G', label: 'Garage (G)' },
-  { value: 'HN', label: 'Huvudnyckel (HN)' },
-  { value: 'Ö', label: 'Övrigt (Ö)' }
+  { value: 'D', label: 'keys.types.D' },
+  { value: 'P', label: 'keys.types.P' },
+  { value: 'T', label: 'keys.types.T' },
+  { value: 'F', label: 'keys.types.F' },
+  { value: 'G', label: 'keys.types.G' },
+  { value: 'HN', label: 'keys.types.HN' },
+  { value: 'Ö', label: 'keys.types.Ö' }
 ];
 
 // Hjälpfunktion för att rendera nyckeltyp
@@ -25,6 +26,8 @@ const renderKeyType = (typeValue) => {
 };
 
 const Tenants = () => {
+  const { t } = useLocale();
+  
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTenant, setSelectedTenant] = useState(null);
   const [tenants, setTenants] = useState([]);
@@ -47,6 +50,12 @@ const Tenants = () => {
     keyIds: [],
   });
 
+  // Uppdatera keyTypes med översättningar
+  const translatedKeyTypes = keyTypes.map(type => ({
+    ...type,
+    label: t(type.label)
+  }));
+
   // Hjälpfunktion för att kontrollera om en hyresgäst har lägenhet
   const hasTenantApartment = (tenant) => {
     // Kontrollera om apartment finns som objekt eller ID
@@ -54,35 +63,35 @@ const Tenants = () => {
   };
 
   const columns = [
-    { key: 'firstName', label: 'Förnamn' },
-    { key: 'lastName', label: 'Efternamn' },
-    { key: 'phone', label: 'Telefon' },
+    { key: 'firstName', label: t('tenants.fields.firstName') },
+    { key: 'lastName', label: t('tenants.fields.lastName') },
+    { key: 'phone', label: t('tenants.fields.phoneNumber') },
     { 
       key: 'status', 
-      label: 'Status',
+      label: t('common.status'),
       render: (_, tenant) => hasTenantApartment(tenant) ? (
         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
-          Boende
+          {t('apartments.isOccupied')}
         </span>
       ) : (
         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
-          Ej boende
+          {t('apartments.isVacant')}
         </span>
       )
     },
     {
       key: 'movedInDate',
-      label: 'IN',
+      label: t('tenants.fields.movedInDate'),
       render: (value) => formatShortDate(value)
     },
     {
       key: 'resiliationDate',
-      label: 'UPS',
+      label: t('tenants.fields.resiliationDate'),
       render: (value) => formatShortDate(value)
     },
     {
       key: 'apartment',
-      label: 'Lägenhet',
+      label: t('tenants.fields.apartment'),
       render: (apartmentId) => {
         if (!apartmentId) return '-';
         const apartment = apartments.find(a => a.id === apartmentId);
@@ -93,7 +102,7 @@ const Tenants = () => {
     },
     {
       key: 'keys',
-      label: 'Nycklar',
+      label: t('tenants.fields.keys'),
       render: (keysValue, tenant) => {
         // Om keys inte finns eller är en tom array
         if (!tenant.keys || (Array.isArray(tenant.keys) && tenant.keys.length === 0)) {
@@ -185,7 +194,7 @@ const Tenants = () => {
       setKeys(keysData);
       setError(null);
     } catch (err) {
-      setError('Ett fel uppstod när data skulle hämtas');
+      setError(t('common.error'));
       console.error('Error fetching initial data:', err);
     } finally {
       setIsLoading(false);
@@ -319,7 +328,7 @@ const Tenants = () => {
         keyIds: [],
       });
     } catch (err) {
-      setError('Ett fel uppstod när hyresgästen skulle sparas');
+      setError(t('tenants.messages.saveError'));
       console.error('Error saving tenant:', err);
     }
   };
@@ -429,13 +438,28 @@ const Tenants = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-cinzel dark:text-white">Hyresgäster</h1>
+        <h1 className="text-3xl font-cinzel dark:text-white">{t('tenants.title')}</h1>
         <button
-          onClick={() => setIsModalOpen(true)}
+          onClick={() => {
+            setSelectedTenant(null);
+            setFormData({
+              firstName: '',
+              lastName: '',
+              personnummer: '',
+              email: '',
+              phone: '',
+              movedInDate: '',
+              resiliationDate: '',
+              comment: '',
+              apartmentId: '',
+              keyIds: [],
+            });
+            setIsModalOpen(true);
+          }}
           className="bg-primary text-white px-4 py-2 rounded-md hover:bg-secondary transition-colors flex items-center"
         >
           <PlusIcon className="h-5 w-5 mr-2" />
-          Lägg till hyresgäst
+          {t('tenants.addNew')}
         </button>
       </div>
 
@@ -479,48 +503,48 @@ const Tenants = () => {
             keyIds: [],
           });
         }}
-        title={selectedTenant ? 'Redigera hyresgäst' : 'Lägg till hyresgäst'}
+        title={selectedTenant ? t('tenants.edit') : t('tenants.addNew')}
         size="small"
       >
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <FormInput
-              label="Förnamn"
+              label={t('tenants.fields.firstName')}
               name="firstName"
               value={formData.firstName}
               onChange={handleInputChange}
               required
             />
             <FormInput
-              label="Efternamn"
+              label={t('tenants.fields.lastName')}
               name="lastName"
               value={formData.lastName}
               onChange={handleInputChange}
               required
             />
             <FormInput
-              label="Personnummer"
+              label={t('tenants.fields.personnummer')}
               name="personnummer"
               value={formData.personnummer}
               onChange={handleInputChange}
-              placeholder="ÅÅÅÅMMDDXXXX"
+              placeholder="ÅÅÅÅMMDD-XXXX"
               required
             />
             <FormInput
-              label="E-post"
+              label={t('tenants.fields.email')}
               name="email"
               value={formData.email}
               onChange={handleInputChange}
             />
             <FormInput
-              label="Telefon"
+              label={t('tenants.fields.phoneNumber')}
               name="phone"
               value={formData.phone}
               onChange={handleInputChange}
               required
             />
             <FormInput
-              label="IN"
+              label={t('tenants.fields.movedInDate')}
               name="movedInDate"
               type="date"
               value={formatDateForInput(formData.movedInDate)}
@@ -528,7 +552,7 @@ const Tenants = () => {
               required
             />
             <FormInput
-              label="UPS"
+              label={t('tenants.fields.resiliationDate')}
               name="resiliationDate"
               type="date"
               value={formatDateForInput(formData.resiliationDate)}
@@ -539,7 +563,7 @@ const Tenants = () => {
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                Lägenhet
+                {t('tenants.fields.apartment')}
               </label>
               <select
                 name="apartmentId"
@@ -547,7 +571,7 @@ const Tenants = () => {
                 onChange={handleInputChange}
                 className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-primary focus:ring-primary dark:bg-gray-700 dark:text-white sm:text-sm"
               >
-                <option value="">Ingen lägenhet</option>
+                <option value="">{t('tenants.fields.noApartment')}</option>
                 {apartments.map((apartment) => (
                   <option key={apartment.id} value={apartment.id}>
                     {`${apartment.street} ${apartment.number}, ${apartment.apartmentNumber}`}
@@ -561,7 +585,7 @@ const Tenants = () => {
                 htmlFor="keyIds"
                 className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1"
               >
-                Nycklar
+                {t('tenants.fields.keys')}
               </label>
               <select
                 id="keyIds"
@@ -574,7 +598,8 @@ const Tenants = () => {
               >
                 {keys.map((key) => (
                   <option key={key.id} value={key.id}>
-                    {renderKeyType(key.type)} ({key.serie}-{key.number}{key.copyNumber ? ' ' + key.copyNumber : ''})
+                    {t(`keys.types.${key.type}`)} ({key.serie}-{key.number})
+                    {key.copyNumber ? ` #${key.copyNumber}` : ''}
                   </option>
                 ))}
               </select>
@@ -582,7 +607,7 @@ const Tenants = () => {
 
             <div className="col-span-2">
               <FormInput
-                label="Kommentar"
+                label={t('tenants.fields.comment')}
                 name="comment"
                 value={formData.comment}
                 onChange={handleInputChange}
@@ -597,7 +622,7 @@ const Tenants = () => {
                 onClick={() => handleDelete(selectedTenant)}
                 className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800"
               >
-                Ta bort
+                {t('common.delete')}
               </button>
             )}
             <div className="flex gap-4 ml-auto">
@@ -621,13 +646,13 @@ const Tenants = () => {
                 }}
                 className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
               >
-                Avbryt
+                {t('common.cancel')}
               </button>
               <button
                 type="submit"
                 className="px-4 py-2 bg-primary text-white rounded-md hover:bg-secondary dark:bg-primary dark:hover:bg-secondary"
               >
-                {selectedTenant ? 'Spara ändringar' : 'Lägg till'}
+                {selectedTenant ? t('common.save') : t('common.add')}
               </button>
             </div>
           </div>
@@ -638,10 +663,16 @@ const Tenants = () => {
         isOpen={isAlertOpen}
         onClose={() => setIsAlertOpen(false)}
         onConfirm={confirmDelete}
-        title="Ta bort hyresgäst"
-        message={tenantToDelete ? `Är du säker på att du vill ta bort hyresgästen ${tenantToDelete.firstName} ${tenantToDelete.lastName}? Detta går inte att ångra.` : ''}
-        confirmText="Ta bort"
-        cancelText="Avbryt"
+        title={t('tenants.confirmDelete')}
+        message={
+          tenantToDelete ? 
+          t('tenants.deleteMessage', { 
+            firstName: tenantToDelete.firstName, 
+            lastName: tenantToDelete.lastName 
+          }) : ''
+        }
+        confirmText={t('common.delete')}
+        cancelText={t('common.cancel')}
       />
     </div>
   );

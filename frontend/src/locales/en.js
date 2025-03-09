@@ -23,6 +23,8 @@ export default {
     none: 'None',
     all: 'All',
     optional: 'Optional',
+    status: 'Status',
+    rooms: 'rooms',
   },
 
   navigation: {
@@ -61,6 +63,7 @@ export default {
   },
 
   dashboard: {
+    title: 'Dashboard',
     stats: {
       totalApartments: 'Total apartments',
       activeTenantsCount: 'Active tenants',

@@ -7,8 +7,10 @@ import {
   ChartBarIcon,
 } from '@heroicons/react/24/outline';
 import { apartmentService, tenantService, keyService } from '../services';
+import { useLocale } from '../contexts/LocaleContext';
 
 const Dashboard = () => {
+  const { t } = useLocale();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [stats, setStats] = useState({
@@ -43,7 +45,7 @@ const Dashboard = () => {
 
       setError(null);
     } catch (err) {
-      setError('Ett fel uppstod när data skulle hämtas');
+      setError(t('common.error'));
       console.error('Error fetching dashboard data:', err);
     } finally {
       setIsLoading(false);
@@ -52,28 +54,28 @@ const Dashboard = () => {
 
   const statCards = [
     {
-      name: 'Totalt antal lägenheter',
+      name: t('dashboard.stats.totalApartments'),
       value: stats.totalApartments,
       icon: HomeIcon,
       color: 'bg-blue-500',
       link: '/apartments',
     },
     {
-      name: 'Aktiva hyresgäster',
+      name: t('dashboard.stats.activeTenantsCount'),
       value: stats.activeTenantsCount,
       icon: UserGroupIcon,
       color: 'bg-green-500',
       link: '/tenants',
     },
     {
-      name: 'Utdelade nycklar',
+      name: t('dashboard.stats.totalKeys'),
       value: stats.totalKeys,
       icon: KeyIcon,
       color: 'bg-yellow-500',
       link: '/keys',
     },
     {
-      name: 'Lediga lägenheter',
+      name: t('dashboard.stats.vacantApartments'),
       value: stats.vacantApartments,
       icon: ChartBarIcon,
       color: 'bg-purple-500',
@@ -91,7 +93,7 @@ const Dashboard = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <h1 className="text-3xl font-cinzel mb-8 dark:text-white">Översikt</h1>
+      <h1 className="text-3xl font-cinzel mb-8 dark:text-white">{t('dashboard.title')}</h1>
 
       {error && (
         <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-4">
@@ -138,22 +140,22 @@ const Dashboard = () => {
         {/* Senaste aktiviteter */}
         <div className="bg-white dark:bg-gray-800 shadow dark:shadow-[0_4px_6px_-1px_rgba(0,0,0,0.5),0_2px_4px_-2px_rgba(0,0,0,0.5)] rounded-lg p-6 dark:border dark:border-gray-700">
           <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-            Senaste aktiviteter
+            {t('dashboard.sections.recentActivity')}
           </h2>
           <div className="space-y-4">
             {/* Här kan vi lägga till en lista med senaste aktiviteter */}
-            <p className="text-gray-500 dark:text-gray-400">Ingen aktivitet att visa</p>
+            <p className="text-gray-500 dark:text-gray-400">{t('dashboard.sections.noActivity')}</p>
           </div>
         </div>
 
         {/* Kommande händelser */}
         <div className="bg-white dark:bg-gray-800 shadow dark:shadow-[0_4px_6px_-1px_rgba(0,0,0,0.5),0_2px_4px_-2px_rgba(0,0,0,0.5)] rounded-lg p-6 dark:border dark:border-gray-700">
           <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-            Kommande händelser
+            {t('dashboard.sections.upcomingEvents')}
           </h2>
           <div className="space-y-4">
             {/* Här kan vi lägga till en lista med kommande händelser */}
-            <p className="text-gray-500 dark:text-gray-400">Inga kommande händelser</p>
+            <p className="text-gray-500 dark:text-gray-400">{t('dashboard.sections.noEvents')}</p>
           </div>
         </div>
       </div>

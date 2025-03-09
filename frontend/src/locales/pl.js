@@ -23,6 +23,8 @@ export default {
     none: 'Brak',
     all: 'Wszystkie',
     optional: 'Opcjonalnie',
+    status: 'Status',
+    rooms: 'pokoje',
   },
 
   navigation: {
@@ -61,6 +63,7 @@ export default {
   },
 
   dashboard: {
+    title: 'Panel główny',
     stats: {
       totalApartments: 'Liczba mieszkań',
       activeTenantsCount: 'Aktywni najemcy',
