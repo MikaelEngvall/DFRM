@@ -13,6 +13,7 @@ import {
   XMarkIcon,
   SunIcon,
   MoonIcon,
+  UserIcon,
 } from '@heroicons/react/24/outline';
 import { useAuth } from '../contexts/AuthContext';
 import { useLocale } from '../contexts/LocaleContext';
@@ -126,7 +127,7 @@ const Navigation = () => {
   const navigation = [
     {
       name: t('navigation.dashboard'),
-      href: '/dashboard',
+      href: '/',
       icon: HomeIcon,
     },
     {
@@ -160,6 +161,15 @@ const Navigation = () => {
       icon: CalendarIcon,
     },
   ];
+
+  // Lägg till admin-länk endast för administratörer
+  if (user && user.role === 'ADMIN') {
+    navigation.push({
+      name: t('navigation.admins'),
+      href: '/admins',
+      icon: UserIcon,
+    });
+  }
 
   return (
     <>

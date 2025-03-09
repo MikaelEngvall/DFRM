@@ -26,6 +26,8 @@ export default {
     status: 'Status',
     rooms: 'rum',
     viewAll: 'Visa alla',
+    clear: 'Rensa',
+    apply: 'Tillämpa',
   },
 
   navigation: {
@@ -41,6 +43,7 @@ export default {
     settings: 'Inställningar',
     darkMode: 'Mörkt läge',
     lightMode: 'Ljust läge',
+    admins: 'Administratörer',
   },
 
   auth: {
@@ -227,6 +230,15 @@ export default {
     edit: 'Redigera uppgift',
     relatedTasks: 'Relaterade uppgifter',
     noRelatedTasks: 'Inga relaterade uppgifter',
+    recurringPatternHelp: 'Systemet kommer automatiskt att skapa nya uppgifter baserat på detta mönster',
+    recurringPatterns: {
+      DAILY: 'Dagligen',
+      WEEKLY: 'Veckovis',
+      BIWEEKLY: 'Varannan vecka',
+      MONTHLY: 'Månadsvis',
+      QUARTERLY: 'Kvartalsvis',
+      YEARLY: 'Årligen',
+    },
     fields: {
       title: 'Titel',
       description: 'Beskrivning',
@@ -240,6 +252,8 @@ export default {
       comments: 'Kommentarer',
       isRecurring: 'Återkommande',
       recurringPattern: 'Återkommandemönster',
+      details: 'Uppgiftsdetaljer',
+      assignment: 'Tilldelning'
     },
     priorities: {
       LOW: 'Låg',
@@ -256,20 +270,32 @@ export default {
     },
     messages: {
       saveSuccess: 'Uppgiften har sparats',
-      saveError: 'Ett fel uppstod när uppgiften skulle sparas',
+      saveError: 'Ett fel uppstod vid sparande av uppgiften',
       deleteSuccess: 'Uppgiften har tagits bort',
-      deleteError: 'Ett fel uppstod när uppgiften skulle tas bort',
+      deleteError: 'Ett fel uppstod vid borttagning av uppgiften',
       statusUpdateSuccess: 'Uppgiftens status har uppdaterats',
-      statusUpdateError: 'Ett fel uppstod när uppgiftens status skulle uppdateras',
+      statusUpdateError: 'Ett fel uppstod vid statusuppdatering',
     },
-    confirmDelete: 'Är du säker på att du vill ta bort denna uppgift?',
+    confirmDelete: 'Bekräfta borttagning av uppgift',
     filters: {
+      apartment: 'Lägenhet',
+      tenant: 'Hyresgäst',
+      priority: 'Prioritet',
+      status: 'Status',
+      date: 'Datum',
       all: 'Alla uppgifter',
       today: 'Idag',
       tomorrow: 'Imorgon',
       thisWeek: 'Denna vecka',
       overdue: 'Försenade',
       completed: 'Slutförda',
+    },
+    notFound: 'Uppgift hittades inte',
+    actions: {
+      startWork: 'Påbörja arbete',
+      markComplete: 'Markera som slutförd',
+      approve: 'Godkänn',
+      reject: 'Avslå'
     },
   },
 
@@ -343,5 +369,34 @@ export default {
       sat: 'Lör',
       sun: 'Sön',
     },
+  },
+
+  admins: {
+    title: 'Administratörer',
+    add: 'Lägg till administratör',
+    edit: 'Redigera administratör',
+    confirmDelete: 'Radera administratör',
+    confirmDeleteMessage: 'Är du säker på att du vill radera administratören',
+    leaveBlankToKeep: 'Lämna tomt för att behålla nuvarande lösenord',
+    fields: {
+      firstName: 'Förnamn',
+      lastName: 'Efternamn',
+      email: 'E-post',
+      password: 'Lösenord',
+      role: 'Roll',
+      active: 'Aktiv',
+      lastLogin: 'Senaste inloggning'
+    },
+    roles: {
+      user: 'Användare',
+      admin: 'Administratör'
+    },
+    messages: {
+      saveSuccess: 'Administratören har sparats',
+      saveError: 'Ett fel uppstod när administratören skulle sparas',
+      deleteSuccess: 'Administratören har raderats',
+      deleteError: 'Ett fel uppstod när administratören skulle raderas',
+      cannotDeleteSelf: 'Du kan inte radera ditt eget konto'
+    }
   },
 }; 

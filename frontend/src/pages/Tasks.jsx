@@ -131,9 +131,19 @@ const Tasks = () => {
     e.preventDefault();
     try {
       if (selectedTask) {
+        // För existerande uppgift, uppdatera återkommande mönster om det har ändrats
+        if (selectedTask.isRecurring !== formData.isRecurring || 
+            selectedTask.recurringPattern !== formData.recurringPattern) {
+          await taskService.updateRecurringPattern(selectedTask.id, formData.recurringPattern);
+        }
         await taskService.updateTask(selectedTask.id, formData);
       } else {
-        await taskService.createTask(formData);
+        // För ny uppgift, skapa normal eller återkommande beroende på valet
+        if (formData.isRecurring && formData.recurringPattern) {
+          await taskService.createRecurringTask(formData);
+        } else {
+          await taskService.createTask(formData);
+        }
       }
       
       await fetchInitialData();
@@ -254,6 +264,10 @@ const Tasks = () => {
     fetchInitialData();
   };
 
+  const handleRowClick = (task) => {
+    navigate(`/tasks/${task.id}`);
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-full">
@@ -264,24 +278,36 @@ const Tasks = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
+      {error && (
+        <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-md mb-4">
+          <p className="text-red-600 dark:text-red-400">{error}</p>
+        </div>
+      )}
+      
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">{t('tasks.title')}</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          {t('navigation.tasks')}
+        </h1>
         <button
           onClick={() => {
-            setSelectedTask(null);
             resetForm();
+            setSelectedTask(null);
             setIsModalOpen(true);
           }}
-          className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+          className="flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md"
         >
-          <PlusIcon className="h-5 w-5 mr-2" />
-          {t('tasks.addNew')}
+          <PlusIcon className="h-5 w-5 mr-1" />
+          <span>{t('common.add')}</span>
         </button>
       </div>
-
-      {/* Filter section */}
+      
+      {/* Filtersektion */}
       <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-4 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+          {t('common.filters')}
+        </h2>
+        
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               {t('tasks.filters.apartment')}
@@ -290,7 +316,7 @@ const Tasks = () => {
               name="apartmentId"
               value={filters.apartmentId}
               onChange={handleFilterChange}
-              className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             >
               <option value="">{t('common.all')}</option>
               {apartments.map((apartment) => (
@@ -309,7 +335,7 @@ const Tasks = () => {
               name="tenantId"
               value={filters.tenantId}
               onChange={handleFilterChange}
-              className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             >
               <option value="">{t('common.all')}</option>
               {tenants.map((tenant) => (
@@ -322,13 +348,13 @@ const Tasks = () => {
           
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              {t('tasks.fields.status')}
+              {t('tasks.filters.status')}
             </label>
             <select
               name="status"
               value={filters.status}
               onChange={handleFilterChange}
-              className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             >
               <option value="">{t('common.all')}</option>
               <option value="PENDING">{t('tasks.status.PENDING')}</option>
@@ -341,13 +367,13 @@ const Tasks = () => {
           
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              {t('tasks.fields.priority')}
+              {t('tasks.filters.priority')}
             </label>
             <select
               name="priority"
               value={filters.priority}
               onChange={handleFilterChange}
-              className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
             >
               <option value="">{t('common.all')}</option>
               <option value="LOW">{t('tasks.priorities.LOW')}</option>
@@ -358,48 +384,56 @@ const Tasks = () => {
           </div>
         </div>
         
-        <div className="flex justify-end mt-4 space-x-2">
+        <div className="flex justify-end space-x-2">
           <button
-            onClick={clearFilters}
-            className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:hover:bg-gray-600"
+            onClick={() => {
+              setFilters({
+                apartmentId: '',
+                tenantId: '',
+                status: '',
+                priority: '',
+              });
+              clearFilters();
+            }}
+            className="bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 py-2 px-4 rounded-md"
           >
             {t('common.clear')}
           </button>
           <button
             onClick={applyFilters}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+            className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md"
           >
             {t('common.apply')}
           </button>
         </div>
       </div>
-
-      {error && (
-        <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-4">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-              </svg>
-            </div>
-            <div className="ml-3">
-              <p className="text-sm text-red-700">{error}</p>
-            </div>
-          </div>
-        </div>
-      )}
-
+      
       <DataTable
         columns={columns}
         data={tasks}
+        isLoading={isLoading}
         onEdit={handleEdit}
-        rowClassName={() => "cursor-pointer"}
+        onDelete={handleDelete}
+        onRowClick={handleRowClick}
+        actions={[
+          {
+            label: t('tasks.actions.markComplete'),
+            condition: (task) => task.status !== 'COMPLETED',
+            onClick: (task) => handleStatusChange(task.id, 'COMPLETED'),
+            className: 'text-green-600 hover:text-green-800'
+          }
+        ]}
       />
-
+      
+      {/* Modalform för att lägga till/redigera uppgifter */}
       <Modal
         isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        title={selectedTask ? t('tasks.edit') : t('tasks.addNew')}
+        onClose={() => {
+          setIsModalOpen(false);
+          setSelectedTask(null);
+          resetForm();
+        }}
+        title={selectedTask ? t('tasks.edit') : t('tasks.add')}
         onSubmit={handleSubmit}
       >
         <div className="grid grid-cols-1 gap-4">
@@ -564,7 +598,7 @@ const Tasks = () => {
           </div>
           
           {formData.isRecurring && (
-            <div>
+            <div className="mt-3">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 {t('tasks.fields.recurringPattern')}
               </label>
@@ -573,24 +607,31 @@ const Tasks = () => {
                 value={formData.recurringPattern}
                 onChange={handleInputChange}
                 className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                required={formData.isRecurring}
               >
-                <option value="">Välj...</option>
-                <option value="DAILY">Dagligen</option>
-                <option value="WEEKLY">Veckovis</option>
-                <option value="MONTHLY">Månadsvis</option>
-                <option value="YEARLY">Årligen</option>
+                <option value="">{t('common.select')}</option>
+                <option value="DAILY">{t('tasks.recurringPatterns.DAILY')}</option>
+                <option value="WEEKLY">{t('tasks.recurringPatterns.WEEKLY')}</option>
+                <option value="BIWEEKLY">{t('tasks.recurringPatterns.BIWEEKLY')}</option>
+                <option value="MONTHLY">{t('tasks.recurringPatterns.MONTHLY')}</option>
+                <option value="QUARTERLY">{t('tasks.recurringPatterns.QUARTERLY')}</option>
+                <option value="YEARLY">{t('tasks.recurringPatterns.YEARLY')}</option>
               </select>
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                {t('tasks.recurringPatternHelp')}
+              </p>
             </div>
           )}
         </div>
       </Modal>
-
+      
+      {/* Bekräftelsemodal för borttagning */}
       <AlertModal
         isOpen={isAlertOpen}
         onClose={() => setIsAlertOpen(false)}
         onConfirm={confirmDelete}
         title={t('tasks.confirmDelete')}
-        message={taskToDelete ? `${t('tasks.confirmDelete')} "${taskToDelete.title}"?` : ''}
+        message={`${t('tasks.confirmDelete')} "${taskToDelete?.title}"?`}
         confirmText={t('common.delete')}
         cancelText={t('common.cancel')}
       />
