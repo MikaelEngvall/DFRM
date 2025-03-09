@@ -1,5 +1,15 @@
-export { default as api } from './api';
-export { default as authService } from './authService';
-export { default as apartmentService } from './apartmentService';
-export { default as tenantService } from './tenantService';
-export { default as keyService } from './keyService'; 
+import authService from './authService';
+import apartmentService from './apartmentService';
+import tenantService from './tenantService';
+import keyService from './keyService';
+import taskService from './taskService';
+import pendingTaskService from './pendingTaskService';
+
+export {
+  authService,
+  apartmentService,
+  tenantService,
+  keyService,
+  taskService,
+  pendingTaskService
+}; 

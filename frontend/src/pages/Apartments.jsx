@@ -7,6 +7,7 @@ import { PlusIcon } from '@heroicons/react/24/outline';
 import { apartmentService, tenantService, keyService } from '../services';
 import { useLocation } from 'react-router-dom';
 import { useLocale } from '../contexts/LocaleContext';
+import RelatedTasks from '../components/RelatedTasks';
 
 // Definiera nyckeltyper
 const keyTypes = [
@@ -856,6 +857,13 @@ const Apartments = () => {
             </div>
           </div>
         </form>
+
+        {/* Visa RelatedTasks endast när vi redigerar en befintlig lägenhet */}
+        {selectedApartment && selectedApartment.id && (
+          <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+            <RelatedTasks entityType="apartment" entityId={selectedApartment.id} />
+          </div>
+        )}
       </Modal>
 
       <AlertModal

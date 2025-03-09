@@ -10,14 +10,17 @@ import Apartments from './pages/Apartments';
 import Tenants from './pages/Tenants';
 import Keys from './pages/Keys';
 import Login from './pages/Login';
+import Tasks from './pages/Tasks';
+import PendingTasks from './pages/PendingTasks';
+import Calendar from './pages/Calendar';
 
 // Wrapper-komponent för sidor som kräver navigation
 const NavigationWrapper = ({ children }) => (
-  <div>
+  <div className="flex min-h-screen">
     <Navigation />
-    <main className="pt-16">
+    <div className="flex-1 overflow-auto mt-16 ml-16 lg:ml-60">
       {children}
-    </main>
+    </div>
   </div>
 );
 
@@ -71,6 +74,30 @@ const App = () => {
                   <PrivateRoute>
                     <NavigationWrapper>
                       <Keys />
+                    </NavigationWrapper>
+                  </PrivateRoute>
+                } />
+                
+                <Route path="/tasks" element={
+                  <PrivateRoute>
+                    <NavigationWrapper>
+                      <Tasks />
+                    </NavigationWrapper>
+                  </PrivateRoute>
+                } />
+                
+                <Route path="/pending-tasks" element={
+                  <PrivateRoute>
+                    <NavigationWrapper>
+                      <PendingTasks />
+                    </NavigationWrapper>
+                  </PrivateRoute>
+                } />
+                
+                <Route path="/calendar" element={
+                  <PrivateRoute>
+                    <NavigationWrapper>
+                      <Calendar />
                     </NavigationWrapper>
                   </PrivateRoute>
                 } />
