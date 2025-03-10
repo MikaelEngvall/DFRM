@@ -17,14 +17,14 @@ const AlertModal = ({ isOpen, onClose, onConfirm, title, message, confirmText = 
     >
       <div className="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
         <div className="fixed inset-0 transition-opacity" aria-hidden="true" onClick={(e) => e.stopPropagation()}>
-          <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
+          <div className="absolute inset-0 bg-gray-500 dark:bg-gray-800 opacity-75"></div>
         </div>
         
         {/* Centrerad modal */}
         <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
         
         <div 
-          className="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full"
+          className="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl dark:shadow-[0_4px_6px_-1px_rgba(0,0,0,0.5),0_2px_4px_-2px_rgba(0,0,0,0.5)] dark:border dark:border-gray-700 transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="bg-white dark:bg-gray-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">

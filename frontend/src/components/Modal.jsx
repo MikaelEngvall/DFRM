@@ -39,7 +39,7 @@ const Modal = ({
         {/* Centrerad modal */}
         <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
         
-        <div className={`inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle ${maxWidthClass} sm:w-full`}>
+        <div className={`inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl dark:shadow-[0_4px_6px_-1px_rgba(0,0,0,0.5),0_2px_4px_-2px_rgba(0,0,0,0.5)] dark:border dark:border-gray-700 transform transition-all sm:my-8 sm:align-middle ${maxWidthClass} sm:w-full`}>
           <form onSubmit={handleSubmit}>
             <div className="flex justify-between items-start px-6 pt-5 pb-4 sm:p-6 sm:pb-4">
               <h3 className="text-lg leading-6 font-bold text-gray-900 dark:text-white">

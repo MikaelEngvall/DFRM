@@ -41,10 +41,6 @@ const Staff = () => {
       label: t('staff.fields.email')
     },
     {
-      key: 'role',
-      label: t('staff.fields.role')
-    },
-    {
       key: 'active',
       label: t('staff.fields.active'),
       render: (active) => active ? t('common.yes') : t('common.no')
