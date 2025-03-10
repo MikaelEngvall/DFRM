@@ -8,6 +8,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import java.time.LocalDateTime;
 
 @Data
 @NoArgsConstructor
@@ -21,10 +22,13 @@ public class User {
     @Indexed(unique = true)
     private String email;
     
-    private String password;
     private String firstName;
     private String lastName;
+    private String password;
+    private String phoneNumber;
     private String role;
+    private String preferredLanguage;
     private boolean active;
-    private String lastLogin;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 } 
