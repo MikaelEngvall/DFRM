@@ -205,6 +205,7 @@ export default {
       cancel: 'Avbryt',
       delete: 'Ta bort',
     },
+    filteredResults: '{count} nyckel(ar) hittades',
   },
 
   validation: {

@@ -3,7 +3,7 @@ import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
 import AlertModal from '../components/AlertModal';
 import FormInput from '../components/FormInput';
-import { PlusIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, FunnelIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { keyService, apartmentService, tenantService } from '../services';
 import { useLocale } from '../contexts/LocaleContext';
 
@@ -12,6 +12,7 @@ const Keys = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedKey, setSelectedKey] = useState(null);
   const [keys, setKeys] = useState([]);
+  const [filteredKeys, setFilteredKeys] = useState([]);
   const [apartments, setApartments] = useState([]);
   const [tenants, setTenants] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -23,6 +24,15 @@ const Keys = () => {
     serie: '',
     number: '',
     copyNumber: '',
+    apartmentId: '',
+    tenantId: '',
+  });
+  
+  // Filter state
+  const [showFilters, setShowFilters] = useState(false);
+  const [filters, setFilters] = useState({
+    type: '',
+    city: '',
     apartmentId: '',
     tenantId: '',
   });
@@ -81,6 +91,11 @@ const Keys = () => {
   useEffect(() => {
     fetchInitialData();
   }, []);
+  
+  // Filter keys when filters change
+  useEffect(() => {
+    applyFilters();
+  }, [filters, keys]);
 
   const fetchInitialData = async () => {
     try {
@@ -106,6 +121,7 @@ const Keys = () => {
       console.log('Processade nycklar:', processedKeys);
       
       setKeys(processedKeys);
+      setFilteredKeys(processedKeys);
       setApartments(apartmentsData);
       setTenants(tenantsData);
       setError(null);
@@ -123,6 +139,66 @@ const Keys = () => {
       ...prev,
       [name]: value,
     }));
+  };
+  
+  const handleFilterChange = (e) => {
+    const { name, value } = e.target;
+    setFilters(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+  
+  const applyFilters = () => {
+    let result = [...keys];
+    
+    // Filtrera baserat på nyckeltyp
+    if (filters.type) {
+      result = result.filter(key => key.type === filters.type);
+    }
+    
+    // Filtrera baserat på stad
+    if (filters.city) {
+      result = result.filter(key => {
+        if (!key.apartment) return false;
+        
+        const apartmentId = typeof key.apartment === 'object' ? key.apartment.id : key.apartment;
+        const apartment = apartments.find(a => a.id === apartmentId);
+        
+        return apartment && apartment.city === filters.city;
+      });
+    }
+    
+    // Filtrera baserat på lägenhet
+    if (filters.apartmentId) {
+      result = result.filter(key => {
+        if (!key.apartment) return false;
+        
+        const apartmentId = typeof key.apartment === 'object' ? key.apartment.id : key.apartment;
+        return apartmentId === filters.apartmentId;
+      });
+    }
+    
+    // Filtrera baserat på hyresgäst
+    if (filters.tenantId) {
+      result = result.filter(key => {
+        if (!key.tenant) return false;
+        
+        const tenantId = typeof key.tenant === 'object' ? key.tenant.id : key.tenant;
+        return tenantId === filters.tenantId;
+      });
+    }
+    
+    setFilteredKeys(result);
+  };
+  
+  const clearFilters = () => {
+    setFilters({
+      type: '',
+      city: '',
+      apartmentId: '',
+      tenantId: '',
+    });
   };
 
   const handleSubmit = async (e) => {
@@ -303,15 +379,8 @@ const Keys = () => {
     }
   };
 
-  const keyTypes = [
-    { value: 'D', label: 'Dörr (D)' },
-    { value: 'P', label: 'Post (P)' },
-    { value: 'T', label: 'Tvätt (T)' },
-    { value: 'F', label: 'Förråd (F)' },
-    { value: 'G', label: 'Garage (G)' },
-    { value: 'HN', label: 'Huvudnyckel (HN)' },
-    { value: 'Ö', label: 'Övrigt (Ö)' }
-  ];
+  // Få unika städer från lägenheter (för filteralternativ)
+  const uniqueCities = [...new Set(apartments.map(apt => apt.city).filter(Boolean))].sort();
 
   if (isLoading) {
     return (
@@ -325,34 +394,144 @@ const Keys = () => {
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">{t('keys.title')}</h1>
-        <button
-          onClick={() => {
-            setSelectedKey(null);
-            setFormData({
-              type: '',
-              serie: '',
-              number: '',
-              copyNumber: '',
-              apartmentId: '',
-              tenantId: ''
-            });
-            setIsModalOpen(true);
-          }}
-          className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
-        >
-          <PlusIcon className="h-5 w-5 mr-2" />
-          {t('keys.addNew')}
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className="flex items-center px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+          >
+            <FunnelIcon className="h-5 w-5 mr-2" />
+            {t('common.filters')}
+          </button>
+          <button
+            onClick={() => {
+              setSelectedKey(null);
+              setFormData({
+                type: '',
+                serie: '',
+                number: '',
+                copyNumber: '',
+                apartmentId: '',
+                tenantId: ''
+              });
+              setIsModalOpen(true);
+            }}
+            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+          >
+            <PlusIcon className="h-5 w-5 mr-2" />
+            {t('keys.addNew')}
+          </button>
+        </div>
       </div>
 
-      {isLoading ? (
-        <div className="text-center py-4">{t('common.loading')}</div>
-      ) : error ? (
+      {showFilters && (
+        <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg mb-6 border border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-medium text-gray-900 dark:text-white">{t('common.filters')}</h2>
+            <button 
+              onClick={clearFilters}
+              className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center"
+            >
+              <XMarkIcon className="h-4 w-4 mr-1" />
+              {t('common.clear')}
+            </button>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Nyckeltyp Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                {t('keys.fields.type')}
+              </label>
+              <select
+                name="type"
+                value={filters.type}
+                onChange={handleFilterChange}
+                className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              >
+                <option value="">{t('common.all')}</option>
+                <option value="D">{t('keys.types.D')}</option>
+                <option value="P">{t('keys.types.P')}</option>
+                <option value="T">{t('keys.types.T')}</option>
+                <option value="F">{t('keys.types.F')}</option>
+                <option value="G">{t('keys.types.G')}</option>
+                <option value="HN">{t('keys.types.HN')}</option>
+                <option value="Ö">{t('keys.types.Ö')}</option>
+              </select>
+            </div>
+            
+            {/* Stad Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                {t('apartments.fields.city')}
+              </label>
+              <select
+                name="city"
+                value={filters.city}
+                onChange={handleFilterChange}
+                className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              >
+                <option value="">{t('common.all')}</option>
+                {uniqueCities.map(city => (
+                  <option key={city} value={city}>{city}</option>
+                ))}
+              </select>
+            </div>
+            
+            {/* Lägenhet Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                {t('keys.fields.apartment')}
+              </label>
+              <select
+                name="apartmentId"
+                value={filters.apartmentId}
+                onChange={handleFilterChange}
+                className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              >
+                <option value="">{t('common.all')}</option>
+                {apartments.map(apartment => (
+                  <option key={apartment.id} value={apartment.id}>
+                    {apartment.street} {apartment.number}{apartment.apartmentNumber ? `, LGH ${apartment.apartmentNumber}` : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+            
+            {/* Hyresgäst Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                {t('keys.fields.tenant')}
+              </label>
+              <select
+                name="tenantId"
+                value={filters.tenantId}
+                onChange={handleFilterChange}
+                className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              >
+                <option value="">{t('common.all')}</option>
+                {tenants.map(tenant => (
+                  <option key={tenant.id} value={tenant.id}>
+                    {tenant.firstName} {tenant.lastName}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          
+          <div className="mt-4 flex items-center justify-between">
+            <div className="text-sm text-gray-500 dark:text-gray-400">
+              {filteredKeys.length} {t('keys.filteredResults', { count: filteredKeys.length })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {error ? (
         <div className="text-center py-4 text-red-600 dark:text-red-400">{error}</div>
       ) : (
         <DataTable
           columns={columns}
-          data={keys}
+          data={filteredKeys}
           onEdit={handleEdit}
           rowClassName={() => "cursor-pointer"}
         />
