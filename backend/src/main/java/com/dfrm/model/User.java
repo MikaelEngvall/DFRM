@@ -3,6 +3,8 @@ package com.dfrm.model;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
 
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -29,7 +31,12 @@ public class User {
     private String role;
     private String preferredLanguage;
     private boolean active;
+    
+    @CreatedDate
     private LocalDateTime createdAt;
+    
+    @LastModifiedDate
     private LocalDateTime updatedAt;
+    
     private LocalDateTime lastLoginAt;
 } 

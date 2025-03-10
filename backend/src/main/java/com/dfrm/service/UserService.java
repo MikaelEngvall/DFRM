@@ -1,5 +1,6 @@
 package com.dfrm.service;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -19,6 +20,15 @@ public class UserService {
 
     public User createUser(User user) {
         user.setPassword(passwordEncoder.encode(user.getPassword()));
+        
+        // Sätt createdAt och updatedAt om de är null
+        if (user.getCreatedAt() == null) {
+            user.setCreatedAt(LocalDateTime.now());
+        }
+        if (user.getUpdatedAt() == null) {
+            user.setUpdatedAt(LocalDateTime.now());
+        }
+        
         return userRepository.save(user);
     }
 
@@ -39,9 +49,14 @@ public class UserService {
     }
 
     public User updateUser(User user) {
+        // Sätt lösenord om det angivits
         if (user.getPassword() != null && !user.getPassword().isEmpty() && !user.getPassword().startsWith("$2a$")) {
             user.setPassword(passwordEncoder.encode(user.getPassword()));
         }
+        
+        // Sätt updatedAt
+        user.setUpdatedAt(LocalDateTime.now());
+        
         return userRepository.save(user);
     }
 
