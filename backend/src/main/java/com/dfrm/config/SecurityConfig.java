@@ -49,21 +49,13 @@ public class SecurityConfig {
                         // Lösenordsåterställning och e-postbekräftelse - ingen autentisering krävs
                         .requestMatchers("/api/security/request-password-reset", "/api/security/reset-password", "/api/security/confirm-email").permitAll()
                         
-                        // Endpoints som alla inloggade användare (USER, ADMIN, SUPERADMIN) kan nå
-                        .requestMatchers(HttpMethod.GET, "/api/apartments/**", "/api/tenants/**", "/api/keys/**", 
-                                        "/api/apartments", "/api/tenants", "/api/keys",
-                                        "/api/tasks/date-range/**", "/api/tasks/assigned/**")
-                        .hasAnyAuthority("ROLE_ADMIN", "ROLE_USER", "ROLE_SUPERADMIN")
+                        // Ge alla inloggade användare tillgång till basics GET endpoints
+                        .requestMatchers(HttpMethod.GET, "/api/**").authenticated()
                         
                         // E-postbyte för autentiserade användare
                         .requestMatchers("/api/security/request-email-change").authenticated()
                         
-                        // Admin och Superadmin-endast endpoints
-                        .requestMatchers("/api/tasks/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_SUPERADMIN")
-                        .requestMatchers("/api/pending-tasks/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_SUPERADMIN")
-                        .requestMatchers("/api/users/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_SUPERADMIN")
-                        
-                        // Skrivoperationer för alla resurser - endast ADMIN och SUPERADMIN
+                        // Skrivoperationer - endast ADMIN och SUPERADMIN
                         .requestMatchers(HttpMethod.POST, "/api/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_SUPERADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_SUPERADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/api/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_SUPERADMIN")
