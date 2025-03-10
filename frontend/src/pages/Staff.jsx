@@ -149,7 +149,7 @@ const Staff = () => {
   };
 
   const isAdmin = () => {
-    return currentUser?.role === 'ADMIN';
+    return currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPERADMIN';
   };
 
   return (
