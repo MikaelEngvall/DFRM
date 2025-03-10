@@ -10,7 +10,7 @@ import { useAuth } from '../contexts/AuthContext';
 
 const Staff = () => {
   const { t } = useLocale();
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, hasRole } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [users, setUsers] = useState([]);
@@ -121,14 +121,15 @@ const Staff = () => {
     try {
       setIsLoading(true);
       const data = await userService.getAllUsers();
-      console.log('Hämtade användare:', data);
       
-      // Kontrollera om lastLoginAt finns i svaret
-      data.forEach(user => {
-        console.log(`Användare ${user.email} lastLoginAt:`, user.lastLoginAt);
-      });
+      // Om användaren är USER, visa bara deras egen information
+      if (hasRole('USER')) {
+        const filteredData = data.filter(u => u.id === currentUser.id);
+        setUsers(filteredData);
+      } else {
+        setUsers(data);
+      }
       
-      setUsers(data);
       setError(null);
     } catch (err) {
       setError(t('common.error'));
@@ -149,9 +150,15 @@ const Staff = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      // Kopiera formulärdata och lägg till ROLE_-prefix för rollen
       const formDataToSubmit = {...formData};
-      formDataToSubmit.role = addRolePrefix(formData.role);
+      
+      // USER kan inte ändra sin roll eller aktiv-status
+      if (hasRole('USER')) {
+        formDataToSubmit.role = currentUser.role;
+        formDataToSubmit.active = currentUser.active;
+      } else {
+        formDataToSubmit.role = addRolePrefix(formData.role);
+      }
       
       if (selectedUser) {
         await userService.updateUser(selectedUser.id, formDataToSubmit);
@@ -182,13 +189,18 @@ const Staff = () => {
   };
 
   const handleEdit = (user) => {
+    // USER kan bara redigera sin egen profil
+    if (hasRole('USER') && user.id !== currentUser.id) {
+      return;
+    }
+
     setSelectedUser(user);
     setFormData({
       firstName: user.firstName || '',
       lastName: user.lastName || '',
       email: user.email || '',
       phoneNumber: user.phoneNumber || '',
-      password: '', // Lösenord visas inte vid redigering
+      password: '',
       role: stripRolePrefix(user.role) || 'USER',
       active: user.active !== undefined ? user.active : true
     });
@@ -250,13 +262,15 @@ const Staff = () => {
         <h1 className="text-3xl font-cinzel dark:text-white">
           {t('navigation.staff')}
         </h1>
-        <button
-          onClick={handleAddUser}
-          className="bg-primary text-white px-4 py-2 rounded-md hover:bg-secondary transition-colors flex items-center"
-        >
-          <PlusIcon className="h-5 w-5 mr-2" />
-          {t('staff.add')}
-        </button>
+        {!hasRole('USER') && (
+          <button
+            onClick={handleAddUser}
+            className="bg-primary text-white px-4 py-2 rounded-md hover:bg-secondary transition-colors flex items-center"
+          >
+            <PlusIcon className="h-5 w-5 mr-2" />
+            {t('staff.add')}
+          </button>
+        )}
       </div>
       
       <DataTable
@@ -305,10 +319,11 @@ const Staff = () => {
             value={formData.email}
             onChange={handleInputChange}
             required
+            disabled={hasRole('USER')}
           />
           
           <FormInput
-            label={t('staff.fields.phone')}
+            label={t('staff.fields.phoneNumber')}
             name="phoneNumber"
             type="text"
             value={formData.phoneNumber}
@@ -326,82 +341,41 @@ const Staff = () => {
             placeholder={selectedUser ? t('staff.fields.leaveBlankToKeep') : ''}
           />
           
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              {t('staff.fields.role')}
-            </label>
-            <select
-              name="role"
-              value={formData.role}
-              onChange={handleInputChange}
-              className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              required
-            >
-              <option value="USER">{t('staff.roles.USER')}</option>
-              <option value="ADMIN">{t('staff.roles.ADMIN')}</option>
-              {isSuperAdmin() && (
-                <option value="SUPERADMIN">{t('staff.roles.SUPERADMIN')}</option>
-              )}
-            </select>
-          </div>
-          
-          <div className="flex items-center">
-            <input
-              id="active"
-              name="active"
-              type="checkbox"
-              checked={formData.active}
-              onChange={handleInputChange}
-              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-            />
-            <label htmlFor="active" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
-              {t('staff.fields.active')}
-            </label>
-          </div>
-          
-          {selectedUser && selectedUser.id !== currentUser?.id && (
-            <div className="mt-4 border-t pt-4">
-              <div className="flex flex-col space-y-3">
-                <h3 className="text-lg font-medium">{t('staff.activeStatus')}</h3>
-                <div className="flex space-x-3">
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      handleToggleActive(selectedUser, true);
-                      setFormData(prev => ({ ...prev, active: true }));
-                    }}
-                    className={`px-3 py-1 rounded-md text-sm ${
-                      formData.active 
-                        ? 'bg-green-600 text-white' 
-                        : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
-                    }`}
-                  >
-                    {t('staff.actions.activate')}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.preventDefault();
-                      handleToggleActive(selectedUser, false);
-                      setFormData(prev => ({ ...prev, active: false }));
-                    }}
-                    className={`px-3 py-1 rounded-md text-sm ${
-                      !formData.active 
-                        ? 'bg-red-600 text-white' 
-                        : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
-                    }`}
-                  >
-                    {t('staff.actions.deactivate')}
-                  </button>
-                </div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  {formData.active 
-                    ? t('staff.activeStatusDescription') 
-                    : t('staff.inactiveStatusDescription')}
-                </p>
+          {!hasRole('USER') && (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {t('staff.fields.role')}
+                </label>
+                <select
+                  name="role"
+                  value={formData.role}
+                  onChange={handleInputChange}
+                  className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  required
+                >
+                  <option value="USER">{t('staff.roles.USER')}</option>
+                  <option value="ADMIN">{t('staff.roles.ADMIN')}</option>
+                  {isSuperAdmin() && (
+                    <option value="SUPERADMIN">{t('staff.roles.SUPERADMIN')}</option>
+                  )}
+                </select>
               </div>
-            </div>
+              
+              <div className="flex items-center">
+                <input
+                  id="active"
+                  name="active"
+                  type="checkbox"
+                  checked={formData.active}
+                  onChange={handleInputChange}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <label htmlFor="active" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                  {t('staff.fields.active')}
+                </label>
+              </div>
+            </>
           )}
         </div>
       </Modal>
