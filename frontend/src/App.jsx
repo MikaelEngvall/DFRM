@@ -13,6 +13,7 @@ import Login from './pages/Login';
 import Tasks from './pages/Tasks';
 import PendingTasks from './pages/PendingTasks';
 import Calendar from './pages/Calendar';
+import Staff from './pages/Staff';
 
 // Wrapper-komponent för sidor som kräver navigation
 const NavigationWrapper = ({ children }) => (
@@ -98,6 +99,14 @@ const App = () => {
                   <PrivateRoute>
                     <NavigationWrapper>
                       <Calendar />
+                    </NavigationWrapper>
+                  </PrivateRoute>
+                } />
+                
+                <Route path="/staff" element={
+                  <PrivateRoute>
+                    <NavigationWrapper>
+                      <Staff />
                     </NavigationWrapper>
                   </PrivateRoute>
                 } />

@@ -404,6 +404,7 @@ export default {
       deleteSuccess: 'Personalen har tagits bort',
       deleteError: 'Ett fel uppstod när personalen skulle tas bort',
       cannotDeleteSelf: 'Du kan inte ta bort ditt eget konto',
+      viewOnlyMode: 'Du ser personal i visningsläge. Endast administratörer kan lägga till, redigera eller ta bort personal.',
     },
     delete: {
       title: 'Ta bort personal',
