@@ -89,7 +89,12 @@ public class PendingTaskService {
     }
     
     public List<PendingTask> findApprovedTasks() {
-        return pendingTaskRepository.findByReviewedByIsNotNullAndTask_StatusOrderByReviewedAtDesc(TaskStatus.APPROVED.name());
+        List<PendingTask> pendingTasks = pendingTaskRepository.findByReviewedByIsNotNullOrderByReviewedAtDesc();
+        // Filtrera efter uppgifter med status = APPROVED
+        return pendingTasks.stream()
+            .filter(pendingTask -> pendingTask.getTask() != null && 
+                    "APPROVED".equals(pendingTask.getTask().getStatus()))
+            .toList();
     }
     
     public void deletePendingTask(String id) {

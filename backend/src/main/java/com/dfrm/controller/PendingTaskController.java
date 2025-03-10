@@ -54,7 +54,7 @@ public class PendingTaskController {
     }
 
     @GetMapping("/approved")
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("permitAll()")
     public List<PendingTask> getApprovedTasks() {
         return pendingTaskService.findApprovedTasks();
     }
