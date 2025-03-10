@@ -1,5 +1,6 @@
 package com.dfrm.controller;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -47,6 +48,11 @@ public class AuthController {
             }
             
             User user = userOpt.get();
+            
+            // Uppdatera senaste inloggningstid
+            user.setLastLoginAt(LocalDateTime.now());
+            userRepository.save(user);
+            
             String token = jwtService.generateToken(user);
             
             Map<String, Object> response = new HashMap<>();
@@ -85,7 +91,8 @@ public class AuthController {
             "email", user.getEmail(),
             "firstName", user.getFirstName(),
             "lastName", user.getLastName(),
-            "role", user.getRole()
+            "role", user.getRole(),
+            "lastLoginAt", user.getLastLoginAt()
         );
         
         return ResponseEntity.ok(response);

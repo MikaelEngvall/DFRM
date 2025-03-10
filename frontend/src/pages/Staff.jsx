@@ -46,9 +46,27 @@ const Staff = () => {
       render: (active) => active ? t('common.yes') : t('common.no')
     },
     {
-      key: 'lastLogin',
+      key: 'lastLoginAt',
       label: t('staff.fields.lastLogin'),
-      render: (date) => date ? new Date(date).toLocaleDateString() : '-'
+      render: (lastLoginAt) => {
+        if (!lastLoginAt) return '-';
+        try {
+          // Försök formatera datumet med tidszon
+          const date = new Date(lastLoginAt);
+          if (isNaN(date.getTime())) return '-';
+          
+          return new Intl.DateTimeFormat('sv-SE', {
+            year: 'numeric',
+            month: 'numeric',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          }).format(date);
+        } catch (e) {
+          console.error('Error formatting date:', e);
+          return '-';
+        }
+      }
     }
   ];
 
