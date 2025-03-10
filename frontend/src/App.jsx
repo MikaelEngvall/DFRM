@@ -4,7 +4,6 @@ import { AuthProvider } from './contexts/AuthContext';
 import { LocaleProvider } from './contexts/LocaleContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import PrivateRoute from './components/PrivateRoute';
-import RoleBasedRoute from './components/RoleBasedRoute';
 import Navigation from './components/Navigation';
 import Dashboard from './pages/Dashboard';
 import Apartments from './pages/Apartments';
@@ -41,59 +40,59 @@ const App = () => {
                 
                 {/* Skyddade rutter med navigation */}
                 <Route path="/" element={
-                  <RoleBasedRoute allowedRoles={['ADMIN', 'SUPERADMIN']}>
+                  <PrivateRoute>
                     <NavigationWrapper>
                       <Navigate to="/dashboard" replace />
                     </NavigationWrapper>
-                  </RoleBasedRoute>
+                  </PrivateRoute>
                 } />
                 
                 <Route path="/dashboard" element={
-                  <RoleBasedRoute allowedRoles={['ADMIN', 'SUPERADMIN']}>
+                  <PrivateRoute>
                     <NavigationWrapper>
                       <Dashboard />
                     </NavigationWrapper>
-                  </RoleBasedRoute>
+                  </PrivateRoute>
                 } />
                 
                 <Route path="/apartments" element={
-                  <RoleBasedRoute allowedRoles={['ADMIN', 'SUPERADMIN']}>
+                  <PrivateRoute>
                     <NavigationWrapper>
                       <Apartments />
                     </NavigationWrapper>
-                  </RoleBasedRoute>
+                  </PrivateRoute>
                 } />
                 
                 <Route path="/tenants" element={
-                  <RoleBasedRoute allowedRoles={['ADMIN', 'SUPERADMIN']}>
+                  <PrivateRoute>
                     <NavigationWrapper>
                       <Tenants />
                     </NavigationWrapper>
-                  </RoleBasedRoute>
+                  </PrivateRoute>
                 } />
                 
                 <Route path="/keys" element={
-                  <RoleBasedRoute allowedRoles={['ADMIN', 'SUPERADMIN']}>
+                  <PrivateRoute>
                     <NavigationWrapper>
                       <Keys />
                     </NavigationWrapper>
-                  </RoleBasedRoute>
+                  </PrivateRoute>
                 } />
                 
                 <Route path="/tasks" element={
-                  <RoleBasedRoute allowedRoles={['ADMIN', 'SUPERADMIN']}>
+                  <PrivateRoute>
                     <NavigationWrapper>
                       <Tasks />
                     </NavigationWrapper>
-                  </RoleBasedRoute>
+                  </PrivateRoute>
                 } />
                 
                 <Route path="/pending-tasks" element={
-                  <RoleBasedRoute allowedRoles={['ADMIN', 'SUPERADMIN']}>
+                  <PrivateRoute>
                     <NavigationWrapper>
                       <PendingTasks />
                     </NavigationWrapper>
-                  </RoleBasedRoute>
+                  </PrivateRoute>
                 } />
                 
                 <Route path="/calendar" element={

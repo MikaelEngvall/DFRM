@@ -72,7 +72,7 @@ function DesktopNavLink({ to, icon: Icon, label, tooltips, showTooltip, hideTool
 }
 
 const Navigation = () => {
-  const { user, logout, hasRole } = useAuth();
+  const { user, logout } = useAuth();
   const { t } = useLocale();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
@@ -124,61 +124,48 @@ const Navigation = () => {
     setMobileMenuOpen(!mobileMenuOpen);
   };
 
-  const getNavigationItems = () => {
-    const isUser = hasRole('USER');
-    const baseNavigation = [
-      {
-        name: t('navigation.calendar'),
-        href: '/calendar',
-        icon: CalendarIcon,
-      },
-      {
-        name: t('navigation.staff'),
-        href: '/staff',
-        icon: UserIcon,
-      },
-    ];
-
-    if (isUser) {
-      return baseNavigation;
-    }
-
-    return [
-      {
-        name: t('navigation.dashboard'),
-        href: '/dashboard',
-        icon: HomeIcon,
-      },
-      {
-        name: t('navigation.apartments'),
-        href: '/apartments',
-        icon: BuildingOffice2Icon,
-      },
-      {
-        name: t('navigation.tenants'),
-        href: '/tenants',
-        icon: UserGroupIcon,
-      },
-      {
-        name: t('navigation.keys'),
-        href: '/keys',
-        icon: KeyIcon,
-      },
-      {
-        name: t('navigation.tasks'),
-        href: '/tasks',
-        icon: ClipboardDocumentListIcon,
-      },
-      {
-        name: t('navigation.pendingTasks'),
-        href: '/pending-tasks',
-        icon: ClipboardDocumentCheckIcon,
-      },
-      ...baseNavigation
-    ];
-  };
-
-  const navigation = getNavigationItems();
+  const navigation = [
+    {
+      name: t('navigation.dashboard'),
+      href: '/',
+      icon: HomeIcon,
+    },
+    {
+      name: t('navigation.apartments'),
+      href: '/apartments',
+      icon: BuildingOffice2Icon,
+    },
+    {
+      name: t('navigation.tenants'),
+      href: '/tenants',
+      icon: UserGroupIcon,
+    },
+    {
+      name: t('navigation.keys'),
+      href: '/keys',
+      icon: KeyIcon,
+    },
+    {
+      name: t('navigation.tasks'),
+      href: '/tasks',
+      icon: ClipboardDocumentListIcon,
+    },
+    {
+      name: t('navigation.pendingTasks'),
+      href: '/pending-tasks',
+      icon: ClipboardDocumentCheckIcon,
+    },
+    {
+      name: t('navigation.calendar'),
+      href: '/calendar',
+      icon: CalendarIcon,
+    },
+    {
+      name: t('navigation.staff'),
+      href: '/staff',
+      icon: UserIcon,
+    },
+  ];
 
   return (
     <>
