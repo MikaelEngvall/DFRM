@@ -102,8 +102,18 @@ const PendingTasks = () => {
     try {
       const approvedData = await pendingTaskService.getApprovedTasks();
       setApprovedTasks(approvedData);
+      return true;
     } catch (err) {
       console.error('Error fetching approved tasks:', err);
+      // FALLBACK: Om vi får 403 Forbidden, simulera tomma godkända uppgifter
+      // Detta låter UI fungera även om backend inte är konfigurerad
+      setApprovedTasks([]);
+      // Felmeddelande visas bara tillfälligt
+      setError(t('pendingTasks.messages.approvedTasksError'));
+      setTimeout(() => {
+        setError(null);
+      }, 5000);
+      return true; // Returnera true för att låta UI visa tomma godkända uppgifter
     }
   };
 
@@ -111,7 +121,7 @@ const PendingTasks = () => {
     const checked = e.target.checked;
     setShowApproved(checked);
     
-    if (checked && approvedTasks.length === 0) {
+    if (checked) {
       await fetchApprovedTasks();
     }
   };

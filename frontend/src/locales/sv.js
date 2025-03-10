@@ -328,6 +328,7 @@ export default {
       rejectError: 'Ett fel uppstod när uppgiften skulle avvisas',
       createSuccess: 'Förfrågan har skapats',
       createError: 'Ett fel uppstod när förfrågan skulle skapas',
+      approvedTasksError: 'Ett fel uppstod när godkända uppgifter skulle hämtas',
     },
     noTasks: 'Inga väntande uppgifter',
     reviewRequest: 'Granska förfrågan',

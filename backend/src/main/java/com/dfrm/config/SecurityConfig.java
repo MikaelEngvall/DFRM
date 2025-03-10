@@ -49,6 +49,9 @@ public class SecurityConfig {
                         // Lösenordsåterställning och e-postbekräftelse - ingen autentisering krävs
                         .requestMatchers("/api/security/request-password-reset", "/api/security/reset-password", "/api/security/confirm-email").permitAll()
                         
+                        // Specifika endpoints för alla autentiserade användare
+                        .requestMatchers("/api/pending-tasks/approved", "/api/pending-tasks/for-review").authenticated()
+                        
                         // Ge alla inloggade användare tillgång till basics GET endpoints
                         .requestMatchers(HttpMethod.GET, "/api/**").authenticated()
                         
