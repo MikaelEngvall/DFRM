@@ -388,6 +388,8 @@ export default {
       firstName: 'Förnamn',
       lastName: 'Efternamn',
       email: 'E-post',
+      phone: 'Telefonnummer',
+      phoneNumber: 'Telefonnummer',
       password: 'Lösenord',
       role: 'Roll',
       active: 'Aktiv',

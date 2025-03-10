@@ -22,6 +22,7 @@ const Staff = () => {
     firstName: '',
     lastName: '',
     email: '',
+    phoneNumber: '',
     password: '',
     role: 'USER',
     active: true
@@ -46,15 +47,18 @@ const Staff = () => {
       label: t('staff.fields.lastName')
     },
     {
-      key: 'email',
-      label: t('staff.fields.email')
-    },
-    {
-      key: 'role',
-      label: t('staff.fields.role'),
-      render: (role) => {
-        const cleanRole = stripRolePrefix(role);
-        return t(`staff.roles.${cleanRole}`);
+      key: 'phoneNumber',
+      label: t('staff.fields.phone'),
+      render: (phoneNumber) => {
+        // Om telefonnumret saknas, visa ett streck
+        if (!phoneNumber) return '-';
+        
+        // Skapa en klickbar länk för att ringa numret
+        return (
+          <a href={`tel:${phoneNumber}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+            {phoneNumber}
+          </a>
+        );
       }
     },
     {
@@ -170,6 +174,7 @@ const Staff = () => {
       firstName: '',
       lastName: '',
       email: '',
+      phoneNumber: '',
       password: '',
       role: 'USER',
       active: true
@@ -182,6 +187,7 @@ const Staff = () => {
       firstName: user.firstName || '',
       lastName: user.lastName || '',
       email: user.email || '',
+      phoneNumber: user.phoneNumber || '',
       password: '', // Lösenord visas inte vid redigering
       role: stripRolePrefix(user.role) || 'USER',
       active: user.active !== undefined ? user.active : true
@@ -297,6 +303,15 @@ const Staff = () => {
             name="email"
             type="email"
             value={formData.email}
+            onChange={handleInputChange}
+            required
+          />
+          
+          <FormInput
+            label={t('staff.fields.phone')}
+            name="phoneNumber"
+            type="text"
+            value={formData.phoneNumber}
             onChange={handleInputChange}
             required
           />
