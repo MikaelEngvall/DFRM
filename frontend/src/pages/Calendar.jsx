@@ -118,11 +118,35 @@ const Calendar = () => {
   const handleTaskClick = (task) => {
     setSelectedTask(task);
     
+    // Formatera dueDate korrekt till YYYY-MM-DD för att undvika tidszonsförskjutning
+    let formattedDueDate = '';
+    if (task.dueDate) {
+      if (Array.isArray(task.dueDate) && task.dueDate.length >= 3) {
+        // LocalDate från backend kommer som array [år, månad, dag]
+        const [year, month, day] = task.dueDate;
+        // Formatera till YYYY-MM-DD och se till att månad och dag har två siffror
+        formattedDueDate = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+        console.log('Formaterade datum från array:', formattedDueDate, 'Original array:', task.dueDate);
+      } else if (typeof task.dueDate === 'string') {
+        // Om det är en sträng, använd den direkt om den har rätt format (YYYY-MM-DD)
+        if (/^\d{4}-\d{2}-\d{2}$/.test(task.dueDate)) {
+          formattedDueDate = task.dueDate;
+        } else {
+          // Annars försök formatera den
+          const date = new Date(task.dueDate);
+          if (!isNaN(date.getTime())) {
+            formattedDueDate = date.toISOString().split('T')[0];
+          }
+        }
+        console.log('Formaterade datum från sträng:', formattedDueDate, 'Original sträng:', task.dueDate);
+      }
+    }
+    
     // Populera formData med uppgiftsinformation
     setFormData({
       title: task.title || '',
       description: task.description || '',
-      dueDate: task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : '',
+      dueDate: formattedDueDate,
       priority: task.priority || '',
       status: task.status || '',
       assignedToUserId: task.assignedToUserId || '',
@@ -166,6 +190,13 @@ const Calendar = () => {
     e.preventDefault();
     try {
       const taskData = { ...formData };
+      
+      // Hantera dueDate korrekt genom att använda ISO-formatet YYYY-MM-DD
+      // vilket backend kan tolka korrekt till LocalDate utan tidszonsförskjutningar
+      if (taskData.dueDate) {
+        // Logga det datum som skickas till servern
+        console.log('Skickar dueDate till server:', taskData.dueDate);
+      }
       
       if (selectedTask) {
         // För existerande uppgift, uppdatera återkommande mönster om det har ändrats
@@ -252,10 +283,29 @@ const Calendar = () => {
       
       // Filtrera uppgifter för denna dag
       const dayTasks = tasks.filter(task => {
-        const taskDate = new Date(task.dueDate);
-        return taskDate.getDate() === day && 
-               taskDate.getMonth() === month && 
-               taskDate.getFullYear() === year;
+        if (!task.dueDate) return false;
+        
+        // Skapa datumobjektet och hantera LocalDate från backend korrekt
+        let taskYear, taskMonth, taskDay;
+        
+        if (Array.isArray(task.dueDate) && task.dueDate.length >= 3) {
+          // LocalDate kommer från backend som en array [år, månad, dag]
+          [taskYear, taskMonth, taskDay] = task.dueDate;
+          // Jämför dagens datum mot uppgiftens datum (månad är 1-indexerad i Java)
+          return taskDay === day && 
+                 taskMonth === month + 1 && 
+                 taskYear === year;
+        } else if (typeof task.dueDate === 'string') {
+          // Om det är en sträng, parsa det
+          const date = new Date(task.dueDate);
+          if (!isNaN(date.getTime())) {
+            return date.getDate() === day && 
+                   date.getMonth() === month && 
+                   date.getFullYear() === year;
+          }
+        }
+        
+        return false;
       });
       
       const isToday = 

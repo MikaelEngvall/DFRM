@@ -1,15 +1,17 @@
 package com.dfrm.config;
 
+import java.util.TimeZone;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 
 import com.dfrm.model.KeyType;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import com.fasterxml.jackson.databind.DeserializationFeature;
 
 @Configuration
 public class JacksonConfig {
@@ -18,8 +20,14 @@ public class JacksonConfig {
     public ObjectMapper objectMapper() {
         ObjectMapper mapper = new ObjectMapper();
         
+        // Sätt tidszonen till Stockholm
+        mapper.setTimeZone(TimeZone.getTimeZone("Europe/Stockholm"));
+        
         // Registrera JavaTimeModule för att hantera datum
         mapper.registerModule(new JavaTimeModule());
+        
+        // Inaktivera konvertering av datum till timestamps
+        mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
         
         // Konfigurera KeyType-konvertering
         SimpleModule keyTypeModule = new SimpleModule();

@@ -2,6 +2,14 @@ server:
   port: ${PORT:8080}
 
 spring:
+  jackson:
+    time-zone: Europe/Stockholm
+    serialization:
+      write-dates-as-timestamps: false
+  mvc:
+    format:
+      date: yyyy-MM-dd
+      date-time: yyyy-MM-dd HH:mm:ss
   mail:
     default-encoding: UTF-8
     host: ${SMTP_HOST:mailcluster.loopia.se}
