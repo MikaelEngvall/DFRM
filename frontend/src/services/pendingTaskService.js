@@ -40,6 +40,16 @@ export const getPendingTasksForReview = async () => {
   }
 };
 
+export const getApprovedTasks = async () => {
+  try {
+    const response = await api.get('/api/pending-tasks/approved');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching approved tasks:', error);
+    throw error;
+  }
+};
+
 export const createPendingTask = async (taskData, requestedById, comments) => {
   try {
     const payload = {
@@ -98,6 +108,7 @@ const pendingTaskService = {
   getPendingTaskById,
   getPendingTasksByRequestedBy,
   getPendingTasksForReview,
+  getApprovedTasks,
   createPendingTask,
   approvePendingTask,
   rejectPendingTask,

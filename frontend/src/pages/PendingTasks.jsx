@@ -10,6 +10,8 @@ const PendingTasks = () => {
   const { t } = useLocale();
   const { currentUser } = useAuth();
   const [pendingTasks, setPendingTasks] = useState([]);
+  const [approvedTasks, setApprovedTasks] = useState([]);
+  const [showApproved, setShowApproved] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
@@ -43,39 +45,74 @@ const PendingTasks = () => {
       render: (task) => task && task.status ? t(`tasks.status.${task.status}`) : '-'
     },
     {
+      key: 'reviewedBy',
+      label: t('pendingTasks.fields.reviewedBy'),
+      render: (user) => user ? `${user.firstName} ${user.lastName}` : '-'
+    },
+    {
+      key: 'reviewedAt',
+      label: t('pendingTasks.fields.reviewedAt'),
+      render: (date) => date ? new Date(date).toLocaleString() : '-'
+    },
+    {
       key: 'actions',
       label: t('common.actions'),
       render: (_, pendingTask) => (
         <div className="flex space-x-2">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              handleReviewClick(pendingTask);
-            }}
-            className="bg-blue-500 hover:bg-blue-600 text-white py-1 px-2 rounded text-xs"
-          >
-            {t('pendingTasks.actions.review')}
-          </button>
+          {!pendingTask.reviewedBy && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleReviewClick(pendingTask);
+              }}
+              className="bg-blue-500 hover:bg-blue-600 text-white py-1 px-2 rounded text-xs"
+            >
+              {t('pendingTasks.actions.review')}
+            </button>
+          )}
         </div>
       )
     }
   ];
 
   useEffect(() => {
-    fetchPendingTasks();
+    fetchData();
   }, []);
 
-  const fetchPendingTasks = async () => {
+  const fetchData = async () => {
     try {
       setIsLoading(true);
-      const data = await pendingTaskService.getPendingTasksForReview();
-      setPendingTasks(data);
+      const pendingData = await pendingTaskService.getPendingTasksForReview();
+      setPendingTasks(pendingData);
+      
+      if (showApproved) {
+        await fetchApprovedTasks();
+      }
+      
       setError(null);
     } catch (err) {
       setError(t('common.error'));
       console.error('Error fetching pending tasks:', err);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchApprovedTasks = async () => {
+    try {
+      const approvedData = await pendingTaskService.getApprovedTasks();
+      setApprovedTasks(approvedData);
+    } catch (err) {
+      console.error('Error fetching approved tasks:', err);
+    }
+  };
+
+  const handleShowApprovedChange = async (e) => {
+    const checked = e.target.checked;
+    setShowApproved(checked);
+    
+    if (checked && approvedTasks.length === 0) {
+      await fetchApprovedTasks();
     }
   };
 
@@ -88,7 +125,7 @@ const PendingTasks = () => {
   const handleApprove = async () => {
     try {
       await pendingTaskService.approvePendingTask(selectedTask.id, currentUser.id, reviewComments);
-      await fetchPendingTasks();
+      await fetchData();
       setIsReviewModalOpen(false);
       setSelectedTask(null);
       setReviewComments('');
@@ -101,7 +138,7 @@ const PendingTasks = () => {
   const handleReject = async () => {
     try {
       await pendingTaskService.rejectPendingTask(selectedTask.id, currentUser.id, reviewComments);
-      await fetchPendingTasks();
+      await fetchData();
       setIsReviewModalOpen(false);
       setSelectedTask(null);
       setReviewComments('');
@@ -109,6 +146,28 @@ const PendingTasks = () => {
       setError(t('pendingTasks.messages.rejectError'));
       console.error('Error rejecting task:', err);
     }
+  };
+
+  const getDisplayData = () => {
+    if (!showApproved) {
+      return pendingTasks;
+    }
+    
+    // Lägg till approved-flaggan för styling
+    const approved = approvedTasks.map(task => ({
+      ...task,
+      approved: true
+    }));
+    
+    return [...pendingTasks, ...approved];
+  };
+
+  const getRowClassName = (row) => {
+    const classes = ["cursor-pointer"];
+    if (row.approved) {
+      classes.push("opacity-50");
+    }
+    return classes.join(" ");
   };
 
   if (isLoading) {
@@ -123,6 +182,17 @@ const PendingTasks = () => {
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">{t('pendingTasks.title')}</h1>
+        <div className="flex items-center">
+          <label className="inline-flex items-center">
+            <input
+              type="checkbox"
+              className="form-checkbox h-5 w-5 text-primary focus:ring-primary border-gray-300 rounded"
+              checked={showApproved}
+              onChange={handleShowApprovedChange}
+            />
+            <span className="ml-2 text-gray-700 dark:text-gray-200">{t('pendingTasks.showApproved')}</span>
+          </label>
+        </div>
       </div>
 
       {error && (
@@ -140,16 +210,16 @@ const PendingTasks = () => {
         </div>
       )}
 
-      {pendingTasks.length === 0 ? (
+      {getDisplayData().length === 0 ? (
         <div className="text-center py-10">
           <p className="text-gray-500 dark:text-gray-400">{t('pendingTasks.noTasks')}</p>
         </div>
       ) : (
         <DataTable
           columns={columns}
-          data={pendingTasks}
+          data={getDisplayData()}
           onEdit={handleReviewClick}
-          rowClassName={() => "cursor-pointer"}
+          rowClassName={getRowClassName}
         />
       )}
 
@@ -191,34 +261,55 @@ const PendingTasks = () => {
             </p>
           </div>
 
-          <div className="mb-6">
-            <label className="block text-md font-medium text-gray-700 dark:text-gray-300 mb-2">
-              {t('pendingTasks.addComments')}
-            </label>
-            <textarea
-              value={reviewComments}
-              onChange={(e) => setReviewComments(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              rows="3"
-            />
-          </div>
+          {!selectedTask.reviewedBy && (
+            <>
+              <div className="mb-6">
+                <label className="block text-md font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  {t('pendingTasks.addComments')}
+                </label>
+                <textarea
+                  value={reviewComments}
+                  onChange={(e) => setReviewComments(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  rows="3"
+                />
+              </div>
 
-          <div className="flex justify-end space-x-3 mt-6">
-            <button
-              type="button"
-              onClick={handleReject}
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-            >
-              {t('pendingTasks.actions.reject')}
-            </button>
-            <button
-              type="button"
-              onClick={handleApprove}
-              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-            >
-              {t('pendingTasks.actions.approve')}
-            </button>
-          </div>
+              <div className="flex justify-end space-x-3 mt-6">
+                <button
+                  type="button"
+                  onClick={handleReject}
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                >
+                  {t('pendingTasks.actions.reject')}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleApprove}
+                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                >
+                  {t('pendingTasks.actions.approve')}
+                </button>
+              </div>
+            </>
+          )}
+
+          {selectedTask.reviewedBy && (
+            <div className="mb-6">
+              <h3 className="text-lg font-medium mb-2">{t('pendingTasks.fields.reviewComments')}</h3>
+              <p className="text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 p-3 rounded">
+                {selectedTask.reviewComments || '-'}
+              </p>
+              <div className="mt-4">
+                <p className="text-sm text-gray-500">
+                  {t('pendingTasks.reviewedBy')}: {selectedTask.reviewedBy.firstName} {selectedTask.reviewedBy.lastName}
+                </p>
+                <p className="text-sm text-gray-500">
+                  {t('pendingTasks.reviewedAt')}: {new Date(selectedTask.reviewedAt).toLocaleString()}
+                </p>
+              </div>
+            </div>
+          )}
         </Modal>
       )}
     </div>

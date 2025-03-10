@@ -88,6 +88,10 @@ public class PendingTaskService {
         return pendingTaskRepository.save(pendingTask);
     }
     
+    public List<PendingTask> findApprovedTasks() {
+        return pendingTaskRepository.findByReviewedByIsNotNullAndTask_StatusOrderByReviewedAtDesc(TaskStatus.APPROVED.name());
+    }
+    
     public void deletePendingTask(String id) {
         pendingTaskRepository.deleteById(id);
     }

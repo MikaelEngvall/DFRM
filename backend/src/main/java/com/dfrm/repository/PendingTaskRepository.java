@@ -16,4 +16,5 @@ public interface PendingTaskRepository extends MongoRepository<PendingTask, Stri
     List<PendingTask> findByReviewedByIsNull();
     List<PendingTask> findByRequestedAtAfter(LocalDateTime date);
     Optional<PendingTask> findByTaskId(String taskId);
+    List<PendingTask> findByReviewedByIsNotNullAndTask_StatusOrderByReviewedAtDesc(String status);
 } 

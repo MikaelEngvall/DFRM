@@ -306,6 +306,7 @@ export default {
     title: 'Väntande uppgifter',
     addNew: 'Skapa förfrågan',
     details: 'Detaljer för väntande uppgift',
+    showApproved: 'Visa godkända',
     fields: {
       task: 'Uppgift',
       requestedBy: 'Efterfrågad av',
@@ -331,6 +332,8 @@ export default {
     noTasks: 'Inga väntande uppgifter',
     reviewRequest: 'Granska förfrågan',
     addComments: 'Lägg till kommentarer',
+    reviewedBy: 'Granskad av',
+    reviewedAt: 'Granskad den',
   },
 
   calendar: {

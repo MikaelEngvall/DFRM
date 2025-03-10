@@ -52,6 +52,11 @@ public class PendingTaskController {
         return pendingTaskService.findPendingTasksForReview();
     }
 
+    @GetMapping("/approved")
+    public List<PendingTask> getApprovedTasks() {
+        return pendingTaskService.findApprovedTasks();
+    }
+
     @PostMapping("/request-approval")
     public ResponseEntity<PendingTask> requestApproval(
             @RequestBody Map<String, String> requestData) {
