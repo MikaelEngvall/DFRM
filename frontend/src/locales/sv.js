@@ -386,6 +386,7 @@ export default {
     fields: {
       firstName: 'Förnamn',
       lastName: 'Efternamn',
+      phoneNumber: 'Telefon',
       email: 'E-post',
       password: 'Lösenord',
       role: 'Roll',

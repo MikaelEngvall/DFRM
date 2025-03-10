@@ -196,6 +196,7 @@ const Staff = () => {
         columns={columns}
         data={users}
         isLoading={isLoading}
+        onRowClick={handleEdit}
       />
       
       {/* Modal för att lägga till/redigera personal */}
