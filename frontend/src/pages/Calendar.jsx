@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { taskService } from '../services';
+import { taskService, userService, apartmentService, tenantService } from '../services';
 import { useLocale } from '../contexts/LocaleContext';
+import { useAuth } from '../contexts/AuthContext';
 import Modal from '../components/Modal';
+import FormInput from '../components/FormInput';
 
 const Calendar = () => {
   const { t } = useLocale();
+  const { user: currentUser } = useAuth();
   const [view, setView] = useState('month'); // month, week, day
   const [currentDate, setCurrentDate] = useState(new Date());
   const [tasks, setTasks] = useState([]);
@@ -12,10 +15,62 @@ const Calendar = () => {
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [users, setUsers] = useState([]);
+  const [apartments, setApartments] = useState([]);
+  const [tenants, setTenants] = useState([]);
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    dueDate: '',
+    priority: '',
+    status: '',
+    assignedToUserId: '',
+    assignedByUserId: '',
+    apartmentId: '',
+    tenantId: '',
+    comments: '',
+    isRecurring: false,
+    recurringPattern: '',
+  });
 
   useEffect(() => {
     fetchTasks();
+    fetchReferenceData();
   }, [currentDate]);
+
+  const fetchReferenceData = async () => {
+    try {
+      const [usersData, apartmentsData, tenantsData] = await Promise.all([
+        userService.getAllUsers(),
+        apartmentService.getAllApartments(),
+        tenantService.getAllTenants(),
+      ]);
+      
+      setUsers(usersData);
+      setApartments(apartmentsData);
+      setTenants(tenantsData);
+    } catch (err) {
+      console.error('Error fetching reference data:', err);
+    }
+  };
+  
+  const getAssignedUserName = (userId) => {
+    if (!userId) return '-';
+    const user = users.find(u => u.id === userId);
+    return user ? `${user.firstName} ${user.lastName}` : '-';
+  };
+  
+  const getApartmentInfo = (apartmentId) => {
+    if (!apartmentId) return '-';
+    const apt = apartments.find(a => a.id === apartmentId);
+    return apt ? `${apt.street} ${apt.number}, LGH ${apt.apartmentNumber}` : '-';
+  };
+  
+  const getTenantName = (tenantId) => {
+    if (!tenantId) return '-';
+    const tenant = tenants.find(t => t.id === tenantId);
+    return tenant ? `${tenant.firstName} ${tenant.lastName}` : '-';
+  };
 
   const fetchTasks = async () => {
     try {
@@ -62,7 +117,84 @@ const Calendar = () => {
 
   const handleTaskClick = (task) => {
     setSelectedTask(task);
+    
+    // Populera formData med uppgiftsinformation
+    setFormData({
+      title: task.title || '',
+      description: task.description || '',
+      dueDate: task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : '',
+      priority: task.priority || '',
+      status: task.status || '',
+      assignedToUserId: task.assignedToUserId || '',
+      assignedByUserId: task.assignedByUserId || '',
+      apartmentId: task.apartmentId || '',
+      tenantId: task.tenantId || '',
+      comments: task.comments || '',
+      isRecurring: task.isRecurring || false,
+      recurringPattern: task.recurringPattern || '',
+    });
+    
     setIsTaskModalOpen(true);
+  };
+
+  const resetForm = () => {
+    setFormData({
+      title: '',
+      description: '',
+      dueDate: '',
+      priority: '',
+      status: '',
+      assignedToUserId: '',
+      assignedByUserId: '',
+      apartmentId: '',
+      tenantId: '',
+      comments: '',
+      isRecurring: false,
+      recurringPattern: '',
+    });
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value,
+    }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const taskData = { ...formData };
+      
+      if (selectedTask) {
+        // För existerande uppgift, uppdatera återkommande mönster om det har ändrats
+        if (selectedTask.isRecurring !== taskData.isRecurring || 
+            selectedTask.recurringPattern !== taskData.recurringPattern) {
+          await taskService.updateRecurringPattern(selectedTask.id, taskData.recurringPattern);
+        }
+        await taskService.updateTask(selectedTask.id, taskData);
+      } else {
+        // För ny uppgift, sätt automatiskt assignedByUserId till aktuell användare
+        taskData.assignedByUserId = currentUser.id;
+        
+        // Skapa normal eller återkommande beroende på valet
+        if (taskData.isRecurring && taskData.recurringPattern) {
+          await taskService.createRecurringTask(taskData);
+        } else {
+          await taskService.createTask(taskData);
+        }
+      }
+      
+      // Uppdatera kalendervyn med nya data
+      await fetchTasks();
+      setIsTaskModalOpen(false);
+      setSelectedTask(null);
+      resetForm();
+    } catch (err) {
+      setError(t('tasks.messages.saveError'));
+      console.error('Error saving task:', err);
+    }
   };
 
   const getPriorityColor = (priority) => {
@@ -278,57 +410,212 @@ const Calendar = () => {
       {selectedTask && (
         <Modal
           isOpen={isTaskModalOpen}
-          onClose={() => setIsTaskModalOpen(false)}
-          title={selectedTask.title}
-          showFooter={true}
-          submitButtonText={t('tasks.actions.edit')}
-          onSubmit={() => {
-            // Öppna redigeringssidan för uppgiften
-            window.location.href = `/tasks/${selectedTask.id}`;
+          onClose={() => {
+            setIsTaskModalOpen(false);
+            setSelectedTask(null);
+            resetForm();
           }}
+          title={selectedTask ? t('tasks.edit') : t('tasks.add')}
+          onSubmit={handleSubmit}
+          submitButtonText={t('common.save')}
         >
-          <div className="mb-6">
-            <h3 className="text-lg font-medium mb-2">{t('tasks.fields.description')}</h3>
-            <p className="text-gray-700 dark:text-gray-300">{selectedTask.description || '-'}</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            <div>
-              <h3 className="text-md font-medium mb-2">{t('tasks.fields.priority')}</h3>
-              <span className={`px-2 py-1 rounded text-sm ${getPriorityColor(selectedTask.priority)}`}>
-                {t(`tasks.priorities.${selectedTask.priority}`)}
-              </span>
+          <div className="grid grid-cols-1 gap-4">
+            <FormInput
+              label={t('tasks.fields.title')}
+              name="title"
+              type="text"
+              value={formData.title}
+              onChange={handleInputChange}
+              required
+            />
+            
+            <div className="mb-3">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                {t('tasks.fields.description')}
+              </label>
+              <textarea
+                name="description"
+                value={formData.description}
+                onChange={handleInputChange}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                rows="3"
+              />
             </div>
-            <div>
-              <h3 className="text-md font-medium mb-2">{t('tasks.fields.status')}</h3>
-              <span className={`px-2 py-1 rounded text-sm ${getStatusColor(selectedTask.status)}`}>
-                {t(`tasks.status.${selectedTask.status}`)}
-              </span>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormInput
+                label={t('tasks.fields.dueDate')}
+                name="dueDate"
+                type="date"
+                value={formData.dueDate}
+                onChange={handleInputChange}
+                required
+              />
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {t('tasks.fields.priority')}
+                </label>
+                <select
+                  name="priority"
+                  value={formData.priority}
+                  onChange={handleInputChange}
+                  className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  required
+                >
+                  <option value="">{t('common.select')}</option>
+                  <option value="LOW">{t('tasks.priorities.LOW')}</option>
+                  <option value="MEDIUM">{t('tasks.priorities.MEDIUM')}</option>
+                  <option value="HIGH">{t('tasks.priorities.HIGH')}</option>
+                  <option value="URGENT">{t('tasks.priorities.URGENT')}</option>
+                </select>
+              </div>
             </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            <div>
-              <h3 className="text-md font-medium mb-2">{t('tasks.fields.dueDate')}</h3>
-              <p className="text-gray-700 dark:text-gray-300">
-                {selectedTask.dueDate ? new Date(selectedTask.dueDate).toLocaleDateString() : '-'}
-              </p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {t('tasks.fields.status')}
+                </label>
+                <select
+                  name="status"
+                  value={formData.status}
+                  onChange={handleInputChange}
+                  className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  required
+                >
+                  <option value="">{t('common.select')}</option>
+                  <option value="PENDING">{t('tasks.status.PENDING')}</option>
+                  <option value="IN_PROGRESS">{t('tasks.status.IN_PROGRESS')}</option>
+                  <option value="COMPLETED">{t('tasks.status.COMPLETED')}</option>
+                  <option value="APPROVED">{t('tasks.status.APPROVED')}</option>
+                  <option value="REJECTED">{t('tasks.status.REJECTED')}</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {t('tasks.fields.assignedUser')}
+                </label>
+                <select
+                  name="assignedToUserId"
+                  value={formData.assignedToUserId}
+                  onChange={handleInputChange}
+                  className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                >
+                  <option value="">{t('common.select')}</option>
+                  {users.map((user) => (
+                    <option key={user.id} value={user.id}>
+                      {user.firstName} {user.lastName}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              {selectedTask && formData.assignedByUserId && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {t('tasks.fields.assignedBy')}
+                  </label>
+                  <div className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 sm:text-sm rounded-md bg-gray-100 dark:bg-gray-700">
+                    {users.find(user => user.id === formData.assignedByUserId)?.firstName || ''} {users.find(user => user.id === formData.assignedByUserId)?.lastName || ''} 
+                  </div>
+                </div>
+              )}
             </div>
-            <div>
-              <h3 className="text-md font-medium mb-2">{t('tasks.fields.assignedUser')}</h3>
-              <p className="text-gray-700 dark:text-gray-300">
-                {selectedTask.assignedUser ? (
-                  typeof selectedTask.assignedUser === 'object' 
-                    ? `${selectedTask.assignedUser.firstName} ${selectedTask.assignedUser.lastName}`
-                    : selectedTask.assignedUser
-                ) : '-'}
-              </p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {t('tasks.fields.apartment')}
+                </label>
+                <select
+                  name="apartmentId"
+                  value={formData.apartmentId}
+                  onChange={handleInputChange}
+                  className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                >
+                  <option value="">{t('common.select')}</option>
+                  {apartments.map((apartment) => (
+                    <option key={apartment.id} value={apartment.id}>
+                      {apartment.street} {apartment.number}, LGH {apartment.apartmentNumber}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {t('tasks.fields.tenant')}
+                </label>
+                <select
+                  name="tenantId"
+                  value={formData.tenantId}
+                  onChange={handleInputChange}
+                  className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                >
+                  <option value="">{t('common.select')}</option>
+                  {tenants.map((tenant) => (
+                    <option key={tenant.id} value={tenant.id}>
+                      {tenant.firstName} {tenant.lastName}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
-          </div>
-
-          <div className="mb-6">
-            <h3 className="text-md font-medium mb-2">{t('tasks.fields.comments')}</h3>
-            <p className="text-gray-700 dark:text-gray-300">{selectedTask.comments || '-'}</p>
+            
+            <div className="mb-3">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                {t('tasks.fields.comments')}
+              </label>
+              <textarea
+                name="comments"
+                value={formData.comments}
+                onChange={handleInputChange}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                rows="2"
+              />
+            </div>
+            
+            <div className="flex items-center">
+              <input
+                id="isRecurring"
+                name="isRecurring"
+                type="checkbox"
+                checked={formData.isRecurring}
+                onChange={handleInputChange}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <label htmlFor="isRecurring" className="ml-2 block text-sm text-gray-900 dark:text-gray-300">
+                {t('tasks.fields.isRecurring')}
+              </label>
+            </div>
+            
+            {formData.isRecurring && (
+              <div className="mt-3">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {t('tasks.fields.recurringPattern')}
+                </label>
+                <select
+                  name="recurringPattern"
+                  value={formData.recurringPattern}
+                  onChange={handleInputChange}
+                  className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  required={formData.isRecurring}
+                >
+                  <option value="">{t('common.select')}</option>
+                  <option value="DAILY">{t('tasks.recurringPatterns.DAILY')}</option>
+                  <option value="WEEKLY">{t('tasks.recurringPatterns.WEEKLY')}</option>
+                  <option value="BIWEEKLY">{t('tasks.recurringPatterns.BIWEEKLY')}</option>
+                  <option value="MONTHLY">{t('tasks.recurringPatterns.MONTHLY')}</option>
+                  <option value="QUARTERLY">{t('tasks.recurringPatterns.QUARTERLY')}</option>
+                  <option value="YEARLY">{t('tasks.recurringPatterns.YEARLY')}</option>
+                </select>
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  {t('tasks.recurringPatternHelp')}
+                </p>
+              </div>
+            )}
           </div>
         </Modal>
       )}

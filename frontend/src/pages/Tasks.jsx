@@ -47,9 +47,9 @@ const Tasks = () => {
     priority: queryParams.get('priority') || '',
   });
 
-  const renderAssignedUser = (assignedUser) => {
-    if (!assignedUser) return '-';
-    const user = users.find(u => u.id === (typeof assignedUser === 'object' ? assignedUser.id : assignedUser));
+  const renderAssignedUser = (assignedUserId) => {
+    if (!assignedUserId) return '-';
+    const user = users.find(u => u.id === assignedUserId);
     return user ? `${user.firstName} ${user.lastName}` : '-';
   };
 
@@ -74,16 +74,16 @@ const Tasks = () => {
       render: (status) => status ? t(`tasks.status.${status}`) : '-'
     },
     {
-      key: 'assignedUser',
+      key: 'assignedToUserId',
       label: t('tasks.fields.assignedUser'),
       render: renderAssignedUser
     },
     {
-      key: 'apartment',
+      key: 'apartmentId',
       label: t('tasks.fields.apartment'),
-      render: (apartment) => {
-        if (!apartment) return '-';
-        const apt = apartments.find(a => a.id === (typeof apartment === 'object' ? apartment.id : apartment));
+      render: (apartmentId) => {
+        if (!apartmentId) return '-';
+        const apt = apartments.find(a => a.id === apartmentId);
         return apt ? `${apt.street} ${apt.number}, LGH ${apt.apartmentNumber}` : '-';
       }
     },
@@ -186,14 +186,13 @@ const Tasks = () => {
     setSelectedTask(task);
     
     // Extrahera ID från objekt om det behövs
-    const assignedUserId = task.assignedUser ? 
-      (typeof task.assignedUser === 'object' ? task.assignedUser.id : task.assignedUser) : '';
+    const assignedToUserId = task.assignedToUserId || '';
     
-    const apartmentId = task.apartment ? 
-      (typeof task.apartment === 'object' ? task.apartment.id : task.apartment) : '';
+    const apartmentId = task.apartmentId ? 
+      (typeof task.apartmentId === 'object' ? task.apartmentId.id : task.apartmentId) : '';
     
-    const tenantId = task.tenant ? 
-      (typeof task.tenant === 'object' ? task.tenant.id : task.tenant) : '';
+    const tenantId = task.tenantId ? 
+      (typeof task.tenantId === 'object' ? task.tenantId.id : task.tenantId) : '';
     
     setFormData({
       title: task.title || '',
@@ -201,7 +200,7 @@ const Tasks = () => {
       dueDate: task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : '',
       priority: task.priority || '',
       status: task.status || '',
-      assignedToUserId: task.assignedToUserId || '',
+      assignedToUserId,
       assignedByUserId: task.assignedByUserId || '',
       apartmentId,
       tenantId,

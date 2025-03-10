@@ -250,6 +250,7 @@ export default {
       priority: 'Prioritet',
       status: 'Status',
       assignedUser: 'Tilldelad till',
+      assignedBy: 'Tilldelad av',
       apartment: 'Lägenhet',
       tenant: 'Hyresgäst',
       comments: 'Kommentarer',
