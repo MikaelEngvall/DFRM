@@ -21,8 +21,13 @@ const apartmentService = {
 
   // Uppdatera en lägenhet
   updateApartment: async (id, apartmentData) => {
-    const response = await api.put(`/api/apartments/${id}`, apartmentData);
-    return response.data;
+    try {
+      const response = await api.patch(`/api/apartments/${id}`, apartmentData);
+      return response.data;
+    } catch (error) {
+      console.error(`Error updating apartment with ID ${id}:`, error);
+      throw error;
+    }
   },
 
   // Partiell uppdatering av en lägenhet (endast ändrade fält)
@@ -65,14 +70,24 @@ const apartmentService = {
 
   // Tilldela en hyresgäst till en lägenhet
   assignTenant: async (apartmentId, tenantId) => {
-    const response = await api.put(`/api/apartments/${apartmentId}/tenant?tenantId=${tenantId}`);
-    return response.data;
+    try {
+      const response = await api.patch(`/api/apartments/${apartmentId}/tenant?tenantId=${tenantId}`);
+      return response.data;
+    } catch (error) {
+      console.error(`Error assigning tenant ${tenantId} to apartment ${apartmentId}:`, error);
+      throw error;
+    }
   },
 
   // Tilldela en nyckel till en lägenhet
   assignKey: async (apartmentId, keyId) => {
-    const response = await api.put(`/api/apartments/${apartmentId}/key?keyId=${keyId}`);
-    return response.data;
+    try {
+      const response = await api.patch(`/api/apartments/${apartmentId}/key?keyId=${keyId}`);
+      return response.data;
+    } catch (error) {
+      console.error(`Error assigning key ${keyId} to apartment ${apartmentId}:`, error);
+      throw error;
+    }
   },
 
   // Ta bort en hyresgäst från en lägenhet

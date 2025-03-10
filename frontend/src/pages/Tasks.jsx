@@ -32,7 +32,8 @@ const Tasks = () => {
     dueDate: '',
     priority: '',
     status: '',
-    assignedUserId: '',
+    assignedToUserId: '',
+    assignedByUserId: '',
     apartmentId: '',
     tenantId: '',
     comments: '',
@@ -130,19 +131,27 @@ const Tasks = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      // Skapa en kopia av formData med aktuell användare som assignedBy för nya uppgifter
+      const taskData = { ...formData };
+      
+      if (!selectedTask) {
+        // För ny uppgift, sätt automatiskt assignedByUserId till aktuell användare
+        taskData.assignedByUserId = currentUser.id;
+      }
+      
       if (selectedTask) {
         // För existerande uppgift, uppdatera återkommande mönster om det har ändrats
-        if (selectedTask.isRecurring !== formData.isRecurring || 
-            selectedTask.recurringPattern !== formData.recurringPattern) {
-          await taskService.updateRecurringPattern(selectedTask.id, formData.recurringPattern);
+        if (selectedTask.isRecurring !== taskData.isRecurring || 
+            selectedTask.recurringPattern !== taskData.recurringPattern) {
+          await taskService.updateRecurringPattern(selectedTask.id, taskData.recurringPattern);
         }
-        await taskService.updateTask(selectedTask.id, formData);
+        await taskService.updateTask(selectedTask.id, taskData);
       } else {
         // För ny uppgift, skapa normal eller återkommande beroende på valet
-        if (formData.isRecurring && formData.recurringPattern) {
-          await taskService.createRecurringTask(formData);
+        if (taskData.isRecurring && taskData.recurringPattern) {
+          await taskService.createRecurringTask(taskData);
         } else {
-          await taskService.createTask(formData);
+          await taskService.createTask(taskData);
         }
       }
       
@@ -163,7 +172,8 @@ const Tasks = () => {
       dueDate: '',
       priority: '',
       status: '',
-      assignedUserId: '',
+      assignedToUserId: '',
+      assignedByUserId: '',
       apartmentId: '',
       tenantId: '',
       comments: '',
@@ -191,7 +201,8 @@ const Tasks = () => {
       dueDate: task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : '',
       priority: task.priority || '',
       status: task.status || '',
-      assignedUserId,
+      assignedToUserId: task.assignedToUserId || '',
+      assignedByUserId: task.assignedByUserId || '',
       apartmentId,
       tenantId,
       comments: task.comments || '',
@@ -425,6 +436,7 @@ const Tasks = () => {
         }}
         title={selectedTask ? t('tasks.edit') : t('tasks.add')}
         onSubmit={handleSubmit}
+        submitButtonText={t('common.save')}
       >
         <div className="grid grid-cols-1 gap-4">
           <FormInput
@@ -505,8 +517,8 @@ const Tasks = () => {
                 {t('tasks.fields.assignedUser')}
               </label>
               <select
-                name="assignedUserId"
-                value={formData.assignedUserId}
+                name="assignedToUserId"
+                value={formData.assignedToUserId}
                 onChange={handleInputChange}
                 className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               >
@@ -518,6 +530,17 @@ const Tasks = () => {
                 ))}
               </select>
             </div>
+            
+            {selectedTask && formData.assignedByUserId && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {t('tasks.fields.assignedBy')}
+                </label>
+                <div className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 sm:text-sm rounded-md bg-gray-100 dark:bg-gray-700">
+                  {users.find(user => user.id === formData.assignedByUserId)?.firstName || ''} {users.find(user => user.id === formData.assignedByUserId)?.lastName || ''} 
+                </div>
+              </div>
+            )}
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

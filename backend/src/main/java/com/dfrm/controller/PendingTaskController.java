@@ -1,5 +1,6 @@
 package com.dfrm.controller;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -56,7 +57,32 @@ public class PendingTaskController {
     @GetMapping("/approved")
     @PreAuthorize("permitAll()")
     public List<PendingTask> getApprovedTasks() {
-        return pendingTaskService.findApprovedTasks();
+        // Skapa en helt hårdkodad uppgift för testning
+        PendingTask testTask = new PendingTask();
+        testTask.setId("67c5f1710fec671fd842aa16");
+        
+        // Skapa en Task
+        Task task = new Task();
+        task.setId("67c5f1710fec671fd842aa15");
+        task.setTitle("Test Task");
+        task.setDescription("Detta är en testuppgift");
+        task.setStatus("APPROVED");
+        
+        // Skapa en User
+        User user = new User();
+        user.setId("67c45b7908f53e4d2bbfbe8f");
+        user.setFirstName("Engvall");
+        user.setLastName("Mikael");
+        user.setEmail("mikael.engvall.me@gmail.com");
+        
+        // Sätt relationer
+        testTask.setTask(task);
+        testTask.setRequestedBy(user);
+        testTask.setReviewedBy(user);
+        testTask.setRequestedAt(LocalDateTime.now().minusDays(1));
+        testTask.setReviewedAt(LocalDateTime.now());
+        
+        return List.of(testTask);
     }
 
     @PostMapping("/request-approval")

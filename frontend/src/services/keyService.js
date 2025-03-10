@@ -50,8 +50,13 @@ const keyService = {
 
   // Uppdatera en nyckel (fullständig ersättning)
   updateKey: async (id, keyData) => {
-    const response = await api.put(`/api/keys/${id}`, keyData);
-    return response.data;
+    try {
+      const response = await api.patch(`/api/keys/${id}`, keyData);
+      return response.data;
+    } catch (error) {
+      console.error(`Error updating key with ID ${id}:`, error);
+      throw error;
+    }
   },
 
   // Partiell uppdatering av en nyckel (endast ändrade fält)
@@ -94,12 +99,10 @@ const keyService = {
   // Tilldela en lägenhet till en nyckel
   assignApartment: async (keyId, apartmentId) => {
     try {
-      console.log(`Anropar API: PUT /api/keys/${keyId}/apartment?apartmentId=${apartmentId}`);
-      const response = await api.put(`/api/keys/${keyId}/apartment?apartmentId=${apartmentId}`);
-      console.log('Svar från assignApartment:', response.data);
+      const response = await api.patch(`/api/keys/${keyId}/apartment?apartmentId=${apartmentId}`);
       return response.data;
     } catch (error) {
-      console.error(`Fel vid tilldelning av lägenhet ${apartmentId} till nyckel ${keyId}:`, error);
+      console.error(`Error assigning key ${keyId} to apartment ${apartmentId}:`, error);
       throw error;
     }
   },
@@ -107,17 +110,10 @@ const keyService = {
   // Tilldela en hyresgäst till en nyckel
   assignTenant: async (keyId, tenantId) => {
     try {
-      console.log(`Anropar API: PUT /api/keys/${keyId}/tenant?tenantId=${tenantId}`);
-      const response = await api.put(`/api/keys/${keyId}/tenant?tenantId=${tenantId}`);
-      console.log('Svar från assignTenant:', response.data);
-      
-      // Efter att ha tilldelat hyresgäst till nyckel, hämta den uppdaterade nyckeln
-      const updatedKey = await api.get(`/api/keys/${keyId}`);
-      console.log('Hämtad uppdaterad nyckel efter tenant-association:', updatedKey.data);
-      
+      const response = await api.patch(`/api/keys/${keyId}/tenant?tenantId=${tenantId}`);
       return response.data;
     } catch (error) {
-      console.error(`Fel vid tilldelning av hyresgäst ${tenantId} till nyckel ${keyId}:`, error);
+      console.error(`Error assigning key ${keyId} to tenant ${tenantId}:`, error);
       throw error;
     }
   },

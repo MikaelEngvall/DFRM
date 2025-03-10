@@ -164,10 +164,14 @@ const PendingTasks = () => {
     }
     
     // Lägg till approved-flaggan för styling
+    // Alla uppgifter som har task.status === "APPROVED" är godkända och ska visas
     const approved = approvedTasks.map(task => ({
       ...task,
       approved: true
     }));
+    
+    console.log("Pending tasks:", pendingTasks);
+    console.log("Approved tasks:", approved);
     
     return [...pendingTasks, ...approved];
   };
@@ -238,6 +242,7 @@ const PendingTasks = () => {
           isOpen={isReviewModalOpen}
           onClose={() => setIsReviewModalOpen(false)}
           title={t('pendingTasks.reviewRequest')}
+          showFooter={false}
         >
           <div className="mb-6">
             <h3 className="text-lg font-medium mb-2">{t('tasks.fields.title')}</h3>
@@ -249,77 +254,43 @@ const PendingTasks = () => {
             <p className="text-gray-700 dark:text-gray-300">{selectedTask.task?.description || '-'}</p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-            <div>
-              <h3 className="text-md font-medium mb-1">{t('tasks.fields.priority')}</h3>
-              <p className="text-gray-700 dark:text-gray-300">
-                {selectedTask.task?.priority ? t(`tasks.priorities.${selectedTask.task.priority}`) : '-'}
-              </p>
-            </div>
-            <div>
-              <h3 className="text-md font-medium mb-1">{t('tasks.fields.dueDate')}</h3>
-              <p className="text-gray-700 dark:text-gray-300">
-                {selectedTask.task?.dueDate ? new Date(selectedTask.task.dueDate).toLocaleDateString() : '-'}
-              </p>
-            </div>
+          <div className="mb-6">
+            <h3 className="text-lg font-medium mb-2">{t('pendingTasks.fields.requestComments')}</h3>
+            <p className="text-gray-700 dark:text-gray-300">{selectedTask.requestComments || '-'}</p>
           </div>
 
           <div className="mb-6">
-            <h3 className="text-lg font-medium mb-2">{t('pendingTasks.fields.requestComments')}</h3>
-            <p className="text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 p-3 rounded">
-              {selectedTask.requestComments || '-'}
-            </p>
+            <h3 className="text-lg font-medium mb-2">{t('pendingTasks.fields.reviewComments')}</h3>
+            <FormInput
+              type="textarea"
+              rows={4}
+              value={reviewComments}
+              onChange={(e) => setReviewComments(e.target.value)}
+              placeholder={t('pendingTasks.placeholders.reviewComments')}
+            />
           </div>
 
-          {!selectedTask.reviewedBy && (
-            <>
-              <div className="mb-6">
-                <label className="block text-md font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  {t('pendingTasks.addComments')}
-                </label>
-                <textarea
-                  value={reviewComments}
-                  onChange={(e) => setReviewComments(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  rows="3"
-                />
-              </div>
-
-              <div className="flex justify-end space-x-3 mt-6">
-                <button
-                  type="button"
-                  onClick={handleReject}
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                >
-                  {t('pendingTasks.actions.reject')}
-                </button>
-                <button
-                  type="button"
-                  onClick={handleApprove}
-                  className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-                >
-                  {t('pendingTasks.actions.approve')}
-                </button>
-              </div>
-            </>
-          )}
-
-          {selectedTask.reviewedBy && (
-            <div className="mb-6">
-              <h3 className="text-lg font-medium mb-2">{t('pendingTasks.fields.reviewComments')}</h3>
-              <p className="text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 p-3 rounded">
-                {selectedTask.reviewComments || '-'}
-              </p>
-              <div className="mt-4">
-                <p className="text-sm text-gray-500">
-                  {t('pendingTasks.reviewedBy')}: {selectedTask.reviewedBy.firstName} {selectedTask.reviewedBy.lastName}
-                </p>
-                <p className="text-sm text-gray-500">
-                  {t('pendingTasks.reviewedAt')}: {new Date(selectedTask.reviewedAt).toLocaleString()}
-                </p>
-              </div>
-            </div>
-          )}
+          <div className="flex flex-col space-y-4 sm:flex-row sm:space-y-0 sm:space-x-4 mt-8 pt-4 border-t border-gray-200 dark:border-gray-700">
+            <button
+              onClick={handleReject}
+              className="w-full sm:w-auto px-6 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+            >
+              {t('pendingTasks.actions.reject')}
+            </button>
+            <button
+              onClick={handleApprove}
+              className="w-full sm:w-auto px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+            >
+              {t('pendingTasks.actions.approve')}
+            </button>
+            <div className="flex-grow"></div>
+            <button
+              onClick={() => setIsReviewModalOpen(false)}
+              className="w-full sm:w-auto px-6 py-2 border border-gray-300 dark:border-gray-600 rounded text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+            >
+              {t('common.cancel')}
+            </button>
+          </div>
         </Modal>
       )}
     </div>

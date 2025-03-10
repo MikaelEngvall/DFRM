@@ -65,23 +65,33 @@ public class TaskService {
     }
     
     public List<Task> getTasksByTenantId(String tenantId) {
-        // Detta skulle normalt implementeras med en repository-metod
+        // Använd både det direkta tenant-ID-fältet och referensen
         return taskRepository.findAll().stream()
-                .filter(task -> task.getTenant() != null && tenantId.equals(task.getTenant().getId()))
+                .filter(task -> (tenantId.equals(task.getTenantId())) || 
+                                (task.getTenant() != null && tenantId.equals(task.getTenant().getId())))
                 .toList();
     }
     
     public List<Task> getTasksByApartmentId(String apartmentId) {
-        // Detta skulle normalt implementeras med en repository-metod
+        // Använd både det direkta apartment-ID-fältet och referensen
         return taskRepository.findAll().stream()
-                .filter(task -> task.getApartment() != null && apartmentId.equals(task.getApartment().getId()))
+                .filter(task -> (apartmentId.equals(task.getApartmentId())) ||
+                                (task.getApartment() != null && apartmentId.equals(task.getApartment().getId())))
                 .toList();
     }
     
     public List<Task> getTasksByAssignedUserId(String userId) {
-        // Detta skulle normalt implementeras med en repository-metod
+        // Använd både assignedToUserId och den gamla assignedUser-referensen
         return taskRepository.findAll().stream()
-                .filter(task -> task.getAssignedUser() != null && userId.equals(task.getAssignedUser().getId()))
+                .filter(task -> (userId.equals(task.getAssignedToUserId())) ||
+                                (task.getAssignedUser() != null && userId.equals(task.getAssignedUser().getId())))
+                .toList();
+    }
+    
+    // Ny metod för att hämta uppgifter baserat på vem som tilldelade dem
+    public List<Task> getTasksByAssignedByUserId(String userId) {
+        return taskRepository.findAll().stream()
+                .filter(task -> userId.equals(task.getAssignedByUserId()))
                 .toList();
     }
     

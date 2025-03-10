@@ -99,10 +99,11 @@ const register = async (userData) => {
 
 const updateProfile = async (userData) => {
   try {
-    const response = await api.put('/api/auth/profile', userData);
+    const response = await api.patch('/api/auth/profile', userData);
     return response.data;
   } catch (error) {
-    handleApiError(error);
+    console.error('Error updating user profile:', error);
+    throw error;
   }
 };
 

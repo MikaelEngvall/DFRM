@@ -89,12 +89,27 @@ public class PendingTaskService {
     }
     
     public List<PendingTask> findApprovedTasks() {
-        List<PendingTask> pendingTasks = pendingTaskRepository.findByReviewedByIsNotNullOrderByReviewedAtDesc();
+        // Hämta alla uppgifter istället för att filtrera på reviewedBy
+        List<PendingTask> allTasks = pendingTaskRepository.findAll();
+        System.out.println("Hittade totalt " + allTasks.size() + " uppgifter");
+        
+        // Logga varje uppgift för att se vad som finns
+        allTasks.forEach(pendingTask -> {
+            System.out.println("PendingTask ID: " + pendingTask.getId());
+            System.out.println("Task: " + (pendingTask.getTask() != null ? pendingTask.getTask().getId() : "null"));
+            System.out.println("Status: " + (pendingTask.getTask() != null ? pendingTask.getTask().getStatus() : "null"));
+            System.out.println("ReviewedBy: " + (pendingTask.getReviewedBy() != null ? pendingTask.getReviewedBy().getId() : "null"));
+        });
+        
         // Filtrera efter uppgifter med status = APPROVED
-        return pendingTasks.stream()
+        List<PendingTask> approvedTasks = allTasks.stream()
             .filter(pendingTask -> pendingTask.getTask() != null && 
                     "APPROVED".equals(pendingTask.getTask().getStatus()))
             .toList();
+        
+        System.out.println("Efter filtrering: " + approvedTasks.size() + " godkända uppgifter");
+        
+        return approvedTasks;
     }
     
     public void deletePendingTask(String id) {

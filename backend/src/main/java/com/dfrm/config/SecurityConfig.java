@@ -61,9 +61,13 @@ public class SecurityConfig {
                         // E-postbyte för autentiserade användare
                         .requestMatchers("/api/security/request-email-change").authenticated()
                         
+                        // Specifika PATCH-endpoints som alla autentiserade användare kan använda
+                        .requestMatchers(HttpMethod.PATCH, "/api/tasks/*/status", "/api/tasks/*/recurring").authenticated()
+                        
                         // Skrivoperationer - endast ADMIN och SUPERADMIN
                         .requestMatchers(HttpMethod.POST, "/api/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_SUPERADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_SUPERADMIN")
+                        .requestMatchers(HttpMethod.PATCH, "/api/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_SUPERADMIN", "ROLE_USER")
                         .requestMatchers(HttpMethod.DELETE, "/api/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_SUPERADMIN")
                         
                         // Övriga endpoints - kräver autentisering

@@ -123,6 +123,64 @@ public class UserController {
         return ResponseEntity.ok(userService.updateUser(user));
     }
 
+    @PatchMapping("/{id}")
+    public ResponseEntity<?> patchUser(@PathVariable String id, @RequestBody User patchUser) {
+        Optional<User> existingUserOpt = userService.getUserById(id);
+        if (existingUserOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        
+        User existingUser = existingUserOpt.get();
+        
+        // Kontrollera behörigheter
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String currentUsername = auth.getName();
+        boolean isAdmin = auth.getAuthorities().stream()
+            .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+        boolean isSuperAdmin = auth.getAuthorities().stream()
+            .anyMatch(a -> a.getAuthority().equals("ROLE_SUPERADMIN"));
+        
+        // Användare kan bara uppdatera sig själva
+        boolean isOwnProfile = existingUser.getEmail().equals(currentUsername);
+        
+        // Om det inte är egen profil och användaren inte är ADMIN/SUPERADMIN
+        if (!isOwnProfile && !isAdmin && !isSuperAdmin) {
+            return ResponseEntity.status(403)
+                .body(Map.of("message", "Du har inte behörighet att uppdatera andra användare"));
+        }
+        
+        // ADMIN kan inte uppdatera SUPERADMIN
+        if (isAdmin && !isSuperAdmin && "SUPERADMIN".equals(existingUser.getRole())) {
+            return ResponseEntity.status(403)
+                .body(Map.of("message", "Du har inte behörighet att uppdatera SUPERADMIN-användare"));
+        }
+        
+        // Uppdatera endast fält som inte är null i patchUser
+        if (patchUser.getEmail() != null) {
+            existingUser.setEmail(patchUser.getEmail());
+        }
+        if (patchUser.getFirstName() != null) {
+            existingUser.setFirstName(patchUser.getFirstName());
+        }
+        if (patchUser.getLastName() != null) {
+            existingUser.setLastName(patchUser.getLastName());
+        }
+        if (patchUser.getPassword() != null && !patchUser.getPassword().isEmpty()) {
+            existingUser.setPassword(patchUser.getPassword());
+        }
+        if (patchUser.getRole() != null) {
+            // Vanliga användare kan inte ändra sin egen roll
+            if (isOwnProfile && !isAdmin && !isSuperAdmin && 
+                !existingUser.getRole().equals(patchUser.getRole())) {
+                return ResponseEntity.status(403)
+                    .body(Map.of("message", "Du har inte behörighet att ändra din roll"));
+            }
+            existingUser.setRole(patchUser.getRole());
+        }
+        
+        return ResponseEntity.ok(userService.updateUser(existingUser));
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteUser(@PathVariable String id) {
         Optional<User> userToDeleteOpt = userService.getUserById(id);

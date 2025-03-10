@@ -22,7 +22,7 @@ public class DataInitializer {
                         .password("Admin123!")
                         .firstName("Mikael")
                         .lastName("Engvall")
-                        .role("ADMIN")
+                        .role("SUPERADMIN")
                         .active(true)
                         .build();
                 

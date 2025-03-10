@@ -35,6 +35,15 @@ public class Task {
     private boolean isRecurring;
     private String recurringPattern; // "DAILY", "WEEKLY", "BIWEEKLY", "MONTHLY", "QUARTERLY", "YEARLY"
     
+    // Nya fält för assignedTo och assignedBy
+    private String assignedToUserId;
+    private String assignedByUserId;
+    
+    // Direkta ID-referenser för lägenhet och hyresgäst
+    private String apartmentId;
+    private String tenantId;
+    
+    // Behåller DBRef för bakåtkompatibilitet
     @DBRef
     @JsonIdentityInfo(
             generator = ObjectIdGenerators.PropertyGenerator.class,

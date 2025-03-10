@@ -94,8 +94,26 @@ public class ApartmentController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    @PatchMapping("/{id}/tenant")
+    public ResponseEntity<Apartment> patchAssignTenant(
+            @PathVariable String id,
+            @RequestParam String tenantId) {
+        return apartmentService.assignTenant(id, tenantId)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
     @PutMapping("/{id}/key")
     public ResponseEntity<Apartment> assignKey(
+            @PathVariable String id,
+            @RequestParam String keyId) {
+        return apartmentService.assignKey(id, keyId)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PatchMapping("/{id}/key")
+    public ResponseEntity<Apartment> patchAssignKey(
             @PathVariable String id,
             @RequestParam String keyId) {
         return apartmentService.assignKey(id, keyId)

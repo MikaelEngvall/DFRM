@@ -60,6 +60,55 @@ public class TaskController {
         return ResponseEntity.ok(taskService.saveTask(task));
     }
 
+    @PatchMapping("/{id}")
+    public ResponseEntity<Task> patchTask(@PathVariable String id, @RequestBody Task patchTask) {
+        Optional<Task> existingTaskOpt = taskService.getTaskById(id);
+        
+        if (existingTaskOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        
+        Task existingTask = existingTaskOpt.get();
+        
+        // Uppdatera endast fält som inte är null i patchTask
+        if (patchTask.getTitle() != null) {
+            existingTask.setTitle(patchTask.getTitle());
+        }
+        if (patchTask.getDescription() != null) {
+            existingTask.setDescription(patchTask.getDescription());
+        }
+        if (patchTask.getDueDate() != null) {
+            existingTask.setDueDate(patchTask.getDueDate());
+        }
+        if (patchTask.getCompletedDate() != null) {
+            existingTask.setCompletedDate(patchTask.getCompletedDate());
+        }
+        if (patchTask.getStatus() != null) {
+            existingTask.setStatus(patchTask.getStatus());
+        }
+        if (patchTask.getPriority() != null) {
+            existingTask.setPriority(patchTask.getPriority());
+        }
+        if (patchTask.getComments() != null) {
+            existingTask.setComments(patchTask.getComments());
+        }
+        if (patchTask.getAssignedUser() != null) {
+            existingTask.setAssignedUser(patchTask.getAssignedUser());
+        }
+        if (patchTask.getApartment() != null) {
+            existingTask.setApartment(patchTask.getApartment());
+        }
+        if (patchTask.getTenant() != null) {
+            existingTask.setTenant(patchTask.getTenant());
+        }
+        if (patchTask.getRecurringPattern() != null) {
+            existingTask.setRecurringPattern(patchTask.getRecurringPattern());
+        }
+        existingTask.setRecurring(patchTask.isRecurring());
+        
+        return ResponseEntity.ok(taskService.saveTask(existingTask));
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteTask(@PathVariable String id) {
         if (!taskService.existsById(id)) {

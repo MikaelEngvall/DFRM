@@ -280,6 +280,12 @@ const Calendar = () => {
           isOpen={isTaskModalOpen}
           onClose={() => setIsTaskModalOpen(false)}
           title={selectedTask.title}
+          showFooter={true}
+          submitButtonText={t('tasks.actions.edit')}
+          onSubmit={() => {
+            // Öppna redigeringssidan för uppgiften
+            window.location.href = `/tasks/${selectedTask.id}`;
+          }}
         >
           <div className="mb-6">
             <h3 className="text-lg font-medium mb-2">{t('tasks.fields.description')}</h3>
@@ -288,13 +294,13 @@ const Calendar = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             <div>
-              <h3 className="text-md font-medium mb-1">{t('tasks.fields.priority')}</h3>
+              <h3 className="text-md font-medium mb-2">{t('tasks.fields.priority')}</h3>
               <span className={`px-2 py-1 rounded text-sm ${getPriorityColor(selectedTask.priority)}`}>
                 {t(`tasks.priorities.${selectedTask.priority}`)}
               </span>
             </div>
             <div>
-              <h3 className="text-md font-medium mb-1">{t('tasks.fields.status')}</h3>
+              <h3 className="text-md font-medium mb-2">{t('tasks.fields.status')}</h3>
               <span className={`px-2 py-1 rounded text-sm ${getStatusColor(selectedTask.status)}`}>
                 {t(`tasks.status.${selectedTask.status}`)}
               </span>
@@ -303,13 +309,13 @@ const Calendar = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             <div>
-              <h3 className="text-md font-medium mb-1">{t('tasks.fields.dueDate')}</h3>
+              <h3 className="text-md font-medium mb-2">{t('tasks.fields.dueDate')}</h3>
               <p className="text-gray-700 dark:text-gray-300">
                 {selectedTask.dueDate ? new Date(selectedTask.dueDate).toLocaleDateString() : '-'}
               </p>
             </div>
             <div>
-              <h3 className="text-md font-medium mb-1">{t('tasks.fields.assignedUser')}</h3>
+              <h3 className="text-md font-medium mb-2">{t('tasks.fields.assignedUser')}</h3>
               <p className="text-gray-700 dark:text-gray-300">
                 {selectedTask.assignedUser ? (
                   typeof selectedTask.assignedUser === 'object' 
@@ -321,7 +327,7 @@ const Calendar = () => {
           </div>
 
           <div className="mb-6">
-            <h3 className="text-md font-medium mb-1">{t('tasks.fields.comments')}</h3>
+            <h3 className="text-md font-medium mb-2">{t('tasks.fields.comments')}</h3>
             <p className="text-gray-700 dark:text-gray-300">{selectedTask.comments || '-'}</p>
           </div>
         </Modal>

@@ -44,7 +44,7 @@ export const createTask = async (taskData) => {
 
 export const updateTask = async (id, taskData) => {
   try {
-    const response = await api.put(`/api/tasks/${id}`, taskData);
+    const response = await api.patch(`/api/tasks/${id}`, taskData);
     return response.data;
   } catch (error) {
     console.error(`Error updating task with ID ${id}:`, error);
