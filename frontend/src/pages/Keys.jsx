@@ -43,28 +43,37 @@ const Keys = () => {
     },
     {
       key: 'copyNumber',
-      label: t('keys.fields.copyNumber')
+      label: t('keys.fields.copyNumber'),
+      render: (copyNumber) => copyNumber || '-'
     },
     {
       key: 'apartment',
       label: t('keys.fields.apartment'),
-      render: (apartmentId) => {
-        if (!apartmentId) return '-';
+      render: (_, key) => {
+        if (!key.apartment) return '-';
+        
+        const apartmentId = typeof key.apartment === 'object' ? key.apartment.id : key.apartment;
+        
         const apartment = apartments.find(a => a.id === apartmentId);
-        return apartment 
-          ? `${apartment.street} ${apartment.number}, LGH ${apartment.apartmentNumber}` 
-          : '-';
+        
+        if (!apartment) return '-';
+        
+        return `${apartment.street} ${apartment.number}${apartment.apartmentNumber ? `, LGH ${apartment.apartmentNumber}` : ''}`;
       }
     },
     {
       key: 'tenant',
       label: t('keys.fields.tenant'),
-      render: (tenantId) => {
-        if (!tenantId) return '-';
+      render: (_, key) => {
+        if (!key.tenant) return '-';
+        
+        const tenantId = typeof key.tenant === 'object' ? key.tenant.id : key.tenant;
+        
         const tenant = tenants.find(t => t.id === tenantId);
-        return tenant 
-          ? `${tenant.firstName} ${tenant.lastName}` 
-          : '-';
+        
+        if (!tenant) return '-';
+        
+        return `${tenant.firstName} ${tenant.lastName}`;
       }
     },
   ];
@@ -86,29 +95,15 @@ const Keys = () => {
       console.log('Lägenheter från API:', apartmentsData);
       console.log('Hyresgäster från API:', tenantsData);
       
+      // Bearbeta nycklar för att säkerställa att apartment och tenant-referenserna är korrekta
       const processedKeys = keysData.map(key => {
+        // Skapa en kopia av nyckeln för att undvika referensproblem
         const processedKey = { ...key };
-        
-        if (typeof key.tenant === 'string') {
-          const tenant = tenantsData.find(t => t.id === key.tenant);
-          if (tenant) {
-            console.log(`Hittade tenant för ID ${key.tenant}:`, tenant);
-            processedKey.tenant = tenant;
-          }
-        }
-        
-        if (typeof key.apartment === 'string') {
-          const apartment = apartmentsData.find(a => a.id === key.apartment);
-          if (apartment) {
-            console.log(`Hittade apartment för ID ${key.apartment}:`, apartment);
-            processedKey.apartment = apartment;
-          }
-        }
         
         return processedKey;
       });
       
-      console.log('Processade nycklar med referenser:', processedKeys);
+      console.log('Processade nycklar:', processedKeys);
       
       setKeys(processedKeys);
       setApartments(apartmentsData);
