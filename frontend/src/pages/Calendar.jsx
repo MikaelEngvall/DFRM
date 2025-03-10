@@ -352,7 +352,7 @@ const Calendar = () => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
           </button>
-          <h2 className="text-xl font-medium">
+          <h2 className="text-xl font-medium text-gray-900 dark:text-white">
             {capitalizedMonthName} {currentDate.getFullYear()}
           </h2>
           <button
