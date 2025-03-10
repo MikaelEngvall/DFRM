@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
 import FormInput from '../components/FormInput';
-import { pendingTaskService } from '../services';
+import { pendingTaskService, taskService, apartmentService, tenantService, userService } from '../services';
 import { useLocale } from '../contexts/LocaleContext';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -17,6 +17,23 @@ const PendingTasks = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [reviewComments, setReviewComments] = useState('');
+  const [apartments, setApartments] = useState([]);
+  const [tenants, setTenants] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [formData, setFormData] = useState({
+    title: '',
+    description: '',
+    dueDate: '',
+    priority: '',
+    status: '',
+    assignedToUserId: '',
+    assignedByUserId: '',
+    apartmentId: '',
+    tenantId: '',
+    comments: '',
+    isRecurring: false,
+    recurringPattern: '',
+  });
 
   const columns = [
     {
@@ -79,7 +96,24 @@ const PendingTasks = () => {
 
   useEffect(() => {
     fetchData();
+    fetchReferenceData();
   }, []);
+
+  const fetchReferenceData = async () => {
+    try {
+      const [usersData, apartmentsData, tenantsData] = await Promise.all([
+        userService.getAllUsers(),
+        apartmentService.getAllApartments(),
+        tenantService.getAllTenants(),
+      ]);
+      
+      setUsers(usersData);
+      setApartments(apartmentsData);
+      setTenants(tenantsData);
+    } catch (err) {
+      console.error('Error fetching reference data:', err);
+    }
+  };
 
   const fetchData = async () => {
     try {
@@ -131,16 +165,52 @@ const PendingTasks = () => {
   const handleReviewClick = (pendingTask) => {
     setSelectedTask(pendingTask);
     setReviewComments('');
+    
+    // Populera formData med task-information
+    if (pendingTask.task) {
+      setFormData({
+        title: pendingTask.task.title || '',
+        description: pendingTask.task.description || '',
+        dueDate: pendingTask.task.dueDate ? new Date(pendingTask.task.dueDate).toISOString().split('T')[0] : '',
+        priority: pendingTask.task.priority || '',
+        status: pendingTask.task.status || '',
+        assignedToUserId: pendingTask.task.assignedToUserId || '',
+        assignedByUserId: pendingTask.task.assignedByUserId || '',
+        apartmentId: pendingTask.task.apartmentId || '',
+        tenantId: pendingTask.task.tenantId || '',
+        comments: pendingTask.task.comments || '',
+        isRecurring: pendingTask.task.isRecurring || false,
+        recurringPattern: pendingTask.task.recurringPattern || '',
+      });
+    }
+    
     setIsReviewModalOpen(true);
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value,
+    }));
+  };
+
+  const handleReviewCommentsChange = (e) => {
+    setReviewComments(e.target.value);
   };
 
   const handleApprove = async () => {
     try {
+      // Uppdatera uppgiften före godkännande
+      await taskService.updateTask(selectedTask.task.id, formData);
+      
+      // Godkänn uppgiften
       await pendingTaskService.approvePendingTask(selectedTask.id, currentUser.id, reviewComments);
       await fetchData();
       setIsReviewModalOpen(false);
       setSelectedTask(null);
       setReviewComments('');
+      resetForm();
     } catch (err) {
       setError(t('pendingTasks.messages.approveError'));
       console.error('Error approving task:', err);
@@ -149,15 +219,37 @@ const PendingTasks = () => {
 
   const handleReject = async () => {
     try {
+      // Uppdatera uppgiften före avvisning
+      await taskService.updateTask(selectedTask.task.id, formData);
+      
+      // Avvisa uppgiften
       await pendingTaskService.rejectPendingTask(selectedTask.id, currentUser.id, reviewComments);
       await fetchData();
       setIsReviewModalOpen(false);
       setSelectedTask(null);
       setReviewComments('');
+      resetForm();
     } catch (err) {
       setError(t('pendingTasks.messages.rejectError'));
       console.error('Error rejecting task:', err);
     }
+  };
+  
+  const resetForm = () => {
+    setFormData({
+      title: '',
+      description: '',
+      dueDate: '',
+      priority: '',
+      status: '',
+      assignedToUserId: '',
+      assignedByUserId: '',
+      apartmentId: '',
+      tenantId: '',
+      comments: '',
+      isRecurring: false,
+      recurringPattern: '',
+    });
   };
 
   const getDisplayData = () => {
@@ -242,34 +334,239 @@ const PendingTasks = () => {
       {selectedTask && (
         <Modal
           isOpen={isReviewModalOpen}
-          onClose={() => setIsReviewModalOpen(false)}
+          onClose={() => {
+            setIsReviewModalOpen(false);
+            setSelectedTask(null);
+            resetForm();
+          }}
           title={t('pendingTasks.reviewRequest')}
           showFooter={false}
         >
-          <div className="mb-6">
-            <h3 className="text-lg font-medium mb-2">{t('tasks.fields.title')}</h3>
-            <p className="text-gray-700 dark:text-gray-300">{selectedTask.task?.title}</p>
-          </div>
-
-          <div className="mb-6">
-            <h3 className="text-lg font-medium mb-2">{t('tasks.fields.description')}</h3>
-            <p className="text-gray-700 dark:text-gray-300">{selectedTask.task?.description || '-'}</p>
-          </div>
-
-          <div className="mb-6">
-            <h3 className="text-lg font-medium mb-2">{t('pendingTasks.fields.requestComments')}</h3>
-            <p className="text-gray-700 dark:text-gray-300">{selectedTask.requestComments || '-'}</p>
-          </div>
-
-          <div className="mb-6">
-            <h3 className="text-lg font-medium mb-2">{t('pendingTasks.fields.reviewComments')}</h3>
+          <div className="grid grid-cols-1 gap-4">
             <FormInput
-              type="textarea"
-              rows={4}
-              value={reviewComments}
-              onChange={(e) => setReviewComments(e.target.value)}
-              placeholder={t('pendingTasks.placeholders.reviewComments')}
+              label={t('tasks.fields.title')}
+              name="title"
+              type="text"
+              value={formData.title}
+              onChange={handleInputChange}
+              required
             />
+            
+            <div className="mb-3">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                {t('tasks.fields.description')}
+              </label>
+              <textarea
+                name="description"
+                value={formData.description}
+                onChange={handleInputChange}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                rows="3"
+              />
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <FormInput
+                label={t('tasks.fields.dueDate')}
+                name="dueDate"
+                type="date"
+                value={formData.dueDate}
+                onChange={handleInputChange}
+                required
+              />
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {t('tasks.fields.priority')}
+                </label>
+                <select
+                  name="priority"
+                  value={formData.priority}
+                  onChange={handleInputChange}
+                  className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  required
+                >
+                  <option value="">{t('common.select')}</option>
+                  <option value="LOW">{t('tasks.priorities.LOW')}</option>
+                  <option value="MEDIUM">{t('tasks.priorities.MEDIUM')}</option>
+                  <option value="HIGH">{t('tasks.priorities.HIGH')}</option>
+                  <option value="URGENT">{t('tasks.priorities.URGENT')}</option>
+                </select>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {t('tasks.fields.status')}
+                </label>
+                <select
+                  name="status"
+                  value={formData.status}
+                  onChange={handleInputChange}
+                  className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  required
+                >
+                  <option value="">{t('common.select')}</option>
+                  <option value="PENDING">{t('tasks.status.PENDING')}</option>
+                  <option value="IN_PROGRESS">{t('tasks.status.IN_PROGRESS')}</option>
+                  <option value="COMPLETED">{t('tasks.status.COMPLETED')}</option>
+                  <option value="APPROVED">{t('tasks.status.APPROVED')}</option>
+                  <option value="REJECTED">{t('tasks.status.REJECTED')}</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {t('tasks.fields.assignedUser')}
+                </label>
+                <select
+                  name="assignedToUserId"
+                  value={formData.assignedToUserId}
+                  onChange={handleInputChange}
+                  className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                >
+                  <option value="">{t('common.select')}</option>
+                  {users.map((user) => (
+                    <option key={user.id} value={user.id}>
+                      {user.firstName} {user.lastName}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {t('tasks.fields.apartment')}
+                </label>
+                <select
+                  name="apartmentId"
+                  value={formData.apartmentId}
+                  onChange={handleInputChange}
+                  className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                >
+                  <option value="">{t('common.select')}</option>
+                  {apartments.map((apartment) => (
+                    <option key={apartment.id} value={apartment.id}>
+                      {apartment.street} {apartment.number}, LGH {apartment.apartmentNumber}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {t('tasks.fields.tenant')}
+                </label>
+                <select
+                  name="tenantId"
+                  value={formData.tenantId}
+                  onChange={handleInputChange}
+                  className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                >
+                  <option value="">{t('common.select')}</option>
+                  {tenants.map((tenant) => (
+                    <option key={tenant.id} value={tenant.id}>
+                      {tenant.firstName} {tenant.lastName}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            
+            <div className="mb-3">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                {t('tasks.fields.comments')}
+              </label>
+              <textarea
+                name="comments"
+                value={formData.comments}
+                onChange={handleInputChange}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                rows="2"
+              />
+            </div>
+            
+            <div className="flex items-center">
+              <input
+                id="isRecurring"
+                name="isRecurring"
+                type="checkbox"
+                checked={formData.isRecurring}
+                onChange={handleInputChange}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <label htmlFor="isRecurring" className="ml-2 block text-sm text-gray-900 dark:text-gray-300">
+                {t('tasks.fields.isRecurring')}
+              </label>
+            </div>
+            
+            {formData.isRecurring && (
+              <div className="mt-3">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {t('tasks.fields.recurringPattern')}
+                </label>
+                <select
+                  name="recurringPattern"
+                  value={formData.recurringPattern}
+                  onChange={handleInputChange}
+                  className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  required={formData.isRecurring}
+                >
+                  <option value="">{t('common.select')}</option>
+                  <option value="DAILY">{t('tasks.recurringPatterns.DAILY')}</option>
+                  <option value="WEEKLY">{t('tasks.recurringPatterns.WEEKLY')}</option>
+                  <option value="BIWEEKLY">{t('tasks.recurringPatterns.BIWEEKLY')}</option>
+                  <option value="MONTHLY">{t('tasks.recurringPatterns.MONTHLY')}</option>
+                  <option value="QUARTERLY">{t('tasks.recurringPatterns.QUARTERLY')}</option>
+                  <option value="YEARLY">{t('tasks.recurringPatterns.YEARLY')}</option>
+                </select>
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  {t('tasks.recurringPatternHelp')}
+                </p>
+              </div>
+            )}
+          </div>
+            
+          {/* Granskningssektion */}
+          <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+              {t('pendingTasks.reviewRequest')}
+            </h3>
+            
+            <div className="mb-6">
+              <h4 className="text-md font-medium mb-2">{t('pendingTasks.fields.requestedBy')}</h4>
+              <p className="text-gray-700 dark:text-gray-300">
+                {selectedTask.requestedBy ? `${selectedTask.requestedBy.firstName} ${selectedTask.requestedBy.lastName}` : '-'}
+              </p>
+            </div>
+            
+            <div className="mb-6">
+              <h4 className="text-md font-medium mb-2">{t('pendingTasks.fields.requestedAt')}</h4>
+              <p className="text-gray-700 dark:text-gray-300">
+                {selectedTask.requestedAt ? new Date(selectedTask.requestedAt).toLocaleString() : '-'}
+              </p>
+            </div>
+            
+            <div className="mb-6">
+              <h4 className="text-md font-medium mb-2">{t('pendingTasks.fields.requestComments')}</h4>
+              <p className="text-gray-700 dark:text-gray-300">{selectedTask.requestComments || '-'}</p>
+            </div>
+            
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                {t('pendingTasks.fields.reviewComments')}
+              </label>
+              <textarea
+                value={reviewComments}
+                onChange={handleReviewCommentsChange}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                rows="4"
+                placeholder={t('pendingTasks.placeholders.reviewComments')}
+              />
+            </div>
           </div>
 
           <div className="flex flex-col space-y-4 sm:flex-row sm:space-y-0 sm:space-x-4 mt-8 pt-4 border-t border-gray-200 dark:border-gray-700">
