@@ -196,8 +196,6 @@ const Staff = () => {
         columns={columns}
         data={users}
         isLoading={isLoading}
-        onEdit={isAdmin() ? handleEdit : undefined}
-        onDelete={isAdmin() ? handleDelete : undefined}
       />
       
       {/* Modal för att lägga till/redigera personal */}
