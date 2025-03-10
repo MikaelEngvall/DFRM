@@ -10,7 +10,7 @@ import { useAuth } from '../contexts/AuthContext';
 
 const Admins = () => {
   const { t } = useLocale();
-  const { currentUser } = useAuth();
+  const { user: currentUser } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedAdmin, setSelectedAdmin] = useState(null);
   const [admins, setAdmins] = useState([]);

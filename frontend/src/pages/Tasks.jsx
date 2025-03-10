@@ -11,7 +11,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
 const Tasks = () => {
   const { t } = useLocale();
-  const { currentUser } = useAuth();
+  const { user: currentUser } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const params = useParams();

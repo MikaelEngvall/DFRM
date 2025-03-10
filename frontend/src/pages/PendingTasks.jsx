@@ -8,7 +8,7 @@ import { useAuth } from '../contexts/AuthContext';
 
 const PendingTasks = () => {
   const { t } = useLocale();
-  const { currentUser } = useAuth();
+  const { user: currentUser } = useAuth();
   const [pendingTasks, setPendingTasks] = useState([]);
   const [approvedTasks, setApprovedTasks] = useState([]);
   const [showApproved, setShowApproved] = useState(false);
@@ -20,9 +20,9 @@ const PendingTasks = () => {
 
   const columns = [
     {
-      key: 'task',
+      key: 'taskTitle',
       label: t('pendingTasks.fields.task'),
-      render: (task) => task ? task.title : '-'
+      render: (_, pendingTask) => pendingTask.task ? pendingTask.task.title : '-'
     },
     {
       key: 'requestedBy',
@@ -35,14 +35,16 @@ const PendingTasks = () => {
       render: (date) => date ? new Date(date).toLocaleString() : '-'
     },
     {
-      key: 'task',
+      key: 'taskPriority',
       label: t('tasks.fields.priority'),
-      render: (task) => task && task.priority ? t(`tasks.priorities.${task.priority}`) : '-'
+      render: (_, pendingTask) => pendingTask.task && pendingTask.task.priority ? 
+        t(`tasks.priorities.${pendingTask.task.priority}`) : '-'
     },
     {
-      key: 'task',
+      key: 'taskStatus',
       label: t('tasks.fields.status'),
-      render: (task) => task && task.status ? t(`tasks.status.${task.status}`) : '-'
+      render: (_, pendingTask) => pendingTask.task && pendingTask.task.status ? 
+        t(`tasks.status.${pendingTask.task.status}`) : '-'
     },
     {
       key: 'reviewedBy',

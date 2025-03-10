@@ -10,7 +10,7 @@ import { useAuth } from '../contexts/AuthContext';
 
 const Staff = () => {
   const { t } = useLocale();
-  const { currentUser } = useAuth();
+  const { user: currentUser } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [users, setUsers] = useState([]);
