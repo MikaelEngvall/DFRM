@@ -398,6 +398,9 @@ export default {
       USER: 'Användare',
       ADMIN: 'Admin',
       SUPERADMIN: 'Superadmin',
+      ROLE_USER: 'Användare',
+      ROLE_ADMIN: 'Admin',
+      ROLE_SUPERADMIN: 'Superadmin',
     },
     messages: {
       cannotDeleteSelf: 'Du kan inte radera ditt eget konto',

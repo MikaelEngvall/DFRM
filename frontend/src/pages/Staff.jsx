@@ -27,6 +27,15 @@ const Staff = () => {
     active: true
   });
 
+  // Hjälpfunktioner för att hantera rollprefix
+  const stripRolePrefix = (role) => {
+    return role?.startsWith('ROLE_') ? role.substring(5) : role;
+  };
+  
+  const addRolePrefix = (role) => {
+    return role?.startsWith('ROLE_') ? role : `ROLE_${role}`;
+  };
+
   const columns = [
     {
       key: 'firstName',
@@ -43,7 +52,10 @@ const Staff = () => {
     {
       key: 'role',
       label: t('staff.fields.role'),
-      render: (role) => t(`staff.roles.${role}`)
+      render: (role) => {
+        const cleanRole = stripRolePrefix(role);
+        return t(`staff.roles.${cleanRole}`);
+      }
     },
     {
       key: 'active',
@@ -53,22 +65,44 @@ const Staff = () => {
     {
       key: 'lastLoginAt',
       label: t('staff.fields.lastLogin'),
-      render: (lastLoginAt) => {
+      render: (lastLoginAt, user) => {
+        // Logga datumet för felsökning
+        console.log(`Rendering lastLoginAt for ${user.email}:`, lastLoginAt);
+        
         if (!lastLoginAt) return '-';
+        
         try {
-          // Försök formatera datumet med tidszon
-          const date = new Date(lastLoginAt);
-          if (isNaN(date.getTime())) return '-';
+          let date;
           
-          return new Intl.DateTimeFormat('sv-SE', {
-            year: 'numeric',
-            month: 'numeric',
+          // Kontrollera om lastLoginAt är en array (från Java LocalDateTime)
+          if (Array.isArray(lastLoginAt) && lastLoginAt.length === 7) {
+            // Format: [år, månad(0-baserad i JS), dag, timme, minut, sekund, nanosekund]
+            // Notera: I Java är månader 1-baserade, men i JavaScript är de 0-baserade
+            const [year, month, day, hour, minute, second] = lastLoginAt;
+            date = new Date(year, month - 1, day, hour, minute, second);
+          } else {
+            // Fallback till vanlig date-parsing
+            date = new Date(lastLoginAt);
+          }
+          
+          // Kontrollera om datumet är giltigt
+          if (isNaN(date.getTime())) {
+            console.error('Invalid date format:', lastLoginAt);
+            return '-';
+          }
+          
+          // Formatera till "Mars 10 21:29"
+          const options = {
+            month: 'long',
             day: 'numeric',
             hour: '2-digit',
-            minute: '2-digit'
-          }).format(date);
+            minute: '2-digit',
+            hour12: false
+          };
+          
+          return new Intl.DateTimeFormat('sv-SE', options).format(date);
         } catch (e) {
-          console.error('Error formatting date:', e);
+          console.error('Error formatting date:', e, lastLoginAt);
           return '-';
         }
       }
@@ -83,6 +117,13 @@ const Staff = () => {
     try {
       setIsLoading(true);
       const data = await userService.getAllUsers();
+      console.log('Hämtade användare:', data);
+      
+      // Kontrollera om lastLoginAt finns i svaret
+      data.forEach(user => {
+        console.log(`Användare ${user.email} lastLoginAt:`, user.lastLoginAt);
+      });
+      
       setUsers(data);
       setError(null);
     } catch (err) {
@@ -104,10 +145,14 @@ const Staff = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      // Kopiera formulärdata och lägg till ROLE_-prefix för rollen
+      const formDataToSubmit = {...formData};
+      formDataToSubmit.role = addRolePrefix(formData.role);
+      
       if (selectedUser) {
-        await userService.updateUser(selectedUser.id, formData);
+        await userService.updateUser(selectedUser.id, formDataToSubmit);
       } else {
-        await userService.createUser(formData);
+        await userService.createUser(formDataToSubmit);
       }
       
       await fetchUsers();
@@ -138,7 +183,7 @@ const Staff = () => {
       lastName: user.lastName || '',
       email: user.email || '',
       password: '', // Lösenord visas inte vid redigering
-      role: user.role || 'USER',
+      role: stripRolePrefix(user.role) || 'USER',
       active: user.active !== undefined ? user.active : true
     });
     setIsModalOpen(true);
@@ -184,7 +229,7 @@ const Staff = () => {
   };
   
   const isSuperAdmin = () => {
-    return currentUser?.role === 'SUPERADMIN';
+    return stripRolePrefix(currentUser?.role) === 'SUPERADMIN';
   };
 
   return (
