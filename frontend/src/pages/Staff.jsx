@@ -41,6 +41,11 @@ const Staff = () => {
       label: t('staff.fields.email')
     },
     {
+      key: 'role',
+      label: t('staff.fields.role'),
+      render: (role) => t(`staff.roles.${role}`)
+    },
+    {
       key: 'active',
       label: t('staff.fields.active'),
       render: (active) => active ? t('common.yes') : t('common.no')
@@ -177,9 +182,9 @@ const Staff = () => {
       console.error('Error deleting user:', err);
     }
   };
-
-  const isAdmin = () => {
-    return currentUser?.role === 'ADMIN' || currentUser?.role === 'SUPERADMIN';
+  
+  const isSuperAdmin = () => {
+    return currentUser?.role === 'SUPERADMIN';
   };
 
   return (
@@ -194,15 +199,13 @@ const Staff = () => {
         <h1 className="text-3xl font-cinzel dark:text-white">
           {t('navigation.staff')}
         </h1>
-        {isAdmin() && (
-          <button
-            onClick={handleAddUser}
-            className="bg-primary text-white px-4 py-2 rounded-md hover:bg-secondary transition-colors flex items-center"
-          >
-            <PlusIcon className="h-5 w-5 mr-2" />
-            {t('staff.add')}
-          </button>
-        )}
+        <button
+          onClick={handleAddUser}
+          className="bg-primary text-white px-4 py-2 rounded-md hover:bg-secondary transition-colors flex items-center"
+        >
+          <PlusIcon className="h-5 w-5 mr-2" />
+          {t('staff.add')}
+        </button>
       </div>
       
       <DataTable
@@ -276,7 +279,7 @@ const Staff = () => {
             >
               <option value="USER">{t('staff.roles.USER')}</option>
               <option value="ADMIN">{t('staff.roles.ADMIN')}</option>
-              {currentUser?.role === 'SUPERADMIN' && (
+              {isSuperAdmin() && (
                 <option value="SUPERADMIN">{t('staff.roles.SUPERADMIN')}</option>
               )}
             </select>
