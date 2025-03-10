@@ -417,4 +417,27 @@ export default {
       deactivate: 'Inaktivera'
     }
   },
+
+  admins: {
+    title: 'Administratörer',
+    add: 'Lägg till administratör',
+    edit: 'Redigera administratör',
+    fields: {
+      firstName: 'Förnamn',
+      lastName: 'Efternamn',
+      email: 'E-post',
+      password: 'Lösenord',
+      role: 'Roll',
+      active: 'Aktiv',
+    },
+    messages: {
+      saveSuccess: 'Administratören har sparats',
+      saveError: 'Ett fel uppstod när administratören skulle sparas',
+      deleteSuccess: 'Administratören har tagits bort',
+      deleteError: 'Ett fel uppstod när administratören skulle tas bort',
+      cannotDeleteSelf: 'Du kan inte radera ditt eget konto',
+    },
+    confirmDelete: 'Är du säker på att du vill ta bort denna administratör?',
+    deleteMessage: 'Är du säker på att du vill ta bort {firstName} {lastName}? Detta går inte att ångra.',
+  },
 }; 

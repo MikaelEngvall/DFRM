@@ -289,16 +289,16 @@ const PendingTasks = () => {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">{t('pendingTasks.title')}</h1>
-        <div className="flex items-center">
-          <label className="inline-flex items-center">
+        <h1 className="text-3xl font-cinzel dark:text-white">{t('pendingTasks.title')}</h1>
+        <div className="flex space-x-2 items-center">
+          <label className="inline-flex items-center text-sm">
             <input
               type="checkbox"
-              className="form-checkbox h-5 w-5 text-primary focus:ring-primary border-gray-300 rounded"
+              className="form-checkbox h-4 w-4 text-blue-600"
               checked={showApproved}
               onChange={handleShowApprovedChange}
             />
-            <span className="ml-2 text-gray-700 dark:text-gray-200">{t('pendingTasks.showApproved')}</span>
+            <span className="ml-2 text-gray-700 dark:text-gray-300">{t('pendingTasks.showApproved')}</span>
           </label>
         </div>
       </div>
