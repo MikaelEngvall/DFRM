@@ -295,8 +295,8 @@ const Tasks = () => {
       )}
       
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-          {t('navigation.tasks')}
+        <h1 className="text-3xl font-cinzel dark:text-white">
+          {t('tasks.title')}
         </h1>
         <button
           onClick={() => {
@@ -304,10 +304,10 @@ const Tasks = () => {
             setSelectedTask(null);
             setIsModalOpen(true);
           }}
-          className="flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md"
+          className="bg-primary text-white px-4 py-2 rounded-md hover:bg-secondary transition-colors flex items-center"
         >
-          <PlusIcon className="h-5 w-5 mr-1" />
-          <span>{t('common.add')}</span>
+          <PlusIcon className="h-5 w-5 mr-2" />
+          {t('tasks.add')}
         </button>
       </div>
       

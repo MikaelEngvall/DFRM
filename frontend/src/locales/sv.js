@@ -409,5 +409,12 @@ export default {
     },
     confirmDelete: 'Är du säker på att du vill ta bort denna personal?',
     deleteMessage: 'Är du säker på att du vill ta bort {firstName} {lastName}? Detta går inte att ångra.',
+    activeStatus: 'Aktiveringsstatus',
+    activeStatusDescription: 'Användaren är aktiv och kan logga in i systemet.',
+    inactiveStatusDescription: 'Användaren är inaktiverad och kan inte logga in i systemet.',
+    actions: {
+      activate: 'Aktivera',
+      deactivate: 'Inaktivera'
+    }
   },
 }; 

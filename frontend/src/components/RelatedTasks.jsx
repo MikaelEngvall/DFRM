@@ -7,7 +7,8 @@ import {
   CheckCircleIcon, 
   ExclamationCircleIcon,
   PlusCircleIcon,
-  ArrowRightIcon
+  ArrowRightIcon,
+  PlusIcon
 } from '@heroicons/react/24/outline';
 
 const RelatedTasks = ({ entityType, entityId, limit = 5, showAddButton = true }) => {
@@ -142,9 +143,9 @@ const RelatedTasks = ({ entityType, entityId, limit = 5, showAddButton = true })
           {showAddButton && (
             <button
               onClick={handleAddTask}
-              className="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded text-blue-700 bg-blue-100 hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-100 dark:hover:bg-blue-800"
+              className="bg-primary text-white px-3 py-1.5 rounded-md hover:bg-secondary transition-colors flex items-center text-xs"
             >
-              <PlusCircleIcon className="mr-1 h-4 w-4" />
+              <PlusIcon className="h-4 w-4 mr-1" />
               {t('tasks.addNew')}
             </button>
           )}

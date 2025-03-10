@@ -393,7 +393,7 @@ const Keys = () => {
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">{t('keys.title')}</h1>
+        <h1 className="text-3xl font-cinzel dark:text-white">{t('keys.title')}</h1>
         <div className="flex gap-2">
           <button
             onClick={() => setShowFilters(!showFilters)}
@@ -415,7 +415,7 @@ const Keys = () => {
               });
               setIsModalOpen(true);
             }}
-            className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-gray-800"
+            className="bg-primary text-white px-4 py-2 rounded-md hover:bg-secondary transition-colors flex items-center"
           >
             <PlusIcon className="h-5 w-5 mr-2" />
             {t('keys.addNew')}

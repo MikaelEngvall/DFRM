@@ -138,6 +138,22 @@ const Staff = () => {
     });
     setIsModalOpen(true);
   };
+  
+  const handleAddUser = () => {
+    resetForm();
+    setSelectedUser(null);
+    setIsModalOpen(true);
+  };
+  
+  const handleToggleActive = async (user, newActiveState) => {
+    try {
+      await userService.updateUser(user.id, { ...user, active: newActiveState });
+      await fetchUsers();
+    } catch (err) {
+      setError(t('staff.messages.saveError'));
+      console.error('Error toggling user active state:', err);
+    }
+  };
 
   const handleDelete = (user) => {
     // Förhindra att radera sig själv
@@ -175,40 +191,19 @@ const Staff = () => {
       )}
       
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+        <h1 className="text-3xl font-cinzel dark:text-white">
           {t('navigation.staff')}
         </h1>
         {isAdmin() && (
           <button
-            onClick={() => {
-              resetForm();
-              setSelectedUser(null);
-              setIsModalOpen(true);
-            }}
-            className="flex items-center justify-center bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md"
+            onClick={handleAddUser}
+            className="bg-primary text-white px-4 py-2 rounded-md hover:bg-secondary transition-colors flex items-center"
           >
-            <PlusIcon className="h-5 w-5 mr-1" />
-            <span>{t('common.add')}</span>
+            <PlusIcon className="h-5 w-5 mr-2" />
+            {t('staff.add')}
           </button>
         )}
       </div>
-      
-      {!isAdmin() && (
-        <div className="bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-400 p-4 mb-4 rounded-md">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-blue-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-              </svg>
-            </div>
-            <div className="ml-3">
-              <p className="text-sm text-blue-700 dark:text-blue-300">
-                {t('staff.messages.viewOnlyMode')}
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
       
       <DataTable
         columns={columns}
@@ -265,7 +260,7 @@ const Staff = () => {
             value={formData.password}
             onChange={handleInputChange}
             required={!selectedUser}
-            placeholder={selectedUser ? t('staff.leaveBlankToKeep') : ''}
+            placeholder={selectedUser ? t('staff.fields.leaveBlankToKeep') : ''}
           />
           
           <div>
@@ -279,9 +274,11 @@ const Staff = () => {
               className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               required
             >
-              <option value="USER">{t('staff.roles.user')}</option>
-              <option value="ADMIN">{t('staff.roles.admin')}</option>
-              <option value="SUPERADMIN">{t('staff.roles.superadmin')}</option>
+              <option value="USER">{t('staff.roles.USER')}</option>
+              <option value="ADMIN">{t('staff.roles.ADMIN')}</option>
+              {currentUser?.role === 'SUPERADMIN' && (
+                <option value="SUPERADMIN">{t('staff.roles.SUPERADMIN')}</option>
+              )}
             </select>
           </div>
           
@@ -298,22 +295,69 @@ const Staff = () => {
               {t('staff.fields.active')}
             </label>
           </div>
+          
+          {selectedUser && selectedUser.id !== currentUser?.id && (
+            <div className="mt-4 border-t pt-4">
+              <div className="flex flex-col space-y-3">
+                <h3 className="text-lg font-medium">{t('staff.activeStatus')}</h3>
+                <div className="flex space-x-3">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleToggleActive(selectedUser, true);
+                      setFormData(prev => ({ ...prev, active: true }));
+                    }}
+                    className={`px-3 py-1 rounded-md text-sm ${
+                      formData.active 
+                        ? 'bg-green-600 text-white' 
+                        : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
+                    }`}
+                  >
+                    {t('staff.actions.activate')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      handleToggleActive(selectedUser, false);
+                      setFormData(prev => ({ ...prev, active: false }));
+                    }}
+                    className={`px-3 py-1 rounded-md text-sm ${
+                      !formData.active 
+                        ? 'bg-red-600 text-white' 
+                        : 'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-300'
+                    }`}
+                  >
+                    {t('staff.actions.deactivate')}
+                  </button>
+                </div>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  {formData.active 
+                    ? t('staff.activeStatusDescription') 
+                    : t('staff.inactiveStatusDescription')}
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       </Modal>
       
       {/* Bekräftelsemodal för radering */}
       <AlertModal
         isOpen={isAlertOpen}
-        title={t('staff.delete.title')}
-        message={t('staff.delete.message', { name: userToDelete ? `${userToDelete.firstName} ${userToDelete.lastName}` : '' })}
-        confirmText={t('common.delete')}
-        cancelText={t('common.cancel')}
-        onConfirm={confirmDelete}
-        onCancel={() => {
+        title={t('staff.confirmDelete')}
+        message={t('staff.deleteMessage', { 
+          firstName: userToDelete ? userToDelete.firstName : '', 
+          lastName: userToDelete ? userToDelete.lastName : ''
+        })}
+        onClose={() => {
           setIsAlertOpen(false);
           setUserToDelete(null);
         }}
-        confirmButtonClass="bg-red-600 hover:bg-red-700"
+        onConfirm={confirmDelete}
+        confirmText={t('common.delete')}
+        cancelText={t('common.cancel')}
       />
     </div>
   );
