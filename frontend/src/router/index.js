@@ -8,12 +8,27 @@ import Tasks from '../pages/Tasks';
 import TaskDetail from '../pages/TaskDetail';
 import PendingTasks from '../pages/PendingTasks';
 import Staff from '../pages/Staff';
+import RequestPasswordReset from '../pages/RequestPasswordReset';
+import ResetPassword from '../pages/ResetPassword';
+import ConfirmEmailChange from '../pages/ConfirmEmailChange';
 import PrivateRoute from '../components/PrivateRoute';
 
 const routes = [
   {
     path: '/login',
     element: <Login />,
+  },
+  {
+    path: '/request-password-reset',
+    element: <RequestPasswordReset />,
+  },
+  {
+    path: '/reset-password',
+    element: <ResetPassword />,
+  },
+  {
+    path: '/confirm-email',
+    element: <ConfirmEmailChange />,
   },
   {
     path: '/',

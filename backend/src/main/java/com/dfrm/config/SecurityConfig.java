@@ -49,34 +49,24 @@ public class SecurityConfig {
                         // Lösenordsåterställning och e-postbekräftelse - ingen autentisering krävs
                         .requestMatchers("/api/security/request-password-reset", "/api/security/reset-password", "/api/security/confirm-email").permitAll()
                         
-                        // Kalender - tillgänglig för alla autentiserade användare (även USER)
-                        .requestMatchers("/api/tasks/date-range/**", "/api/tasks/assigned/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_USER", "ROLE_SUPERADMIN")
+                        // Endpoints som alla inloggade användare (USER, ADMIN, SUPERADMIN) kan nå
+                        .requestMatchers(HttpMethod.GET, "/api/apartments/**", "/api/tenants/**", "/api/keys/**", 
+                                        "/api/apartments", "/api/tenants", "/api/keys",
+                                        "/api/tasks/date-range/**", "/api/tasks/assigned/**")
+                        .hasAnyAuthority("ROLE_ADMIN", "ROLE_USER", "ROLE_SUPERADMIN")
                         
                         // E-postbyte för autentiserade användare
                         .requestMatchers("/api/security/request-email-change").authenticated()
                         
-                        // Tasks - endast för ADMIN och SUPERADMIN
+                        // Admin och Superadmin-endast endpoints
                         .requestMatchers("/api/tasks/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_SUPERADMIN")
-                        
-                        // Pending tasks - endast för ADMIN och SUPERADMIN
                         .requestMatchers("/api/pending-tasks/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_SUPERADMIN")
+                        .requestMatchers("/api/users/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_SUPERADMIN")
                         
-                        // CRUD för användare - endast ADMIN och SUPERADMIN kan lista/visa/skapa/uppdatera
-                        .requestMatchers(
-                            HttpMethod.GET, 
-                            "/api/users/**"
-                        ).hasAnyAuthority("ROLE_ADMIN", "ROLE_SUPERADMIN")
-                        .requestMatchers(
-                            HttpMethod.POST,
-                            "/api/users/**"
-                        ).hasAnyAuthority("ROLE_ADMIN", "ROLE_SUPERADMIN")
-                        .requestMatchers(
-                            HttpMethod.PUT,
-                            "/api/users/**"
-                        ).hasAnyAuthority("ROLE_ADMIN", "ROLE_SUPERADMIN")
-                        
-                        // Läggenheter, hyresgäster, nycklar - endast för ADMIN och SUPERADMIN
-                        .requestMatchers("/api/apartments/**", "/api/tenants/**", "/api/keys/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_SUPERADMIN")
+                        // Skrivoperationer för alla resurser - endast ADMIN och SUPERADMIN
+                        .requestMatchers(HttpMethod.POST, "/api/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_SUPERADMIN")
+                        .requestMatchers(HttpMethod.PUT, "/api/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_SUPERADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_SUPERADMIN")
                         
                         // Övriga endpoints - kräver autentisering
                         .anyRequest().authenticated()

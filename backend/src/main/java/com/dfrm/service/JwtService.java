@@ -34,6 +34,7 @@ public class JwtService {
         Map<String, Object> claims = new HashMap<>();
         String roleWithPrefix = user.getRole().startsWith("ROLE_") ? user.getRole() : "ROLE_" + user.getRole();
         claims.put("role", roleWithPrefix);
+        System.out.println("Genererar token med roll: " + roleWithPrefix);
         return createToken(claims, user.getEmail());
     }
 

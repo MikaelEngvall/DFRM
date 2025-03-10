@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import FormInput from '../components/FormInput';
 import { useAuth } from '../contexts/AuthContext';
 import { validateEmail, validatePassword } from '../utils/validation';
@@ -113,6 +113,14 @@ const Login = () => {
               required
               autoComplete="current-password"
             />
+          </div>
+
+          <div className="flex items-center justify-between mb-4">
+            <div className="text-sm">
+              <Link to="/request-password-reset" className="text-primary hover:text-secondary dark:text-primary-light dark:hover:text-secondary-light">
+                Glömt lösenord?
+              </Link>
+            </div>
           </div>
 
           <div>

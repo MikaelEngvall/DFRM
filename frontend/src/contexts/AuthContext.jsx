@@ -65,6 +65,7 @@ export const AuthProvider = ({ children }) => {
   const login = async (credentials) => {
     try {
       const userData = await authService.login(credentials);
+      console.log('Användare inloggad med roll:', userData.role);
       setUser(userData);
       navigate('/dashboard');
       return userData;
@@ -89,6 +90,19 @@ export const AuthProvider = ({ children }) => {
     setShowSessionWarning(false);
   };
 
+  // Hjälpfunktion för att kontrollera användarroller
+  const hasRole = useCallback((requiredRoles) => {
+    if (!user) return false;
+    if (!Array.isArray(requiredRoles)) {
+      requiredRoles = [requiredRoles];
+    }
+    const userRole = user.role.startsWith('ROLE_') ? user.role : `ROLE_${user.role}`;
+    return requiredRoles.some(role => {
+      const formattedRole = role.startsWith('ROLE_') ? role : `ROLE_${role}`;
+      return userRole === formattedRole;
+    });
+  }, [user]);
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-screen">
@@ -102,6 +116,7 @@ export const AuthProvider = ({ children }) => {
     login,
     logout,
     extendSession,
+    hasRole,
   };
 
   return (

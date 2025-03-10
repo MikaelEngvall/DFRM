@@ -19,7 +19,11 @@ public class EmailService {
     private String fromEmail;
     
     /**
-     * Skickar ett enkelt textmeddelande till angiven mottagare
+     * Skickar ett e-postmeddelande
+     * 
+     * @param to      mottagarens e-postadress
+     * @param subject ämne
+     * @param text    innehåll
      */
     public void sendEmail(String to, String subject, String text) {
         try {
@@ -30,9 +34,10 @@ public class EmailService {
             message.setText(text);
             
             mailSender.send(message);
-            log.info("E-post skickad till {}", to);
+            log.info("E-post skickad till: {}", to);
         } catch (Exception e) {
-            log.error("Fel vid skickande av e-post: ", e);
+            log.error("Fel vid skickande av e-post till: {}", to, e);
+            // Vi kastar inte vidare exception för att inte störa programmets flöde om e-post misslyckas
         }
     }
 } 

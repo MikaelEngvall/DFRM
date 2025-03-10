@@ -81,12 +81,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             
             if (roleObj != null) {
                 String role = roleObj.toString();
+                logger.info("Extraherade roll från token: " + role);
                 return Collections.singletonList(new SimpleGrantedAuthority(role));
+            } else {
+                logger.warn("Ingen roll hittades i token");
             }
         } catch (Exception e) {
             logger.error("Kunde inte extrahera roller från token", e);
         }
         
+        logger.warn("Returnerar tom rollsamling");
         return Collections.emptyList();
     }
 } 
