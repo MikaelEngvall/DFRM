@@ -168,6 +168,9 @@ public class UserController {
         if (patchUser.getPassword() != null && !patchUser.getPassword().isEmpty()) {
             existingUser.setPassword(patchUser.getPassword());
         }
+        if (patchUser.getPhoneNumber() != null) {
+            existingUser.setPhoneNumber(patchUser.getPhoneNumber());
+        }
         if (patchUser.getRole() != null) {
             // Vanliga användare kan inte ändra sin egen roll
             if (isOwnProfile && !isAdmin && !isSuperAdmin && 
@@ -176,6 +179,9 @@ public class UserController {
                     .body(Map.of("message", "Du har inte behörighet att ändra din roll"));
             }
             existingUser.setRole(patchUser.getRole());
+        }
+        if (patchUser.getPreferredLanguage() != null) {
+            existingUser.setPreferredLanguage(patchUser.getPreferredLanguage());
         }
         
         return ResponseEntity.ok(userService.updateUser(existingUser));

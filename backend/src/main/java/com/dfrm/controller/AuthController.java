@@ -62,7 +62,8 @@ public class AuthController {
                 "email", user.getEmail(),
                 "firstName", user.getFirstName(),
                 "lastName", user.getLastName(),
-                "role", user.getRole()
+                "role", user.getRole(),
+                "preferredLanguage", user.getPreferredLanguage()
             ));
             
             return ResponseEntity.ok(response);
@@ -86,15 +87,15 @@ public class AuthController {
         }
         
         User user = userOpt.get();
-        Map<String, Object> response = Map.of(
-            "id", user.getId(),
-            "email", user.getEmail(),
-            "firstName", user.getFirstName(),
-            "lastName", user.getLastName(),
-            "role", user.getRole(),
-            "lastLoginAt", user.getLastLoginAt()
-        );
+        Map<String, Object> userMap = new HashMap<>();
+        userMap.put("id", user.getId());
+        userMap.put("email", user.getEmail());
+        userMap.put("firstName", user.getFirstName());
+        userMap.put("lastName", user.getLastName());
+        userMap.put("role", user.getRole());
+        userMap.put("lastLoginAt", user.getLastLoginAt());
+        userMap.put("preferredLanguage", user.getPreferredLanguage());
         
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(userMap);
     }
 } 

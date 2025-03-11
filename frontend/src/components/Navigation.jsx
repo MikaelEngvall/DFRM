@@ -130,49 +130,49 @@ const Navigation = () => {
       name: t('navigation.dashboard'),
       href: '/',
       icon: HomeIcon,
-      roles: ['ADMIN', 'MANAGER'] // Bara admin och manager kan se dashboard
+      roles: ['ADMIN', 'SUPERADMIN'] // Tagit bort MANAGER
     },
     {
       name: t('navigation.apartments'),
       href: '/apartments',
       icon: BuildingOffice2Icon,
-      roles: ['ADMIN', 'MANAGER'] // Bara admin och manager kan se lägenheter
+      roles: ['ADMIN', 'SUPERADMIN'] // Tagit bort MANAGER
     },
     {
       name: t('navigation.tenants'),
       href: '/tenants',
       icon: UserGroupIcon,
-      roles: ['ADMIN', 'MANAGER'] // Bara admin och manager kan se hyresgäster
+      roles: ['ADMIN', 'SUPERADMIN'] // Tagit bort MANAGER
     },
     {
       name: t('navigation.keys'),
       href: '/keys',
       icon: KeyIcon,
-      roles: ['ADMIN', 'MANAGER'] // Bara admin och manager kan se nycklar
+      roles: ['ADMIN', 'SUPERADMIN'] // Tagit bort MANAGER
     },
     {
       name: t('navigation.tasks'),
       href: '/tasks',
       icon: ClipboardDocumentListIcon,
-      roles: ['ADMIN', 'MANAGER'] // Bara admin och manager kan se uppgifter
+      roles: ['ADMIN', 'SUPERADMIN'] // Tagit bort MANAGER
     },
     {
       name: t('navigation.pendingTasks'),
       href: '/pending-tasks',
       icon: ClipboardDocumentCheckIcon,
-      roles: ['ADMIN', 'MANAGER'] // Bara admin och manager kan se väntande uppgifter
+      roles: ['ADMIN', 'SUPERADMIN'] // Tagit bort MANAGER
     },
     {
       name: t('navigation.calendar'),
       href: '/calendar',
       icon: CalendarIcon,
-      roles: ['ADMIN', 'MANAGER', 'USER'] // Alla roller kan se kalender
+      roles: ['ADMIN', 'USER', 'SUPERADMIN'] // Tagit bort MANAGER
     },
     {
       name: t('navigation.staff'),
       href: '/staff',
       icon: UserIcon,
-      roles: ['ADMIN', 'MANAGER', 'USER'] // Alla kan se personal, men USER kan bara se sig själv (hanteras i komponent)
+      roles: ['ADMIN', 'USER', 'SUPERADMIN'] // Tagit bort MANAGER
     },
   ];
   
