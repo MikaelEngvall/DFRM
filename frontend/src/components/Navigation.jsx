@@ -72,7 +72,7 @@ function DesktopNavLink({ to, icon: Icon, label, tooltips, showTooltip, hideTool
 }
 
 const Navigation = () => {
-  const { user, logout } = useAuth();
+  const { user, logout, hasRole } = useAuth();
   const { t } = useLocale();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
@@ -124,48 +124,69 @@ const Navigation = () => {
     setMobileMenuOpen(!mobileMenuOpen);
   };
 
+  // Uppdaterad navigation med rollkontroll
   const navigation = [
     {
       name: t('navigation.dashboard'),
       href: '/',
       icon: HomeIcon,
+      roles: ['ADMIN', 'MANAGER'] // Bara admin och manager kan se dashboard
     },
     {
       name: t('navigation.apartments'),
       href: '/apartments',
       icon: BuildingOffice2Icon,
+      roles: ['ADMIN', 'MANAGER'] // Bara admin och manager kan se lägenheter
     },
     {
       name: t('navigation.tenants'),
       href: '/tenants',
       icon: UserGroupIcon,
+      roles: ['ADMIN', 'MANAGER'] // Bara admin och manager kan se hyresgäster
     },
     {
       name: t('navigation.keys'),
       href: '/keys',
       icon: KeyIcon,
+      roles: ['ADMIN', 'MANAGER'] // Bara admin och manager kan se nycklar
     },
     {
       name: t('navigation.tasks'),
       href: '/tasks',
       icon: ClipboardDocumentListIcon,
+      roles: ['ADMIN', 'MANAGER'] // Bara admin och manager kan se uppgifter
     },
     {
       name: t('navigation.pendingTasks'),
       href: '/pending-tasks',
       icon: ClipboardDocumentCheckIcon,
+      roles: ['ADMIN', 'MANAGER'] // Bara admin och manager kan se väntande uppgifter
     },
     {
       name: t('navigation.calendar'),
       href: '/calendar',
       icon: CalendarIcon,
+      roles: ['ADMIN', 'MANAGER', 'USER'] // Alla roller kan se kalender
     },
     {
       name: t('navigation.staff'),
       href: '/staff',
       icon: UserIcon,
+      roles: ['ADMIN', 'MANAGER', 'USER'] // Alla kan se personal, men USER kan bara se sig själv (hanteras i komponent)
     },
   ];
+  
+  // Funktion för att filtrera navigationsalternativ baserat på användarens roll
+  const getAuthorizedNavItems = () => {
+    if (!user) return [];
+    
+    return navigation.filter(item => {
+      // Kontrollera om användaren har någon av de roller som krävs för denna menypost
+      return item.roles && item.roles.some(role => hasRole(role));
+    });
+  };
+
+  const authorizedNavItems = getAuthorizedNavItems();
 
   return (
     <>
@@ -201,7 +222,7 @@ const Navigation = () => {
             <LanguageSelector />
           </div>
           <nav className="space-y-1">
-            {navigation.map((item) => (
+            {authorizedNavItems.map((item) => (
               <MobileNavLink key={item.name} to={item.href} icon={item.icon} label={item.name} />
             ))}
             <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
@@ -258,7 +279,7 @@ const Navigation = () => {
           <p className="text-gray-600 dark:text-gray-400">Hej, {getFirstName()}</p>
         </div>
         <nav className="mt-6 px-2 space-y-1">
-          {navigation.map((item) => (
+          {authorizedNavItems.map((item) => (
             <DesktopNavLink key={item.name} to={item.href} icon={item.icon} label={item.name} tooltips={tooltips} showTooltip={showTooltip} hideTooltip={hideTooltip} />
           ))}
         </nav>
@@ -267,8 +288,8 @@ const Navigation = () => {
       {/* Desktop navigation - collapsed sidebar for small screens */}
       <div className="fixed top-0 left-0 bottom-0 w-16 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 pt-16 hidden md:block lg:hidden">
         <nav className="mt-6 px-2 space-y-1">
-          {navigation.map((item) => (
-            <DesktopNavLink key={item.name} to={item.href} icon={item.icon} tooltips={tooltips} showTooltip={showTooltip} hideTooltip={hideTooltip} collapsed />
+          {authorizedNavItems.map((item) => (
+            <DesktopNavLink key={item.name} to={item.href} icon={item.icon} label={item.name} tooltips={tooltips} showTooltip={showTooltip} hideTooltip={hideTooltip} collapsed />
           ))}
         </nav>
       </div>

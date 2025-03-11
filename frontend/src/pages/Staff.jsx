@@ -10,7 +10,7 @@ import { useAuth } from '../contexts/AuthContext';
 
 const Staff = () => {
   const { t } = useLocale();
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, hasRole } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [users, setUsers] = useState([]);
@@ -22,7 +22,7 @@ const Staff = () => {
     firstName: '',
     lastName: '',
     email: '',
-    phone: '',
+    phoneNumber: '',
     password: '',
     role: 'USER',
     active: true
@@ -37,6 +37,11 @@ const Staff = () => {
     return role?.startsWith('ROLE_') ? role : `ROLE_${role}`;
   };
 
+  // Kontrollera om användaren endast har USER-rollen
+  const isRegularUser = () => {
+    return hasRole('USER') && !hasRole('ADMIN') && !hasRole('SUPERADMIN') && !hasRole('MANAGER');
+  };
+
   const columns = [
     {
       key: 'firstName',
@@ -47,16 +52,16 @@ const Staff = () => {
       label: t('staff.fields.lastName')
     },
     {
-      key: 'phone',
+      key: 'phoneNumber',
       label: t('staff.fields.phone'),
-      render: (phone) => {
+      render: (phoneNumber) => {
         // Om telefonnumret saknas, visa ett streck
-        if (!phone) return '-';
+        if (!phoneNumber) return '-';
         
         // Skapa en klickbar länk för att ringa numret
         return (
-          <a href={`tel:${phone}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-            {phone}
+          <a href={`tel:${phoneNumber}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+            {phoneNumber}
           </a>
         );
       }
@@ -119,9 +124,20 @@ const Staff = () => {
   const fetchUsers = async () => {
     try {
       setIsLoading(true);
-      const data = await userService.getAllUsers();
- 
-      setUsers(data);
+      
+      // Om användaren bara har USER-roll, hämta bara deras egen information
+      if (isRegularUser() && currentUser) {
+        // Hämta endast aktuell användare
+        const userData = await userService.getUserById(currentUser.id);
+        console.log('User data för current user:', userData);
+        setUsers([userData]);
+      } else {
+        // Admin, manager eller superadmin - hämta alla användare
+        const data = await userService.getAllUsers();
+        console.log('All users data:', data);
+        setUsers(data);
+      }
+      
       setError(null);
     } catch (err) {
       setError(t('common.error'));
@@ -141,14 +157,31 @@ const Staff = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Förhindra vanliga användare från att redigera annan information än sin egen
+    if (isRegularUser() && selectedUser && selectedUser.id !== currentUser.id) {
+      setError(t('staff.messages.unauthorized'));
+      return;
+    }
+    
     try {
       // Kopiera formulärdata och lägg till ROLE_-prefix för rollen
       const formDataToSubmit = {...formData};
       formDataToSubmit.role = addRolePrefix(formData.role);
       
+      // Om vanlig användare redigerar sin profil, behåll befintlig roll
+      if (isRegularUser() && selectedUser) {
+        formDataToSubmit.role = selectedUser.role;
+      }
+      
       if (selectedUser) {
         await userService.updateUser(selectedUser.id, formDataToSubmit);
       } else {
+        // Vanliga användare kan inte skapa nya användare
+        if (isRegularUser()) {
+          setError(t('staff.messages.unauthorized'));
+          return;
+        }
         await userService.createUser(formDataToSubmit);
       }
       
@@ -167,7 +200,7 @@ const Staff = () => {
       firstName: '',
       lastName: '',
       email: '',
-      phone: '',
+      phoneNumber: '',
       password: '',
       role: 'USER',
       active: true
@@ -175,12 +208,18 @@ const Staff = () => {
   };
 
   const handleEdit = (user) => {
+    // Kontrollera om användaren får redigera denna profil
+    if (isRegularUser() && user.id !== currentUser.id) {
+      setError(t('staff.messages.unauthorized'));
+      return;
+    }
+    
     setSelectedUser(user);
     setFormData({
       firstName: user.firstName || '',
       lastName: user.lastName || '',
       email: user.email || '',
-      phone: user.phone || '',
+      phoneNumber: user.phoneNumber || '',
       password: '', // Lösenord visas inte vid redigering
       role: stripRolePrefix(user.role) || 'USER',
       active: user.active !== undefined ? user.active : true
@@ -189,12 +228,24 @@ const Staff = () => {
   };
   
   const handleAddUser = () => {
+    // Vanliga användare kan inte lägga till nya användare
+    if (isRegularUser()) {
+      setError(t('staff.messages.unauthorized'));
+      return;
+    }
+    
     resetForm();
     setSelectedUser(null);
     setIsModalOpen(true);
   };
   
   const handleToggleActive = async (user, newActiveState) => {
+    // Vanliga användare kan inte ändra aktivitetsstatus
+    if (isRegularUser()) {
+      setError(t('staff.messages.unauthorized'));
+      return;
+    }
+    
     try {
       await userService.updateUser(user.id, { ...user, active: newActiveState });
       await fetchUsers();
@@ -205,6 +256,12 @@ const Staff = () => {
   };
 
   const handleDelete = (user) => {
+    // Vanliga användare kan inte radera konton
+    if (isRegularUser()) {
+      setError(t('staff.messages.unauthorized'));
+      return;
+    }
+    
     // Förhindra att radera sig själv
     if (user.id === currentUser?.id) {
       setError(t('staff.messages.cannotDeleteSelf'));
@@ -241,15 +298,18 @@ const Staff = () => {
       
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-cinzel dark:text-white">
-          {t('navigation.staff')}
+          {isRegularUser() ? t('staff.myProfile') : t('navigation.staff')}
         </h1>
-        <button
-          onClick={handleAddUser}
-          className="bg-primary text-white px-4 py-2 rounded-md hover:bg-secondary transition-colors flex items-center"
-        >
-          <PlusIcon className="h-5 w-5 mr-2" />
-          {t('staff.add')}
-        </button>
+        {/* Visa bara "Lägg till" knappen om användaren inte är en vanlig användare */}
+        {!isRegularUser() && (
+          <button
+            onClick={handleAddUser}
+            className="bg-primary text-white px-4 py-2 rounded-md hover:bg-secondary transition-colors flex items-center"
+          >
+            <PlusIcon className="h-5 w-5 mr-2" />
+            {t('staff.add')}
+          </button>
+        )}
       </div>
       
       <DataTable
@@ -302,9 +362,9 @@ const Staff = () => {
           
           <FormInput
             label={t('staff.fields.phone')}
-            name="phone"
+            name="phoneNumber"
             type="text"
-            value={formData.phone}
+            value={formData.phoneNumber}
             onChange={handleInputChange}
             required
           />
@@ -319,40 +379,47 @@ const Staff = () => {
             placeholder={selectedUser ? t('staff.fields.leaveBlankToKeep') : ''}
           />
           
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              {t('staff.fields.role')}
-            </label>
-            <select
-              name="role"
-              value={formData.role}
-              onChange={handleInputChange}
-              className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              required
-            >
-              <option value="USER">{t('staff.roles.USER')}</option>
-              <option value="ADMIN">{t('staff.roles.ADMIN')}</option>
-              {isSuperAdmin() && (
-                <option value="SUPERADMIN">{t('staff.roles.SUPERADMIN')}</option>
-              )}
-            </select>
-          </div>
+          {/* Visa inte rollfältet för vanliga användare */}
+          {!isRegularUser() && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                {t('staff.fields.role')}
+              </label>
+              <select
+                name="role"
+                value={formData.role}
+                onChange={handleInputChange}
+                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                required
+              >
+                <option value="USER">{t('staff.roles.USER')}</option>
+                <option value="ADMIN">{t('staff.roles.ADMIN')}</option>
+                {isSuperAdmin() && (
+                  <option value="SUPERADMIN">{t('staff.roles.SUPERADMIN')}</option>
+                )}
+              </select>
+            </div>
+          )}
           
-          <div className="flex items-center">
-            <input
-              id="active"
-              name="active"
-              type="checkbox"
-              checked={formData.active}
-              onChange={handleInputChange}
-              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-            />
-            <label htmlFor="active" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
-              {t('staff.fields.active')}
-            </label>
-          </div>
+          {/* Visa inte aktiv-checkboxen för vanliga användare */}
+          {!isRegularUser() && (
+            <div className="flex items-center">
+              <input
+                id="active"
+                name="active"
+                type="checkbox"
+                checked={formData.active}
+                onChange={handleInputChange}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <label htmlFor="active" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                {t('staff.fields.active')}
+              </label>
+            </div>
+          )}
           
-          {selectedUser && selectedUser.id !== currentUser?.id && (
+          {/* Visa inte aktivera/inaktivera-knappar för vanliga användare */}
+          {!isRegularUser() && selectedUser && selectedUser.id !== currentUser?.id && (
             <div className="mt-4 border-t pt-4">
               <div className="flex flex-col space-y-3">
                 <h3 className="text-lg font-medium">{t('staff.activeStatus')}</h3>

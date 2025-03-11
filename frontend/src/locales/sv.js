@@ -380,6 +380,7 @@ export default {
     title: 'Personal',
     add: 'Lägg till användare',
     edit: 'Redigera personal',
+    myProfile: 'Min profil',
     fields: {
       firstName: 'Förnamn',
       lastName: 'Efternamn',
@@ -405,6 +406,7 @@ export default {
       saveError: 'Ett fel uppstod när personalen skulle sparas',
       deleteSuccess: 'Personalen har tagits bort',
       deleteError: 'Ett fel uppstod när personalen skulle tas bort',
+      unauthorized: 'Du har inte behörighet att utföra denna åtgärd',
     },
     confirmDelete: 'Är du säker på att du vill ta bort denna personal?',
     deleteMessage: 'Är du säker på att du vill ta bort {firstName} {lastName}? Detta går inte att ångra.',
