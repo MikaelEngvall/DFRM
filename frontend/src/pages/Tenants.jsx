@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
 import AlertModal from '../components/AlertModal';
 import FormInput from '../components/FormInput';
-import { PlusIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, FunnelIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { tenantService, apartmentService, keyService } from '../services';
 import { formatShortDate, formatDateForInput } from '../utils/formatters';
 import { useLocale } from '../contexts/LocaleContext';
@@ -32,6 +32,7 @@ const Tenants = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTenant, setSelectedTenant] = useState(null);
   const [tenants, setTenants] = useState([]);
+  const [filteredTenants, setFilteredTenants] = useState([]);
   const [apartments, setApartments] = useState([]);
   const [keys, setKeys] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -50,6 +51,53 @@ const Tenants = () => {
     apartmentId: '',
     keyIds: [],
   });
+  
+  // Filter state
+  const [showFilters, setShowFilters] = useState(false);
+  const [filters, setFilters] = useState({
+    city: '',
+    street: '',
+    number: '',
+    firstName: '',
+    lastName: ''
+  });
+  
+  // Unika städer, gator, förnamn och efternamn för filter
+  const uniqueCities = useMemo(() => {
+    // Hämta alla unika städer från hyresgästernas lägenheter
+    const cities = tenants
+      .filter(tenant => tenant.apartment)
+      .map(tenant => {
+        const apartmentId = typeof tenant.apartment === 'object' ? tenant.apartment.id : tenant.apartment;
+        const apartment = apartments.find(a => a.id === apartmentId);
+        return apartment?.city;
+      })
+      .filter(Boolean);
+    
+    return [...new Set(cities)].sort();
+  }, [tenants, apartments]);
+  
+  const uniqueStreets = useMemo(() => {
+    // Hämta alla unika gator från hyresgästernas lägenheter
+    const streets = tenants
+      .filter(tenant => tenant.apartment)
+      .map(tenant => {
+        const apartmentId = typeof tenant.apartment === 'object' ? tenant.apartment.id : tenant.apartment;
+        const apartment = apartments.find(a => a.id === apartmentId);
+        return apartment?.street;
+      })
+      .filter(Boolean);
+    
+    return [...new Set(streets)].sort();
+  }, [tenants, apartments]);
+  
+  const uniqueFirstNames = useMemo(() => {
+    return [...new Set(tenants.map(tenant => tenant.firstName))].filter(Boolean).sort();
+  }, [tenants]);
+  
+  const uniqueLastNames = useMemo(() => {
+    return [...new Set(tenants.map(tenant => tenant.lastName))].filter(Boolean).sort();
+  }, [tenants]);
 
   // Uppdatera keyTypes med översättningar
   const translatedKeyTypes = keyTypes.map(type => ({
@@ -181,6 +229,11 @@ const Tenants = () => {
   useEffect(() => {
     fetchInitialData();
   }, []);
+  
+  // Applicera filter när de ändras eller när data ändras
+  useEffect(() => {
+    applyFilters();
+  }, [filters, tenants, apartments]);
 
   const fetchInitialData = async () => {
     try {
@@ -190,7 +243,9 @@ const Tenants = () => {
         apartmentService.getAllApartments(),
         keyService.getAllKeys(),
       ]);
+      
       setTenants(tenantsData);
+      setFilteredTenants(tenantsData);
       setApartments(apartmentsData);
       setKeys(keysData);
       setError(null);
@@ -221,6 +276,76 @@ const Tenants = () => {
         [name]: value,
       }));
     }
+  };
+
+  const handleFilterChange = (e) => {
+    const { name, value } = e.target;
+    setFilters(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+  
+  const applyFilters = () => {
+    let result = [...tenants];
+    
+    // Filtrera baserat på förnamn
+    if (filters.firstName) {
+      result = result.filter(tenant => tenant.firstName === filters.firstName);
+    }
+    
+    // Filtrera baserat på efternamn
+    if (filters.lastName) {
+      result = result.filter(tenant => tenant.lastName === filters.lastName);
+    }
+    
+    // Filtrera baserat på stad
+    if (filters.city) {
+      result = result.filter(tenant => {
+        if (!tenant.apartment) return false;
+        
+        const apartmentId = typeof tenant.apartment === 'object' ? tenant.apartment.id : tenant.apartment;
+        const apartment = apartments.find(a => a.id === apartmentId);
+        
+        return apartment && apartment.city === filters.city;
+      });
+    }
+    
+    // Filtrera baserat på gata
+    if (filters.street) {
+      result = result.filter(tenant => {
+        if (!tenant.apartment) return false;
+        
+        const apartmentId = typeof tenant.apartment === 'object' ? tenant.apartment.id : tenant.apartment;
+        const apartment = apartments.find(a => a.id === apartmentId);
+        
+        return apartment && apartment.street === filters.street;
+      });
+    }
+    
+    // Filtrera baserat på nummer
+    if (filters.number) {
+      result = result.filter(tenant => {
+        if (!tenant.apartment) return false;
+        
+        const apartmentId = typeof tenant.apartment === 'object' ? tenant.apartment.id : tenant.apartment;
+        const apartment = apartments.find(a => a.id === apartmentId);
+        
+        return apartment && apartment.number === filters.number;
+      });
+    }
+    
+    setFilteredTenants(result);
+  };
+  
+  const clearFilters = () => {
+    setFilters({
+      city: '',
+      street: '',
+      number: '',
+      firstName: '',
+      lastName: ''
+    });
   };
 
   const handleSubmit = async (e) => {
@@ -438,53 +563,167 @@ const Tenants = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-cinzel dark:text-white">{t('tenants.title')}</h1>
-        <button
-          onClick={() => {
-            setSelectedTenant(null);
-            setFormData({
-              firstName: '',
-              lastName: '',
-              personnummer: '',
-              email: '',
-              phone: '',
-              movedInDate: '',
-              resiliationDate: '',
-              comment: '',
-              apartmentId: '',
-              keyIds: [],
-            });
-            setIsModalOpen(true);
-          }}
-          className="bg-primary text-white px-4 py-2 rounded-md hover:bg-secondary transition-colors flex items-center"
-        >
-          <PlusIcon className="h-5 w-5 mr-2" />
-          {t('tenants.addNew')}
-        </button>
+        <div className="flex space-x-2">
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className="flex items-center px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+          >
+            <FunnelIcon className="h-5 w-5 mr-2" />
+            {t('common.filters')}
+          </button>
+          <button
+            onClick={() => {
+              setSelectedTenant(null);
+              setFormData({
+                firstName: '',
+                lastName: '',
+                personnummer: '',
+                email: '',
+                phone: '',
+                movedInDate: '',
+                resiliationDate: '',
+                comment: '',
+                apartmentId: '',
+                keyIds: [],
+              });
+              setIsModalOpen(true);
+            }}
+            className="bg-primary text-white px-4 py-2 rounded-md hover:bg-secondary transition-colors flex items-center"
+          >
+            <PlusIcon className="h-5 w-5 mr-2" />
+            {t('tenants.addNew')}
+          </button>
+        </div>
       </div>
 
-      {error && (
-        <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-4">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-              </svg>
+      {showFilters && (
+        <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg mb-6 border border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-medium text-gray-900 dark:text-white">{t('common.filters')}</h2>
+            <button 
+              onClick={clearFilters}
+              className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center"
+            >
+              <XMarkIcon className="h-4 w-4 mr-1" />
+              {t('common.clear')}
+            </button>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            {/* Förnamn Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                {t('tenants.fields.firstName')}
+              </label>
+              <select
+                name="firstName"
+                value={filters.firstName}
+                onChange={handleFilterChange}
+                className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              >
+                <option value="">{t('common.all')}</option>
+                {uniqueFirstNames.map(name => (
+                  <option key={name} value={name}>{name}</option>
+                ))}
+              </select>
             </div>
-            <div className="ml-3">
-              <p className="text-sm text-red-700">{error}</p>
+            
+            {/* Efternamn Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                {t('tenants.fields.lastName')}
+              </label>
+              <select
+                name="lastName"
+                value={filters.lastName}
+                onChange={handleFilterChange}
+                className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              >
+                <option value="">{t('common.all')}</option>
+                {uniqueLastNames.map(name => (
+                  <option key={name} value={name}>{name}</option>
+                ))}
+              </select>
+            </div>
+            
+            {/* Stad Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                {t('apartments.fields.city')}
+              </label>
+              <select
+                name="city"
+                value={filters.city}
+                onChange={handleFilterChange}
+                className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              >
+                <option value="">{t('common.all')}</option>
+                {uniqueCities.map(city => (
+                  <option key={city} value={city}>{city}</option>
+                ))}
+              </select>
+            </div>
+            
+            {/* Gata Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                {t('apartments.fields.street')}
+              </label>
+              <select
+                name="street"
+                value={filters.street}
+                onChange={handleFilterChange}
+                className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              >
+                <option value="">{t('common.all')}</option>
+                {uniqueStreets.map(street => (
+                  <option key={street} value={street}>{street}</option>
+                ))}
+              </select>
+            </div>
+            
+            {/* Nummer Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                {t('apartments.fields.number')}
+              </label>
+              <input
+                type="text"
+                name="number"
+                value={filters.number}
+                onChange={handleFilterChange}
+                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              />
+            </div>
+          </div>
+          
+          <div className="mt-4 flex items-center justify-between">
+            <div className="text-sm text-gray-500 dark:text-gray-400">
+              {filteredTenants.length} {t('tenants.filteredResults', { count: filteredTenants.length })}
             </div>
           </div>
         </div>
       )}
 
-      <DataTable
-        columns={columns}
-        data={tenants}
-        onEdit={handleEdit}
-        rowClassName={(tenant) => hasTenantApartment(tenant) ? 'opacity-60' : ''}
-      />
+      {error ? (
+        <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4" role="alert">
+          <p>{error}</p>
+        </div>
+      ) : isLoading ? (
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+      ) : (
+        <DataTable
+          columns={columns}
+          data={filteredTenants}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+          isLoading={isLoading}
+        />
+      )}
 
       <Modal
         isOpen={isModalOpen}

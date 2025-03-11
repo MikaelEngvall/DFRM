@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
 import AlertModal from '../components/AlertModal';
 import FormInput from '../components/FormInput';
-import { PlusIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, FunnelIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { apartmentService, tenantService, keyService } from '../services';
 import { useLocation } from 'react-router-dom';
 import { useLocale } from '../contexts/LocaleContext';
@@ -32,6 +32,7 @@ const Apartments = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedApartment, setSelectedApartment] = useState(null);
   const [apartments, setApartments] = useState([]);
+  const [filteredApartments, setFilteredApartments] = useState([]);
   const [tenants, setTenants] = useState([]);
   const [keys, setKeys] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -55,6 +56,24 @@ const Apartments = () => {
     keyIds: [],
   });
   const [activeTab, setActiveTab] = useState('all'); // 'all' eller 'vacant'
+  
+  // Filter state
+  const [showFilters, setShowFilters] = useState(false);
+  const [filters, setFilters] = useState({
+    city: '',
+    street: '',
+    number: '',
+    tenantId: ''
+  });
+  
+  // Unika städer och gator för filter
+  const uniqueCities = useMemo(() => {
+    return [...new Set(apartments.map(apt => apt.city))].filter(Boolean).sort();
+  }, [apartments]);
+  
+  const uniqueStreets = useMemo(() => {
+    return [...new Set(apartments.map(apt => apt.street))].filter(Boolean).sort();
+  }, [apartments]);
 
   // Kolumner för datatabellen
   const columns = [
@@ -244,6 +263,15 @@ const Apartments = () => {
     }
   }, [location.search]);
 
+  // Applicera filter när de ändras eller när data ändras
+  useEffect(() => {
+    if (activeTab === 'vacant') {
+      setFilteredApartments(getVacantApartments(apartments));
+    } else {
+      applyFilters();
+    }
+  }, [activeTab, filters, apartments]);
+
   const fetchInitialData = async () => {
     setIsLoading(true);
     try {
@@ -252,9 +280,17 @@ const Apartments = () => {
         tenantService.getAllTenants(),
         keyService.getAllKeys(),
       ]);
+      
       setApartments(apartmentsData);
+      setFilteredApartments(apartmentsData);
       setTenants(tenantsData);
       setKeys(keysData);
+      
+      // Om den skickades vidare från en annan sida med "vacant" parameter, visa bara lediga lägenheter
+      if (location.state?.showVacant) {
+        setActiveTab('vacant');
+      }
+      
       setError(null);
     } catch (err) {
       console.error("Failed to fetch initial data:", err);
@@ -286,6 +322,57 @@ const Apartments = () => {
         [name]: type === 'checkbox' ? checked : value
       }));
     }
+  };
+
+  const handleFilterChange = (e) => {
+    const { name, value } = e.target;
+    setFilters(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+  
+  const applyFilters = () => {
+    let result = [...apartments];
+    
+    // Filtrera baserat på stad
+    if (filters.city) {
+      result = result.filter(apartment => apartment.city === filters.city);
+    }
+    
+    // Filtrera baserat på gata
+    if (filters.street) {
+      result = result.filter(apartment => apartment.street === filters.street);
+    }
+    
+    // Filtrera baserat på nummer
+    if (filters.number) {
+      result = result.filter(apartment => apartment.number === filters.number);
+    }
+    
+    // Filtrera baserat på hyresgäst
+    if (filters.tenantId) {
+      result = result.filter(apartment => {
+        if (!apartment.tenants || !apartment.tenants.length) return false;
+        
+        // Kontrollera om hyresgästen finns i lägenheten
+        return apartment.tenants.some(tenant => {
+          const tenantId = typeof tenant === 'object' ? tenant.id : tenant;
+          return tenantId === filters.tenantId;
+        });
+      });
+    }
+    
+    setFilteredApartments(result);
+  };
+  
+  const clearFilters = () => {
+    setFilters({
+      city: '',
+      street: '',
+      number: '',
+      tenantId: ''
+    });
   };
 
   const handleSubmit = async (e) => {
@@ -578,68 +665,179 @@ const Apartments = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-cinzel dark:text-white">{t('apartments.title')}</h1>
-        <button
-          onClick={() => setIsModalOpen(true)}
-          className="bg-primary text-white px-4 py-2 rounded-md hover:bg-secondary transition-colors flex items-center"
-        >
-          <PlusIcon className="h-5 w-5 mr-2" />
-          {t('apartments.addNew')}
-        </button>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-cinzel dark:text-white">
+          {activeTab === 'vacant' ? t('apartments.vacant') : t('apartments.title')}
+        </h1>
+        <div className="flex space-x-2">
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className="flex items-center px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+          >
+            <FunnelIcon className="h-5 w-5 mr-2" />
+            {t('common.filters')}
+          </button>
+          <button
+            onClick={() => {
+              setSelectedApartment(null);
+              setFormData({
+                street: '',
+                number: '',
+                apartmentNumber: '',
+                postalCode: '',
+                city: '',
+                rooms: '',
+                area: '',
+                price: '',
+                electricity: false,
+                storage: false,
+                internet: false,
+                tenantIds: [],
+                keyIds: [],
+              });
+              setIsModalOpen(true);
+            }}
+            className="bg-primary text-white px-4 py-2 rounded-md hover:bg-secondary transition-colors flex items-center"
+          >
+            <PlusIcon className="h-5 w-5 mr-2" />
+            {t('apartments.addNew')}
+          </button>
+        </div>
       </div>
 
-      {error && (
-        <div className="bg-red-50 dark:bg-red-900/20 border-l-4 border-red-400 p-4 mb-4">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-              </svg>
+      {showFilters && (
+        <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg mb-6 border border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-medium text-gray-900 dark:text-white">{t('common.filters')}</h2>
+            <button 
+              onClick={clearFilters}
+              className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center"
+            >
+              <XMarkIcon className="h-4 w-4 mr-1" />
+              {t('common.clear')}
+            </button>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Stad Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                {t('apartments.fields.city')}
+              </label>
+              <select
+                name="city"
+                value={filters.city}
+                onChange={handleFilterChange}
+                className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              >
+                <option value="">{t('common.all')}</option>
+                {uniqueCities.map(city => (
+                  <option key={city} value={city}>{city}</option>
+                ))}
+              </select>
             </div>
-            <div className="ml-3">
-              <p className="text-sm text-red-700 dark:text-red-400">{error}</p>
+            
+            {/* Gata Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                {t('apartments.fields.street')}
+              </label>
+              <select
+                name="street"
+                value={filters.street}
+                onChange={handleFilterChange}
+                className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              >
+                <option value="">{t('common.all')}</option>
+                {uniqueStreets.map(street => (
+                  <option key={street} value={street}>{street}</option>
+                ))}
+              </select>
+            </div>
+            
+            {/* Nummer Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                {t('apartments.fields.number')}
+              </label>
+              <input
+                type="text"
+                name="number"
+                value={filters.number}
+                onChange={handleFilterChange}
+                className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              />
+            </div>
+            
+            {/* Hyresgäst Filter */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                {t('tenants.title')}
+              </label>
+              <select
+                name="tenantId"
+                value={filters.tenantId}
+                onChange={handleFilterChange}
+                className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              >
+                <option value="">{t('common.all')}</option>
+                {tenants.map(tenant => (
+                  <option key={tenant.id} value={tenant.id}>
+                    {tenant.firstName} {tenant.lastName}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          
+          <div className="mt-4 flex items-center justify-between">
+            <div className="text-sm text-gray-500 dark:text-gray-400">
+              {filteredApartments.length} {t('apartments.filteredResults', { count: filteredApartments.length })}
             </div>
           </div>
         </div>
       )}
 
-      {/* Flikar för att visa alla/lediga lägenheter */}
-      <div className="flex border-b border-gray-200 dark:border-gray-700 mb-4">
+      <div className="flex mb-6">
         <button
-          className={`py-2 px-4 font-medium ${
+          onClick={() => setActiveTab('all')}
+          className={`px-4 py-2 text-sm font-medium rounded-l-md ${
             activeTab === 'all'
-              ? 'text-primary border-b-2 border-primary'
-              : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+              ? 'bg-blue-600 text-white'
+              : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600'
           }`}
-          onClick={() => {
-            setShowOnlyVacant(false);
-            setActiveTab('all');
-          }}
         >
-          {t('apartments.all')} ({apartments.length})
+          {t('apartments.all')}
         </button>
         <button
-          className={`py-2 px-4 font-medium ${
+          onClick={() => setActiveTab('vacant')}
+          className={`px-4 py-2 text-sm font-medium rounded-r-md ${
             activeTab === 'vacant'
-              ? 'text-primary border-b-2 border-primary'
-              : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300'
+              ? 'bg-blue-600 text-white'
+              : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600'
           }`}
-          onClick={() => {
-            setShowOnlyVacant(true);
-            setActiveTab('vacant');
-          }}
         >
           {t('apartments.vacant')} ({countVacantApartments(apartments)})
         </button>
       </div>
-      
-      <DataTable
-        columns={columns}
-        data={showOnlyVacant ? getVacantApartments(apartments) : apartments}
-        onEdit={handleEdit}
-        rowClassName={(apartment) => isApartmentVacant(apartment) ? 'bg-green-50 dark:bg-green-900/10' : ''}
-      />
+
+      {error ? (
+        <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4" role="alert">
+          <p>{error}</p>
+        </div>
+      ) : isLoading ? (
+        <div className="flex justify-center items-center h-64">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        </div>
+      ) : (
+        <DataTable
+          columns={columns}
+          data={filteredApartments}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+          isLoading={isLoading}
+        />
+      )}
 
       <Modal
         isOpen={isModalOpen}
