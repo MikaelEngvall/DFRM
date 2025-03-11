@@ -31,6 +31,7 @@ export default {
     filter: 'Filter',
     filters: 'Filters',
     noResults: 'No results',
+    greeting: 'Hello',
   },
 
   navigation: {

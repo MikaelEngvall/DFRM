@@ -67,7 +67,14 @@ export const AuthProvider = ({ children }) => {
       const userData = await authService.login(credentials);
       console.log('Användare inloggad med roll:', userData.role);
       setUser(userData);
-      navigate('/dashboard');
+      
+      // Omdirigera USER till kalendersidan, andra roller till dashboard
+      if (userData.role === 'ROLE_USER' || userData.role === 'USER') {
+        navigate('/calendar');
+      } else {
+        navigate('/');
+      }
+      
       return userData;
     } catch (error) {
       throw error;

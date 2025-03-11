@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   HomeIcon,
   UserGroupIcon,
@@ -8,9 +8,12 @@ import {
 } from '@heroicons/react/24/outline';
 import { apartmentService, tenantService, keyService } from '../services';
 import { useLocale } from '../contexts/LocaleContext';
+import { useAuth } from '../contexts/AuthContext';
 
 const Dashboard = () => {
   const { t } = useLocale();
+  const { user, hasRole } = useAuth();
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [stats, setStats] = useState({
@@ -21,36 +24,52 @@ const Dashboard = () => {
   });
 
   useEffect(() => {
-    fetchDashboardData();
-  }, []);
-
-  const fetchDashboardData = async () => {
-    try {
-      setIsLoading(true);
-      const [apartments, tenants, keys] = await Promise.all([
-        apartmentService.getAllApartments(),
-        tenantService.getAllTenants(),
-        keyService.getAllKeys(),
-      ]);
-
-      const activeTenantsCount = tenants.filter(tenant => !tenant.resiliationDate).length;
-      const vacantApartments = apartments.filter(apartment => !apartment.tenants?.length).length;
-
-      setStats({
-        totalApartments: apartments.length,
-        activeTenantsCount,
-        totalKeys: keys.length,
-        vacantApartments,
-      });
-
-      setError(null);
-    } catch (err) {
-      setError(t('common.error'));
-      console.error('Error fetching dashboard data:', err);
-    } finally {
-      setIsLoading(false);
+    // Om användaren är USER, omdirigera till kalendersidan
+    if (user && hasRole('USER')) {
+      navigate('/calendar');
     }
-  };
+  }, [user, hasRole, navigate]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setIsLoading(true);
+        
+        // Hämta statistik
+        const [apartments, tenants, keys] = await Promise.all([
+          apartmentService.getAllApartments(),
+          tenantService.getAllTenants(),
+          keyService.getAllKeys()
+        ]);
+        
+        const totalApartments = apartments?.length || 0;
+        const activeTenantsCount = tenants?.length || 0;
+        const totalKeys = keys?.length || 0;
+        const vacantApartments = apartments?.filter(apt => !apt.tenantId)?.length || 0;
+        
+        setStats({
+          totalApartments,
+          activeTenantsCount,
+          totalKeys,
+          vacantApartments
+        });
+        
+        setError(null);
+      } catch (err) {
+        console.error('Error fetching dashboard data:', err);
+        setError(t('common.error'));
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    fetchData();
+  }, [t]);
+
+  // Om användaren är USER, visa ingenting medan omdirigeringen sker
+  if (user && hasRole('USER')) {
+    return null;
+  }
 
   const statCards = [
     {

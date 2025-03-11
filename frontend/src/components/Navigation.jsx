@@ -216,7 +216,7 @@ const Navigation = () => {
         >
           <div className="mb-6">
             <h2 className="text-xl font-bold text-gray-800 dark:text-white">DFRM</h2>
-            <p className="text-gray-600 dark:text-gray-400">Hej, {getFirstName()}</p>
+            <p className="text-gray-600 dark:text-gray-400">{t('common.greeting')}, {getFirstName()}</p>
           </div>
           <div className="mb-4">
             <LanguageSelector />
@@ -276,7 +276,7 @@ const Navigation = () => {
       <div className="hidden lg:block fixed top-0 left-0 bottom-0 w-60 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 pt-16">
         <div className="p-4">
           <h2 className="text-xl font-bold text-gray-800 dark:text-white">DFRM</h2>
-          <p className="text-gray-600 dark:text-gray-400">Hej, {getFirstName()}</p>
+          <p className="text-gray-600 dark:text-gray-400">{t('common.greeting')}, {getFirstName()}</p>
         </div>
         <nav className="mt-6 px-2 space-y-1">
           {authorizedNavItems.map((item) => (

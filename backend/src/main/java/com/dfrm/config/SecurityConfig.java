@@ -64,8 +64,8 @@ public class SecurityConfig {
                         // Specifika PATCH-endpoints som alla autentiserade användare kan använda
                         .requestMatchers(HttpMethod.PATCH, "/api/tasks/*/status", "/api/tasks/*/recurring").authenticated()
                         
-                        // Skrivoperationer - endast ADMIN och SUPERADMIN
-                        .requestMatchers(HttpMethod.POST, "/api/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_SUPERADMIN")
+                        // Skrivoperationer - användarrollsbegränsningar
+                        .requestMatchers(HttpMethod.POST, "/api/apartments/**", "/api/tenants/**", "/api/keys/**", "/api/tasks/**", "/api/users/**", "/api/pending-tasks/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_SUPERADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_SUPERADMIN")
                         .requestMatchers(HttpMethod.PATCH, "/api/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_SUPERADMIN", "ROLE_USER")
                         .requestMatchers(HttpMethod.DELETE, "/api/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_SUPERADMIN")

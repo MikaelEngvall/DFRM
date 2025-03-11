@@ -31,6 +31,7 @@ export default {
     filter: 'Фільтр',
     filters: 'Фільтри',
     noResults: 'Немає результатів',
+    greeting: 'Привіт',
   },
 
   navigation: {

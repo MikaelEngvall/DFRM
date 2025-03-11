@@ -31,6 +31,7 @@ export default {
     filter: 'Filter',
     filters: 'Filter',
     noResults: 'Inga resultat',
+    greeting: 'Hej',
   },
 
   navigation: {
