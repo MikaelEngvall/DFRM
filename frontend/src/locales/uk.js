@@ -354,6 +354,7 @@ export default {
     week: 'Тиждень',
     day: 'День',
     noEvents: 'Немає подій',
+    clickToAddTask: 'Натисніть на день, щоб додати нове завдання',
     months: {
       january: 'Січень',
       february: 'Лютий',

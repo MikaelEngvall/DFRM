@@ -376,28 +376,6 @@ const Staff = () => {
         }}
       />
       
-      {/* Hjälpinformation om behörigheter */}
-      {!isRegularUser() && (
-        <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-md">
-          <h3 className="text-lg font-medium mb-2">{t('common.permissions')}</h3>
-          <ul className="list-disc pl-5 space-y-1 text-sm">
-            {isAdmin() && (
-              <>
-                <li>{t('staff.permissions.adminCanEdit')}</li>
-                <li>{t('staff.permissions.adminCantEditSuperadmin')}</li>
-                <li>{t('staff.permissions.cantDeactivateSelf')}</li>
-              </>
-            )}
-            {isSuperAdmin() && (
-              <>
-                <li>{t('staff.permissions.superadminCanAll')}</li>
-                <li>{t('staff.permissions.cantDeactivateSelf')}</li>
-              </>
-            )}
-          </ul>
-        </div>
-      )}
-      
       {/* Modal för att lägga till/redigera personal */}
       <Modal
         isOpen={isModalOpen}

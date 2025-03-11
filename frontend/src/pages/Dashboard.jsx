@@ -45,7 +45,20 @@ const Dashboard = () => {
         const totalApartments = apartments?.length || 0;
         const activeTenantsCount = tenants?.length || 0;
         const totalKeys = keys?.length || 0;
-        const vacantApartments = apartments?.filter(apt => !apt.tenantId)?.length || 0;
+        
+        // Uppdaterad logik för att avgöra om en lägenhet är ledig (samma som i Apartments.jsx)
+        const isApartmentVacant = (apartment) => {
+          if (!apartment.tenants) return true;
+          if (Array.isArray(apartment.tenants) && apartment.tenants.length === 0) return true;
+          if (Array.isArray(apartment.tenants)) {
+            // Filtrera bort null/undefined värden
+            const validTenants = apartment.tenants.filter(t => t);
+            return validTenants.length === 0;
+          }
+          return false;
+        };
+        
+        const vacantApartments = apartments?.filter(isApartmentVacant)?.length || 0;
         
         setStats({
           totalApartments,

@@ -347,6 +347,7 @@ export default {
     week: 'Vecka',
     day: 'Dag',
     noEvents: 'Inga händelser',
+    clickToAddTask: 'Klicka på en dag för att lägga till en ny uppgift',
     months: {
       january: 'Januari',
       february: 'Februari',

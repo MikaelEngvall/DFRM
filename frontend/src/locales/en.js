@@ -354,6 +354,7 @@ export default {
     week: 'Week',
     day: 'Day',
     noEvents: 'No events',
+    clickToAddTask: 'Click on a day to add a new task',
     months: {
       january: 'January',
       february: 'February',

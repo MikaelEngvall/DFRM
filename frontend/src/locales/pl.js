@@ -354,6 +354,7 @@ export default {
     week: 'Tydzień',
     day: 'Dzień',
     noEvents: 'Brak wydarzeń',
+    clickToAddTask: 'Kliknij na dzień, aby dodać nowe zadanie',
     months: {
       january: 'Styczeń',
       february: 'Luty',

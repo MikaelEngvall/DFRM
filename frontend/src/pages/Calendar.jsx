@@ -7,7 +7,7 @@ import FormInput from '../components/FormInput';
 
 const Calendar = () => {
   const { t } = useLocale();
-  const { user: currentUser } = useAuth();
+  const { user: currentUser, hasRole } = useAuth();
   const [view, setView] = useState('month'); // month, week, day
   const [currentDate, setCurrentDate] = useState(new Date());
   const [tasks, setTasks] = useState([]);
@@ -32,6 +32,11 @@ const Calendar = () => {
     isRecurring: false,
     recurringPattern: '',
   });
+
+  // Funktion för att kontrollera om användaren är admin eller superadmin
+  const isAdminOrSuperAdmin = () => {
+    return hasRole(['ADMIN', 'SUPERADMIN']);
+  };
 
   useEffect(() => {
     fetchTasks();
@@ -117,36 +122,14 @@ const Calendar = () => {
 
   const handleTaskClick = (task) => {
     setSelectedTask(task);
-    
-    // Formatera dueDate korrekt till YYYY-MM-DD för att undvika tidszonsförskjutning
-    let formattedDueDate = '';
-    if (task.dueDate) {
-      if (Array.isArray(task.dueDate) && task.dueDate.length >= 3) {
-        // LocalDate från backend kommer som array [år, månad, dag]
-        const [year, month, day] = task.dueDate;
-        // Formatera till YYYY-MM-DD och se till att månad och dag har två siffror
-        formattedDueDate = `${year}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
-        console.log('Formaterade datum från array:', formattedDueDate, 'Original array:', task.dueDate);
-      } else if (typeof task.dueDate === 'string') {
-        // Om det är en sträng, använd den direkt om den har rätt format (YYYY-MM-DD)
-        if (/^\d{4}-\d{2}-\d{2}$/.test(task.dueDate)) {
-          formattedDueDate = task.dueDate;
-        } else {
-          // Annars försök formatera den
-          const date = new Date(task.dueDate);
-          if (!isNaN(date.getTime())) {
-            formattedDueDate = date.toISOString().split('T')[0];
-          }
-        }
-        console.log('Formaterade datum från sträng:', formattedDueDate, 'Original sträng:', task.dueDate);
-      }
-    }
-    
-    // Populera formData med uppgiftsinformation
     setFormData({
       title: task.title || '',
       description: task.description || '',
-      dueDate: formattedDueDate,
+      dueDate: Array.isArray(task.dueDate) 
+        ? `${task.dueDate[0]}-${task.dueDate[1].toString().padStart(2, '0')}-${task.dueDate[2].toString().padStart(2, '0')}` 
+        : typeof task.dueDate === 'string' 
+          ? task.dueDate.substring(0, 10)
+          : '',
       priority: task.priority || '',
       status: task.status || '',
       assignedToUserId: task.assignedToUserId || '',
@@ -156,6 +139,33 @@ const Calendar = () => {
       comments: task.comments || '',
       isRecurring: task.isRecurring || false,
       recurringPattern: task.recurringPattern || '',
+    });
+    setIsTaskModalOpen(true);
+  };
+
+  // Funktion för att hantera klick på en kalenderdag (för admin och superadmin)
+  const handleDayClick = (date) => {
+    // Endast admin och superadmin kan skapa uppgifter genom att klicka på en dag
+    if (!isAdminOrSuperAdmin()) return;
+    
+    // Formatera datumet för input-fältet (YYYY-MM-DD)
+    const formattedDate = date.toISOString().split('T')[0];
+    
+    // Reset formdata och sätt selectedTask till null för att indikera att det är en ny uppgift
+    setSelectedTask(null);
+    setFormData({
+      title: '',
+      description: '',
+      dueDate: formattedDate,
+      priority: 'MEDIUM',
+      status: 'PENDING',
+      assignedToUserId: '', 
+      assignedByUserId: currentUser?.id || '',
+      apartmentId: '',
+      tenantId: '',
+      comments: '',
+      isRecurring: false,
+      recurringPattern: '',
     });
     
     setIsTaskModalOpen(true);
@@ -313,10 +323,14 @@ const Calendar = () => {
         new Date().getMonth() === month &&
         new Date().getFullYear() === year;
       
+      // Lägg till cursor-pointer om användaren är admin eller superadmin
+      const isClickable = isAdminOrSuperAdmin();
+      
       days.push(
         <div 
           key={day} 
-          className={`bg-white dark:bg-gray-900 border-b border-r border-gray-200 dark:border-gray-700 h-32 overflow-y-auto ${isToday ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}
+          className={`bg-white dark:bg-gray-900 border-b border-r border-gray-200 dark:border-gray-700 h-32 overflow-y-auto ${isToday ? 'bg-blue-50 dark:bg-blue-900/20' : ''} ${isClickable ? 'cursor-pointer' : ''}`}
+          onClick={() => isClickable && handleDayClick(new Date(year, month, day))}
         >
           <div className="p-2 sticky top-0 bg-white dark:bg-gray-900 z-10">
             <span className={`text-sm font-medium ${isToday ? 'text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'}`}>
@@ -391,7 +405,14 @@ const Calendar = () => {
           </div>
         </div>
       </div>
-
+      
+      {/* Info för admin och superadmin */}
+      {isAdminOrSuperAdmin() && (
+        <div className="mb-4 bg-blue-50 dark:bg-blue-900/20 p-3 rounded-md border border-blue-200 dark:border-blue-800">
+          <p className="text-sm text-blue-700 dark:text-blue-300">{t('calendar.clickToAddTask')}</p>
+        </div>
+      )}
+      
       <div className="flex justify-between items-center mb-6">
         <div className="flex items-center space-x-4">
           <button
@@ -457,7 +478,7 @@ const Calendar = () => {
       </div>
 
       {/* Task Modal */}
-      {selectedTask && (
+      {isTaskModalOpen && (
         <Modal
           isOpen={isTaskModalOpen}
           onClose={() => {
@@ -467,7 +488,6 @@ const Calendar = () => {
           }}
           title={selectedTask ? t('tasks.edit') : t('tasks.add')}
           onSubmit={handleSubmit}
-          submitButtonText={t('common.save')}
         >
           <div className="grid grid-cols-1 gap-4">
             <FormInput
