@@ -357,6 +357,12 @@ const Tenants = () => {
       apartmentId = apartmentId || null;
       keyIds = keyIds || [];
       
+      // Validera att inflyttningsdatum finns om en lägenhet tilldelas
+      if (apartmentId && !formData.movedInDate) {
+        setError(t('tenants.messages.movedInDateRequired'));
+        return;
+      }
+      
       // Rensa adressfält som ska ärvas från lägenheten
       tenantData.street = '';
       tenantData.postalCode = '';
@@ -386,6 +392,11 @@ const Tenants = () => {
         // Hantera lägenhet
         const currentApartmentId = selectedTenant?.apartment?.id || null;
         if (apartmentId && apartmentId !== currentApartmentId) {
+          // Validera att inflyttningsdatum finns om en lägenhet tilldelas eller byts
+          if (!formData.movedInDate) {
+            setError(t('tenants.messages.movedInDateRequired'));
+            return;
+          }
           updateOperations.push(tenantService.assignApartment(savedTenant.id, apartmentId));
         } else if (!apartmentId && currentApartmentId) {
           updateOperations.push(tenantService.removeApartment(savedTenant.id));
@@ -798,7 +809,7 @@ const Tenants = () => {
               type="date"
               value={formatDateForInput(formData.movedInDate)}
               onChange={handleInputChange}
-              required
+              required={!!formData.apartmentId}
             />
             <FormInput
               label={t('tenants.fields.resiliationDate')}

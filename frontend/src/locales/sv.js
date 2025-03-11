@@ -155,6 +155,7 @@ export default {
       comment: 'Kommentar',
       apartment: 'Lägenhet',
       noApartment: 'Ingen lägenhet',
+      keys: 'Nycklar',
     },
     confirmDelete: 'Är du säker på att du vill ta bort denna hyresgäst?',
     deleteMessage: 'Är du säker på att du vill ta bort hyresgästen {firstName} {lastName}? Detta går inte att ångra.',
@@ -163,6 +164,7 @@ export default {
       saveError: 'Ett fel uppstod när hyresgästen skulle sparas',
       deleteSuccess: 'Hyresgästen har tagits bort',
       deleteError: 'Ett fel uppstod när hyresgästen skulle tas bort',
+      movedInDateRequired: 'Inflyttningsdatum krävs när en lägenhet tilldelas',
     },
     buttons: {
       add: 'Lägg till hyresgäst',

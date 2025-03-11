@@ -161,6 +161,7 @@ export default {
       saveError: 'An error occurred while saving the tenant',
       deleteSuccess: 'Tenant has been deleted',
       deleteError: 'An error occurred while deleting the tenant',
+      movedInDateRequired: 'Move-in date is required when assigning an apartment',
     },
     buttons: {
       add: 'Add tenant',

@@ -161,6 +161,7 @@ export default {
       saveError: 'Wystąpił błąd podczas zapisywania najemcy',
       deleteSuccess: 'Najemca został usunięty',
       deleteError: 'Wystąpił błąd podczas usuwania najemcy',
+      movedInDateRequired: 'Data wprowadzenia jest wymagana podczas przypisywania mieszkania',
     },
     buttons: {
       add: 'Dodaj najemcę',
