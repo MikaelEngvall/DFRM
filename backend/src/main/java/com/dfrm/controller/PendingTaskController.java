@@ -189,28 +189,37 @@ public class PendingTaskController {
                 return ResponseEntity.notFound().build();
             }
             
-            PendingTask emailReport = pendingTaskOpt.get();
-            Task task = new Task();
+            String reviewedById = taskData.getAssignedByUserId(); // Använd assignedByUserId från taskData
+            if (reviewedById == null) {
+                return ResponseEntity.badRequest().build();
+            }
             
-            // Kopiera data från inkommande task-data
+            // Hämta användaren som granskar
+            User reviewedBy = userService.getUserById(reviewedById)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid user ID"));
+            
+            // Skapa en ny uppgift
+            Task task = new Task();
             task.setTitle(taskData.getTitle());
             task.setDescription(taskData.getDescription());
             task.setStatus(taskData.getStatus());
             task.setPriority(taskData.getPriority());
             
-            // Sätt apartmentId om det anges
+            // Sätt referenser till lägenhet, användare och hyresgäst om de anges
             if (taskData.getApartmentId() != null && !taskData.getApartmentId().isEmpty()) {
                 task.setApartmentId(taskData.getApartmentId());
             }
             
-            // Spara uppgiften
-            Task savedTask = taskService.saveTask(task);
+            if (taskData.getAssignedToUserId() != null && !taskData.getAssignedToUserId().isEmpty()) {
+                task.setAssignedToUserId(taskData.getAssignedToUserId());
+            }
             
-            // Uppdatera e-postrapporten till CONVERTED
-            emailReport.setStatus("CONVERTED");
-            emailReport.setTask(savedTask);
-            pendingTaskRepository.save(emailReport);
+            if (taskData.getDueDate() != null) {
+                task.setDueDate(taskData.getDueDate());
+            }
             
+            // Konvertera e-postrapporten till en uppgift
+            Task savedTask = pendingTaskService.convertEmailReportToTask(id, task, reviewedBy);
             return ResponseEntity.ok(savedTask);
         } catch (Exception e) {
             return ResponseEntity.badRequest().build();
@@ -220,11 +229,6 @@ public class PendingTaskController {
     @PostMapping("/{id}/reject-email")
     public ResponseEntity<PendingTask> rejectEmailReport(@PathVariable String id, @RequestBody Map<String, String> rejectData) {
         try {
-            Optional<PendingTask> pendingTaskOpt = pendingTaskService.getPendingTaskById(id);
-            if (pendingTaskOpt.isEmpty()) {
-                return ResponseEntity.notFound().build();
-            }
-            
             String reviewedById = rejectData.get("reviewedById");
             String reason = rejectData.get("reason");
             
@@ -235,13 +239,7 @@ public class PendingTaskController {
             User reviewedBy = userService.getUserById(reviewedById)
                 .orElseThrow(() -> new IllegalArgumentException("Invalid user ID"));
             
-            PendingTask emailReport = pendingTaskOpt.get();
-            emailReport.setStatus("REJECTED");
-            emailReport.setReviewedBy(reviewedBy);
-            emailReport.setReviewedAt(LocalDateTime.now());
-            emailReport.setReviewComments(reason);
-            
-            PendingTask updatedReport = pendingTaskRepository.save(emailReport);
+            PendingTask updatedReport = pendingTaskService.rejectEmailReport(id, reviewedBy, reason);
             return ResponseEntity.ok(updatedReport);
         } catch (Exception e) {
             return ResponseEntity.badRequest().build();

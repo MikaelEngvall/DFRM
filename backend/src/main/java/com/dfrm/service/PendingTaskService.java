@@ -14,9 +14,11 @@ import com.dfrm.repository.PendingTaskRepository;
 import com.dfrm.repository.TaskRepository;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class PendingTaskService {
     
     private final PendingTaskRepository pendingTaskRepository;
@@ -86,6 +88,65 @@ public class PendingTaskService {
         taskRepository.save(task);
         
         return pendingTaskRepository.save(pendingTask);
+    }
+    
+    /**
+     * Konverterar en e-postrapport till en Task
+     * 
+     * @param emailReportId ID för e-postrapporten (PendingTask)
+     * @param newTask Den nya uppgiften som ska skapas
+     * @param reviewedBy Användaren som konverterar uppgiften
+     * @return Den skapade uppgiften
+     */
+    public Task convertEmailReportToTask(String emailReportId, Task newTask, User reviewedBy) {
+        Optional<PendingTask> emailReportOpt = pendingTaskRepository.findById(emailReportId);
+        if (emailReportOpt.isEmpty()) {
+            throw new IllegalArgumentException("E-postrapport hittades inte");
+        }
+        
+        PendingTask emailReport = emailReportOpt.get();
+        
+        // Spara uppgiften
+        Task savedTask = taskRepository.save(newTask);
+        log.info("Skapade ny uppgift med ID: {}", savedTask.getId());
+        
+        // Uppdatera e-postrapporten
+        emailReport.setStatus("CONVERTED");
+        emailReport.setTask(savedTask);
+        emailReport.setReviewedBy(reviewedBy);
+        emailReport.setReviewedAt(LocalDateTime.now());
+        emailReport.setReviewComments("Konverterad till uppgift");
+        
+        pendingTaskRepository.save(emailReport);
+        log.info("Uppdaterade e-postrapport med ID: {} till status CONVERTED", emailReport.getId());
+        
+        return savedTask;
+    }
+    
+    /**
+     * Avvisar en e-postrapport
+     * 
+     * @param emailReportId ID för e-postrapporten
+     * @param reviewedBy Användaren som avvisar
+     * @param reason Anledning till avvisning
+     * @return Den uppdaterade e-postrapporten
+     */
+    public PendingTask rejectEmailReport(String emailReportId, User reviewedBy, String reason) {
+        Optional<PendingTask> emailReportOpt = pendingTaskRepository.findById(emailReportId);
+        if (emailReportOpt.isEmpty()) {
+            throw new IllegalArgumentException("E-postrapport hittades inte");
+        }
+        
+        PendingTask emailReport = emailReportOpt.get();
+        emailReport.setStatus("REJECTED");
+        emailReport.setReviewedBy(reviewedBy);
+        emailReport.setReviewedAt(LocalDateTime.now());
+        emailReport.setReviewComments(reason);
+        
+        PendingTask savedReport = pendingTaskRepository.save(emailReport);
+        log.info("Avvisade e-postrapport med ID: {}", emailReport.getId());
+        
+        return savedReport;
     }
     
     public List<PendingTask> findApprovedTasks() {
