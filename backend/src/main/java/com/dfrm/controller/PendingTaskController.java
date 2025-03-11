@@ -167,4 +167,14 @@ public class PendingTaskController {
                 })
                 .orElse(ResponseEntity.notFound().build());
     }
+
+    @GetMapping("/unreview-count")
+    public ResponseEntity<Long> getUnreviewedCount() {
+        return ResponseEntity.ok(pendingTaskService.countByStatus("NEW"));
+    }
+    
+    @GetMapping("/email-reports")
+    public ResponseEntity<List<PendingTask>> getEmailReports() {
+        return ResponseEntity.ok(pendingTaskService.findPendingTasksByStatus("NEW"));
+    }
 } 

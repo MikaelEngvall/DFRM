@@ -6,7 +6,7 @@ import {
   KeyIcon,
   ChartBarIcon,
 } from '@heroicons/react/24/outline';
-import { apartmentService, tenantService, keyService } from '../services';
+import { apartmentService, tenantService, keyService, pendingTaskService } from '../services';
 import { useLocale } from '../contexts/LocaleContext';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -22,6 +22,7 @@ const Dashboard = () => {
     totalKeys: 0,
     vacantApartments: 0,
   });
+  const [unreviewedCount, setUnreviewedCount] = useState(0);
 
   useEffect(() => {
     // Om användaren är USER, omdirigera till kalendersidan
@@ -36,10 +37,11 @@ const Dashboard = () => {
         setIsLoading(true);
         
         // Hämta statistik
-        const [apartments, tenants, keys] = await Promise.all([
+        const [apartments, tenants, keys, unreviewedCount] = await Promise.all([
           apartmentService.getAllApartments(),
           tenantService.getAllTenants(),
-          keyService.getAllKeys()
+          keyService.getAllKeys(),
+          pendingTaskService.getUnreviewedCount()
         ]);
         
         const totalApartments = apartments?.length || 0;
@@ -66,6 +68,8 @@ const Dashboard = () => {
           totalKeys,
           vacantApartments
         });
+        
+        setUnreviewedCount(unreviewedCount);
         
         setError(null);
       } catch (err) {
@@ -122,6 +126,10 @@ const Dashboard = () => {
       </div>
     );
   }
+
+  const handleEmailReportsClick = () => {
+    navigate('/pending-tasks');
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -181,13 +189,21 @@ const Dashboard = () => {
         </div>
 
         {/* Kommande händelser */}
-        <div className="bg-white dark:bg-gray-900 shadow dark:shadow-[0_4px_6px_-1px_rgba(0,0,0,0.5),0_2px_4px_-2px_rgba(0,0,0,0.5)] rounded-lg p-6 dark:border dark:border-gray-700">
+        <div 
+          onClick={handleEmailReportsClick}
+          className="bg-white dark:bg-gray-900 shadow dark:shadow-[0_4px_6px_-1px_rgba(0,0,0,0.5),0_2px_4px_-2px_rgba(0,0,0,0.5)] rounded-lg p-6 dark:border dark:border-gray-700 cursor-pointer hover:shadow-lg dark:hover:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.6),0_4px_6px_-4px_rgba(0,0,0,0.6)] transition-shadow"
+        >
           <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
             {t('dashboard.sections.upcomingEvents')}
           </h2>
           <div className="space-y-4">
-            {/* Här kan vi lägga till en lista med kommande händelser */}
-            <p className="text-gray-500 dark:text-gray-400">{t('dashboard.sections.noEvents')}</p>
+            {unreviewedCount > 0 ? (
+              <p className="text-blue-600 dark:text-blue-400 font-medium">
+                {unreviewedCount} {t('dashboard.sections.newReportsNeedReview')}
+              </p>
+            ) : (
+              <p className="text-gray-500 dark:text-gray-400">{t('dashboard.sections.noEvents')}</p>
+            )}
           </div>
         </div>
       </div>

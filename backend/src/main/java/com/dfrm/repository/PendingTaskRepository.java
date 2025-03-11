@@ -17,4 +17,8 @@ public interface PendingTaskRepository extends MongoRepository<PendingTask, Stri
     List<PendingTask> findByRequestedAtAfter(LocalDateTime date);
     Optional<PendingTask> findByTaskId(String taskId);
     List<PendingTask> findByReviewedByIsNotNullOrderByReviewedAtDesc();
+    
+    // Nya sökmetoder för felanmälningar
+    List<PendingTask> findByStatus(String status);
+    long countByStatus(String status);
 } 

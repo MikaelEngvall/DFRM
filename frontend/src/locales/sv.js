@@ -88,6 +88,7 @@ export default {
       upcomingEvents: 'Felanmälningar',
       noActivity: 'Inga just nu',
       noEvents: 'Inga just nu',
+      newReportsNeedReview: 'ny(a) behöver granskas',
     },
   },
 

@@ -86,6 +86,7 @@ export default {
       upcomingEvents: 'Fault reports',
       noActivity: 'None at the moment',
       noEvents: 'None at the moment',
+      newReportsNeedReview: 'new report(s) need review',
     },
   },
 

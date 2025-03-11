@@ -86,6 +86,7 @@ export default {
       upcomingEvents: 'Повідомлення про несправності',
       noActivity: 'Наразі немає',
       noEvents: 'Наразі немає',
+      newReportsNeedReview: 'нових(і) потребує(ють) перегляду',
     },
   },
 

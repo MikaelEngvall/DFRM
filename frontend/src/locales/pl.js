@@ -86,6 +86,7 @@ export default {
       upcomingEvents: 'Zgłoszenia usterek',
       noActivity: 'Brak w tej chwili',
       noEvents: 'Brak w tej chwili',
+      newReportsNeedReview: 'nowe(ych) wymaga(ją) przeglądu',
     },
   },
 

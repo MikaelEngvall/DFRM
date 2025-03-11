@@ -1,8 +1,8 @@
-import api from './api';
+import axios from './api';
 
-export const getAllPendingTasks = async () => {
+const getAll = async () => {
   try {
-    const response = await api.get('/api/pending-tasks');
+    const response = await axios.get('/api/pending-tasks');
     return response.data;
   } catch (error) {
     console.error('Error fetching pending tasks:', error);
@@ -10,29 +10,39 @@ export const getAllPendingTasks = async () => {
   }
 };
 
-export const getPendingTaskById = async (id) => {
+const getById = async (id) => {
   try {
-    const response = await api.get(`/api/pending-tasks/${id}`);
+    const response = await axios.get(`/api/pending-tasks/${id}`);
     return response.data;
   } catch (error) {
-    console.error(`Error fetching pending task with id ${id}:`, error);
+    console.error(`Error fetching pending task ${id}:`, error);
     throw error;
   }
 };
 
-export const getPendingTasksByRequestedBy = async (userId) => {
+const getUnreviewedCount = async () => {
   try {
-    const response = await api.get(`/api/pending-tasks/requested-by/${userId}`);
+    const response = await axios.get('/api/pending-tasks/unreview-count');
     return response.data;
   } catch (error) {
-    console.error(`Error fetching pending tasks for user with id ${userId}:`, error);
+    console.error('Error fetching unreviewd count:', error);
+    return 0; // Om API-anropet misslyckas visar vi 0 nya uppgifter
+  }
+};
+
+const getEmailReports = async () => {
+  try {
+    const response = await axios.get('/api/pending-tasks/email-reports');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching email reports:', error);
     throw error;
   }
 };
 
-export const getPendingTasksForReview = async () => {
+const getPendingTasksForReview = async () => {
   try {
-    const response = await api.get('/api/pending-tasks/for-review');
+    const response = await axios.get('/api/pending-tasks/for-review');
     return response.data;
   } catch (error) {
     console.error('Error fetching pending tasks for review:', error);
@@ -40,9 +50,9 @@ export const getPendingTasksForReview = async () => {
   }
 };
 
-export const getApprovedTasks = async () => {
+const getApprovedTasks = async () => {
   try {
-    const response = await api.get('/api/pending-tasks/approved');
+    const response = await axios.get('/api/pending-tasks/approved');
     return response.data;
   } catch (error) {
     console.error('Error fetching approved tasks:', error);
@@ -50,69 +60,35 @@ export const getApprovedTasks = async () => {
   }
 };
 
-export const createPendingTask = async (taskData, requestedById, comments) => {
+const approvePendingTask = async (pendingTaskId, reviewData) => {
   try {
-    const payload = {
-      task: taskData,
-      requestedById,
-      comments
-    };
-    const response = await api.post('/api/pending-tasks', payload);
+    const response = await axios.post(`/api/pending-tasks/${pendingTaskId}/approve`, reviewData);
     return response.data;
   } catch (error) {
-    console.error('Error creating pending task:', error);
+    console.error(`Error approving pending task ${pendingTaskId}:`, error);
     throw error;
   }
 };
 
-export const approvePendingTask = async (id, reviewedById, comments) => {
+const rejectPendingTask = async (pendingTaskId, reviewData) => {
   try {
-    const payload = {
-      reviewedById,
-      comments
-    };
-    const response = await api.post(`/api/pending-tasks/${id}/approve`, payload);
+    const response = await axios.post(`/api/pending-tasks/${pendingTaskId}/reject`, reviewData);
     return response.data;
   } catch (error) {
-    console.error(`Error approving pending task with id ${id}:`, error);
-    throw error;
-  }
-};
-
-export const rejectPendingTask = async (id, reviewedById, comments) => {
-  try {
-    const payload = {
-      reviewedById,
-      comments
-    };
-    const response = await api.post(`/api/pending-tasks/${id}/reject`, payload);
-    return response.data;
-  } catch (error) {
-    console.error(`Error rejecting pending task with id ${id}:`, error);
-    throw error;
-  }
-};
-
-export const deletePendingTask = async (id) => {
-  try {
-    const response = await api.delete(`/api/pending-tasks/${id}`);
-    return response.data;
-  } catch (error) {
-    console.error(`Error deleting pending task with id ${id}:`, error);
+    console.error(`Error rejecting pending task ${pendingTaskId}:`, error);
     throw error;
   }
 };
 
 const pendingTaskService = {
-  getAllPendingTasks,
-  getPendingTaskById,
-  getPendingTasksByRequestedBy,
+  getAll,
+  getById,
+  getUnreviewedCount,
+  getEmailReports,
   getPendingTasksForReview,
   getApprovedTasks,
-  createPendingTask,
   approvePendingTask,
-  rejectPendingTask,
-  deletePendingTask
+  rejectPendingTask
 };
 
 export default pendingTaskService; 

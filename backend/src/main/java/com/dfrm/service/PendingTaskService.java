@@ -115,4 +115,24 @@ public class PendingTaskService {
     public void deletePendingTask(String id) {
         pendingTaskRepository.deleteById(id);
     }
+    
+    /**
+     * Räknar antalet väntande uppgifter med given status
+     * 
+     * @param status Status att söka efter
+     * @return Antal uppgifter
+     */
+    public long countByStatus(String status) {
+        return pendingTaskRepository.countByStatus(status);
+    }
+    
+    /**
+     * Hämtar alla väntande uppgifter med given status
+     * 
+     * @param status Status att söka efter
+     * @return Lista med väntande uppgifter
+     */
+    public List<PendingTask> findPendingTasksByStatus(String status) {
+        return pendingTaskRepository.findByStatus(status);
+    }
 } 

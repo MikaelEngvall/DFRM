@@ -205,7 +205,11 @@ const PendingTasks = () => {
       await taskService.updateTask(selectedTask.task.id, formData);
       
       // Godkänn uppgiften
-      await pendingTaskService.approvePendingTask(selectedTask.id, currentUser.id, reviewComments);
+      const reviewData = {
+        reviewedById: currentUser.id,
+        comment: reviewComments
+      };
+      await pendingTaskService.approvePendingTask(selectedTask.id, reviewData);
       await fetchData();
       setIsReviewModalOpen(false);
       setSelectedTask(null);
@@ -223,7 +227,11 @@ const PendingTasks = () => {
       await taskService.updateTask(selectedTask.task.id, formData);
       
       // Avvisa uppgiften
-      await pendingTaskService.rejectPendingTask(selectedTask.id, currentUser.id, reviewComments);
+      const reviewData = {
+        reviewedById: currentUser.id,
+        comment: reviewComments
+      };
+      await pendingTaskService.rejectPendingTask(selectedTask.id, reviewData);
       await fetchData();
       setIsReviewModalOpen(false);
       setSelectedTask(null);

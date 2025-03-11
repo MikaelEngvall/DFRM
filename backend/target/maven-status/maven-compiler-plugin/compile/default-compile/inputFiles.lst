@@ -2,6 +2,7 @@ C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\service\UserDetailsServi
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\service\TaskService.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\controller\UserController.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\repository\PendingTaskRepository.java
+C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\service\EmailListener.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\controller\KeyController.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\model\Key.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\service\TenantService.java
@@ -17,10 +18,13 @@ C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\filter\JwtAuthentication
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\model\Apartment.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\model\SecurityToken.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\config\MongoConfig.java
+C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\service\TranslationService.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\service\KeyService.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\controller\AuthController.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\controller\SecurityController.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\model\TaskPriority.java
+C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\config\JavaMailProperties.java
+C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\client\GoogleTranslateClient.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\controller\PendingTaskController.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\model\PendingTask.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\model\Task.java
@@ -30,6 +34,7 @@ C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\model\TaskStatus.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\repository\TenantRepository.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\controller\TaskController.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\service\JwtService.java
+C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\model\Language.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\service\EmailService.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\config\KeyTypeDeserializer.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\model\User.java
