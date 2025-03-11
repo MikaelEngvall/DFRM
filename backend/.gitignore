@@ -1,3 +1,7 @@
- .env
- /node_modules
+# Miljövariabler
+.env
+.env.cmd
+run-dev.ps1
+
+/node_modules
  
