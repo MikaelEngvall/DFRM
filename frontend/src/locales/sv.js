@@ -391,6 +391,7 @@ export default {
       active: 'Aktiv',
       lastLogin: 'Senaste inloggning',
       leaveBlankToKeep: 'Lämna tomt för att behålla nuvarande',
+      preferredLanguage: 'Föredraget språk',
     },
     roles: {
       USER: 'Användare',

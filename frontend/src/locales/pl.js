@@ -390,6 +390,7 @@ export default {
     title: 'Personel',
     add: 'Dodaj użytkownika',
     edit: 'Edytuj personel',
+    myProfile: 'Mój Profil',
     fields: {
       firstName: 'Imię',
       lastName: 'Nazwisko',
@@ -400,6 +401,7 @@ export default {
       active: 'Aktywny',
       lastLogin: 'Ostatnie logowanie',
       leaveBlankToKeep: 'Pozostaw puste, aby zachować aktualne',
+      preferredLanguage: 'Preferowany język',
     },
     roles: {
       USER: 'Użytkownik',
@@ -415,6 +417,7 @@ export default {
       saveError: 'Wystąpił błąd podczas zapisywania personelu',
       deleteSuccess: 'Personel został usunięty',
       deleteError: 'Wystąpił błąd podczas usuwania personelu',
+      unauthorized: 'Nie masz uprawnień do wykonania tej akcji',
     },
     confirmDelete: 'Czy na pewno chcesz usunąć tego członka personelu?',
     deleteMessage: 'Czy na pewno chcesz usunąć {firstName} {lastName}? Tej operacji nie można cofnąć.',

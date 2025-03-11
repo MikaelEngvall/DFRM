@@ -390,6 +390,7 @@ export default {
     title: 'Персонал',
     add: 'Додати користувача',
     edit: 'Редагувати персонал',
+    myProfile: 'Мій профіль',
     fields: {
       firstName: 'Ім\'я',
       lastName: 'Прізвище',
@@ -400,6 +401,7 @@ export default {
       active: 'Активний',
       lastLogin: 'Останній вхід',
       leaveBlankToKeep: 'Залиште порожнім, щоб зберегти поточне значення',
+      preferredLanguage: 'Бажана мова',
     },
     roles: {
       USER: 'Користувач',
@@ -415,6 +417,7 @@ export default {
       saveError: 'Сталася помилка при збереженні персоналу',
       deleteSuccess: 'Персонал видалений',
       deleteError: 'Сталася помилка при видаленні персоналу',
+      unauthorized: 'У вас немає дозволу на виконання цієї дії',
     },
     confirmDelete: 'Ви впевнені, що хочете видалити цього співробітника?',
     deleteMessage: 'Ви впевнені, що хочете видалити {firstName} {lastName}? Ця дія незворотна.',

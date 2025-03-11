@@ -390,6 +390,7 @@ export default {
     title: 'Staff',
     add: 'Add user',
     edit: 'Edit staff',
+    myProfile: 'My Profile',
     fields: {
       firstName: 'First name',
       lastName: 'Last name',
@@ -400,6 +401,7 @@ export default {
       active: 'Active',
       lastLogin: 'Last login',
       leaveBlankToKeep: 'Leave blank to keep current',
+      preferredLanguage: 'Preferred language',
     },
     roles: {
       USER: 'User',
@@ -415,6 +417,7 @@ export default {
       saveError: 'An error occurred while saving the staff',
       deleteSuccess: 'Staff has been deleted',
       deleteError: 'An error occurred while deleting the staff',
+      unauthorized: 'You do not have permission to perform this action',
     },
     confirmDelete: 'Are you sure you want to delete this staff?',
     deleteMessage: 'Are you sure you want to delete {firstName} {lastName}? This action cannot be undone.',

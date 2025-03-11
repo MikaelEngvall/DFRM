@@ -372,6 +372,25 @@ const Staff = () => {
             required
           />
           
+          {/* Lägg till språkval */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              {t('staff.fields.preferredLanguage')}
+            </label>
+            <select
+              name="preferredLanguage"
+              value={formData.preferredLanguage}
+              onChange={handleInputChange}
+              className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            >
+              {Object.entries(availableLocales).map(([code, locale]) => (
+                <option key={code} value={code}>
+                  {locale.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          
           <FormInput
             label={t('staff.fields.password')}
             name="password"
