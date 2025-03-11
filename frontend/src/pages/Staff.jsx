@@ -40,7 +40,61 @@ const Staff = () => {
 
   // Kontrollera om användaren endast har USER-rollen
   const isRegularUser = () => {
-    return hasRole('USER') && !hasRole('ADMIN') && !hasRole('SUPERADMIN') && !hasRole('MANAGER');
+    return hasRole('USER') && !hasRole('ADMIN') && !hasRole('SUPERADMIN');
+  };
+
+  // Hjälpfunktioner för rollkontroll
+  const isSuperAdmin = () => {
+    return stripRolePrefix(currentUser?.role) === 'SUPERADMIN';
+  };
+  
+  const isAdmin = () => {
+    return stripRolePrefix(currentUser?.role) === 'ADMIN';
+  };
+  
+  // Kontrollera om nuvarande användare får redigera given användare
+  const canEditUser = (userToEdit) => {
+    const targetRole = stripRolePrefix(userToEdit?.role);
+    
+    // SUPERADMIN kan redigera alla
+    if (isSuperAdmin()) return true;
+    
+    // ADMIN kan inte redigera SUPERADMIN
+    if (isAdmin() && targetRole === 'SUPERADMIN') return false;
+    
+    // Användare kan bara redigera sig själva
+    if (isRegularUser() && userToEdit?.id !== currentUser?.id) return false;
+    
+    return true;
+  };
+  
+  // Kontrollera om nuvarande användare får inaktivera given användare
+  const canToggleActiveState = (userToToggle) => {
+    const targetRole = stripRolePrefix(userToToggle?.role);
+    
+    // Ingen kan inaktivera sig själv
+    if (userToToggle?.id === currentUser?.id) return false;
+    
+    // USER kan inte inaktivera någon
+    if (isRegularUser()) return false;
+    
+    // ADMIN kan inte inaktivera SUPERADMIN
+    if (isAdmin() && targetRole === 'SUPERADMIN') return false;
+    
+    // SUPERADMIN kan inaktivera alla utom sig själv
+    return true;
+  };
+  
+  // Kontrollera om användaren kan skapa användare med angiven roll
+  const canCreateWithRole = (role) => {
+    // USER kan inte skapa användare
+    if (isRegularUser()) return false;
+    
+    // ADMIN kan inte skapa SUPERADMIN
+    if (isAdmin() && role === 'SUPERADMIN') return false;
+    
+    // SUPERADMIN kan skapa alla typer
+    return true;
   };
 
   const columns = [
@@ -126,18 +180,10 @@ const Staff = () => {
     try {
       setIsLoading(true);
       
-      // Om användaren bara har USER-roll, hämta bara deras egen information
-      if (isRegularUser() && currentUser) {
-        // Hämta endast aktuell användare
-        const userData = await userService.getUserById(currentUser.id);
-        console.log('User data för current user:', userData);
-        setUsers([userData]);
-      } else {
-        // Admin, manager eller superadmin - hämta alla användare
-        const data = await userService.getAllUsers();
-        console.log('All users data:', data);
-        setUsers(data);
-      }
+      // Alla användare kan se hela personallistan
+      const data = await userService.getAllUsers();
+      console.log('All users data:', data);
+      setUsers(data);
       
       setError(null);
     } catch (err) {
@@ -159,8 +205,14 @@ const Staff = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Förhindra vanliga användare från att redigera annan information än sin egen
-    if (isRegularUser() && selectedUser && selectedUser.id !== currentUser.id) {
+    // Kontrollera behörighet för att redigera användaren
+    if (selectedUser && !canEditUser(selectedUser)) {
+      setError(t('staff.messages.unauthorized'));
+      return;
+    }
+    
+    // Kontrollera behörighet för att skapa användare med angiven roll
+    if (!selectedUser && !canCreateWithRole(formData.role)) {
       setError(t('staff.messages.unauthorized'));
       return;
     }
@@ -178,11 +230,6 @@ const Staff = () => {
       if (selectedUser) {
         await userService.updateUser(selectedUser.id, formDataToSubmit);
       } else {
-        // Vanliga användare kan inte skapa nya användare
-        if (isRegularUser()) {
-          setError(t('staff.messages.unauthorized'));
-          return;
-        }
         await userService.createUser(formDataToSubmit);
       }
       
@@ -211,7 +258,7 @@ const Staff = () => {
 
   const handleEdit = (user) => {
     // Kontrollera om användaren får redigera denna profil
-    if (isRegularUser() && user.id !== currentUser.id) {
+    if (!canEditUser(user)) {
       setError(t('staff.messages.unauthorized'));
       return;
     }
@@ -231,7 +278,7 @@ const Staff = () => {
   };
   
   const handleAddUser = () => {
-    // Vanliga användare kan inte lägga till nya användare
+    // Kontrollera om användaren får skapa nya användare
     if (isRegularUser()) {
       setError(t('staff.messages.unauthorized'));
       return;
@@ -243,8 +290,8 @@ const Staff = () => {
   };
   
   const handleToggleActive = async (user, newActiveState) => {
-    // Vanliga användare kan inte ändra aktivitetsstatus
-    if (isRegularUser()) {
+    // Kontrollera om användaren får ändra aktiveringsstatus för denna användare
+    if (!canToggleActiveState(user)) {
       setError(t('staff.messages.unauthorized'));
       return;
     }
@@ -259,8 +306,8 @@ const Staff = () => {
   };
 
   const handleDelete = (user) => {
-    // Vanliga användare kan inte radera konton
-    if (isRegularUser()) {
+    // Använd samma behörighetsregler som för redigering
+    if (!canEditUser(user)) {
       setError(t('staff.messages.unauthorized'));
       return;
     }
@@ -287,10 +334,6 @@ const Staff = () => {
     }
   };
   
-  const isSuperAdmin = () => {
-    return stripRolePrefix(currentUser?.role) === 'SUPERADMIN';
-  };
-
   return (
     <div className="container mx-auto px-4 py-8">
       {error && (
@@ -319,8 +362,41 @@ const Staff = () => {
         columns={columns}
         data={users}
         isLoading={isLoading}
-        onRowClick={handleEdit}
+        onRowClick={(user) => {
+          // Bara navigera till redigering om användaren har behörighet
+          if (canEditUser(user)) {
+            handleEdit(user);
+          } else {
+            setError(t('staff.messages.unauthorized'));
+          }
+        }}
+        getRowClassName={(user) => {
+          // Markera rader som användaren inte kan redigera
+          return !canEditUser(user) ? 'opacity-70 cursor-not-allowed' : '';
+        }}
       />
+      
+      {/* Hjälpinformation om behörigheter */}
+      {!isRegularUser() && (
+        <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-md">
+          <h3 className="text-lg font-medium mb-2">{t('common.permissions')}</h3>
+          <ul className="list-disc pl-5 space-y-1 text-sm">
+            {isAdmin() && (
+              <>
+                <li>{t('staff.permissions.adminCanEdit')}</li>
+                <li>{t('staff.permissions.adminCantEditSuperadmin')}</li>
+                <li>{t('staff.permissions.cantDeactivateSelf')}</li>
+              </>
+            )}
+            {isSuperAdmin() && (
+              <>
+                <li>{t('staff.permissions.superadminCanAll')}</li>
+                <li>{t('staff.permissions.cantDeactivateSelf')}</li>
+              </>
+            )}
+          </ul>
+        </div>
+      )}
       
       {/* Modal för att lägga till/redigera personal */}
       <Modal
@@ -440,8 +516,8 @@ const Staff = () => {
             </div>
           )}
           
-          {/* Visa inte aktivera/inaktivera-knappar för vanliga användare */}
-          {!isRegularUser() && selectedUser && selectedUser.id !== currentUser?.id && (
+          {/* Visa aktivera/inaktivera-knappar endast om användaren har behörighet */}
+          {selectedUser && canToggleActiveState(selectedUser) && (
             <div className="mt-4 border-t pt-4">
               <div className="flex flex-col space-y-3">
                 <h3 className="text-lg font-medium">{t('staff.activeStatus')}</h3>

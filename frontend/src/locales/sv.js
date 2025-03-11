@@ -32,6 +32,8 @@ export default {
     filters: 'Filter',
     noResults: 'Inga resultat',
     greeting: 'Hej',
+    permissions: 'Behörigheter',
+    unauthorized: 'Du har inte behörighet att utföra denna åtgärd',
   },
 
   navigation: {
@@ -403,12 +405,12 @@ export default {
       ROLE_SUPERADMIN: 'Superadmin',
     },
     messages: {
-      cannotDeleteSelf: 'Du kan inte radera ditt eget konto',
-      saveSuccess: 'Personalen har sparats',
-      saveError: 'Ett fel uppstod när personalen skulle sparas',
-      deleteSuccess: 'Personalen har tagits bort',
-      deleteError: 'Ett fel uppstod när personalen skulle tas bort',
       unauthorized: 'Du har inte behörighet att utföra denna åtgärd',
+      saveSuccess: 'Användaren har sparats',
+      saveError: 'Ett fel uppstod vid sparande av användaren',
+      deleteSuccess: 'Användaren har tagits bort',
+      deleteError: 'Ett fel uppstod vid borttagning av användaren',
+      cannotDeleteSelf: 'Du kan inte ta bort ditt eget konto',
     },
     confirmDelete: 'Är du säker på att du vill ta bort denna personal?',
     deleteMessage: 'Är du säker på att du vill ta bort {firstName} {lastName}? Detta går inte att ångra.',
@@ -418,6 +420,12 @@ export default {
     actions: {
       activate: 'Aktivera',
       deactivate: 'Inaktivera'
-    }
+    },
+    permissions: {
+      adminCanEdit: 'ADMIN kan lägga till, redigera och inaktivera användare med rollerna USER och ADMIN',
+      adminCantEditSuperadmin: 'ADMIN kan inte hantera användare med rollen SUPERADMIN',
+      superadminCanAll: 'SUPERADMIN kan hantera alla användare och roller',
+      cantDeactivateSelf: 'Ingen kan inaktivera sitt eget konto',
+    },
   },
 }; 
