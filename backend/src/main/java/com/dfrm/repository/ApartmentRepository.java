@@ -1,6 +1,7 @@
 package com.dfrm.repository;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
@@ -16,4 +17,8 @@ public interface ApartmentRepository extends MongoRepository<Apartment, String> 
     List<Apartment> findByAddress(String street, String number, String apartmentNumber);
 
     List<Apartment> findByStreetAndNumberAndApartmentNumber(String street, String number, String apartmentNumber);
+    
+    // Sök lägenhet utifrån adress (som innehåller gatunummer) och lägenhetsnummer
+    @Query("{'street': {$regex: ?0, $options: 'i'}, 'apartmentNumber': ?1}")
+    Optional<Apartment> findByStreetAddressAndApartmentNumber(String streetAddress, String apartmentNumber);
 } 
