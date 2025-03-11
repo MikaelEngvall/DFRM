@@ -3,6 +3,7 @@ package com.dfrm.controller;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.dfrm.model.PendingTask;
 import com.dfrm.model.Task;
 import com.dfrm.model.User;
+import com.dfrm.repository.PendingTaskRepository;
 import com.dfrm.service.PendingTaskService;
 import com.dfrm.service.TaskService;
 import com.dfrm.service.UserService;
@@ -31,6 +33,7 @@ public class PendingTaskController {
     private final PendingTaskService pendingTaskService;
     private final TaskService taskService;
     private final UserService userService;
+    private final PendingTaskRepository pendingTaskRepository;
 
     @GetMapping
     public List<PendingTask> getAllPendingTasks() {
@@ -176,5 +179,72 @@ public class PendingTaskController {
     @GetMapping("/email-reports")
     public ResponseEntity<List<PendingTask>> getEmailReports() {
         return ResponseEntity.ok(pendingTaskService.findPendingTasksByStatus("NEW"));
+    }
+    
+    @PostMapping("/{id}/convert-to-task")
+    public ResponseEntity<Task> convertEmailToTask(@PathVariable String id, @RequestBody Task taskData) {
+        try {
+            Optional<PendingTask> pendingTaskOpt = pendingTaskService.getPendingTaskById(id);
+            if (pendingTaskOpt.isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+            
+            PendingTask emailReport = pendingTaskOpt.get();
+            Task task = new Task();
+            
+            // Kopiera data från inkommande task-data
+            task.setTitle(taskData.getTitle());
+            task.setDescription(taskData.getDescription());
+            task.setStatus(taskData.getStatus());
+            task.setPriority(taskData.getPriority());
+            
+            // Sätt apartmentId om det anges
+            if (taskData.getApartmentId() != null && !taskData.getApartmentId().isEmpty()) {
+                task.setApartmentId(taskData.getApartmentId());
+            }
+            
+            // Spara uppgiften
+            Task savedTask = taskService.saveTask(task);
+            
+            // Uppdatera e-postrapporten till CONVERTED
+            emailReport.setStatus("CONVERTED");
+            emailReport.setTask(savedTask);
+            pendingTaskRepository.save(emailReport);
+            
+            return ResponseEntity.ok(savedTask);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+    
+    @PostMapping("/{id}/reject-email")
+    public ResponseEntity<PendingTask> rejectEmailReport(@PathVariable String id, @RequestBody Map<String, String> rejectData) {
+        try {
+            Optional<PendingTask> pendingTaskOpt = pendingTaskService.getPendingTaskById(id);
+            if (pendingTaskOpt.isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+            
+            String reviewedById = rejectData.get("reviewedById");
+            String reason = rejectData.get("reason");
+            
+            if (reviewedById == null) {
+                return ResponseEntity.badRequest().build();
+            }
+            
+            User reviewedBy = userService.getUserById(reviewedById)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid user ID"));
+            
+            PendingTask emailReport = pendingTaskOpt.get();
+            emailReport.setStatus("REJECTED");
+            emailReport.setReviewedBy(reviewedBy);
+            emailReport.setReviewedAt(LocalDateTime.now());
+            emailReport.setReviewComments(reason);
+            
+            PendingTask updatedReport = pendingTaskRepository.save(emailReport);
+            return ResponseEntity.ok(updatedReport);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
     }
 } 

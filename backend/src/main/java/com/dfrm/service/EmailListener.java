@@ -3,6 +3,7 @@ package com.dfrm.service;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 
 import org.springframework.core.env.Environment;
@@ -13,7 +14,9 @@ import com.dfrm.client.GoogleTranslateClient;
 import com.dfrm.config.JavaMailProperties;
 import com.dfrm.model.Language;
 import com.dfrm.model.PendingTask;
+import com.dfrm.model.User;
 import com.dfrm.repository.PendingTaskRepository;
+import com.dfrm.repository.UserRepository;
 
 import jakarta.mail.Address;
 import jakarta.mail.BodyPart;
@@ -36,6 +39,7 @@ public class EmailListener {
     private final Environment environment;
     private final TranslationService translationService;
     private final GoogleTranslateClient googleTranslateClient;
+    private final UserRepository userRepository;
     
     private static final String TARGET_RECIPIENT = "felanmalan@duggalsfastigheter.se";
     private static final String TARGET_SENDER = "felanmalan@duggalsfastigheter.se";
@@ -410,42 +414,65 @@ public class EmailListener {
         LocalDateTime now = LocalDateTime.now();
         
         try {
-            // Skapa ett nytt ärende
-            PendingTask pendingTask = PendingTask.builder()
-                .name(name)
-                .email(email)
-                .phone(phone)
-                .address(address)
-                .apartment(apartment)
-                .description(finalDescription)
-                .descriptionLanguage(detectedLanguage)
-                .descriptionTranslations(translations)
-                .status("NEW")
-                .received(now)
-                .build();
+            // Skapa en ny PendingTask med korrekt struktur för att visas på e-postrapportsidan
+            PendingTask pendingTask = new PendingTask();
             
-            log.info("Creating PendingTask: \n" + 
-                    "Name: {}\n" +
-                    "Email: {}\n" +
-                    "Phone: {}\n" +
-                    "Address: {}\n" +
-                    "Apartment: {}\n" +
-                    "Description: {}\n" +
-                    "Received: {}\n",
-                    pendingTask.getName(),
-                    pendingTask.getEmail(),
-                    pendingTask.getPhone(),
-                    pendingTask.getAddress(),
-                    pendingTask.getApartment(),
-                    pendingTask.getDescription(),
-                    pendingTask.getReceived());
-                    
+            // Sätt användare som begärde ärendet om e-postadressen finns i systemet
+            if (email != null && !email.isEmpty()) {
+                try {
+                    Optional<User> userOpt = userRepository.findByEmail(email);
+                    if (userOpt.isPresent()) {
+                        pendingTask.setRequestedBy(userOpt.get());
+                    }
+                } catch (Exception e) {
+                    log.error("Kunde inte hitta användare med e-post: {}", email, e);
+                }
+            }
+            
+            // Samla ihop all relevant information från e-postmeddelandet till requestComments
+            StringBuilder comments = new StringBuilder();
+            comments.append("Felanmälan från e-post\n\n");
+            
+            if (!name.isEmpty()) {
+                comments.append("Namn: ").append(name).append("\n");
+            }
+            if (!email.isEmpty()) {
+                comments.append("E-post: ").append(email).append("\n");
+            }
+            if (!phone.isEmpty()) {
+                comments.append("Telefon: ").append(phone).append("\n");
+            }
+            if (!address.isEmpty()) {
+                comments.append("Adress: ").append(address).append("\n");
+            }
+            if (!apartment.isEmpty()) {
+                comments.append("Lägenhet: ").append(apartment).append("\n");
+            }
+            
+            comments.append("\nBeskrivning:\n").append(finalDescription);
+            
+            String messageContent = comments.toString();
+            
+            // Sätt egenskaper på PendingTask
+            pendingTask.setName(name);
+            pendingTask.setEmail(email);
+            pendingTask.setPhone(phone);
+            pendingTask.setAddress(address);
+            pendingTask.setApartment(apartment);
+            pendingTask.setDescription(finalDescription);
+            pendingTask.setDescriptionLanguage(detectedLanguage);
+            pendingTask.setDescriptionTranslations(translations);
+            pendingTask.setRequestComments(messageContent);
+            pendingTask.setRequestedAt(now);
+            pendingTask.setStatus("NEW"); // Sätt status till NEW för att markera som ny e-postrapport
+            pendingTask.setReceived(now);
+                        
             PendingTask savedTask = pendingTaskRepository.save(pendingTask);
             
-            log.info("Successfully created pending task with ID: {}", 
+            log.info("Successfully created email report with ID: {}", 
                 savedTask.getId());
         } catch (Exception e) {
-            log.error("Failed to save pending task: {}", e.getMessage(), e);
+            log.error("Failed to save email report: {}", e.getMessage(), e);
             throw e;
         }
     }
