@@ -25,6 +25,12 @@ export default {
     optional: 'Optional',
     status: 'Status',
     rooms: 'rooms',
+    viewAll: 'View all',
+    clear: 'Clear',
+    apply: 'Apply',
+    filter: 'Filter',
+    filters: 'Filters',
+    noResults: 'No results',
   },
 
   navigation: {
@@ -40,6 +46,7 @@ export default {
     settings: 'Settings',
     darkMode: 'Dark mode',
     lightMode: 'Light mode',
+    staff: 'Staff',
   },
 
   auth: {
@@ -74,10 +81,10 @@ export default {
       vacantApartments: 'Vacant apartments',
     },
     sections: {
-      recentActivity: 'Recent activity',
-      upcomingEvents: 'Upcoming events',
-      noActivity: 'No activity to show',
-      noEvents: 'No upcoming events',
+      recentActivity: 'Interest inquiries',
+      upcomingEvents: 'Fault reports',
+      noActivity: 'None at the moment',
+      noEvents: 'None at the moment',
     },
   },
 
@@ -89,6 +96,7 @@ export default {
     all: 'All apartments',
     isVacant: 'Vacant',
     isOccupied: 'Occupied',
+    filteredResults: 'apartments found',
     fields: {
       street: 'Street',
       number: 'Number',
@@ -128,6 +136,8 @@ export default {
     title: 'Tenants',
     addNew: 'Add tenant',
     edit: 'Edit tenant',
+    keys: 'Keys',
+    filteredResults: 'tenants found',
     fields: {
       firstName: 'First name',
       lastName: 'Last name',
@@ -141,7 +151,6 @@ export default {
       resiliationDate: 'Notice',
       comment: 'Comment',
       apartment: 'Apartment',
-      keys: 'Keys',
       noApartment: 'No apartment',
     },
     confirmDelete: 'Are you sure you want to delete this tenant?',
@@ -164,13 +173,17 @@ export default {
     title: 'Keys',
     addNew: 'Add key',
     edit: 'Edit key',
+    details: 'Key details',
+    filteredResults: 'keys found',
     fields: {
       type: 'Type',
       serie: 'Series',
       number: 'Number',
-      copyNumber: 'Copy number',
+      copyNumber: 'Copy',
       apartment: 'Apartment',
       tenant: 'Tenant',
+      isAvailable: 'Available',
+      description: 'Description',
       noApartment: 'Select apartment',
       noTenant: 'No tenant',
     },
@@ -185,7 +198,7 @@ export default {
       selectType: 'Select type',
     },
     confirmDelete: 'Are you sure you want to delete this key?',
-    deleteMessage: 'Are you sure you want to delete the key {type} ({serie}-{number})? This action cannot be undone.',
+    deleteMessage: 'This will delete the key and all its connections to tenants and apartments.',
     messages: {
       saveSuccess: 'Key has been saved',
       saveError: 'An error occurred while saving the key',
@@ -222,8 +235,20 @@ export default {
 
   tasks: {
     title: 'Tasks',
-    addNew: 'Add task',
+    add: 'Add task',
     edit: 'Edit task',
+    addNew: 'Add task',
+    relatedTasks: 'Related tasks',
+    noRelatedTasks: 'No related tasks',
+    recurringPatternHelp: 'The system will automatically create new tasks based on this pattern',
+    recurringPatterns: {
+      DAILY: 'Daily',
+      WEEKLY: 'Weekly',
+      BIWEEKLY: 'Biweekly',
+      MONTHLY: 'Monthly',
+      QUARTERLY: 'Quarterly',
+      YEARLY: 'Yearly',
+    },
     fields: {
       title: 'Title',
       description: 'Description',
@@ -232,11 +257,14 @@ export default {
       priority: 'Priority',
       status: 'Status',
       assignedUser: 'Assigned to',
+      assignedBy: 'Assigned by',
       apartment: 'Apartment',
       tenant: 'Tenant',
       comments: 'Comments',
       isRecurring: 'Recurring',
       recurringPattern: 'Recurring pattern',
+      details: 'Task details',
+      assignment: 'Assignment'
     },
     priorities: {
       LOW: 'Low',
@@ -261,6 +289,11 @@ export default {
     },
     confirmDelete: 'Are you sure you want to delete this task?',
     filters: {
+      apartment: 'Apartment',
+      tenant: 'Tenant',
+      priority: 'Priority',
+      status: 'Status',
+      date: 'Date',
       all: 'All tasks',
       today: 'Today',
       tomorrow: 'Tomorrow',
@@ -268,12 +301,20 @@ export default {
       overdue: 'Overdue',
       completed: 'Completed',
     },
+    notFound: 'Task not found',
+    actions: {
+      startWork: 'Start work',
+      markComplete: 'Mark as completed',
+      approve: 'Approve',
+      reject: 'Reject'
+    },
   },
 
   pendingTasks: {
     title: 'Pending Tasks',
     addNew: 'Create request',
     details: 'Pending task details',
+    showApproved: 'Show approved',
     fields: {
       task: 'Task',
       requestedBy: 'Requested by',
@@ -295,10 +336,13 @@ export default {
       rejectError: 'An error occurred while rejecting the task',
       createSuccess: 'Request has been created',
       createError: 'An error occurred while creating the request',
+      approvedTasksError: 'An error occurred while fetching approved tasks',
     },
     noTasks: 'No pending tasks',
     reviewRequest: 'Review request',
     addComments: 'Add comments',
+    reviewedBy: 'Reviewed by',
+    reviewedAt: 'Reviewed at',
   },
 
   calendar: {
@@ -340,5 +384,46 @@ export default {
       sat: 'Sat',
       sun: 'Sun',
     },
+  },
+
+  staff: {
+    title: 'Staff',
+    add: 'Add user',
+    edit: 'Edit staff',
+    fields: {
+      firstName: 'First name',
+      lastName: 'Last name',
+      email: 'Email',
+      phone: 'Phone number',
+      password: 'Password',
+      role: 'Role',
+      active: 'Active',
+      lastLogin: 'Last login',
+      leaveBlankToKeep: 'Leave blank to keep current',
+    },
+    roles: {
+      USER: 'User',
+      ADMIN: 'Admin',
+      SUPERADMIN: 'Superadmin',
+      ROLE_USER: 'User',
+      ROLE_ADMIN: 'Admin',
+      ROLE_SUPERADMIN: 'Superadmin',
+    },
+    messages: {
+      cannotDeleteSelf: 'You cannot delete your own account',
+      saveSuccess: 'Staff has been saved',
+      saveError: 'An error occurred while saving the staff',
+      deleteSuccess: 'Staff has been deleted',
+      deleteError: 'An error occurred while deleting the staff',
+    },
+    confirmDelete: 'Are you sure you want to delete this staff?',
+    deleteMessage: 'Are you sure you want to delete {firstName} {lastName}? This action cannot be undone.',
+    activeStatus: 'Activation status',
+    activeStatusDescription: 'The user is active and can log in to the system.',
+    inactiveStatusDescription: 'The user is deactivated and cannot log in to the system.',
+    actions: {
+      activate: 'Activate',
+      deactivate: 'Deactivate'
+    }
   },
 }; 

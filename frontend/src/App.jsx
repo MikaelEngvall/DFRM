@@ -19,7 +19,7 @@ import Staff from './pages/Staff';
 const NavigationWrapper = ({ children }) => (
   <div className="flex min-h-screen">
     <Navigation />
-    <div className="flex-1 overflow-auto mt-16 ml-16 lg:ml-60">
+    <div className="flex-1 overflow-auto mt-16 ml-16 lg:ml-60 bg-gray-100 dark:bg-gray-800">
       {children}
     </div>
   </div>

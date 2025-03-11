@@ -71,7 +71,6 @@ const Staff = () => {
       label: t('staff.fields.lastLogin'),
       render: (lastLoginAt, user) => {
         // Logga datumet för felsökning
-        console.log(`Rendering lastLoginAt for ${user.email}:`, lastLoginAt);
         
         if (!lastLoginAt) return '-';
         
@@ -121,13 +120,7 @@ const Staff = () => {
     try {
       setIsLoading(true);
       const data = await userService.getAllUsers();
-      console.log('Hämtade användare:', data);
-      
-      // Kontrollera om lastLoginAt finns i svaret
-      data.forEach(user => {
-        console.log(`Användare ${user.email} lastLoginAt:`, user.lastLoginAt);
-      });
-      
+ 
       setUsers(data);
       setError(null);
     } catch (err) {

@@ -197,6 +197,9 @@ const Navigation = () => {
             <h2 className="text-xl font-bold text-gray-800 dark:text-white">DFRM</h2>
             <p className="text-gray-600 dark:text-gray-400">Hej, {getFirstName()}</p>
           </div>
+          <div className="mb-4">
+            <LanguageSelector />
+          </div>
           <nav className="space-y-1">
             {navigation.map((item) => (
               <MobileNavLink key={item.name} to={item.href} icon={item.icon} label={item.name} />
@@ -231,7 +234,12 @@ const Navigation = () => {
       </div>
 
       {/* Desktop navigation - top bar */}
-      <div className="fixed top-0 left-0 right-0 h-16 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex items-center justify-end px-4 z-10">
+      <div className="fixed top-0 left-0 right-0 h-16 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-4 z-10">
+        <div className="flex items-center">
+          <div className="hidden md:block">
+            <LanguageSelector />
+          </div>
+        </div>
         <div className="flex items-center space-x-4">
           <ThemeToggle darkMode={darkMode} setDarkMode={setDarkMode} />
           <button 

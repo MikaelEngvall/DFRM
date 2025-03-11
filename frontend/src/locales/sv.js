@@ -75,16 +75,16 @@ export default {
   dashboard: {
     title: 'Översikt',
     stats: {
-      totalApartments: 'Totalt antal lägenheter',
-      activeTenantsCount: 'Aktiva hyresgäster',
-      totalKeys: 'Utdelade nycklar',
-      vacantApartments: 'Lediga lägenheter',
+      totalApartments: 'Lägenheter',
+      activeTenantsCount: 'Hyresgäster',
+      totalKeys: 'Nycklar',
+      vacantApartments: 'Lediga lgh',
     },
     sections: {
-      recentActivity: 'Senaste aktiviteter',
-      upcomingEvents: 'Kommande händelser',
-      noActivity: 'Ingen aktivitet att visa',
-      noEvents: 'Inga kommande händelser',
+      recentActivity: 'Intresseanmälningar',
+      upcomingEvents: 'Felanmälningar',
+      noActivity: 'Inga just nu',
+      noEvents: 'Inga just nu',
     },
   },
 
@@ -177,9 +177,9 @@ export default {
     filteredResults: 'nycklar hittades',
     fields: {
       type: 'Typ',
-      serie: 'Nyckelserienummer',
-      number: 'Nyckelnummer',
-      copyNumber: 'Kopienummer',
+      serie: 'Serie',
+      number: 'Nummer',
+      copyNumber: 'Kopia',
       apartment: 'Lägenhet',
       tenant: 'Hyresgäst',
       isAvailable: 'Tillgänglig',

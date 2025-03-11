@@ -3,8 +3,12 @@ import api from './api';
 const apartmentService = {
   // Hämta alla lägenheter
   getAllApartments: async () => {
-    const response = await api.get('/api/apartments');
-    return response.data;
+    try {
+      const response = await api.get('/api/apartments');
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
   },
 
   // Hämta en specifik lägenhet
@@ -15,8 +19,29 @@ const apartmentService = {
 
   // Skapa en ny lägenhet
   createApartment: async (apartmentData) => {
-    const response = await api.post('/api/apartments', apartmentData);
-    return response.data;
+    try {
+      // Skapa en exakt kopia av det format som fungerar i Postman
+      const postmanExactData = {
+        street: apartmentData.street,
+        number: apartmentData.number,
+        apartmentNumber: apartmentData.apartmentNumber,
+        postalCode: apartmentData.postalCode,
+        city: apartmentData.city,
+        rooms: typeof apartmentData.rooms === 'string' ? parseInt(apartmentData.rooms, 10) : apartmentData.rooms,
+        area: typeof apartmentData.area === 'string' ? parseFloat(apartmentData.area) : apartmentData.area,
+        price: typeof apartmentData.price === 'string' ? parseFloat(apartmentData.price) : apartmentData.price,
+        electricity: apartmentData.electricity,
+        storage: apartmentData.storage,
+        internet: apartmentData.internet,
+        tenants: null,
+        keys: null
+      };
+      
+      const response = await api.post('/api/apartments', postmanExactData);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
   },
 
   // Uppdatera en lägenhet
@@ -25,7 +50,6 @@ const apartmentService = {
       const response = await api.patch(`/api/apartments/${id}`, apartmentData);
       return response.data;
     } catch (error) {
-      console.error(`Error updating apartment with ID ${id}:`, error);
       throw error;
     }
   },
@@ -74,7 +98,6 @@ const apartmentService = {
       const response = await api.patch(`/api/apartments/${apartmentId}/tenant?tenantId=${tenantId}`);
       return response.data;
     } catch (error) {
-      console.error(`Error assigning tenant ${tenantId} to apartment ${apartmentId}:`, error);
       throw error;
     }
   },
@@ -85,7 +108,6 @@ const apartmentService = {
       const response = await api.patch(`/api/apartments/${apartmentId}/key?keyId=${keyId}`);
       return response.data;
     } catch (error) {
-      console.error(`Error assigning key ${keyId} to apartment ${apartmentId}:`, error);
       throw error;
     }
   },

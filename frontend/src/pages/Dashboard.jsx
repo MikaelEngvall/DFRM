@@ -115,7 +115,7 @@ const Dashboard = () => {
           <Link
             key={stat.name}
             to={stat.link}
-            className="bg-white dark:bg-gray-800 overflow-hidden shadow dark:shadow-[0_4px_6px_-1px_rgba(0,0,0,0.5),0_2px_4px_-2px_rgba(0,0,0,0.5)] rounded-lg hover:shadow-lg dark:hover:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.6),0_4px_6px_-4px_rgba(0,0,0,0.6)] transition-shadow dark:border dark:border-gray-700"
+            className="bg-white dark:bg-gray-900 overflow-hidden shadow dark:shadow-[0_4px_6px_-1px_rgba(0,0,0,0.5),0_2px_4px_-2px_rgba(0,0,0,0.5)] rounded-lg hover:shadow-lg dark:hover:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.6),0_4px_6px_-4px_rgba(0,0,0,0.6)] transition-shadow dark:border dark:border-gray-700"
           >
             <div className="p-5">
               <div className="flex items-center">
@@ -138,7 +138,7 @@ const Dashboard = () => {
 
       <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Senaste aktiviteter */}
-        <div className="bg-white dark:bg-gray-800 shadow dark:shadow-[0_4px_6px_-1px_rgba(0,0,0,0.5),0_2px_4px_-2px_rgba(0,0,0,0.5)] rounded-lg p-6 dark:border dark:border-gray-700">
+        <div className="bg-white dark:bg-gray-900 shadow dark:shadow-[0_4px_6px_-1px_rgba(0,0,0,0.5),0_2px_4px_-2px_rgba(0,0,0,0.5)] rounded-lg p-6 dark:border dark:border-gray-700">
           <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
             {t('dashboard.sections.recentActivity')}
           </h2>
@@ -149,7 +149,7 @@ const Dashboard = () => {
         </div>
 
         {/* Kommande händelser */}
-        <div className="bg-white dark:bg-gray-800 shadow dark:shadow-[0_4px_6px_-1px_rgba(0,0,0,0.5),0_2px_4px_-2px_rgba(0,0,0,0.5)] rounded-lg p-6 dark:border dark:border-gray-700">
+        <div className="bg-white dark:bg-gray-900 shadow dark:shadow-[0_4px_6px_-1px_rgba(0,0,0,0.5),0_2px_4px_-2px_rgba(0,0,0,0.5)] rounded-lg p-6 dark:border dark:border-gray-700">
           <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
             {t('dashboard.sections.upcomingEvents')}
           </h2>

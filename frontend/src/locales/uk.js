@@ -25,6 +25,12 @@ export default {
     optional: 'Необов\'язково',
     status: 'Статус',
     rooms: 'кімн.',
+    viewAll: 'Переглянути всі',
+    clear: 'Очистити',
+    apply: 'Застосувати',
+    filter: 'Фільтр',
+    filters: 'Фільтри',
+    noResults: 'Немає результатів',
   },
 
   navigation: {
@@ -40,6 +46,7 @@ export default {
     settings: 'Налаштування',
     darkMode: 'Темний режим',
     lightMode: 'Світлий режим',
+    staff: 'Персонал',
   },
 
   auth: {
@@ -74,10 +81,10 @@ export default {
       vacantApartments: 'Вільні квартири',
     },
     sections: {
-      recentActivity: 'Остання активність',
-      upcomingEvents: 'Найближчі події',
-      noActivity: 'Немає активності для відображення',
-      noEvents: 'Немає найближчих подій',
+      recentActivity: 'Запити зацікавлених',
+      upcomingEvents: 'Повідомлення про несправності',
+      noActivity: 'Наразі немає',
+      noEvents: 'Наразі немає',
     },
   },
 
@@ -89,6 +96,7 @@ export default {
     all: 'Усі квартири',
     isVacant: 'Вільна',
     isOccupied: 'Зайнята',
+    filteredResults: 'знайдено квартир',
     fields: {
       street: 'Вулиця',
       number: 'Номер',
@@ -128,6 +136,8 @@ export default {
     title: 'Орендарі',
     addNew: 'Додати орендаря',
     edit: 'Редагувати орендаря',
+    keys: 'Ключі',
+    filteredResults: 'знайдено орендарів',
     fields: {
       firstName: 'Ім\'я',
       lastName: 'Прізвище',
@@ -141,7 +151,6 @@ export default {
       resiliationDate: 'Виїзд',
       comment: 'Коментар',
       apartment: 'Квартира',
-      keys: 'Ключі',
       noApartment: 'Немає квартири',
     },
     confirmDelete: 'Ви впевнені, що хочете видалити цього орендаря?',
@@ -164,6 +173,8 @@ export default {
     title: 'Ключі',
     addNew: 'Додати ключ',
     edit: 'Редагувати ключ',
+    details: 'Деталі ключа',
+    filteredResults: 'знайдено ключів',
     fields: {
       type: 'Тип',
       serie: 'Серія',
@@ -171,6 +182,8 @@ export default {
       copyNumber: 'Номер копії',
       apartment: 'Квартира',
       tenant: 'Орендар',
+      isAvailable: 'Доступний',
+      description: 'Опис',
       noApartment: 'Виберіть квартиру',
       noTenant: 'Немає орендаря',
     },
@@ -185,7 +198,7 @@ export default {
       selectType: 'Виберіть тип',
     },
     confirmDelete: 'Ви впевнені, що хочете видалити цей ключ?',
-    deleteMessage: 'Ви впевнені, що хочете видалити ключ {type} ({serie}-{number})? Ця дія незворотна.',
+    deleteMessage: 'Це видалить ключ і всі його зв\'язки з орендарями та квартирами.',
     messages: {
       saveSuccess: 'Ключ збережений',
       saveError: 'Сталася помилка при збереженні ключа',
@@ -222,8 +235,20 @@ export default {
 
   tasks: {
     title: 'Завдання',
-    addNew: 'Додати завдання',
+    add: 'Додати завдання',
     edit: 'Редагувати завдання',
+    addNew: 'Додати завдання',
+    relatedTasks: 'Пов\'язані завдання',
+    noRelatedTasks: 'Немає пов\'язаних завдань',
+    recurringPatternHelp: 'Система автоматично створить нові завдання за цим шаблоном',
+    recurringPatterns: {
+      DAILY: 'Щодня',
+      WEEKLY: 'Щотижня',
+      BIWEEKLY: 'Раз на два тижні',
+      MONTHLY: 'Щомісяця',
+      QUARTERLY: 'Щокварталу',
+      YEARLY: 'Щороку',
+    },
     fields: {
       title: 'Назва',
       description: 'Опис',
@@ -232,11 +257,14 @@ export default {
       priority: 'Пріоритет',
       status: 'Статус',
       assignedUser: 'Призначено',
+      assignedBy: 'Призначено ким',
       apartment: 'Квартира',
       tenant: 'Орендар',
       comments: 'Коментарі',
       isRecurring: 'Повторюване',
       recurringPattern: 'Шаблон повторення',
+      details: 'Деталі завдання',
+      assignment: 'Призначення'
     },
     priorities: {
       LOW: 'Низький',
@@ -261,6 +289,11 @@ export default {
     },
     confirmDelete: 'Ви впевнені, що хочете видалити це завдання?',
     filters: {
+      apartment: 'Квартира',
+      tenant: 'Орендар',
+      priority: 'Пріоритет',
+      status: 'Статус',
+      date: 'Дата',
       all: 'Всі завдання',
       today: 'Сьогодні',
       tomorrow: 'Завтра',
@@ -268,12 +301,20 @@ export default {
       overdue: 'Прострочені',
       completed: 'Завершені',
     },
+    notFound: 'Завдання не знайдено',
+    actions: {
+      startWork: 'Почати роботу',
+      markComplete: 'Позначити як завершене',
+      approve: 'Схвалити',
+      reject: 'Відхилити'
+    },
   },
 
   pendingTasks: {
     title: 'Очікуючі завдання',
     addNew: 'Створити запит',
     details: 'Деталі очікуючого завдання',
+    showApproved: 'Показати схвалені',
     fields: {
       task: 'Завдання',
       requestedBy: 'Запитано',
@@ -295,10 +336,13 @@ export default {
       rejectError: 'Помилка при відхиленні завдання',
       createSuccess: 'Запит створено',
       createError: 'Помилка при створенні запиту',
+      approvedTasksError: 'Помилка при отриманні схвалених завдань',
     },
     noTasks: 'Немає очікуючих завдань',
     reviewRequest: 'Розглянути запит',
     addComments: 'Додати коментарі',
+    reviewedBy: 'Розглянуто',
+    reviewedAt: 'Дата розгляду',
   },
 
   calendar: {
@@ -340,5 +384,46 @@ export default {
       sat: 'Сб',
       sun: 'Нд',
     },
+  },
+
+  staff: {
+    title: 'Персонал',
+    add: 'Додати користувача',
+    edit: 'Редагувати персонал',
+    fields: {
+      firstName: 'Ім\'я',
+      lastName: 'Прізвище',
+      email: 'Електронна пошта',
+      phone: 'Телефон',
+      password: 'Пароль',
+      role: 'Роль',
+      active: 'Активний',
+      lastLogin: 'Останній вхід',
+      leaveBlankToKeep: 'Залиште порожнім, щоб зберегти поточне значення',
+    },
+    roles: {
+      USER: 'Користувач',
+      ADMIN: 'Адміністратор',
+      SUPERADMIN: 'Суперадміністратор',
+      ROLE_USER: 'Користувач',
+      ROLE_ADMIN: 'Адміністратор',
+      ROLE_SUPERADMIN: 'Суперадміністратор',
+    },
+    messages: {
+      cannotDeleteSelf: 'Ви не можете видалити власний обліковий запис',
+      saveSuccess: 'Персонал збережений',
+      saveError: 'Сталася помилка при збереженні персоналу',
+      deleteSuccess: 'Персонал видалений',
+      deleteError: 'Сталася помилка при видаленні персоналу',
+    },
+    confirmDelete: 'Ви впевнені, що хочете видалити цього співробітника?',
+    deleteMessage: 'Ви впевнені, що хочете видалити {firstName} {lastName}? Ця дія незворотна.',
+    activeStatus: 'Статус активації',
+    activeStatusDescription: 'Користувач активний і може увійти в систему.',
+    inactiveStatusDescription: 'Користувач деактивований і не може увійти в систему.',
+    actions: {
+      activate: 'Активувати',
+      deactivate: 'Деактивувати'
+    }
   },
 }; 

@@ -4,9 +4,7 @@ const keyService = {
   // Hämta alla nycklar
   getAllKeys: async () => {
     try {
-      console.log('Anropar API: GET /api/keys');
       const response = await api.get('/api/keys');
-      console.log('Svar från getAllKeys:', response.data);
       return response.data;
     } catch (error) {
       console.error('Fel vid hämtning av nycklar:', error);
@@ -17,9 +15,7 @@ const keyService = {
   // Hämta en specifik nyckel
   getKeyById: async (id) => {
     try {
-      console.log(`Anropar API: GET /api/keys/${id}`);
       const response = await api.get(`/api/keys/${id}`);
-      console.log('Svar från getKeyById:', response.data);
       return response.data;
     } catch (error) {
       console.error(`Fel vid hämtning av nyckel ${id}:`, error);

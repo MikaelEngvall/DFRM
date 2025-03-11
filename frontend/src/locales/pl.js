@@ -25,6 +25,12 @@ export default {
     optional: 'Opcjonalnie',
     status: 'Status',
     rooms: 'pokoje',
+    viewAll: 'Pokaż wszystkie',
+    clear: 'Wyczyść',
+    apply: 'Zastosuj',
+    filter: 'Filtr',
+    filters: 'Filtry',
+    noResults: 'Brak wyników',
   },
 
   navigation: {
@@ -40,6 +46,7 @@ export default {
     settings: 'Ustawienia',
     darkMode: 'Tryb ciemny',
     lightMode: 'Tryb jasny',
+    staff: 'Personel',
   },
 
   auth: {
@@ -74,10 +81,10 @@ export default {
       vacantApartments: 'Wolne mieszkania',
     },
     sections: {
-      recentActivity: 'Ostatnia aktywność',
-      upcomingEvents: 'Nadchodzące wydarzenia',
-      noActivity: 'Brak aktywności do wyświetlenia',
-      noEvents: 'Brak nadchodzących wydarzeń',
+      recentActivity: 'Zgłoszenia zainteresowania',
+      upcomingEvents: 'Zgłoszenia usterek',
+      noActivity: 'Brak w tej chwili',
+      noEvents: 'Brak w tej chwili',
     },
   },
 
@@ -89,6 +96,7 @@ export default {
     all: 'Wszystkie mieszkania',
     isVacant: 'Wolne',
     isOccupied: 'Zajęte',
+    filteredResults: 'znaleziono mieszkań',
     fields: {
       street: 'Ulica',
       number: 'Numer',
@@ -128,6 +136,8 @@ export default {
     title: 'Najemcy',
     addNew: 'Dodaj najemcę',
     edit: 'Edytuj najemcę',
+    keys: 'Klucze',
+    filteredResults: 'znaleziono najemców',
     fields: {
       firstName: 'Imię',
       lastName: 'Nazwisko',
@@ -141,7 +151,6 @@ export default {
       resiliationDate: 'Wypowiedzenie',
       comment: 'Komentarz',
       apartment: 'Mieszkanie',
-      keys: 'Klucze',
       noApartment: 'Brak mieszkania',
     },
     confirmDelete: 'Czy na pewno chcesz usunąć tego najemcę?',
@@ -164,6 +173,8 @@ export default {
     title: 'Klucze',
     addNew: 'Dodaj klucz',
     edit: 'Edytuj klucz',
+    details: 'Szczegóły klucza',
+    filteredResults: 'znaleziono kluczy',
     fields: {
       type: 'Typ',
       serie: 'Seria',
@@ -171,6 +182,8 @@ export default {
       copyNumber: 'Numer kopii',
       apartment: 'Mieszkanie',
       tenant: 'Najemca',
+      isAvailable: 'Dostępny',
+      description: 'Opis',
       noApartment: 'Wybierz mieszkanie',
       noTenant: 'Brak najemcy',
     },
@@ -185,7 +198,7 @@ export default {
       selectType: 'Wybierz typ',
     },
     confirmDelete: 'Czy na pewno chcesz usunąć ten klucz?',
-    deleteMessage: 'Czy na pewno chcesz usunąć klucz {type} ({serie}-{number})? Tej operacji nie można cofnąć.',
+    deleteMessage: 'Spowoduje to usunięcie klucza i wszystkich jego powiązań z najemcami i mieszkaniami.',
     messages: {
       saveSuccess: 'Klucz został zapisany',
       saveError: 'Wystąpił błąd podczas zapisywania klucza',
@@ -222,8 +235,20 @@ export default {
 
   tasks: {
     title: 'Zadania',
-    addNew: 'Dodaj zadanie',
+    add: 'Dodaj zadanie',
     edit: 'Edytuj zadanie',
+    addNew: 'Dodaj zadanie',
+    relatedTasks: 'Powiązane zadania',
+    noRelatedTasks: 'Brak powiązanych zadań',
+    recurringPatternHelp: 'System automatycznie utworzy nowe zadania według tego wzorca',
+    recurringPatterns: {
+      DAILY: 'Codziennie',
+      WEEKLY: 'Co tydzień',
+      BIWEEKLY: 'Co dwa tygodnie',
+      MONTHLY: 'Co miesiąc',
+      QUARTERLY: 'Co kwartał',
+      YEARLY: 'Co rok',
+    },
     fields: {
       title: 'Tytuł',
       description: 'Opis',
@@ -232,11 +257,14 @@ export default {
       priority: 'Priorytet',
       status: 'Status',
       assignedUser: 'Przypisane do',
+      assignedBy: 'Przypisane przez',
       apartment: 'Mieszkanie',
       tenant: 'Najemca',
       comments: 'Komentarze',
       isRecurring: 'Powtarzające się',
       recurringPattern: 'Wzorzec powtarzania',
+      details: 'Szczegóły zadania',
+      assignment: 'Przypisanie'
     },
     priorities: {
       LOW: 'Niski',
@@ -261,6 +289,11 @@ export default {
     },
     confirmDelete: 'Czy na pewno chcesz usunąć to zadanie?',
     filters: {
+      apartment: 'Mieszkanie',
+      tenant: 'Najemca',
+      priority: 'Priorytet',
+      status: 'Status',
+      date: 'Data',
       all: 'Wszystkie zadania',
       today: 'Dzisiaj',
       tomorrow: 'Jutro',
@@ -268,12 +301,20 @@ export default {
       overdue: 'Zaległe',
       completed: 'Zakończone',
     },
+    notFound: 'Nie znaleziono zadania',
+    actions: {
+      startWork: 'Rozpocznij pracę',
+      markComplete: 'Oznacz jako zakończone',
+      approve: 'Zatwierdź',
+      reject: 'Odrzuć'
+    },
   },
 
   pendingTasks: {
     title: 'Oczekujące zadania',
     addNew: 'Utwórz wniosek',
     details: 'Szczegóły oczekującego zadania',
+    showApproved: 'Pokaż zatwierdzone',
     fields: {
       task: 'Zadanie',
       requestedBy: 'Zgłoszone przez',
@@ -295,10 +336,13 @@ export default {
       rejectError: 'Wystąpił błąd podczas odrzucania zadania',
       createSuccess: 'Wniosek został utworzony',
       createError: 'Wystąpił błąd podczas tworzenia wniosku',
+      approvedTasksError: 'Wystąpił błąd podczas pobierania zatwierdzonych zadań',
     },
     noTasks: 'Brak oczekujących zadań',
     reviewRequest: 'Sprawdź wniosek',
     addComments: 'Dodaj komentarze',
+    reviewedBy: 'Sprawdzone przez',
+    reviewedAt: 'Data sprawdzenia',
   },
 
   calendar: {
@@ -340,5 +384,46 @@ export default {
       sat: 'So',
       sun: 'Nd',
     },
+  },
+
+  staff: {
+    title: 'Personel',
+    add: 'Dodaj użytkownika',
+    edit: 'Edytuj personel',
+    fields: {
+      firstName: 'Imię',
+      lastName: 'Nazwisko',
+      email: 'Email',
+      phone: 'Numer telefonu',
+      password: 'Hasło',
+      role: 'Rola',
+      active: 'Aktywny',
+      lastLogin: 'Ostatnie logowanie',
+      leaveBlankToKeep: 'Pozostaw puste, aby zachować aktualne',
+    },
+    roles: {
+      USER: 'Użytkownik',
+      ADMIN: 'Administrator',
+      SUPERADMIN: 'Superadministrator',
+      ROLE_USER: 'Użytkownik',
+      ROLE_ADMIN: 'Administrator',
+      ROLE_SUPERADMIN: 'Superadministrator',
+    },
+    messages: {
+      cannotDeleteSelf: 'Nie możesz usunąć własnego konta',
+      saveSuccess: 'Personel został zapisany',
+      saveError: 'Wystąpił błąd podczas zapisywania personelu',
+      deleteSuccess: 'Personel został usunięty',
+      deleteError: 'Wystąpił błąd podczas usuwania personelu',
+    },
+    confirmDelete: 'Czy na pewno chcesz usunąć tego członka personelu?',
+    deleteMessage: 'Czy na pewno chcesz usunąć {firstName} {lastName}? Tej operacji nie można cofnąć.',
+    activeStatus: 'Status aktywacji',
+    activeStatusDescription: 'Użytkownik jest aktywny i może logować się do systemu.',
+    inactiveStatusDescription: 'Użytkownik jest nieaktywny i nie może logować się do systemu.',
+    actions: {
+      activate: 'Aktywuj',
+      deactivate: 'Dezaktywuj'
+    }
   },
 }; 

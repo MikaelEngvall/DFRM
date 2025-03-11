@@ -307,8 +307,18 @@ const Keys = () => {
         tenantId: '',
       });
     } catch (err) {
-      setError('Ett fel uppstod när nyckeln skulle sparas');
       console.error('Error saving key:', err);
+      // Visa mer detaljerad felinformation 
+      if (err.response) {
+        console.error('Server svarade med:', err.response.status, err.response.data);
+        setError(`${t('keys.messages.saveError')} - ${err.response.status}: ${JSON.stringify(err.response.data)}`);
+      } else if (err.request) {
+        console.error('Ingen respons från servern:', err.request);
+        setError(`${t('keys.messages.saveError')} - Ingen respons från servern`);
+      } else {
+        console.error('Fel vid anrop:', err.message);
+        setError(`${t('keys.messages.saveError')} - ${err.message}`);
+      }
     }
   };
 

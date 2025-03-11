@@ -51,8 +51,6 @@ const login = async (credentials) => {
   try {
     const response = await api.post('/api/auth/login', credentials);
     const { token, user } = response.data;
-    console.log('Inloggad användare:', user);
-    console.log('Roll:', user.role);
     setToken(token);
     return user;
   } catch (error) {

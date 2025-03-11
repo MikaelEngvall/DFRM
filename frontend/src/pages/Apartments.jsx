@@ -274,27 +274,32 @@ const Apartments = () => {
 
   const fetchInitialData = async () => {
     setIsLoading(true);
+    setError(null);
+    
     try {
-      const [apartmentsData, tenantsData, keysData] = await Promise.all([
-        apartmentService.getAllApartments(),
-        tenantService.getAllTenants(),
-        keyService.getAllKeys(),
-      ]);
+      // Hämta lägenheter
+      const apartmentsData = await apartmentService.getAllApartments();
       
-      setApartments(apartmentsData);
-      setFilteredApartments(apartmentsData);
-      setTenants(tenantsData);
-      setKeys(keysData);
+      // Uppdatera state med hämtad data
+      setApartments(apartmentsData || []);
+      setFilteredApartments(apartmentsData || []);
       
-      // Om den skickades vidare från en annan sida med "vacant" parameter, visa bara lediga lägenheter
-      if (location.state?.showVacant) {
-        setActiveTab('vacant');
-      }
+      // Hämta tillgängliga hyresgäster (för dropdowns)
+      const tenantsData = await tenantService.getAllTenants();
+      setTenants(tenantsData || []);
       
-      setError(null);
+      // Hämta tillgängliga nycklar (för dropdowns)
+      const keysData = await keyService.getAllKeys();
+      setKeys(keysData || []);
     } catch (err) {
-      console.error("Failed to fetch initial data:", err);
-      setError(t('common.error'));
+      console.error('Fel vid datahämtning:', err);
+      if (err.response) {
+        setError(`${t('common.fetchError')}: ${err.response.status} - ${err.response.data.message || JSON.stringify(err.response.data)}`);
+      } else if (err.request) {
+        setError(`${t('common.fetchError')}: Ingen respons från servern`);
+      } else {
+        setError(`${t('common.fetchError')}: ${err.message}`);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -458,7 +463,63 @@ const Apartments = () => {
         }
       } else {
         // För en ny lägenhet, skapa den först
-        savedApartment = await apartmentService.createApartment(apartmentData);
+        // Säkerställ att tenants och keys är null när de saknas (istället för att utesluta dem)
+        apartmentData.tenants = null;
+        apartmentData.keys = null;
+        
+        try {
+          // Prova först att använda apartmentService
+          savedApartment = await apartmentService.createApartment(apartmentData);
+          console.log('✅ LÄGENHET SKAPAD - SVARSDATA:', savedApartment);
+          
+          // Om det inte fungerade, prova direkt fetch
+          if (!savedApartment || !savedApartment.id) {
+            console.log('⚠️ Inget ID returnerades - provar med direkt fetch...');
+            
+            // Skapa ett alternativt fetch-anrop för att testa
+            try {
+              const token = localStorage.getItem('auth_token');
+              const fetchResponse = await fetch('http://localhost:8080/api/apartments', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                  street: apartmentData.street,
+                  number: apartmentData.number,
+                  apartmentNumber: apartmentData.apartmentNumber,
+                  postalCode: apartmentData.postalCode,
+                  city: apartmentData.city,
+                  rooms: typeof apartmentData.rooms === 'number' ? apartmentData.rooms : parseInt(apartmentData.rooms, 10),
+                  area: typeof apartmentData.area === 'number' ? apartmentData.area : parseFloat(apartmentData.area),
+                  price: typeof apartmentData.price === 'number' ? apartmentData.price : parseFloat(apartmentData.price),
+                  electricity: apartmentData.electricity,
+                  storage: apartmentData.storage,
+                  internet: apartmentData.internet,
+                  tenants: null,
+                  keys: null
+                })
+              });
+              
+              if (fetchResponse.ok) {
+                const fetchData = await fetchResponse.json();
+                console.log('✅ LÄGENHET SKAPAD MED FETCH - SVARSDATA:', fetchData);
+                
+                if (!savedApartment) {
+                  savedApartment = fetchData;
+                }
+              } else {
+                console.error('❌ FETCH MISSLYCKADES:', fetchResponse.status, fetchResponse.statusText);
+              }
+            } catch (fetchError) {
+              console.error('❌ FEL VID FETCH-ANROP:', fetchError);
+            }
+          }
+        } catch (error) {
+          console.error('❌ FEL VID SKAPANDE AV LÄGENHET:', error);
+          throw error;
+        }
         
         // Lägg till hyresgäster till ny lägenhet
         for (const id of tenantIds) {
@@ -477,7 +538,10 @@ const Apartments = () => {
       }
       
       // Uppdatera data efter sparande
+      // Lägg till en kort timeout för att säkerställa att servern hunnit behandla alla ändringar
+      await new Promise(resolve => setTimeout(resolve, 300));
       await fetchInitialData();
+      
       setIsModalOpen(false);
       setSelectedApartment(null);
       setFormData({
@@ -496,12 +560,29 @@ const Apartments = () => {
         keyIds: [],
       });
     } catch (err) {
-      console.error('Error saving apartment:', err);
-      setError(t('apartments.messages.saveError'));
+      console.error('❌ FEL VID SPARANDE AV LÄGENHET:', err);
+      
+      // Visa mer detaljerad felinformation 
+      if (err.response) {
+        console.error('❌ SERVERFEL:', err.response.status, err.response.data);
+        setError(`${t('apartments.messages.saveError')} - ${err.response.status}: ${JSON.stringify(err.response.data)}`);
+      } else if (err.request) {
+        console.error('❌ INGET SVAR FRÅN SERVER:', err.request);
+        setError(`${t('apartments.messages.saveError')} - Ingen respons från servern`);
+      } else {
+        console.error('❌ FELMEDDELANDE:', err.message);
+        setError(`${t('apartments.messages.saveError')} - ${err.message}`);
+      }
     }
   };
 
   const handleEdit = (apartment) => {
+    // Säkerställ att apartment inte är null
+    if (!apartment) {
+      console.error('Försöker redigera null-lägenhet');
+      return;
+    }
+    
     // Rensa upp dubletter i tenant arrays
     const cleanedApartment = cleanupDuplicateTenants(apartment);
     setSelectedApartment(cleanedApartment);
@@ -510,7 +591,7 @@ const Apartments = () => {
     let tenantIds = [];
     if (Array.isArray(cleanedApartment.tenants)) {
       tenantIds = cleanedApartment.tenants.map(tenant => {
-        if (typeof tenant === 'object' && tenant.id) {
+        if (typeof tenant === 'object' && tenant && tenant.id) {
           return tenant.id;
         }
         return tenant;
@@ -524,7 +605,7 @@ const Apartments = () => {
     let keyIds = [];
     if (Array.isArray(cleanedApartment.keys)) {
       keyIds = cleanedApartment.keys.map(key => {
-        if (typeof key === 'object' && key.id) {
+        if (typeof key === 'object' && key && key.id) {
           return key.id;
         }
         return key;
@@ -591,11 +672,19 @@ const Apartments = () => {
 
   // Hjälpfunktion för att hitta lediga hyresgäster och nuvarande hyresgäster för en lägenhet
   const getAvailableTenants = (tenantList, selectedApartmentTenants = []) => {
-    const selectedTenantIds = selectedApartmentTenants
-      .map(tenant => typeof tenant === 'object' ? tenant.id : tenant)
+    // Säkerställ att selectedApartmentTenants inte är null
+    const safeSelectedApartmentTenants = selectedApartmentTenants || [];
+    
+    const selectedTenantIds = safeSelectedApartmentTenants
+      .map(tenant => typeof tenant === 'object' && tenant ? tenant.id : tenant)
       .filter(Boolean);
     
+    // Säkerställ att tenantList inte är null
+    if (!tenantList) return [];
+    
     return tenantList.filter(tenant => {
+      if (!tenant) return false;
+      
       // Hyresgäst har ingen lägenhet eller är redan kopplad till denna lägenhet
       const hasNoApartment = !tenant.apartment;
       const isAlreadyAssigned = selectedTenantIds.includes(tenant.id);

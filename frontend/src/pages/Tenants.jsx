@@ -373,8 +373,7 @@ const Tenants = () => {
             changedFields[key] = tenantData[key];
           }
         }
-        
-        console.log("Ändrade fält:", changedFields);
+      
         
         // Uppdatera grundläggande information om hyresgästen (endast ändrade fält)
         savedTenant = Object.keys(changedFields).length > 0 
@@ -454,8 +453,18 @@ const Tenants = () => {
         keyIds: [],
       });
     } catch (err) {
-      setError(t('tenants.messages.saveError'));
       console.error('Error saving tenant:', err);
+      // Visa mer detaljerad felinformation 
+      if (err.response) {
+        console.error('Server svarade med:', err.response.status, err.response.data);
+        setError(`${t('tenants.messages.saveError')} - ${err.response.status}: ${JSON.stringify(err.response.data)}`);
+      } else if (err.request) {
+        console.error('Ingen respons från servern:', err.request);
+        setError(`${t('tenants.messages.saveError')} - Ingen respons från servern`);
+      } else {
+        console.error('Fel vid anrop:', err.message);
+        setError(`${t('tenants.messages.saveError')} - ${err.message}`);
+      }
     }
   };
 
