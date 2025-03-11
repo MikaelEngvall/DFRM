@@ -2,11 +2,13 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import FormInput from '../components/FormInput';
 import { useAuth } from '../contexts/AuthContext';
+import { useLocale } from '../contexts/LocaleContext';
 import { validateEmail, validatePassword } from '../utils/validation';
 
 const Login = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
+  const { changeLocale } = useLocale();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -51,7 +53,13 @@ const Login = () => {
 
     try {
       setIsLoading(true);
-      await login(formData);
+      const userData = await login(formData);
+      
+      // Sätt användarens föredragna språk om det finns
+      if (userData && userData.preferredLanguage) {
+        changeLocale(userData.preferredLanguage);
+      }
+      
       navigate('/dashboard');
     } catch (err) {
       console.error('Login error:', err);

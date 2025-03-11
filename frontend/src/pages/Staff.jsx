@@ -9,7 +9,7 @@ import { useLocale } from '../contexts/LocaleContext';
 import { useAuth } from '../contexts/AuthContext';
 
 const Staff = () => {
-  const { t } = useLocale();
+  const { t, availableLocales, currentLocale } = useLocale();
   const { user: currentUser, hasRole } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
@@ -25,7 +25,8 @@ const Staff = () => {
     phoneNumber: '',
     password: '',
     role: 'USER',
-    active: true
+    active: true,
+    preferredLanguage: currentLocale || 'sv'
   });
 
   // Hjälpfunktioner för att hantera rollprefix
@@ -203,7 +204,8 @@ const Staff = () => {
       phoneNumber: '',
       password: '',
       role: 'USER',
-      active: true
+      active: true,
+      preferredLanguage: currentLocale || 'sv'
     });
   };
 
@@ -222,7 +224,8 @@ const Staff = () => {
       phoneNumber: user.phoneNumber || '',
       password: '', // Lösenord visas inte vid redigering
       role: stripRolePrefix(user.role) || 'USER',
-      active: user.active !== undefined ? user.active : true
+      active: user.active !== undefined ? user.active : true,
+      preferredLanguage: user.preferredLanguage || currentLocale || 'sv'
     });
     setIsModalOpen(true);
   };
