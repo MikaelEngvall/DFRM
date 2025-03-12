@@ -200,4 +200,8 @@ public class ApartmentService {
                     }
                 });
     }
+
+    public Optional<Apartment> findByStreetAddressAndApartmentNumber(String streetAddress, String apartmentNumber) {
+        return apartmentRepository.findByStreetAddressAndApartmentNumber(streetAddress, apartmentNumber);
+    }
 } 

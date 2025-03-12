@@ -13,12 +13,16 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.dfrm.model.Apartment;
 import com.dfrm.model.PendingTask;
 import com.dfrm.model.Task;
+import com.dfrm.model.Tenant;
 import com.dfrm.model.User;
 import com.dfrm.repository.PendingTaskRepository;
+import com.dfrm.service.ApartmentService;
 import com.dfrm.service.PendingTaskService;
 import com.dfrm.service.TaskService;
+import com.dfrm.service.TenantService;
 import com.dfrm.service.UserService;
 
 import lombok.RequiredArgsConstructor;
@@ -32,6 +36,8 @@ public class PendingTaskController {
     private final TaskService taskService;
     private final UserService userService;
     private final PendingTaskRepository pendingTaskRepository;
+    private final TenantService tenantService;
+    private final ApartmentService apartmentService;
 
     @GetMapping
     public List<PendingTask> getAllPendingTasks() {
@@ -154,46 +160,69 @@ public class PendingTaskController {
         
         // Manuellt hantera requestedBy för e-postrapporter som kan ha tillfälliga användare
         for (PendingTask report : emailReports) {
-            if (report.getRequestedBy() != null) {
-                // Om användaren har ett ID men inte har firstName/lastName, försök ladda den från databasen
-                if (report.getRequestedBy().getId() != null && 
-                    (report.getRequestedBy().getFirstName() == null || 
-                     report.getRequestedBy().getLastName() == null)) {
-                    try {
-                        userService.getUserById(report.getRequestedBy().getId())
-                                  .ifPresent(report::setRequestedBy);
-                    } catch (Exception e) {
-                        // Om användaren inte kan laddas, skapa en tillfällig
-                        if (report.getName() != null && !report.getName().isEmpty()) {
-                            User tempUser = new User();
-                            // Försök tolka namn
-                            String[] nameParts = report.getName().split(" ");
-                            if (nameParts.length > 1) {
-                                tempUser.setFirstName(nameParts[0]);
-                                tempUser.setLastName(nameParts[nameParts.length - 1]);
-                            } else {
-                                tempUser.setFirstName(report.getName());
-                                tempUser.setLastName("");
-                            }
-                            tempUser.setEmail(report.getEmail());
-                            report.setRequestedBy(tempUser);
+            // Försök hitta hyresgäst baserat på e-post eller namn
+            if (report.getEmail() != null && !report.getEmail().isEmpty()) {
+                try {
+                    Optional<Tenant> tenant = tenantService.findTenantByEmail(report.getEmail());
+                    if (tenant.isPresent()) {
+                        Tenant foundTenant = tenant.get();
+                        report.setTenantId(foundTenant.getId());
+                        report.setRequestedByTenant(foundTenant);
+                        
+                        // Om hyresgästen har en lägenhet, sätt även den
+                        if (foundTenant.getApartment() != null) {
+                            report.setApartmentId(foundTenant.getApartment().getId());
+                            report.setRequestedByApartment(foundTenant.getApartment());
                         }
                     }
+                } catch (Exception e) {
+                    // Logga felet men fortsätt processen
+                    System.err.println("Kunde inte hitta hyresgäst för e-post: " + report.getEmail());
                 }
-            } else if (report.getName() != null && !report.getName().isEmpty()) {
-                // Skapa en tillfällig användare om det inte finns någon requestedBy men det finns namn
-                User tempUser = new User();
-                // Försök tolka namn
+            }
+            
+            // Om vi inte hittade hyresgäst via e-post, försök med namn och lägenhetsnummer
+            if (report.getRequestedByTenant() == null && report.getName() != null && 
+                !report.getName().isEmpty() && report.getApartment() != null && report.getAddress() != null) {
+                try {
+                    Optional<Apartment> apartment = apartmentService.findByStreetAddressAndApartmentNumber(
+                        report.getAddress(), 
+                        report.getApartment()
+                    );
+                    if (apartment.isPresent()) {
+                        Apartment foundApartment = apartment.get();
+                        report.setApartmentId(foundApartment.getId());
+                        report.setRequestedByApartment(foundApartment);
+                        
+                        // Försök matcha hyresgäst i lägenheten baserat på namn
+                        for (Tenant tenant : foundApartment.getTenants()) {
+                            String fullName = tenant.getFirstName() + " " + tenant.getLastName();
+                            if (report.getName().equalsIgnoreCase(fullName)) {
+                                report.setTenantId(tenant.getId());
+                                report.setRequestedByTenant(tenant);
+                                break;
+                            }
+                        }
+                    }
+                } catch (Exception e) {
+                    System.err.println("Kunde inte hitta lägenhet/hyresgäst för: " + report.getAddress() + " " + report.getApartment());
+                }
+            }
+
+            // Skapa en temporär Tenant om vi inte kunde hitta en matchande
+            if (report.getRequestedByTenant() == null && report.getName() != null && !report.getName().isEmpty()) {
+                Tenant tempTenant = new Tenant();
                 String[] nameParts = report.getName().split(" ");
                 if (nameParts.length > 1) {
-                    tempUser.setFirstName(nameParts[0]);
-                    tempUser.setLastName(nameParts[nameParts.length - 1]);
+                    tempTenant.setFirstName(nameParts[0]);
+                    tempTenant.setLastName(nameParts[nameParts.length - 1]);
                 } else {
-                    tempUser.setFirstName(report.getName());
-                    tempUser.setLastName("");
+                    tempTenant.setFirstName(report.getName());
+                    tempTenant.setLastName("");
                 }
-                tempUser.setEmail(report.getEmail());
-                report.setRequestedBy(tempUser);
+                tempTenant.setEmail(report.getEmail());
+                tempTenant.setPhone(report.getPhone());
+                report.setRequestedByTenant(tempTenant);
             }
             
             // Sätt ett standardvärde för subject om det saknas

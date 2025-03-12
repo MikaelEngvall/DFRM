@@ -34,7 +34,15 @@ public class PendingTask {
         property = "id"
     )
     @JsonIdentityReference(alwaysAsId = true)
-    private User requestedBy;
+    private Tenant requestedByTenant;
+    
+    @DBRef
+    @JsonIdentityInfo(
+        generator = ObjectIdGenerators.PropertyGenerator.class,
+        property = "id"
+    )
+    @JsonIdentityReference(alwaysAsId = true)
+    private Apartment requestedByApartment;
     
     private LocalDateTime requestedAt;
     private String requestComments;
@@ -62,4 +70,8 @@ public class PendingTask {
     private String status; // NEW, REVIEWED, CONVERTED, REJECTED
     private LocalDateTime received;
     private String subject; // Ämne för e-postrapport
+    
+    // Direkta ID-referenser för lägenhet och hyresgäst
+    private String tenantId;
+    private String apartmentId;
 } 

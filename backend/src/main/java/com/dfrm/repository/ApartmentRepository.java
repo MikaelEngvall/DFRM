@@ -21,4 +21,6 @@ public interface ApartmentRepository extends MongoRepository<Apartment, String> 
     // Sök lägenhet utifrån adress (som innehåller gatunummer) och lägenhetsnummer
     @Query("{'street': {$regex: ?0, $options: 'i'}, 'apartmentNumber': ?1}")
     Optional<Apartment> findByStreetAddressAndApartmentNumber(String streetAddress, String apartmentNumber);
+
+    Optional<Apartment> findByApartmentNumber(String apartmentNumber);
 } 

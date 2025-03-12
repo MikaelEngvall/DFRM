@@ -254,4 +254,8 @@ public class TenantService {
                             return tenant;
                         }));
     }
+
+    public Optional<Tenant> findTenantByEmail(String email) {
+        return tenantRepository.findByEmail(email);
+    }
 } 
