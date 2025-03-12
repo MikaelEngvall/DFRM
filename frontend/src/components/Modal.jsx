@@ -6,7 +6,7 @@ const Modal = ({
   onClose, 
   title, 
   children, 
-  size = 'large', 
+  size = 'small',
   onSubmit,
   submitButtonText,
   showFooter = true
@@ -20,7 +20,7 @@ const Modal = ({
     large: 'sm:max-w-4xl'
   };
 
-  const maxWidthClass = sizeClasses[size] || sizeClasses.large;
+  const maxWidthClass = sizeClasses[size] || sizeClasses.small;
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -58,12 +58,12 @@ const Modal = ({
               {children}
 
               {showFooter && (
-                <div className="flex flex-col space-y-4 sm:flex-row sm:space-y-0 sm:space-x-4 mt-8 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <div className="flex justify-between gap-4 mt-6">
                   {onSubmit && (
                     <button
                       type="submit"
                       onClick={handleSubmit}
-                      className="w-full sm:w-auto px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                      className="px-4 py-2 bg-primary text-white rounded-md hover:bg-secondary dark:bg-primary dark:hover:bg-secondary"
                     >
                       {submitButtonText || 'Spara ändringar'}
                     </button>
@@ -72,7 +72,7 @@ const Modal = ({
                   <button
                     type="button"
                     onClick={onClose}
-                    className="w-full sm:w-auto px-6 py-2 border border-gray-300 dark:border-gray-600 rounded text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                    className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
                   >
                     {onSubmit ? 'Avbryt' : 'Stäng'}
                   </button>

@@ -950,74 +950,74 @@ const Apartments = () => {
         size="small"
       >
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Ändra layout till 2 kolumner */}
+          {/* Ändra layout till 2 kolumner i en gemensam grid för korrekt tab-ordning */}
           <div className="grid grid-cols-2 gap-4">
-            {/* Vänster kolumn */}
-            <div className="space-y-4">
-              <FormInput
-                label={t('apartments.fields.street')}
-                name="street"
-                value={formData.street}
-                onChange={handleInputChange}
-                required
-              />
-              <FormInput
-                label={t('apartments.fields.apartmentNumber')}
-                name="apartmentNumber"
-                value={formData.apartmentNumber}
-                onChange={handleInputChange}
-                required
-              />
-              <FormInput
-                label={t('apartments.fields.city')}
-                name="city"
-                value={formData.city}
-                onChange={handleInputChange}
-                required
-              />
-              <FormInput
-                label={t('apartments.fields.area')}
-                name="area"
-                type="number"
-                value={formData.area}
-                onChange={handleInputChange}
-                required
-              />
-            </div>
+            {/* Första raden */}
+            <FormInput
+              label={t('apartments.fields.street')}
+              name="street"
+              value={formData.street}
+              onChange={handleInputChange}
+              required
+            />
+            <FormInput
+              label={t('apartments.fields.number')}
+              name="number"
+              value={formData.number}
+              onChange={handleInputChange}
+              required
+            />
             
-            {/* Höger kolumn */}
-            <div className="space-y-4">
-              <FormInput
-                label={t('apartments.fields.number')}
-                name="number"
-                value={formData.number}
-                onChange={handleInputChange}
-                required
-              />
-              <FormInput
-                label={t('apartments.fields.postalCode')}
-                name="postalCode"
-                value={formData.postalCode}
-                onChange={handleInputChange}
-                required
-              />
-              <FormInput
-                label={t('apartments.fields.rooms')}
-                name="rooms"
-                type="number"
-                value={formData.rooms}
-                onChange={handleInputChange}
-                required
-              />
-              <FormInput
-                label={t('apartments.fields.price')}
-                name="price"
-                type="number"
-                value={formData.price}
-                onChange={handleInputChange}
-                required
-              />
-            </div>
+            {/* Andra raden */}
+            <FormInput
+              label={t('apartments.fields.apartmentNumber')}
+              name="apartmentNumber"
+              value={formData.apartmentNumber}
+              onChange={handleInputChange}
+              required
+            />
+            <FormInput
+              label={t('apartments.fields.postalCode')}
+              name="postalCode"
+              value={formData.postalCode}
+              onChange={handleInputChange}
+              required
+            />
+            
+            {/* Tredje raden */}
+            <FormInput
+              label={t('apartments.fields.city')}
+              name="city"
+              value={formData.city}
+              onChange={handleInputChange}
+              required
+            />
+            <FormInput
+              label={t('apartments.fields.rooms')}
+              name="rooms"
+              type="number"
+              value={formData.rooms}
+              onChange={handleInputChange}
+              required
+            />
+            
+            {/* Fjärde raden */}
+            <FormInput
+              label={t('apartments.fields.area')}
+              name="area"
+              type="number"
+              value={formData.area}
+              onChange={handleInputChange}
+              required
+            />
+            <FormInput
+              label={t('apartments.fields.price')}
+              name="price"
+              type="number"
+              value={formData.price}
+              onChange={handleInputChange}
+              required
+            />
           </div>
 
           {/* Ändra från kolumn till rad */}
