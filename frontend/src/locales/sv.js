@@ -34,6 +34,7 @@ export default {
     greeting: 'Hej',
     permissions: 'Behörigheter',
     unauthorized: 'Du har inte behörighet att utföra denna åtgärd',
+    notSpecified: 'Ej angiven',
   },
 
   navigation: {

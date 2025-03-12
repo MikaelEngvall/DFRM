@@ -684,10 +684,10 @@ const PendingTasks = () => {
                   required
                 >
                   <option value="">{t('common.select')}</option>
-                  <option value="NEW">{t('tasks.status.pending')}</option>
-                  <option value="IN_PROGRESS">{t('tasks.status.inProgress')}</option>
-                  <option value="NOT_FEASIBLE">{t('tasks.status.notFeasible')}</option>
-                  <option value="COMPLETED">{t('tasks.status.completed')}</option>
+                  <option value="NEW">{t('tasks.status.NEW')}</option>
+                  <option value="IN_PROGRESS">{t('tasks.status.IN_PROGRESS')}</option>
+                  <option value="NOT_FEASIBLE">{t('tasks.status.NOT_FEASIBLE')}</option>
+                  <option value="COMPLETED">{t('tasks.status.COMPLETED')}</option>
                 </select>
               </div>
               
