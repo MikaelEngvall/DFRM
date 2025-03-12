@@ -7,7 +7,10 @@ import java.util.Optional;
 import org.springframework.stereotype.Service;
 
 import com.dfrm.model.Task;
+import com.dfrm.repository.ApartmentRepository;
 import com.dfrm.repository.TaskRepository;
+import com.dfrm.repository.TenantRepository;
+import com.dfrm.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -16,6 +19,9 @@ import lombok.RequiredArgsConstructor;
 public class TaskService {
     
     private final TaskRepository taskRepository;
+    private final TenantRepository tenantRepository;
+    private final ApartmentRepository apartmentRepository;
+    private final UserRepository userRepository;
     
     public List<Task> getAllTasks(String status, String priority, String tenantId, String apartmentId) {
         // Här skulle man normalt implementera logik för att filtrera baserat på parametrarna
@@ -28,6 +34,24 @@ public class TaskService {
     }
     
     public Task saveTask(Task task) {
+        // Om bara tenantId är angivet men inte tenant-referensen, försök att hitta
+        // och sätta tenant-referensen för bakåtkompatibilitet
+        if (task.getTenantId() != null && task.getTenant() == null) {
+            tenantRepository.findById(task.getTenantId()).ifPresent(task::setTenant);
+        }
+        
+        // Om bara apartmentId är angivet men inte apartment-referensen, försök att hitta
+        // och sätta apartment-referensen för bakåtkompatibilitet
+        if (task.getApartmentId() != null && task.getApartment() == null) {
+            apartmentRepository.findById(task.getApartmentId()).ifPresent(task::setApartment);
+        }
+        
+        // Om bara assignedToUserId är angivet men inte assignedUser-referensen, försök att hitta
+        // och sätta assignedUser-referensen för bakåtkompatibilitet
+        if (task.getAssignedToUserId() != null && task.getAssignedUser() == null) {
+            userRepository.findById(task.getAssignedToUserId()).ifPresent(task::setAssignedUser);
+        }
+        
         return taskRepository.save(task);
     }
     

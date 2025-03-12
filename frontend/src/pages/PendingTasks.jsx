@@ -289,9 +289,21 @@ const PendingTasks = () => {
     try {
       const isEmailReport = !selectedTask.task && selectedTask.name;
       
+      // Skapa en kopia av formulärdatan och logga för felsökning
+      let taskData = { ...formData };
+      console.log('Formulärdata före behandling:', taskData);
+      
+      // Säkerställ att tenantId och apartmentId är strängar, inte objekt
+      if (taskData.tenantId && typeof taskData.tenantId === 'object') {
+        taskData.tenantId = taskData.tenantId.id;
+      }
+      
+      if (taskData.apartmentId && typeof taskData.apartmentId === 'object') {
+        taskData.apartmentId = taskData.apartmentId.id;
+      }
+      
       if (isEmailReport) {
         // Fixa tidszonsproblemet för dueDate
-        let taskData = { ...formData };
         
         if (taskData.dueDate) {
           // Konvertera datumet till en "tidlös" ISO-sträng för att undvika tidszonsförskjutningar
@@ -308,6 +320,8 @@ const PendingTasks = () => {
           }
         }
         
+        console.log('Skickar e-postrapportdata till servern:', taskData);
+        
         // Konvertera e-postrapporten till en uppgift med korrigerat datum
         await pendingEmailReportService.convertToTask(selectedTask.id, {
           ...taskData,
@@ -316,7 +330,6 @@ const PendingTasks = () => {
       } else {
         // Uppdatera uppgiften före godkännande för vanliga väntande uppgifter
         // Fixa tidszonsproblemet även här för konsekvens
-        let taskData = { ...formData };
         
         if (taskData.dueDate) {
           const dueDateParts = taskData.dueDate.split('-');
@@ -329,6 +342,8 @@ const PendingTasks = () => {
             taskData.dueDate = fixedDate.toISOString();
           }
         }
+        
+        console.log('Skickar uppgiftsdata till servern:', taskData);
         
         await taskService.updateTask(selectedTask.task.id, taskData);
         
@@ -355,6 +370,19 @@ const PendingTasks = () => {
     try {
       const isEmailReport = !selectedTask.task && selectedTask.name;
       
+      // Skapa en kopia av formulärdatan och logga för felsökning
+      let taskData = { ...formData };
+      console.log('Formulärdata före avvisning:', taskData);
+      
+      // Säkerställ att tenantId och apartmentId är strängar, inte objekt
+      if (taskData.tenantId && typeof taskData.tenantId === 'object') {
+        taskData.tenantId = taskData.tenantId.id;
+      }
+      
+      if (taskData.apartmentId && typeof taskData.apartmentId === 'object') {
+        taskData.apartmentId = taskData.apartmentId.id;
+      }
+      
       if (isEmailReport) {
         // Avvisa e-postrapporten
         await pendingEmailReportService.rejectEmailReport(
@@ -365,7 +393,6 @@ const PendingTasks = () => {
       } else {
         // Uppdatera uppgiften före avvisning för vanliga väntande uppgifter
         // Fixa tidszonsproblemet även här för avvisade uppgifter
-        let taskData = { ...formData };
         
         if (taskData.dueDate) {
           const dueDateParts = taskData.dueDate.split('-');
@@ -378,6 +405,8 @@ const PendingTasks = () => {
             taskData.dueDate = fixedDate.toISOString();
           }
         }
+        
+        console.log('Skickar avvisad uppgiftsdata till servern:', taskData);
         
         await taskService.updateTask(selectedTask.task.id, taskData);
         

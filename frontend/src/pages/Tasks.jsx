@@ -134,9 +134,21 @@ const Tasks = () => {
       // Skapa en kopia av formData med aktuell användare som assignedBy för nya uppgifter
       const taskData = { ...formData };
       
+      // Logga data som skickas till servern för felsökning
+      console.log('Skickar uppgiftsdata till servern:', taskData);
+      
       if (!selectedTask) {
         // För ny uppgift, sätt automatiskt assignedByUserId till aktuell användare
         taskData.assignedByUserId = currentUser.id;
+      }
+      
+      // Säkerställ att tenantId och apartmentId är strängar, inte objekt
+      if (taskData.tenantId && typeof taskData.tenantId === 'object') {
+        taskData.tenantId = taskData.tenantId.id;
+      }
+      
+      if (taskData.apartmentId && typeof taskData.apartmentId === 'object') {
+        taskData.apartmentId = taskData.apartmentId.id;
       }
       
       if (selectedTask) {

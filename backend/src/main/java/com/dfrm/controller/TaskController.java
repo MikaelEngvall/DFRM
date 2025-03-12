@@ -95,11 +95,23 @@ public class TaskController {
         if (patchTask.getAssignedUser() != null) {
             existingTask.setAssignedUser(patchTask.getAssignedUser());
         }
+        if (patchTask.getAssignedToUserId() != null) {
+            existingTask.setAssignedToUserId(patchTask.getAssignedToUserId());
+        }
+        if (patchTask.getAssignedByUserId() != null) {
+            existingTask.setAssignedByUserId(patchTask.getAssignedByUserId());
+        }
         if (patchTask.getApartment() != null) {
             existingTask.setApartment(patchTask.getApartment());
         }
+        if (patchTask.getApartmentId() != null) {
+            existingTask.setApartmentId(patchTask.getApartmentId());
+        }
         if (patchTask.getTenant() != null) {
             existingTask.setTenant(patchTask.getTenant());
+        }
+        if (patchTask.getTenantId() != null) {
+            existingTask.setTenantId(patchTask.getTenantId());
         }
         if (patchTask.getRecurringPattern() != null) {
             existingTask.setRecurringPattern(patchTask.getRecurringPattern());

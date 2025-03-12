@@ -84,13 +84,26 @@ const TaskDetail = () => {
   const handleSave = async (e) => {
     e.preventDefault();
     try {
-      // Uppdatera återkommande mönster om det har ändrats
-      if (task.isRecurring !== formData.isRecurring || 
-          task.recurringPattern !== formData.recurringPattern) {
-        await taskService.updateRecurringPattern(task.id, formData.recurringPattern);
+      // Skapa en kopia av formulärdatan
+      const taskData = { ...formData };
+      console.log('Formulärdata före sparande:', taskData);
+      
+      // Säkerställ att tenantId och apartmentId är strängar, inte objekt
+      if (taskData.tenantId && typeof taskData.tenantId === 'object') {
+        taskData.tenantId = taskData.tenantId.id;
       }
       
-      await taskService.updateTask(id, formData);
+      if (taskData.apartmentId && typeof taskData.apartmentId === 'object') {
+        taskData.apartmentId = taskData.apartmentId.id;
+      }
+      
+      // Uppdatera återkommande mönster om det har ändrats
+      if (task.isRecurring !== taskData.isRecurring || 
+          task.recurringPattern !== taskData.recurringPattern) {
+        await taskService.updateRecurringPattern(task.id, taskData.recurringPattern);
+      }
+      
+      await taskService.updateTask(id, taskData);
       await fetchData();
       setIsEditMode(false);
     } catch (err) {
