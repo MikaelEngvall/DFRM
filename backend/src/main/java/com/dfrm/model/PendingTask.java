@@ -61,4 +61,5 @@ public class PendingTask {
     private Map<Language, String> descriptionTranslations;
     private String status; // NEW, REVIEWED, CONVERTED, REJECTED
     private LocalDateTime received;
+    private String subject; // Ämne för e-postrapport
 } 

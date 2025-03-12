@@ -466,7 +466,32 @@ public class EmailListener {
             pendingTask.setRequestedAt(now);
             pendingTask.setStatus("NEW"); // Sätt status till NEW för att markera som ny e-postrapport
             pendingTask.setReceived(now);
-                        
+            
+            // Sätt ett meningsfullt ämne baserat på beskrivningen
+            String subject = "Felanmälan: " + (finalDescription.length() > 50 
+                ? finalDescription.substring(0, 47) + "..." 
+                : finalDescription);
+            pendingTask.setSubject(subject);
+            
+            // Om ingen användare hittades med e-postadressen, skapa en tillfällig
+            if (pendingTask.getRequestedBy() == null && !name.isEmpty()) {
+                // Skapa en användare som motsvarar personen, endast för visning
+                User senderUser = new User();
+                
+                // Försök dela upp namnet i för- och efternamn
+                String[] nameParts = name.split(" ");
+                if (nameParts.length > 1) {
+                    senderUser.setFirstName(nameParts[0]);
+                    senderUser.setLastName(nameParts[nameParts.length - 1]);
+                } else {
+                    senderUser.setFirstName(name);
+                    senderUser.setLastName("");
+                }
+                
+                senderUser.setEmail(email);
+                pendingTask.setRequestedBy(senderUser);
+            }
+            
             PendingTask savedTask = pendingTaskRepository.save(pendingTask);
             
             log.info("Successfully created email report with ID: {}", 
