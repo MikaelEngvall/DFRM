@@ -5,9 +5,11 @@ import java.util.Optional;
 
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.data.mongodb.repository.Query;
+import org.springframework.stereotype.Repository;
 
 import com.dfrm.model.Apartment;
 
+@Repository
 public interface ApartmentRepository extends MongoRepository<Apartment, String> {
     List<Apartment> findByCity(String city);
     List<Apartment> findByRoomsGreaterThanEqual(Integer rooms);
@@ -23,4 +25,6 @@ public interface ApartmentRepository extends MongoRepository<Apartment, String> 
     Optional<Apartment> findByStreetAddressAndApartmentNumber(String streetAddress, String apartmentNumber);
 
     Optional<Apartment> findByApartmentNumber(String apartmentNumber);
+
+    Optional<Apartment> findByStreetAndNumber(String street, String number);
 } 

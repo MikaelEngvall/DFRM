@@ -430,27 +430,22 @@ const Apartments = () => {
           ? selectedApartment.keys.map(k => typeof k === 'object' ? k.id : k).filter(Boolean)
           : [];
         
-        // Hyresgäster att lägga till (finns i tenantIds men inte i currentTenantIds)
-        const tenantsToAdd = tenantIds.filter(id => !currentTenantIds.includes(id));
+        // Kontrollera om hyresgästlistan har ändrats
+        const tenantListChanged = JSON.stringify(currentTenantIds.sort()) !== JSON.stringify(tenantIds.sort());
         
-        // Hyresgäster att ta bort (finns i currentTenantIds men inte i tenantIds)
-        const tenantsToRemove = currentTenantIds.filter(id => !tenantIds.includes(id));
+        if (tenantListChanged) {
+          // Istället för att ta bort och lägga till hyresgäster en och en, 
+          // uppdatera hela listan på en gång med en PATCH-operation
+          updateOperations.push(
+            apartmentService.patchApartment(savedApartment.id, { tenants: tenantIds })
+          );
+        }
         
         // Nycklar att lägga till (finns i keyIds men inte i currentKeyIds)
         const keysToAdd = keyIds.filter(id => !currentKeyIds.includes(id));
         
         // Nycklar att ta bort (finns i currentKeyIds men inte i keyIds)
         const keysToRemove = currentKeyIds.filter(id => !keyIds.includes(id));
-        
-        // Lägg till uppdateringsoperationer för hyresgäster
-        for (const id of tenantsToAdd) {
-          updateOperations.push(apartmentService.assignTenant(savedApartment.id, id));
-        }
-        
-        // Lägg till uppdateringsoperationer för hyresgäster att ta bort
-        for (const id of tenantsToRemove) {
-          updateOperations.push(apartmentService.removeTenant(savedApartment.id, id));
-        }
         
         // Lägg till uppdateringsoperationer för nycklar
         for (const id of keysToAdd) {
@@ -521,9 +516,11 @@ const Apartments = () => {
           throw error;
         }
         
-        // Lägg till hyresgäster till ny lägenhet
-        for (const id of tenantIds) {
-          updateOperations.push(apartmentService.assignTenant(savedApartment.id, id));
+        // Om det finns hyresgäster att lägga till, uppdatera lägenheten med alla hyresgäster på en gång
+        if (tenantIds.length > 0) {
+          updateOperations.push(
+            apartmentService.patchApartment(savedApartment.id, { tenants: tenantIds })
+          );
         }
         
         // Lägg till nycklar till ny lägenhet

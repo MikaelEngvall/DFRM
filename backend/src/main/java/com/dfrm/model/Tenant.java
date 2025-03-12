@@ -31,6 +31,7 @@ public class Tenant {
     private LocalDate movedInDate;
     private LocalDate resiliationDate;
     private String comment;
+    private boolean isTemporary;
     
     @DBRef
     @JsonIdentityInfo(
@@ -47,4 +48,12 @@ public class Tenant {
     )
     @JsonIdentityReference(alwaysAsId = true)
     private List<Key> keys = new ArrayList<>();
+    
+    public boolean getIsTemporary() {
+        return isTemporary;
+    }
+    
+    public void setIsTemporary(boolean isTemporary) {
+        this.isTemporary = isTemporary;
+    }
 } 

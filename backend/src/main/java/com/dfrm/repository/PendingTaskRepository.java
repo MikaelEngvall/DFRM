@@ -11,7 +11,8 @@ import com.dfrm.model.PendingTask;
 
 @Repository
 public interface PendingTaskRepository extends MongoRepository<PendingTask, String> {
-    List<PendingTask> findByRequestedById(String userId);
+    List<PendingTask> findByRequestedByTenantId(String tenantId);
+    List<PendingTask> findByRequestedByApartmentId(String apartmentId);
     List<PendingTask> findByReviewedById(String userId);
     List<PendingTask> findByReviewedByIsNull();
     List<PendingTask> findByRequestedAtAfter(LocalDateTime date);

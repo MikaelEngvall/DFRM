@@ -29,6 +29,7 @@ public class Apartment {
     private Boolean electricity;
     private Boolean storage;
     private Boolean internet;
+    private boolean isTemporary;
     
     @DBRef
     @JsonIdentityInfo(
@@ -45,4 +46,12 @@ public class Apartment {
     )
     @JsonIdentityReference(alwaysAsId = true)
     private List<Key> keys;
+
+    public boolean getIsTemporary() {
+        return isTemporary;
+    }
+    
+    public void setIsTemporary(boolean isTemporary) {
+        this.isTemporary = isTemporary;
+    }
 } 

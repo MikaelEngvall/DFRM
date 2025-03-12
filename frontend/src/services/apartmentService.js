@@ -56,8 +56,14 @@ const apartmentService = {
 
   // Partiell uppdatering av en lägenhet (endast ändrade fält)
   patchApartment: async (id, partialData) => {
-    const response = await api.patch(`/api/apartments/${id}`, partialData);
-    return response.data;
+    try {
+      console.log(`Anropar PATCH /api/apartments/${id} med data:`, partialData);
+      const response = await api.patch(`/api/apartments/${id}`, partialData);
+      return response.data;
+    } catch (error) {
+      console.error(`Fel vid PATCH /api/apartments/${id}:`, error);
+      throw error;
+    }
   },
 
   // Ta bort en lägenhet

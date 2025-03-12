@@ -233,6 +233,7 @@ export default {
   tasks: {
     title: 'Uppgifter',
     add: 'Lägg till uppgift',
+    addNew: 'Lägg till uppgift',
     edit: 'Redigera uppgift',
     relatedTasks: 'Relaterade uppgifter',
     noRelatedTasks: 'Inga relaterade uppgifter',

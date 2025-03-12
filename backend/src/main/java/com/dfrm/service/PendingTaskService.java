@@ -36,8 +36,12 @@ public class PendingTaskService {
         return pendingTaskRepository.findById(id);
     }
     
-    public List<PendingTask> findPendingTasksByRequestedBy(String userId) {
-        return pendingTaskRepository.findByRequestedById(userId);
+    public List<PendingTask> getTasksByRequestedTenant(String tenantId) {
+        return pendingTaskRepository.findByRequestedByTenantId(tenantId);
+    }
+    
+    public List<PendingTask> getTasksByRequestedApartment(String apartmentId) {
+        return pendingTaskRepository.findByRequestedByApartmentId(apartmentId);
     }
     
     public List<PendingTask> findPendingTasksForReview() {

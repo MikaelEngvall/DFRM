@@ -8,11 +8,10 @@ import java.util.Optional;
 import org.springframework.stereotype.Service;
 
 import com.dfrm.model.Apartment;
+import com.dfrm.model.Tenant;
 import com.dfrm.repository.ApartmentRepository;
 import com.dfrm.repository.KeyRepository;
 import com.dfrm.repository.TenantRepository;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import lombok.RequiredArgsConstructor;
 
@@ -167,37 +166,40 @@ public class ApartmentService {
 
     public Optional<Apartment> partialUpdate(String id, Map<String, Object> updates) {
         return apartmentRepository.findById(id)
-                .map(existingApartment -> {
-                    // Applicera uppdateringarna till lägenheten, men ignorera relations-fält
-                    try {
-                        ObjectMapper objectMapper = new ObjectMapper();
-                        objectMapper.registerModule(new JavaTimeModule()); // Stöd för LocalDate
-                        
-                        // Konvertera existerande lägenhet till Map
-                        Map<String, Object> apartmentMap = objectMapper.convertValue(existingApartment, Map.class);
-                        
-                        // Applicera endast de fält som skickats in
-                        for (Map.Entry<String, Object> entry : updates.entrySet()) {
-                            // Ignorera ID-fältet och relationsfält
-                            if (!entry.getKey().equals("id") && !entry.getKey().equals("tenants") && !entry.getKey().equals("keys")) {
-                                apartmentMap.put(entry.getKey(), entry.getValue());
-                            }
-                        }
-                        
-                        // Konvertera tillbaka till Apartment-objekt med uppdaterade fält
-                        Apartment updatedApartment = objectMapper.convertValue(apartmentMap, Apartment.class);
-                        
-                        // Behåll original-ID och relationer
-                        updatedApartment.setId(id);
-                        updatedApartment.setTenants(existingApartment.getTenants());
-                        updatedApartment.setKeys(existingApartment.getKeys());
-                        
-                        // Spara och returnera uppdaterad lägenhet
-                        return apartmentRepository.save(updatedApartment);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                        return existingApartment; // Vid fel, returnera originalet
+                .map(apartment -> {
+                    // Uppdatera grundläggande fält
+                    if (updates.containsKey("street")) {
+                        apartment.setStreet((String) updates.get("street"));
                     }
+                    if (updates.containsKey("number")) {
+                        apartment.setNumber((String) updates.get("number"));
+                    }
+                    if (updates.containsKey("city")) {
+                        apartment.setCity((String) updates.get("city"));
+                    }
+                    if (updates.containsKey("rooms")) {
+                        apartment.setRooms((Integer) updates.get("rooms"));
+                    }
+                    if (updates.containsKey("price")) {
+                        apartment.setPrice((Double) updates.get("price"));
+                    }
+                    
+                    // Hantera hyresgäster
+                    if (updates.containsKey("tenants")) {
+                        @SuppressWarnings("unchecked")
+                        List<String> tenantIds = (List<String>) updates.get("tenants");
+                        
+                        // Om listan är tom eller null, ta bort alla hyresgäster
+                        if (tenantIds == null || tenantIds.isEmpty()) {
+                            apartment.setTenants(new ArrayList<>());
+                        } else {
+                            // Hämta alla hyresgäster baserat på ID:n
+                            List<Tenant> tenants = tenantRepository.findAllById(tenantIds);
+                            apartment.setTenants(tenants);
+                        }
+                    }
+                    
+                    return apartmentRepository.save(apartment);
                 });
     }
 

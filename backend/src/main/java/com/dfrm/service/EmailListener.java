@@ -12,9 +12,11 @@ import org.springframework.stereotype.Service;
 
 import com.dfrm.client.GoogleTranslateClient;
 import com.dfrm.config.JavaMailProperties;
+import com.dfrm.model.Apartment;
 import com.dfrm.model.Language;
 import com.dfrm.model.PendingTask;
 import com.dfrm.model.Tenant;
+import com.dfrm.repository.ApartmentRepository;
 import com.dfrm.repository.PendingTaskRepository;
 import com.dfrm.repository.TenantRepository;
 
@@ -40,6 +42,7 @@ public class EmailListener {
     private final TranslationService translationService;
     private final GoogleTranslateClient googleTranslateClient;
     private final TenantRepository tenantRepository;
+    private final ApartmentRepository apartmentRepository;
     
     private static final String TARGET_RECIPIENT = "felanmalan@duggalsfastigheter.se";
     private static final String TARGET_SENDER = "felanmalan@duggalsfastigheter.se";
@@ -252,60 +255,129 @@ public class EmailListener {
         // Skapa en ny PendingTask
         PendingTask pendingTask = new PendingTask();
         
+        // Extrahera information från innehållet
+        String[] lines = content.split("\n");
+        String name = null;
+        String email = null;
+        String phone = null;
+        String address = null;
+        String apartmentNumber = null;
+        StringBuilder messageContent = new StringBuilder();
+        boolean isMessageContent = false;
+
+        for (String line : lines) {
+            line = line.trim();
+            if (line.startsWith("Namn:")) {
+                name = line.substring("Namn:".length()).trim();
+            } else if (line.startsWith("E-post:")) {
+                email = line.substring("E-post:".length()).trim();
+            } else if (line.startsWith("Telefonnummer:")) {
+                phone = line.substring("Telefonnummer:".length()).trim();
+            } else if (line.startsWith("Adress:")) {
+                address = line.substring("Adress:".length()).trim();
+            } else if (line.startsWith("Lägenhetsnummer:")) {
+                apartmentNumber = line.substring("Lägenhetsnummer:".length()).trim();
+            } else if (line.startsWith("Meddelande:")) {
+                isMessageContent = true;
+            } else if (line.startsWith("---")) {
+                isMessageContent = false;
+            } else if (isMessageContent) {
+                messageContent.append(line).append("\n");
+            }
+        }
+
         // Sätt grundläggande information
         pendingTask.setReceived(LocalDateTime.now());
         pendingTask.setStatus("NEW");
+        pendingTask.setName(name);
+        pendingTask.setEmail(email);
+        pendingTask.setPhone(phone);
         
-        // Försök extrahera e-postadress och namn från avsändaren
-        Address[] fromAddresses = message.getFrom();
-        if (fromAddresses != null && fromAddresses.length > 0) {
-            InternetAddress from = (InternetAddress) fromAddresses[0];
-            String email = from.getAddress();
-            String name = from.getPersonal() != null ? from.getPersonal() : "";
+        // Sätt beskrivningen (meddelandet mellan "Meddelande:" och "---")
+        String messageText = messageContent.toString().trim();
+        String fullEmailContent = cleanHtmlContent(content);
+        
+        // Använd messageText som huvudbeskrivning om det finns, annars använd hela e-postmeddelandet
+        pendingTask.setDescription(messageText.isEmpty() ? fullEmailContent : messageText);
+
+        // Sätt titeln som "Adress nummer, lghnummer"
+        if (address != null && apartmentNumber != null) {
+            pendingTask.setSubject(String.format("%s, %s", address, apartmentNumber));
+        } else {
+            pendingTask.setSubject("Felanmälan via e-post");
+        }
+
+        // Försök hitta eller skapa hyresgäst
+        try {
+            Optional<Tenant> tenantOpt = tenantRepository.findByEmail(email);
+            Tenant tenant;
             
-            pendingTask.setEmail(email);
-            if (!name.isEmpty()) {
-                pendingTask.setName(name);
+            if (tenantOpt.isPresent()) {
+                tenant = tenantOpt.get();
+            } else if (name != null && !name.isEmpty()) {
+                // Skapa en temporär hyresgäst
+                tenant = new Tenant();
+                String[] nameParts = name.split(" ");
+                if (nameParts.length > 1) {
+                    tenant.setFirstName(nameParts[0]);
+                    tenant.setLastName(nameParts[nameParts.length - 1]);
+                } else {
+                    tenant.setFirstName(name);
+                    tenant.setLastName("");
+                }
+                tenant.setEmail(email);
+                tenant.setPhone(phone);
+                tenant.setIsTemporary(true);
+                
+                // Spara den temporära hyresgästen
+                tenant = tenantRepository.save(tenant);
+            } else {
+                tenant = null;
             }
             
-            // Försök hitta existerande hyresgäst baserat på e-post
+            if (tenant != null) {
+                pendingTask.setRequestedByTenant(tenant);
+                pendingTask.setTenantId(tenant.getId());
+            }
+        } catch (Exception e) {
+            log.error("Error handling tenant: {}", e.getMessage());
+        }
+
+        // Hantera lägenhet
+        if (address != null && apartmentNumber != null) {
             try {
-                Optional<Tenant> tenantOpt = tenantRepository.findByEmail(email);
-                if (tenantOpt.isPresent()) {
-                    Tenant tenant = tenantOpt.get();
-                    pendingTask.setRequestedByTenant(tenant);
-                    pendingTask.setTenantId(tenant.getId());
+                Optional<Apartment> apartmentOpt = apartmentRepository.findByStreetAndNumber(
+                    address, apartmentNumber);
+                
+                Apartment apartment;
+                if (apartmentOpt.isPresent()) {
+                    apartment = apartmentOpt.get();
+                } else {
+                    // Skapa en temporär lägenhet
+                    apartment = new Apartment();
+                    apartment.setStreet(address);
+                    apartment.setNumber(apartmentNumber);
+                    apartment.setIsTemporary(true);
                     
-                    // Om hyresgästen har en lägenhet, sätt även den
-                    if (tenant.getApartment() != null) {
-                        pendingTask.setRequestedByApartment(tenant.getApartment());
-                        pendingTask.setApartmentId(tenant.getApartment().getId());
-                    }
-                } else if (!name.isEmpty()) {
-                    // Skapa en temporär hyresgäst för visning
-                    Tenant tempTenant = new Tenant();
-                    String[] nameParts = name.split(" ");
-                    if (nameParts.length > 1) {
-                        tempTenant.setFirstName(nameParts[0]);
-                        tempTenant.setLastName(nameParts[nameParts.length - 1]);
-                    } else {
-                        tempTenant.setFirstName(name);
-                        tempTenant.setLastName("");
-                    }
-                    tempTenant.setEmail(email);
-                    pendingTask.setRequestedByTenant(tempTenant);
+                    // Spara den temporära lägenheten
+                    apartment = apartmentRepository.save(apartment);
+                }
+                
+                pendingTask.setRequestedByApartment(apartment);
+                pendingTask.setApartmentId(apartment.getId());
+                
+                // Om vi har en hyresgäst utan lägenhet, koppla lägenheten till hyresgästen
+                if (pendingTask.getRequestedByTenant() != null && 
+                    pendingTask.getRequestedByTenant().getApartment() == null) {
+                    Tenant tenant = pendingTask.getRequestedByTenant();
+                    tenant.setApartment(apartment);
+                    tenantRepository.save(tenant);
                 }
             } catch (Exception e) {
-                log.error("Error looking up tenant: {}", e.getMessage());
+                log.error("Error handling apartment: {}", e.getMessage());
             }
         }
-        
-        // Sätt ämne
-        String subject = message.getSubject();
-        if (subject != null && !subject.trim().isEmpty()) {
-            pendingTask.setSubject(subject.trim());
-        }
-        
+
         // Sätt beskrivning och identifiera språk
         pendingTask.setDescription(content);
         String detectedLanguageCode = googleTranslateClient.detectLanguage(content);

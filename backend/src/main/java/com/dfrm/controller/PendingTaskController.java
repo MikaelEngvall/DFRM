@@ -7,6 +7,7 @@ import java.util.Optional;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -51,9 +52,9 @@ public class PendingTaskController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    @GetMapping("/requested-by/{userId}")
-    public List<PendingTask> getPendingTasksByRequestedBy(@PathVariable String userId) {
-        return pendingTaskService.findPendingTasksByRequestedBy(userId);
+    @GetMapping("/requested/{userId}")
+    public ResponseEntity<List<PendingTask>> getTasksByRequestedTenant(@PathVariable String userId) {
+        return ResponseEntity.ok(pendingTaskService.getTasksByRequestedTenant(userId));
     }
 
     @GetMapping("/for-review")
@@ -301,6 +302,85 @@ public class PendingTaskController {
             
             PendingTask updatedReport = pendingTaskService.rejectEmailReport(id, reviewedBy, reason);
             return ResponseEntity.ok(updatedReport);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @GetMapping("/tenant/{tenantId}")
+    public ResponseEntity<List<PendingTask>> getTasksByTenant(@PathVariable String tenantId) {
+        return ResponseEntity.ok(pendingTaskService.getTasksByRequestedTenant(tenantId));
+    }
+
+    @GetMapping("/apartment/{apartmentId}")
+    public ResponseEntity<List<PendingTask>> getTasksByApartment(@PathVariable String apartmentId) {
+        return ResponseEntity.ok(pendingTaskService.getTasksByRequestedApartment(apartmentId));
+    }
+
+    /**
+     * Uppdaterar en väntande uppgift
+     */
+    @PatchMapping("/{id}")
+    public ResponseEntity<PendingTask> updatePendingTask(
+            @PathVariable String id,
+            @RequestBody Map<String, Object> updateData) {
+        try {
+            Optional<PendingTask> existingTaskOpt = pendingTaskService.getPendingTaskById(id);
+            if (existingTaskOpt.isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+
+            PendingTask existingTask = existingTaskOpt.get();
+            
+            // Uppdatera fält om de finns i updateData
+            if (updateData.containsKey("subject")) {
+                existingTask.setSubject((String) updateData.get("subject"));
+            }
+            if (updateData.containsKey("description")) {
+                existingTask.setDescription((String) updateData.get("description"));
+            }
+            if (updateData.containsKey("name")) {
+                existingTask.setName((String) updateData.get("name"));
+            }
+            if (updateData.containsKey("email")) {
+                existingTask.setEmail((String) updateData.get("email"));
+            }
+            if (updateData.containsKey("phone")) {
+                existingTask.setPhone((String) updateData.get("phone"));
+            }
+            
+            // Hantera hyresgäst - null eller tom sträng betyder ta bort hyresgäst
+            if (updateData.containsKey("tenantId")) {
+                String tenantId = (String) updateData.get("tenantId");
+                if (tenantId == null || tenantId.isEmpty()) {
+                    existingTask.setRequestedByTenant(null);
+                    existingTask.setTenantId(null);
+                } else {
+                    Optional<Tenant> tenantOpt = tenantService.getTenantById(tenantId);
+                    if (tenantOpt.isPresent()) {
+                        existingTask.setRequestedByTenant(tenantOpt.get());
+                        existingTask.setTenantId(tenantId);
+                    }
+                }
+            }
+            
+            // Hantera lägenhet - null eller tom sträng betyder ta bort lägenhet
+            if (updateData.containsKey("apartmentId")) {
+                String apartmentId = (String) updateData.get("apartmentId");
+                if (apartmentId == null || apartmentId.isEmpty()) {
+                    existingTask.setRequestedByApartment(null);
+                    existingTask.setApartmentId(null);
+                } else {
+                    Optional<Apartment> apartmentOpt = apartmentService.getApartmentById(apartmentId);
+                    if (apartmentOpt.isPresent()) {
+                        existingTask.setRequestedByApartment(apartmentOpt.get());
+                        existingTask.setApartmentId(apartmentId);
+                    }
+                }
+            }
+
+            PendingTask updatedTask = pendingTaskRepository.save(existingTask);
+            return ResponseEntity.ok(updatedTask);
         } catch (Exception e) {
             return ResponseEntity.badRequest().build();
         }
