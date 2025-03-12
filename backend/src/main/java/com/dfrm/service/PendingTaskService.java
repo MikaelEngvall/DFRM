@@ -1,5 +1,6 @@
 package com.dfrm.service;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -107,12 +108,58 @@ public class PendingTaskService {
      * @return Den skapade uppgiften
      */
     public Task convertEmailReportToTask(String emailReportId, Task newTask, User reviewedBy) {
-        Optional<PendingTask> emailReportOpt = pendingTaskRepository.findById(emailReportId);
-        if (emailReportOpt.isEmpty()) {
-            throw new IllegalArgumentException("E-postrapport hittades inte");
+        log.info("Konverterar e-postrapport {} till uppgift", emailReportId);
+        
+        // Hitta e-postrapporten
+        PendingTask emailReport = pendingTaskRepository.findById(emailReportId)
+            .orElseThrow(() -> new IllegalArgumentException("Kan inte hitta e-postrapport med ID: " + emailReportId));
+        
+        // Säkerställ att uppgiftens data är korrekt
+        newTask.setAssignedByUserId(reviewedBy.getId());
+        
+        // Sätt tenantId från e-postrapporten om det inte redan är satt i uppgiften
+        if ((newTask.getTenantId() == null || newTask.getTenantId().isEmpty()) && emailReport.getTenantId() != null) {
+            log.info("Använder tenantId från e-postrapporten: {}", emailReport.getTenantId());
+            newTask.setTenantId(emailReport.getTenantId());
+            
+            // Uppdatera också tenant-referensen om det behövs
+            if (emailReport.getRequestedByTenant() != null) {
+                newTask.setTenant(emailReport.getRequestedByTenant());
+                log.info("Satte tenant {} på uppgift", emailReport.getRequestedByTenant().getId());
+            }
         }
         
-        PendingTask emailReport = emailReportOpt.get();
+        // Sätt apartmentId från e-postrapporten om det inte redan är satt i uppgiften
+        if ((newTask.getApartmentId() == null || newTask.getApartmentId().isEmpty()) && emailReport.getApartmentId() != null) {
+            log.info("Använder apartmentId från e-postrapporten: {}", emailReport.getApartmentId());
+            newTask.setApartmentId(emailReport.getApartmentId());
+            
+            // Uppdatera också apartment-referensen om det behövs
+            if (emailReport.getRequestedByApartment() != null) {
+                newTask.setApartment(emailReport.getRequestedByApartment());
+                log.info("Satte apartment {} på uppgift", emailReport.getRequestedByApartment().getId());
+            }
+        }
+        
+        // Sätt standardvärden för den nya uppgiften om de inte är angivna
+        if (newTask.getStatus() == null || newTask.getStatus().isEmpty()) {
+            newTask.setStatus("NEW");
+        }
+        
+        if (newTask.getPriority() == null || newTask.getPriority().isEmpty()) {
+            newTask.setPriority("MEDIUM");
+        }
+        
+        if (newTask.getDueDate() == null) {
+            // Sätt standard förfallodatum till 7 dagar från nu
+            newTask.setDueDate(LocalDate.now().plusDays(7));
+        }
+        
+        // Om description är tom, använd beskrivningen från emailReport
+        if (newTask.getDescription() == null || newTask.getDescription().isEmpty()) {
+            newTask.setDescription(emailReport.getDescription());
+            log.info("Använde beskrivning från e-postrapporten");
+        }
         
         // Sätt standardvärden för den nya uppgiften om de inte är angivna
         if (newTask.getTitle() == null || newTask.getTitle().isEmpty()) {
@@ -123,10 +170,6 @@ public class PendingTaskService {
             } else {
                 newTask.setTitle("Felanmälan från " + emailReport.getName());
             }
-        }
-        
-        if (newTask.getDescription() == null || newTask.getDescription().isEmpty()) {
-            newTask.setDescription(emailReport.getDescription());
         }
         
         // Överför värden från emailReport till den nya uppgiften
@@ -162,17 +205,15 @@ public class PendingTaskService {
         
         // Spara uppgiften
         Task savedTask = taskRepository.save(newTask);
-        log.info("Skapade ny uppgift med ID: {} från e-postrapport", savedTask.getId());
+        log.info("Sparade ny uppgift med ID: {} från e-postrapport: {}", savedTask.getId(), emailReportId);
         
-        // Uppdatera e-postrapporten
-        emailReport.setStatus("APPROVED");
-        emailReport.setTask(savedTask);
+        // Uppdatera e-postrapporten som granskad och konverterad
         emailReport.setReviewedBy(reviewedBy);
         emailReport.setReviewedAt(LocalDateTime.now());
-        emailReport.setReviewComments("Godkänd och konverterad till uppgift");
-        
+        emailReport.setStatus("CONVERTED");
+        emailReport.setTask(savedTask);
         pendingTaskRepository.save(emailReport);
-        log.info("Uppdaterade e-postrapport med ID: {} till status APPROVED", emailReport.getId());
+        log.info("Uppdaterade e-postrapport {} som konverterad", emailReportId);
         
         return savedTask;
     }

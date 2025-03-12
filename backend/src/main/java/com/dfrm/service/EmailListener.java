@@ -251,6 +251,7 @@ public class EmailListener {
         
         // Rensa HTML först
         content = cleanHtmlContent(content);
+        log.info("Cleaned content: {}", content);
         
         // Skapa en ny PendingTask
         PendingTask pendingTask = new PendingTask();
@@ -279,12 +280,18 @@ public class EmailListener {
                 apartmentNumber = line.substring("Lägenhetsnummer:".length()).trim();
             } else if (line.startsWith("Meddelande:")) {
                 isMessageContent = true;
+                // Undvik att lägga till "Meddelande:" i innehållet
+                continue;
             } else if (line.startsWith("---")) {
                 isMessageContent = false;
             } else if (isMessageContent) {
                 messageContent.append(line).append("\n");
             }
         }
+        
+        // Logga de extraherade värdena för felsökning
+        log.info("Extraherade värden - Namn: {}, E-post: {}, Telefon: {}, Adress: {}, Lägenhetsnummer: {}", 
+            name, email, phone, address, apartmentNumber);
 
         // Sätt grundläggande information
         pendingTask.setReceived(LocalDateTime.now());
@@ -293,12 +300,18 @@ public class EmailListener {
         pendingTask.setEmail(email);
         pendingTask.setPhone(phone);
         
+        // Sätt var-fältet (adress och lägenhetsnummer)
+        if (address != null && apartmentNumber != null) {
+            pendingTask.setAddress(address);
+            pendingTask.setApartment(apartmentNumber);
+        }
+        
         // Sätt beskrivningen (meddelandet mellan "Meddelande:" och "---")
         String messageText = messageContent.toString().trim();
-        String fullEmailContent = cleanHtmlContent(content);
+        log.info("Extraherat meddelande: {}", messageText);
         
         // Använd messageText som huvudbeskrivning om det finns, annars använd hela e-postmeddelandet
-        pendingTask.setDescription(messageText.isEmpty() ? fullEmailContent : messageText);
+        pendingTask.setDescription(messageText.isEmpty() ? content : messageText);
 
         // Sätt titeln som "Adress nummer, lghnummer"
         if (address != null && apartmentNumber != null) {
@@ -307,51 +320,57 @@ public class EmailListener {
             pendingTask.setSubject("Felanmälan via e-post");
         }
 
-        // Försök hitta eller skapa hyresgäst
-        try {
-            Optional<Tenant> tenantOpt = tenantRepository.findByEmail(email);
-            Tenant tenant;
-            
-            if (tenantOpt.isPresent()) {
-                tenant = tenantOpt.get();
-            } else if (name != null && !name.isEmpty()) {
-                // Skapa en temporär hyresgäst
-                tenant = new Tenant();
-                String[] nameParts = name.split(" ");
-                if (nameParts.length > 1) {
-                    tenant.setFirstName(nameParts[0]);
-                    tenant.setLastName(nameParts[nameParts.length - 1]);
-                } else {
-                    tenant.setFirstName(name);
-                    tenant.setLastName("");
-                }
-                tenant.setEmail(email);
-                tenant.setPhone(phone);
-                tenant.setIsTemporary(true);
+        // Försök hitta hyresgäst baserat på e-postadressen
+        if (email != null && !email.isEmpty()) {
+            try {
+                Optional<Tenant> tenantOpt = tenantRepository.findByEmail(email);
+                Tenant tenant;
                 
-                // Spara den temporära hyresgästen
-                tenant = tenantRepository.save(tenant);
-            } else {
-                tenant = null;
+                if (tenantOpt.isPresent()) {
+                    tenant = tenantOpt.get();
+                    log.info("Hittade befintlig hyresgäst: {} (ID: {})", tenant.getFirstName() + " " + tenant.getLastName(), tenant.getId());
+                } else if (name != null && !name.isEmpty()) {
+                    // Skapa en temporär hyresgäst
+                    tenant = new Tenant();
+                    String[] nameParts = name.split(" ");
+                    if (nameParts.length > 1) {
+                        tenant.setFirstName(nameParts[0]);
+                        tenant.setLastName(nameParts[nameParts.length - 1]);
+                    } else {
+                        tenant.setFirstName(name);
+                        tenant.setLastName("");
+                    }
+                    tenant.setEmail(email);
+                    tenant.setPhone(phone);
+                    tenant.setIsTemporary(true);
+                    
+                    // Spara den temporära hyresgästen
+                    tenant = tenantRepository.save(tenant);
+                    log.info("Skapade temporär hyresgäst: {} (ID: {})", tenant.getFirstName() + " " + tenant.getLastName(), tenant.getId());
+                } else {
+                    tenant = null;
+                }
+                
+                if (tenant != null) {
+                    pendingTask.setRequestedByTenant(tenant);
+                    pendingTask.setTenantId(tenant.getId());
+                }
+            } catch (Exception e) {
+                log.error("Error handling tenant: {}", e.getMessage());
             }
-            
-            if (tenant != null) {
-                pendingTask.setRequestedByTenant(tenant);
-                pendingTask.setTenantId(tenant.getId());
-            }
-        } catch (Exception e) {
-            log.error("Error handling tenant: {}", e.getMessage());
         }
 
-        // Hantera lägenhet
+        // Hantera lägenhet baserat på adress och lägenhetsnummer
         if (address != null && apartmentNumber != null) {
             try {
+                log.info("Söker lägenhet med adress: {} och nummer: {}", address, apartmentNumber);
                 Optional<Apartment> apartmentOpt = apartmentRepository.findByStreetAndNumber(
                     address, apartmentNumber);
                 
                 Apartment apartment;
                 if (apartmentOpt.isPresent()) {
                     apartment = apartmentOpt.get();
+                    log.info("Hittade befintlig lägenhet: {} (ID: {})", address + " " + apartmentNumber, apartment.getId());
                 } else {
                     // Skapa en temporär lägenhet
                     apartment = new Apartment();
@@ -361,6 +380,7 @@ public class EmailListener {
                     
                     // Spara den temporära lägenheten
                     apartment = apartmentRepository.save(apartment);
+                    log.info("Skapade temporär lägenhet: {} (ID: {})", address + " " + apartmentNumber, apartment.getId());
                 }
                 
                 pendingTask.setRequestedByApartment(apartment);
@@ -372,15 +392,15 @@ public class EmailListener {
                     Tenant tenant = pendingTask.getRequestedByTenant();
                     tenant.setApartment(apartment);
                     tenantRepository.save(tenant);
+                    log.info("Kopplade hyresgäst (ID: {}) till lägenhet (ID: {})", tenant.getId(), apartment.getId());
                 }
             } catch (Exception e) {
                 log.error("Error handling apartment: {}", e.getMessage());
             }
         }
 
-        // Sätt beskrivning och identifiera språk
-        pendingTask.setDescription(content);
-        String detectedLanguageCode = googleTranslateClient.detectLanguage(content);
+        // Identifiera språk
+        String detectedLanguageCode = googleTranslateClient.detectLanguage(messageText.isEmpty() ? content : messageText);
         Language detectedLanguage = Language.SV; // Standard är svenska
         
         // Försök matcha språkkoden mot enum
@@ -396,15 +416,22 @@ public class EmailListener {
         // Om språket inte är svenska, översätt och spara översättningar
         if (detectedLanguage != Language.SV) {
             Map<Language, String> translations = new HashMap<>();
-            String translatedText = googleTranslateClient.translate(content, detectedLanguage.getCode(), "sv");
+            String translatedText = googleTranslateClient.translate(messageText.isEmpty() ? content : messageText, 
+                                                                    detectedLanguage.getCode(), "sv");
             translations.put(Language.SV, translatedText);
             pendingTask.setDescriptionTranslations(translations);
         }
         
         // Spara den nya uppgiften
-        pendingTaskRepository.save(pendingTask);
+        pendingTask = pendingTaskRepository.save(pendingTask);
         
-        log.info("Created new pending task from email with ID: {}", pendingTask.getId());
+        log.info("Skapade ny väntande uppgift från e-post med ID: {}", pendingTask.getId());
+        log.info("Uppgiftsinformation - Från: {}, Telefon: {}, Var: {}, {}, Vad: {}", 
+            pendingTask.getName(), 
+            pendingTask.getPhone(), 
+            pendingTask.getAddress(), 
+            pendingTask.getApartment(),
+            pendingTask.getDescription().substring(0, Math.min(50, pendingTask.getDescription().length())) + "...");
     }
 
     private String getTextFromMessage(Message message) throws Exception {

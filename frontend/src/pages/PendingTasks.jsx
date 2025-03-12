@@ -51,13 +51,26 @@ const PendingTasks = () => {
     {
       key: 'address',
       label: 'Var',
-      render: (address, report) => address ? 
-        `${address}${report.apartment ? ' lgh ' + report.apartment : ''}` : 'Ej angiven'
+      render: (_, report) => {
+        if (report.address && report.apartment) {
+          return `${report.address}, lgh ${report.apartment}`;
+        } else if (report.address) {
+          return report.address;
+        } else {
+          return 'Ej angiven';
+        }
+      }
     },
     {
       key: 'description',
       label: 'Vad',
-      render: (description) => description || 'Ingen beskrivning'
+      render: (description) => {
+        // Trimma beskrivningen till max 80 tecken för bättre visning i tabellen
+        if (description && description.length > 80) {
+          return `${description.substring(0, 80)}...`;
+        }
+        return description || 'Ingen beskrivning';
+      }
     },
     {
       key: 'received',
@@ -216,6 +229,29 @@ const PendingTasks = () => {
     const isEmailReport = !item.task && item.name;
     
     if (isEmailReport) {
+      // Logga objektet för felsökning
+      console.log('E-postrapport:', item);
+      
+      // Hitta lägenhetsobjekt baserat på apartmentId om det finns
+      let apartmentObj = '';
+      if (item.apartmentId) {
+        const foundApartment = apartments.find(apt => apt.id === item.apartmentId);
+        if (foundApartment) {
+          apartmentObj = foundApartment.id;
+          console.log('Hittade lägenhet:', foundApartment);
+        }
+      }
+      
+      // Hitta hyresgästobjekt baserat på tenantId om det finns
+      let tenantObj = '';
+      if (item.tenantId) {
+        const foundTenant = tenants.find(t => t.id === item.tenantId);
+        if (foundTenant) {
+          tenantObj = foundTenant.id;
+          console.log('Hittade hyresgäst:', foundTenant);
+        }
+      }
+      
       // Förifyll formulär med data från e-postrapporten
       setFormData({
         title: `${item.address || ''} ${item.apartment || ''}`.trim(),
@@ -225,8 +261,10 @@ const PendingTasks = () => {
         status: 'NEW',
         assignedToUserId: '',
         assignedByUserId: currentUser.id,
-        apartmentId: item.apartment || '',
-        tenantId: '',
+        // Använd apartmentId om det finns, annars försök hitta lägenheten baserat på adress och apartment
+        apartmentId: apartmentObj,
+        // Använd tenantId om det finns
+        tenantId: tenantObj,
         comments: '',
         isRecurring: false,
         recurringPattern: '',
@@ -574,7 +612,7 @@ const PendingTasks = () => {
                 <div>
                   <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Beskrivning</h3>
                   <div className="mt-1 border rounded p-3 bg-gray-50 dark:bg-gray-700 whitespace-pre-wrap">
-                    {selectedTask.requestComments || 'Ingen beskrivning'}
+                    {selectedTask.description || 'Ingen beskrivning'}
                   </div>
                 </div>
               </>
@@ -587,6 +625,7 @@ const PendingTasks = () => {
               value={formData.title}
               onChange={handleInputChange}
               required
+              error={formData.title.trim() === '' && 'Titel är obligatorisk'}
             />
             
             <div className="mb-3">

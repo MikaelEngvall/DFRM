@@ -4,6 +4,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -39,6 +42,7 @@ public class PendingTaskController {
     private final PendingTaskRepository pendingTaskRepository;
     private final TenantService tenantService;
     private final ApartmentService apartmentService;
+    private static final Logger log = LoggerFactory.getLogger(PendingTaskController.class);
 
     @GetMapping
     public List<PendingTask> getAllPendingTasks() {
@@ -246,44 +250,50 @@ public class PendingTaskController {
     public ResponseEntity<Task> convertEmailToTask(@PathVariable String id, @RequestBody Task taskData) {
         try {
             Optional<PendingTask> pendingTaskOpt = pendingTaskService.getPendingTaskById(id);
-            if (pendingTaskOpt.isEmpty()) {
+            if (!pendingTaskOpt.isPresent()) {
                 return ResponseEntity.notFound().build();
             }
             
-            String reviewedById = taskData.getAssignedByUserId(); // Använd assignedByUserId från taskData
-            if (reviewedById == null) {
+            PendingTask pendingTask = pendingTaskOpt.get();
+            log.info("Konverterar e-postrapport till uppgift: ID={}, Tenant ID={}, Apartment ID={}", 
+                pendingTask.getId(), pendingTask.getTenantId(), pendingTask.getApartmentId());
+            
+            // Sätt hyresgäst och lägenhet från PendingTask om de inte redan är angivna i taskData
+            if ((taskData.getTenantId() == null || taskData.getTenantId().isEmpty()) && pendingTask.getTenantId() != null) {
+                taskData.setTenantId(pendingTask.getTenantId());
+                log.info("Satte tenant ID till: {}", pendingTask.getTenantId());
+            }
+            
+            if ((taskData.getApartmentId() == null || taskData.getApartmentId().isEmpty()) && pendingTask.getApartmentId() != null) {
+                taskData.setApartmentId(pendingTask.getApartmentId());
+                log.info("Satte apartment ID till: {}", pendingTask.getApartmentId());
+            }
+            
+            // Om description är tom eller null, använd beskrivningen från pendingTask
+            if (taskData.getDescription() == null || taskData.getDescription().trim().isEmpty()) {
+                taskData.setDescription(pendingTask.getDescription());
+                log.info("Använde beskrivning från e-postrapport: {}", 
+                         pendingTask.getDescription() != null ? 
+                             pendingTask.getDescription().substring(0, Math.min(50, pendingTask.getDescription().length())) + "..." : null);
+            }
+            
+            User reviewedBy = null;
+            if (taskData.getAssignedByUserId() != null && !taskData.getAssignedByUserId().isEmpty()) {
+                Optional<User> userOpt = userService.getUserById(taskData.getAssignedByUserId());
+                if (userOpt.isPresent()) {
+                    reviewedBy = userOpt.get();
+                }
+            }
+            
+            if (reviewedBy == null) {
                 return ResponseEntity.badRequest().build();
             }
             
-            // Hämta användaren som granskar
-            User reviewedBy = userService.getUserById(reviewedById)
-                .orElseThrow(() -> new IllegalArgumentException("Invalid user ID"));
-            
-            // Skapa en ny uppgift
-            Task task = new Task();
-            task.setTitle(taskData.getTitle());
-            task.setDescription(taskData.getDescription());
-            task.setStatus(taskData.getStatus());
-            task.setPriority(taskData.getPriority());
-            
-            // Sätt referenser till lägenhet, användare och hyresgäst om de anges
-            if (taskData.getApartmentId() != null && !taskData.getApartmentId().isEmpty()) {
-                task.setApartmentId(taskData.getApartmentId());
-            }
-            
-            if (taskData.getAssignedToUserId() != null && !taskData.getAssignedToUserId().isEmpty()) {
-                task.setAssignedToUserId(taskData.getAssignedToUserId());
-            }
-            
-            if (taskData.getDueDate() != null) {
-                task.setDueDate(taskData.getDueDate());
-            }
-            
-            // Konvertera e-postrapporten till en uppgift
-            Task savedTask = pendingTaskService.convertEmailReportToTask(id, task, reviewedBy);
-            return ResponseEntity.ok(savedTask);
+            Task newTask = pendingTaskService.convertEmailReportToTask(id, taskData, reviewedBy);
+            return ResponseEntity.ok(newTask);
         } catch (Exception e) {
-            return ResponseEntity.badRequest().build();
+            log.error("Fel vid konvertering av e-postrapport till uppgift", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
     
