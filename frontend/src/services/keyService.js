@@ -95,8 +95,23 @@ const keyService = {
   // Tilldela en lägenhet till en nyckel
   assignApartment: async (keyId, apartmentId) => {
     try {
-      const response = await api.patch(`/api/keys/${keyId}/apartment?apartmentId=${apartmentId}`);
-      return response.data;
+      console.log(`Försöker tilldela lägenhet ${apartmentId} till nyckel ${keyId} med PATCH`);
+      try {
+        const response = await api.patch(`/api/keys/${keyId}/apartment?apartmentId=${apartmentId}`);
+        console.log('Framgångsrik tilldelning med PATCH');
+        return response.data;
+      } catch (patchError) {
+        // Om PATCH misslyckas med 403, försök med PUT istället
+        if (patchError.response && patchError.response.status === 403) {
+          console.log('PATCH misslyckades med 403, försöker med PUT istället');
+          const putResponse = await api.put(`/api/keys/${keyId}/apartment?apartmentId=${apartmentId}`);
+          console.log('Framgångsrik tilldelning med PUT som fallback');
+          return putResponse.data;
+        } else {
+          // Om det inte är ett 403-fel, kasta felet vidare
+          throw patchError;
+        }
+      }
     } catch (error) {
       console.error(`Error assigning key ${keyId} to apartment ${apartmentId}:`, error);
       throw error;
@@ -106,8 +121,23 @@ const keyService = {
   // Tilldela en hyresgäst till en nyckel
   assignTenant: async (keyId, tenantId) => {
     try {
-      const response = await api.patch(`/api/keys/${keyId}/tenant?tenantId=${tenantId}`);
-      return response.data;
+      console.log(`Försöker tilldela hyresgäst ${tenantId} till nyckel ${keyId} med PATCH`);
+      try {
+        const response = await api.patch(`/api/keys/${keyId}/tenant?tenantId=${tenantId}`);
+        console.log('Framgångsrik tilldelning med PATCH');
+        return response.data;
+      } catch (patchError) {
+        // Om PATCH misslyckas med 403, försök med PUT istället
+        if (patchError.response && patchError.response.status === 403) {
+          console.log('PATCH misslyckades med 403, försöker med PUT istället');
+          const putResponse = await api.put(`/api/keys/${keyId}/tenant?tenantId=${tenantId}`);
+          console.log('Framgångsrik tilldelning med PUT som fallback');
+          return putResponse.data;
+        } else {
+          // Om det inte är ett 403-fel, kasta felet vidare
+          throw patchError;
+        }
+      }
     } catch (error) {
       console.error(`Error assigning key ${keyId} to tenant ${tenantId}:`, error);
       throw error;

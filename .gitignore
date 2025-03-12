@@ -1,3 +1,4 @@
+# Node
 /node_modules
 /dist
 /build
@@ -5,13 +6,27 @@
 /logs
 /temp
 /cache
+
+# Environment variables and secrets
 .env
+.env.*
+.env.local
+.env.development
+.env.test
+.env.production
+*.env
+*.env.cmd
+backend/.env*
+frontend/.env*
+run-dev.ps1
 
 # Känsliga konfigurationsfiler
 backend/src/main/resources/application.yml
 backend/src/main/resources/application-dev.yml
 backend/src/main/resources/application-prod.yml
-*.env
+backend/src/main/resources/application.properties
+backend/src/main/resources/application-*.properties
 
 # Men inkludera mallen
 !backend/src/main/resources/application-template.yml
+!.env.example

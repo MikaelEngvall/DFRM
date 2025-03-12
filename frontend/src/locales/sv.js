@@ -317,6 +317,7 @@ export default {
     addNew: 'Skapa förfrågan',
     details: 'Detaljer för väntande uppgift',
     showApproved: 'Visa godkända',
+    emailReport: 'Väntande uppgift',
     fields: {
       task: 'Uppgift',
       requestedBy: 'Efterfrågad av',
@@ -325,6 +326,13 @@ export default {
       reviewedBy: 'Granskad av',
       reviewedAt: 'Granskad den',
       reviewComments: 'Granskningskommentarer',
+      sender: 'Från',
+      contactInfo: 'Kontaktinformation',
+      email: 'E-post',
+      phone: 'Telefon',
+      address: 'Adress',
+      apt: 'lgh',
+      description: 'Beskrivning'
     },
     actions: {
       approve: 'Godkänn',
@@ -341,6 +349,7 @@ export default {
       approvedTasksError: 'Ett fel uppstod när godkända uppgifter skulle hämtas',
     },
     noTasks: 'Inga väntande uppgifter',
+    noDescription: 'Ingen beskrivning',
     reviewRequest: 'Granska förfrågan',
     addComments: 'Lägg till kommentarer',
     reviewedBy: 'Granskad av',

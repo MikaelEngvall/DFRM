@@ -485,7 +485,7 @@ const PendingTasks = () => {
   };
 
   const getDisplayData = () => {
-    // Visa endast e-postrapporter om vi är på fliken "VÄNTANDE UPPGIFTER"
+    // Visa endast e-postrapporter om vi är på fliken "Väntande uppgifter"
     if (!showApproved) {
       return emailReports;
     }
@@ -501,7 +501,7 @@ const PendingTasks = () => {
   };
 
   const getColumns = () => {
-    // Använd e-postrapportkolumner om vi är på fliken "VÄNTANDE UPPGIFTER"
+    // Använd e-postrapportkolumner om vi är på fliken "Väntande uppgifter"
     if (!showApproved) {
       return emailReportColumns;
     }
@@ -533,7 +533,7 @@ const PendingTasks = () => {
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-cinzel dark:text-white">
-          {!showApproved ? "VÄNTANDE UPPGIFTER" : t('pendingTasks.title')}
+          {!showApproved ? t('pendingTasks.title') : t('pendingTasks.title')}
         </h1>
         <div className="flex space-x-2 items-center">
           <label className="inline-flex items-center text-sm">
@@ -566,7 +566,7 @@ const PendingTasks = () => {
       {getDisplayData().length === 0 ? (
         <div className="text-center py-10">
           <p className="text-gray-500 dark:text-gray-400">
-            {!showApproved ? "Inga väntande uppgifter" : t('pendingTasks.noTasks')}
+            {!showApproved ? t('pendingTasks.noTasks') : t('pendingTasks.noTasks')}
           </p>
         </div>
       ) : (
@@ -586,7 +586,7 @@ const PendingTasks = () => {
             setSelectedTask(null);
             resetForm();
           }}
-          title={isEmailReport ? "Väntande uppgift" : t('pendingTasks.reviewRequest')}
+          title={isEmailReport ? t('pendingTasks.emailReport') : t('pendingTasks.reviewRequest')}
           showFooter={false}
         >
           <div className="grid grid-cols-1 gap-4">
@@ -594,25 +594,25 @@ const PendingTasks = () => {
             {isEmailReport && (
               <>
                 <div>
-                  <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Från</h3>
-                  <p className="mt-1">{selectedTask.name || 'Ej angiven'}</p>
+                  <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('pendingTasks.fields.sender')}</h3>
+                  <p className="mt-1">{selectedTask.name || t('common.notSpecified')}</p>
                 </div>
                 <div>
-                  <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Kontaktinformation</h3>
-                  <p className="mt-1">E-post: {selectedTask.email || 'Ej angiven'}</p>
-                  <p className="mt-1">Telefon: {selectedTask.phone || 'Ej angiven'}</p>
+                  <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('pendingTasks.fields.contactInfo')}</h3>
+                  <p className="mt-1">{t('pendingTasks.fields.email')}: {selectedTask.email || t('common.notSpecified')}</p>
+                  <p className="mt-1">{t('pendingTasks.fields.phone')}: {selectedTask.phone || t('common.notSpecified')}</p>
                 </div>
                 <div>
-                  <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Adress</h3>
+                  <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('pendingTasks.fields.address')}</h3>
                   <p className="mt-1">
-                    {selectedTask.address || 'Ej angiven'}
-                    {selectedTask.apartment ? `, lgh ${selectedTask.apartment}` : ''}
+                    {selectedTask.address || t('common.notSpecified')}
+                    {selectedTask.apartment ? `, ${t('pendingTasks.fields.apt')} ${selectedTask.apartment}` : ''}
                   </p>
                 </div>
                 <div>
-                  <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Beskrivning</h3>
+                  <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('pendingTasks.fields.description')}</h3>
                   <div className="mt-1 border rounded p-3 bg-gray-50 dark:bg-gray-700 whitespace-pre-wrap">
-                    {selectedTask.description || 'Ingen beskrivning'}
+                    {selectedTask.description || t('pendingTasks.noDescription')}
                   </div>
                 </div>
               </>
@@ -684,10 +684,10 @@ const PendingTasks = () => {
                   required
                 >
                   <option value="">{t('common.select')}</option>
-                  <option value="NEW">Väntande</option>
-                  <option value="IN_PROGRESS">Pågående</option>
-                  <option value="NOT_FEASIBLE">Ej genomförbar</option>
-                  <option value="COMPLETED">Avslutad</option>
+                  <option value="NEW">{t('tasks.status.pending')}</option>
+                  <option value="IN_PROGRESS">{t('tasks.status.inProgress')}</option>
+                  <option value="NOT_FEASIBLE">{t('tasks.status.notFeasible')}</option>
+                  <option value="COMPLETED">{t('tasks.status.completed')}</option>
                 </select>
               </div>
               

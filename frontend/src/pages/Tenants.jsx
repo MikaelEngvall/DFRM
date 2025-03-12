@@ -115,19 +115,6 @@ const Tenants = () => {
     { key: 'firstName', label: t('tenants.fields.firstName') },
     { key: 'lastName', label: t('tenants.fields.lastName') },
     { key: 'phone', label: t('tenants.fields.phoneNumber') },
-    { 
-      key: 'status', 
-      label: t('common.status'),
-      render: (_, tenant) => hasTenantApartment(tenant) ? (
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
-          {t('apartments.isOccupied')}
-        </span>
-      ) : (
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
-          {t('apartments.isVacant')}
-        </span>
-      )
-    },
     {
       key: 'movedInDate',
       label: t('tenants.fields.movedInDate'),
