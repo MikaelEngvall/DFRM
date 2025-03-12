@@ -32,6 +32,9 @@ export default {
     filters: 'Filtry',
     noResults: 'Brak wyników',
     greeting: 'Cześć',
+    permissions: 'Uprawnienia',
+    unauthorized: 'Nie masz uprawnień do wykonania tej akcji',
+    notSpecified: 'Nie określono',
   },
 
   navigation: {
@@ -154,6 +157,7 @@ export default {
       comment: 'Komentarz',
       apartment: 'Mieszkanie',
       noApartment: 'Brak mieszkania',
+      keys: 'Klucze',
     },
     confirmDelete: 'Czy na pewno chcesz usunąć tego najemcę?',
     deleteMessage: 'Czy na pewno chcesz usunąć najemcę {firstName} {lastName}? Tej operacji nie można cofnąć.',
@@ -276,11 +280,13 @@ export default {
       URGENT: 'Pilny',
     },
     status: {
+      NEW: 'Nowy',
       PENDING: 'Oczekujące',
       IN_PROGRESS: 'W trakcie',
       COMPLETED: 'Zakończone',
       APPROVED: 'Zatwierdzone',
       REJECTED: 'Odrzucone',
+      NOT_FEASIBLE: 'Niewykonalne',
     },
     messages: {
       saveSuccess: 'Zadanie zostało zapisane',
@@ -318,6 +324,7 @@ export default {
     addNew: 'Utwórz wniosek',
     details: 'Szczegóły oczekującego zadania',
     showApproved: 'Pokaż zatwierdzone',
+    emailReport: 'Oczekujące zadanie',
     fields: {
       task: 'Zadanie',
       requestedBy: 'Zgłoszone przez',
@@ -326,6 +333,13 @@ export default {
       reviewedBy: 'Sprawdzone przez',
       reviewedAt: 'Data sprawdzenia',
       reviewComments: 'Komentarze recenzenta',
+      sender: 'Od',
+      contactInfo: 'Informacje kontaktowe',
+      email: 'Email',
+      phone: 'Telefon',
+      address: 'Adres',
+      apt: 'mieszk.',
+      description: 'Opis'
     },
     actions: {
       approve: 'Zatwierdź',
@@ -342,6 +356,7 @@ export default {
       approvedTasksError: 'Wystąpił błąd podczas pobierania zatwierdzonych zadań',
     },
     noTasks: 'Brak oczekujących zadań',
+    noDescription: 'Brak opisu',
     reviewRequest: 'Sprawdź wniosek',
     addComments: 'Dodaj komentarze',
     reviewedBy: 'Sprawdzone przez',

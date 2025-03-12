@@ -32,6 +32,9 @@ export default {
     filters: 'Фільтри',
     noResults: 'Немає результатів',
     greeting: 'Привіт',
+    permissions: 'Дозволи',
+    unauthorized: 'У вас немає дозволу на виконання цієї дії',
+    notSpecified: 'Не вказано',
   },
 
   navigation: {
@@ -154,6 +157,7 @@ export default {
       comment: 'Коментар',
       apartment: 'Квартира',
       noApartment: 'Немає квартири',
+      keys: 'Ключі',
     },
     confirmDelete: 'Ви впевнені, що хочете видалити цього орендаря?',
     deleteMessage: 'Ви впевнені, що хочете видалити орендаря {firstName} {lastName}? Ця дія незворотна.',
@@ -276,11 +280,13 @@ export default {
       URGENT: 'Терміновий',
     },
     status: {
+      NEW: 'Новий',
       PENDING: 'Очікує',
       IN_PROGRESS: 'В процесі',
       COMPLETED: 'Завершено',
       APPROVED: 'Схвалено',
       REJECTED: 'Відхилено',
+      NOT_FEASIBLE: 'Неможливо виконати',
     },
     messages: {
       saveSuccess: 'Завдання збережено',
@@ -318,6 +324,7 @@ export default {
     addNew: 'Створити запит',
     details: 'Деталі очікуючого завдання',
     showApproved: 'Показати схвалені',
+    emailReport: 'Очікуюче завдання',
     fields: {
       task: 'Завдання',
       requestedBy: 'Запитано',
@@ -326,6 +333,13 @@ export default {
       reviewedBy: 'Розглянуто',
       reviewedAt: 'Дата розгляду',
       reviewComments: 'Коментарі до розгляду',
+      sender: 'Від',
+      contactInfo: 'Контактна інформація',
+      email: 'Електронна пошта',
+      phone: 'Телефон',
+      address: 'Адреса',
+      apt: 'кв.',
+      description: 'Опис'
     },
     actions: {
       approve: 'Схвалити',
@@ -342,6 +356,7 @@ export default {
       approvedTasksError: 'Помилка при отриманні схвалених завдань',
     },
     noTasks: 'Немає очікуючих завдань',
+    noDescription: 'Немає опису',
     reviewRequest: 'Розглянути запит',
     addComments: 'Додати коментарі',
     reviewedBy: 'Розглянуто',

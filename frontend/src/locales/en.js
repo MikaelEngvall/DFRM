@@ -32,6 +32,9 @@ export default {
     filters: 'Filters',
     noResults: 'No results',
     greeting: 'Hello',
+    permissions: 'Permissions',
+    unauthorized: 'You do not have permission to perform this action',
+    notSpecified: 'Not specified',
   },
 
   navigation: {
@@ -154,6 +157,7 @@ export default {
       comment: 'Comment',
       apartment: 'Apartment',
       noApartment: 'No apartment',
+      keys: 'Keys',
     },
     confirmDelete: 'Are you sure you want to delete this tenant?',
     deleteMessage: 'Are you sure you want to delete the tenant {firstName} {lastName}? This action cannot be undone.',
@@ -276,11 +280,13 @@ export default {
       URGENT: 'Urgent',
     },
     status: {
+      NEW: 'New',
       PENDING: 'Pending',
       IN_PROGRESS: 'In progress',
       COMPLETED: 'Completed',
       APPROVED: 'Approved',
       REJECTED: 'Rejected',
+      NOT_FEASIBLE: 'Not feasible',
     },
     messages: {
       saveSuccess: 'Task has been saved',
@@ -318,6 +324,7 @@ export default {
     addNew: 'Create request',
     details: 'Pending task details',
     showApproved: 'Show approved',
+    emailReport: 'Pending task',
     fields: {
       task: 'Task',
       requestedBy: 'Requested by',
@@ -326,6 +333,13 @@ export default {
       reviewedBy: 'Reviewed by',
       reviewedAt: 'Reviewed at',
       reviewComments: 'Review comments',
+      sender: 'From',
+      contactInfo: 'Contact information',
+      email: 'Email',
+      phone: 'Phone',
+      address: 'Address',
+      apt: 'apt',
+      description: 'Description'
     },
     actions: {
       approve: 'Approve',
@@ -342,6 +356,7 @@ export default {
       approvedTasksError: 'An error occurred while fetching approved tasks',
     },
     noTasks: 'No pending tasks',
+    noDescription: 'No description',
     reviewRequest: 'Review request',
     addComments: 'Add comments',
     reviewedBy: 'Reviewed by',
