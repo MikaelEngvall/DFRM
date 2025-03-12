@@ -306,10 +306,6 @@ const Calendar = () => {
         return 'bg-blue-100 text-blue-800 border-blue-300';
       case 'COMPLETED':
         return 'bg-green-100 text-green-800 border-green-300';
-      case 'APPROVED':
-        return 'bg-purple-100 text-purple-800 border-purple-300';
-      case 'REJECTED':
-        return 'bg-red-100 text-red-800 border-red-300';
       default:
         return 'bg-gray-100 text-gray-800 border-gray-300';
     }
@@ -603,8 +599,6 @@ const Calendar = () => {
                   <option value="PENDING">{t('tasks.status.PENDING')}</option>
                   <option value="IN_PROGRESS">{t('tasks.status.IN_PROGRESS')}</option>
                   <option value="COMPLETED">{t('tasks.status.COMPLETED')}</option>
-                  <option value="APPROVED">{t('tasks.status.APPROVED')}</option>
-                  <option value="REJECTED">{t('tasks.status.REJECTED')}</option>
                 </select>
               </div>
               

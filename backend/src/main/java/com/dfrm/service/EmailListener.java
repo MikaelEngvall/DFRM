@@ -2,6 +2,7 @@ package com.dfrm.service;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
@@ -265,10 +266,36 @@ public class EmailListener {
         String apartmentNumber = null;
         StringBuilder messageContent = new StringBuilder();
         boolean isMessageContent = false;
-
-        for (String line : lines) {
-            line = line.trim();
-            if (line.startsWith("Namn:")) {
+        boolean foundMessageStart = false;
+        
+        log.info("Antal rader i meddelandet: {}", lines.length);
+        
+        for (int i = 0; i < lines.length; i++) {
+            String line = lines[i].trim();
+            log.debug("Bearbetar rad {}: {}", i, line);
+            
+            if (line.contains("Meddelande:")) {
+                log.info("Hittade start på meddelande på rad {}: {}", i, line);
+                isMessageContent = true;
+                foundMessageStart = true;
+                // Om "Meddelande:" är i början av en rad, skippa den raden 
+                // annars ta med texten som kommer efter "Meddelande:"
+                if (!line.startsWith("Meddelande:")) {
+                    String remainingText = line.substring(line.indexOf("Meddelande:") + "Meddelande:".length()).trim();
+                    if (!remainingText.isEmpty()) {
+                        messageContent.append(remainingText).append("\n");
+                    }
+                }
+                continue;
+            } else if (line.contains("---") && foundMessageStart) {
+                log.info("Hittade slut på meddelande på rad {}: {}", i, line);
+                isMessageContent = false;
+            } else if (isMessageContent) {
+                // I meddelandeläge, lägg till raden exakt som den är 
+                // (inklusive eventuella radbrytningar och mellanslag)
+                log.debug("Lägger till meddelanderad: {}", line);
+                messageContent.append(line).append("\n");
+            } else if (line.startsWith("Namn:")) {
                 name = line.substring("Namn:".length()).trim();
             } else if (line.startsWith("E-post:")) {
                 email = line.substring("E-post:".length()).trim();
@@ -278,15 +305,12 @@ public class EmailListener {
                 address = line.substring("Adress:".length()).trim();
             } else if (line.startsWith("Lägenhetsnummer:")) {
                 apartmentNumber = line.substring("Lägenhetsnummer:".length()).trim();
-            } else if (line.startsWith("Meddelande:")) {
-                isMessageContent = true;
-                // Undvik att lägga till "Meddelande:" i innehållet
-                continue;
-            } else if (line.startsWith("---")) {
-                isMessageContent = false;
-            } else if (isMessageContent) {
-                messageContent.append(line).append("\n");
             }
+        }
+        
+        // Om vi inte hittade slut på meddelandet men vi hittade start, använd all text till slutet
+        if (foundMessageStart && isMessageContent) {
+            log.info("Slutmarkör för meddelande (---) hittades inte, använder all återstående text");
         }
         
         // Logga de extraherade värdena för felsökning
@@ -306,12 +330,42 @@ public class EmailListener {
             pendingTask.setApartment(apartmentNumber);
         }
         
-        // Sätt beskrivningen (meddelandet mellan "Meddelande:" och "---")
-        String messageText = messageContent.toString().trim();
-        log.info("Extraherat meddelande: {}", messageText);
+        // Sätt beskrivningen (meddelandet mellan "Meddelande:" och "---") och bevara alla radbrytningar
+        // Vi använder trim() endast för att ta bort eventuella extra radbrytningar i början och slutet
+        String messageText = messageContent.toString();
+        if (messageText.endsWith("\n")) {
+            messageText = messageText.substring(0, messageText.length() - 1);
+        }
+        log.info("Extraherat meddelande (längd: {}): '{}'", messageText.length(), messageText);
         
-        // Använd messageText som huvudbeskrivning om det finns, annars använd hela e-postmeddelandet
-        pendingTask.setDescription(messageText.isEmpty() ? content : messageText);
+        // Om inget meddelande extraherades, använd en alternativ metod
+        if (messageText.isEmpty()) {
+            log.warn("Inget meddelande kunde extraheras, letar efter meddelande i hela texten");
+            
+            // Försök hitta meddelandet på annat sätt - ta med allt efter "Meddelande:" någonstans i texten
+            int messageIdx = content.indexOf("Meddelande:");
+            if (messageIdx >= 0) {
+                String allTextAfterMessage = content.substring(messageIdx + "Meddelande:".length());
+                // Ta bort allt från första "---" om det finns
+                int separatorIdx = allTextAfterMessage.indexOf("---");
+                if (separatorIdx >= 0) {
+                    messageText = allTextAfterMessage.substring(0, separatorIdx);
+                } else {
+                    messageText = allTextAfterMessage;
+                }
+            }
+            
+            log.info("Extraherade meddelande på alternativt sätt (längd: {}): '{}'", 
+                messageText.length(), messageText);
+        }
+        
+        // Sätt beskrivningen, om det fortfarande är tomt använd en platshållare
+        if (messageText.isEmpty()) {
+            log.warn("Kunde inte extrahera något meddelande, använder platshållare");
+            pendingTask.setDescription("(Inget meddelande kunde extraheras)");
+        } else {
+            pendingTask.setDescription(messageText);
+        }
 
         // Sätt titeln som "Adress nummer, lghnummer"
         if (address != null && apartmentNumber != null) {
@@ -363,24 +417,51 @@ public class EmailListener {
         // Hantera lägenhet baserat på adress och lägenhetsnummer
         if (address != null && apartmentNumber != null) {
             try {
-                log.info("Söker lägenhet med adress: {} och nummer: {}", address, apartmentNumber);
-                Optional<Apartment> apartmentOpt = apartmentRepository.findByStreetAndNumber(
-                    address, apartmentNumber);
+                log.info("Söker lägenhet med adress: {} och lägenhetsnummer: {}", address, apartmentNumber);
+                
+                // Analysera adressen för att få fram gatunummer
+                String streetName = address;
+                String streetNumber = "";
+                
+                // Försök extrahera gatunummer från adressraden om den innehåller ett nummer
+                int lastSpaceIndex = address.lastIndexOf(" ");
+                if (lastSpaceIndex > 0) {
+                    String lastPart = address.substring(lastSpaceIndex + 1);
+                    // Om sista delen är ett nummer, anta att det är gatunumret
+                    if (lastPart.matches("\\d+")) {
+                        streetName = address.substring(0, lastSpaceIndex);
+                        streetNumber = lastPart;
+                        log.info("Extraherade gatunamn: {} och gatunummer: {}", streetName, streetNumber);
+                    }
+                }
+                
+                // Om vi inte kunde extrahera ett gatunummer från adressen, använd en fallback-lösning
+                if (streetNumber.isEmpty()) {
+                    streetNumber = "1"; // Standardvärde
+                    log.warn("Kunde inte extrahera gatunummer från adress '{}', använder standardvärde '{}'", address, streetNumber);
+                }
+                
+                // Ändra sökningen för att inkludera lägenhetsnumret och garantera unikhet
+                List<Apartment> apartments = apartmentRepository.findByStreetAndNumberAndApartmentNumber(
+                    streetName, streetNumber, apartmentNumber);
                 
                 Apartment apartment;
-                if (apartmentOpt.isPresent()) {
-                    apartment = apartmentOpt.get();
-                    log.info("Hittade befintlig lägenhet: {} (ID: {})", address + " " + apartmentNumber, apartment.getId());
+                if (!apartments.isEmpty()) {
+                    apartment = apartments.get(0);
+                    log.info("Hittade befintlig lägenhet: {} {} lgh {} (ID: {})", 
+                        apartment.getStreet(), apartment.getNumber(), apartment.getApartmentNumber(), apartment.getId());
                 } else {
                     // Skapa en temporär lägenhet
                     apartment = new Apartment();
-                    apartment.setStreet(address);
-                    apartment.setNumber(apartmentNumber);
+                    apartment.setStreet(streetName);
+                    apartment.setNumber(streetNumber); // Gatunummer
+                    apartment.setApartmentNumber(apartmentNumber); // Lägenhetsnummer
                     apartment.setIsTemporary(true);
                     
                     // Spara den temporära lägenheten
                     apartment = apartmentRepository.save(apartment);
-                    log.info("Skapade temporär lägenhet: {} (ID: {})", address + " " + apartmentNumber, apartment.getId());
+                    log.info("Skapade temporär lägenhet: {} {} lgh {} (ID: {})", 
+                        apartment.getStreet(), apartment.getNumber(), apartment.getApartmentNumber(), apartment.getId());
                 }
                 
                 pendingTask.setRequestedByApartment(apartment);

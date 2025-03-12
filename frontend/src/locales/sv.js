@@ -273,11 +273,13 @@ export default {
       URGENT: 'Akut',
     },
     status: {
+      NEW: 'Ny',
       PENDING: 'Väntande',
       IN_PROGRESS: 'Pågående',
       COMPLETED: 'Slutförd',
       APPROVED: 'Godkänd',
       REJECTED: 'Avvisad',
+      NOT_FEASIBLE: 'Ej genomförbar',
     },
     messages: {
       saveSuccess: 'Uppgiften har sparats',

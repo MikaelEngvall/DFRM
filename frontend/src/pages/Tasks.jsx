@@ -382,8 +382,6 @@ const Tasks = () => {
               <option value="PENDING">{t('tasks.status.PENDING')}</option>
               <option value="IN_PROGRESS">{t('tasks.status.IN_PROGRESS')}</option>
               <option value="COMPLETED">{t('tasks.status.COMPLETED')}</option>
-              <option value="APPROVED">{t('tasks.status.APPROVED')}</option>
-              <option value="REJECTED">{t('tasks.status.REJECTED')}</option>
             </select>
           </div>
           
@@ -518,8 +516,6 @@ const Tasks = () => {
                 <option value="PENDING">{t('tasks.status.PENDING')}</option>
                 <option value="IN_PROGRESS">{t('tasks.status.IN_PROGRESS')}</option>
                 <option value="COMPLETED">{t('tasks.status.COMPLETED')}</option>
-                <option value="APPROVED">{t('tasks.status.APPROVED')}</option>
-                <option value="REJECTED">{t('tasks.status.REJECTED')}</option>
               </select>
             </div>
             
