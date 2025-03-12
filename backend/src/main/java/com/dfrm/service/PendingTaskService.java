@@ -110,173 +110,67 @@ public class PendingTaskService {
         
         PendingTask emailReport = emailReportOpt.get();
         
-        // Om title inte är angiven, använd subject från rapporten eller skapa en baserad på adress
+        // Sätt standardvärden för den nya uppgiften om de inte är angivna
         if (newTask.getTitle() == null || newTask.getTitle().isEmpty()) {
-            if (emailReport.getSubject() != null && !emailReport.getSubject().isEmpty()) {
-                newTask.setTitle(emailReport.getSubject());
-            } else if (emailReport.getAddress() != null && emailReport.getApartment() != null) {
+            if (emailReport.getAddress() != null && emailReport.getApartment() != null) {
                 newTask.setTitle(emailReport.getAddress() + " lgh " + emailReport.getApartment());
+            } else if (emailReport.getAddress() != null) {
+                newTask.setTitle(emailReport.getAddress());
             } else {
-                newTask.setTitle("Felanmälan från e-post");
+                newTask.setTitle("Felanmälan från " + emailReport.getName());
             }
         }
         
-        // Om description inte är angiven, använd description från rapporten
         if (newTask.getDescription() == null || newTask.getDescription().isEmpty()) {
-            StringBuilder description = new StringBuilder();
-            
-            // Lägg till kontaktinformation
-            if (emailReport.getName() != null && !emailReport.getName().isEmpty()) {
-                description.append("Namn: ").append(emailReport.getName()).append("\n");
-            }
-            if (emailReport.getEmail() != null && !emailReport.getEmail().isEmpty()) {
-                description.append("E-post: ").append(emailReport.getEmail()).append("\n");
-            }
-            if (emailReport.getPhone() != null && !emailReport.getPhone().isEmpty()) {
-                description.append("Telefon: ").append(emailReport.getPhone()).append("\n");
-            }
-            if (emailReport.getAddress() != null && !emailReport.getAddress().isEmpty()) {
-                description.append("Adress: ").append(emailReport.getAddress()).append("\n");
-            }
+            newTask.setDescription(emailReport.getDescription());
+        }
+        
+        // Överför värden från emailReport till den nya uppgiften
+        if (newTask.getApartmentId() == null || newTask.getApartmentId().isEmpty()) {
             if (emailReport.getApartment() != null && !emailReport.getApartment().isEmpty()) {
-                description.append("Lägenhet: ").append(emailReport.getApartment()).append("\n\n");
-            }
-            
-            // Lägg till felanmälans beskrivning
-            if (emailReport.getDescription() != null && !emailReport.getDescription().isEmpty()) {
-                description.append(emailReport.getDescription());
-            } else if (emailReport.getRequestComments() != null && !emailReport.getRequestComments().isEmpty()) {
-                description.append(emailReport.getRequestComments());
-            }
-            
-            newTask.setDescription(description.toString());
-        }
-        
-        // Extrahera data från e-postmeddelandet (requestComments) om det behövs
-        String emailContent = emailReport.getRequestComments();
-        log.info("Extraherar information från e-postrapport: {}", emailReport.getId());
-        
-        if (emailContent != null) {
-            try {
-                // Extrahera e-postadress om den inte redan är satt i rapporten
-                String email = emailReport.getEmail() != null ? 
-                    emailReport.getEmail() : 
-                    extractValue(emailContent, "E-post:", true);
-                log.info("Extraherad e-postadress: {}", email);
-                
-                // Extrahera adress om den inte redan är satt i rapporten
-                String address = emailReport.getAddress() != null ? 
-                    emailReport.getAddress() : 
-                    extractValue(emailContent, "Adress:", true);
-                log.info("Extraherad adress: {}", address);
-                
-                // Extrahera lägenhetsnummer om det inte redan är satt i rapporten
-                String apartmentNumber = emailReport.getApartment() != null ? 
-                    emailReport.getApartment() : 
-                    extractValue(emailContent, "Lägenhet:", true);
-                log.info("Extraherat lägenhetsnummer: {}", apartmentNumber);
-                
-                // Försök hitta hyresgäst via e-postadressen
-                if (email != null && !email.isEmpty()) {
-                    try {
-                        // Använd TenantRepository för att söka efter hyresgäst
-                        Optional<com.dfrm.model.Tenant> tenantOpt = tenantRepository.findByEmail(email);
-                        
-                        if (tenantOpt.isPresent()) {
-                            com.dfrm.model.Tenant tenant = tenantOpt.get();
-                            log.info("Hittade hyresgäst: {} {}", tenant.getFirstName(), tenant.getLastName());
-                            
-                            // Sätt tenant ID och apartment ID från hyresgästen
-                            newTask.setTenantId(tenant.getId());
-                            
-                            if (tenant.getApartment() != null) {
-                                newTask.setApartmentId(tenant.getApartment().getId());
-                                log.info("Satte lägenhet från hyresgäst: {}", tenant.getApartment().getId());
-                            }
-                        } else {
-                            log.info("Ingen hyresgäst hittades med e-postadressen: {}", email);
-                            
-                            // Försök hitta lägenhet baserat på adress och lägenhetsnummer
-                            if (address != null && !address.isEmpty() && apartmentNumber != null && !apartmentNumber.isEmpty()) {
-                                try {
-                                    // Använd ApartmentRepository för att söka efter lägenhet
-                                    Optional<com.dfrm.model.Apartment> apartmentOpt = 
-                                        apartmentRepository.findByStreetAddressAndApartmentNumber(address, apartmentNumber);
-                                    
-                                    if (apartmentOpt.isPresent()) {
-                                        com.dfrm.model.Apartment apartment = apartmentOpt.get();
-                                        log.info("Hittade lägenhet: {} {}, {}",
-                                                apartment.getStreet(), apartment.getNumber(), apartment.getApartmentNumber());
-                                        
-                                        // Sätt apartment ID
-                                        newTask.setApartmentId(apartment.getId());
-                                    } else {
-                                        log.info("Ingen lägenhet hittades med adress: {} och lägenhetsnummer: {}", 
-                                                address, apartmentNumber);
-                                    }
-                                } catch (Exception e) {
-                                    log.error("Fel vid sökning efter lägenhet: {}", e.getMessage(), e);
-                                }
-                            }
-                        }
-                    } catch (Exception e) {
-                        log.error("Fel vid sökning efter hyresgäst: {}", e.getMessage(), e);
-                    }
-                }
-            } catch (Exception e) {
-                log.error("Fel vid extrahering av information från e-postrapport: {}", e.getMessage(), e);
+                newTask.setApartmentId(emailReport.getApartment());
             }
         }
+        
+        // Överför kontaktinformation
+        StringBuilder contactInfo = new StringBuilder();
+        if (emailReport.getName() != null && !emailReport.getName().isEmpty()) {
+            contactInfo.append("Kontaktperson: ").append(emailReport.getName()).append("\n");
+        }
+        if (emailReport.getEmail() != null && !emailReport.getEmail().isEmpty()) {
+            contactInfo.append("E-post: ").append(emailReport.getEmail()).append("\n");
+        }
+        if (emailReport.getPhone() != null && !emailReport.getPhone().isEmpty()) {
+            contactInfo.append("Telefon: ").append(emailReport.getPhone()).append("\n");
+        }
+        
+        // Lägg till kontaktinformation om det finns någon
+        if (contactInfo.length() > 0) {
+            newTask.setDescription(
+                contactInfo.toString() + 
+                "\n---\n" + 
+                (newTask.getDescription() != null ? newTask.getDescription() : "")
+            );
+        }
+        
+        // Sätt vem som tilldelade uppgiften (den som godkände e-postrapporten)
+        newTask.setAssignedByUserId(reviewedBy.getId());
         
         // Spara uppgiften
         Task savedTask = taskRepository.save(newTask);
-        log.info("Skapade ny uppgift med ID: {}", savedTask.getId());
+        log.info("Skapade ny uppgift med ID: {} från e-postrapport", savedTask.getId());
         
         // Uppdatera e-postrapporten
-        emailReport.setStatus("CONVERTED");
+        emailReport.setStatus("APPROVED");
         emailReport.setTask(savedTask);
         emailReport.setReviewedBy(reviewedBy);
         emailReport.setReviewedAt(LocalDateTime.now());
-        emailReport.setReviewComments("Konverterad till uppgift");
+        emailReport.setReviewComments("Godkänd och konverterad till uppgift");
         
         pendingTaskRepository.save(emailReport);
-        log.info("Uppdaterade e-postrapport med ID: {} till status CONVERTED", emailReport.getId());
+        log.info("Uppdaterade e-postrapport med ID: {} till status APPROVED", emailReport.getId());
         
         return savedTask;
-    }
-    
-    /**
-     * Extraherar ett värde från en sträng baserat på en nyckel
-     * 
-     * @param content Innehållet att söka i
-     * @param key Nyckeln att söka efter
-     * @param untilNextSpace Om true, extraheras värdet till nästa mellanslag, annars till slutet av strängen
-     * @return Det extraherade värdet eller null om nyckeln inte hittas
-     */
-    private String extractValue(String content, String key, boolean untilNextSpace) {
-        int startIndex = content.indexOf(key);
-        if (startIndex == -1) {
-            return null;
-        }
-        
-        startIndex += key.length();
-        String remaining = content.substring(startIndex).trim();
-        
-        if (untilNextSpace) {
-            // Extrahera till nästa mellanslag
-            int endIndex = remaining.indexOf(" ");
-            if (endIndex == -1) {
-                return remaining;
-            }
-            return remaining.substring(0, endIndex).trim();
-        } else {
-            // Extrahera till "---" eller slutet om "---" inte hittas
-            int endIndex = remaining.indexOf("---");
-            if (endIndex == -1) {
-                return remaining.trim();
-            }
-            return remaining.substring(0, endIndex).trim();
-        }
     }
     
     /**

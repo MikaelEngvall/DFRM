@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
 import FormInput from '../components/FormInput';
-import { pendingTaskService, taskService, apartmentService, tenantService, userService } from '../services';
+import { pendingTaskService, pendingEmailReportService, taskService, apartmentService, tenantService, userService } from '../services';
 import { useLocale } from '../contexts/LocaleContext';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -10,6 +10,7 @@ const PendingTasks = () => {
   const { t } = useLocale();
   const { user: currentUser } = useAuth();
   const [pendingTasks, setPendingTasks] = useState([]);
+  const [emailReports, setEmailReports] = useState([]);
   const [approvedTasks, setApprovedTasks] = useState([]);
   const [showApproved, setShowApproved] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
@@ -35,7 +36,47 @@ const PendingTasks = () => {
     recurringPattern: '',
   });
 
-  const columns = [
+  // Kolumner för väntande uppgifter från email-rapporter
+  const emailReportColumns = [
+    {
+      key: 'name',
+      label: 'Från',
+      render: (name) => name || 'Okänd'
+    },
+    {
+      key: 'phone',
+      label: 'Telefon',
+      render: (phone) => phone || '-'
+    },
+    {
+      key: 'address',
+      label: 'Var',
+      render: (address, report) => address ? 
+        `${address}${report.apartment ? ' lgh ' + report.apartment : ''}` : 'Ej angiven'
+    },
+    {
+      key: 'description',
+      label: 'Vad',
+      render: (description) => description || 'Ingen beskrivning'
+    },
+    {
+      key: 'received',
+      label: 'När',
+      render: (date) => date ? formatMonthDay(date) : '-'
+    }
+  ];
+
+  // Formatera datum som "månad dag" (t.ex. "mars 15")
+  const formatMonthDay = (dateString) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    const month = date.toLocaleString('sv-SE', { month: 'long' });
+    const day = date.getDate();
+    return `${month} ${day}`;
+  };
+
+  // Originalkolumner för vanliga väntande uppgifter
+  const pendingTaskColumns = [
     {
       key: 'taskTitle',
       label: t('pendingTasks.fields.task'),
@@ -118,8 +159,14 @@ const PendingTasks = () => {
   const fetchData = async () => {
     try {
       setIsLoading(true);
-      const pendingData = await pendingTaskService.getPendingTasksForReview();
+      // Hämta både vanliga väntande uppgifter och e-postrapporter
+      const [pendingData, emailReportsData] = await Promise.all([
+        pendingTaskService.getPendingTasksForReview(),
+        pendingTaskService.getEmailReports()
+      ]);
+      
       setPendingTasks(pendingData);
+      setEmailReports(emailReportsData);
       
       if (showApproved) {
         await fetchApprovedTasks();
@@ -162,29 +209,68 @@ const PendingTasks = () => {
     }
   };
 
-  const handleReviewClick = (pendingTask) => {
-    setSelectedTask(pendingTask);
-    setReviewComments('');
+  const handleRowClick = (item) => {
+    setSelectedTask(item);
     
-    // Populera formData med task-information
-    if (pendingTask.task) {
+    // Kontrollera om det är en e-postrapport (om det har name, email, etc. men ingen task)
+    const isEmailReport = !item.task && item.name;
+    
+    if (isEmailReport) {
+      // Förifyll formulär med data från e-postrapporten
       setFormData({
-        title: pendingTask.task.title || '',
-        description: pendingTask.task.description || '',
-        dueDate: pendingTask.task.dueDate ? new Date(pendingTask.task.dueDate).toISOString().split('T')[0] : '',
-        priority: pendingTask.task.priority || '',
-        status: pendingTask.task.status || '',
-        assignedToUserId: pendingTask.task.assignedToUserId || '',
-        assignedByUserId: pendingTask.task.assignedByUserId || '',
-        apartmentId: pendingTask.task.apartmentId || '',
-        tenantId: pendingTask.task.tenantId || '',
-        comments: pendingTask.task.comments || '',
-        isRecurring: pendingTask.task.isRecurring || false,
-        recurringPattern: pendingTask.task.recurringPattern || '',
+        title: `${item.address || ''} ${item.apartment || ''}`.trim(),
+        description: item.description || '',
+        dueDate: '',
+        priority: 'MEDIUM',
+        status: 'NEW',
+        assignedToUserId: '',
+        assignedByUserId: currentUser.id,
+        apartmentId: item.apartment || '',
+        tenantId: '',
+        comments: '',
+        isRecurring: false,
+        recurringPattern: '',
+      });
+    } else if (item.task) {
+      // Fixa tidszonsproblemet för befintliga uppgifter
+      let dueDateString = '';
+      
+      if (item.task.dueDate) {
+        // Konvertera ISO-datumsträngen till ett lokalt datum
+        // Vi behöver skapa ett datum utan tidskomponent i lokal tidszon
+        const dueDate = new Date(item.task.dueDate);
+        
+        // Använd lokal tidszon för att säkerställa att datumet visas korrekt
+        const year = dueDate.getFullYear();
+        const month = String(dueDate.getMonth() + 1).padStart(2, '0'); // +1 eftersom JS-månader är 0-indexerade
+        const day = String(dueDate.getDate()).padStart(2, '0');
+        
+        dueDateString = `${year}-${month}-${day}`;
+      }
+      
+      // Förifyll formulär med task-information för vanliga väntande uppgifter
+      setFormData({
+        title: item.task.title || '',
+        description: item.task.description || '',
+        dueDate: dueDateString,
+        priority: item.task.priority || '',
+        status: item.task.status || '',
+        assignedToUserId: item.task.assignedToUserId || '',
+        assignedByUserId: item.task.assignedByUserId || '',
+        apartmentId: item.task.apartmentId || '',
+        tenantId: item.task.tenantId || '',
+        comments: item.task.comments || '',
+        isRecurring: item.task.isRecurring || false,
+        recurringPattern: item.task.recurringPattern || '',
       });
     }
     
+    setReviewComments('');
     setIsReviewModalOpen(true);
+  };
+
+  const handleReviewClick = (pendingTask) => {
+    handleRowClick(pendingTask);
   };
 
   const handleInputChange = (e) => {
@@ -201,15 +287,59 @@ const PendingTasks = () => {
 
   const handleApprove = async () => {
     try {
-      // Uppdatera uppgiften före godkännande
-      await taskService.updateTask(selectedTask.task.id, formData);
+      const isEmailReport = !selectedTask.task && selectedTask.name;
       
-      // Godkänn uppgiften
-      const reviewData = {
-        reviewedById: currentUser.id,
-        comment: reviewComments
-      };
-      await pendingTaskService.approvePendingTask(selectedTask.id, reviewData);
+      if (isEmailReport) {
+        // Fixa tidszonsproblemet för dueDate
+        let taskData = { ...formData };
+        
+        if (taskData.dueDate) {
+          // Konvertera datumet till en "tidlös" ISO-sträng för att undvika tidszonsförskjutningar
+          // Datumet sparas som "YYYY-MM-DDT12:00:00Z" för att säkerställa att det inte ändras
+          const dueDateParts = taskData.dueDate.split('-');
+          if (dueDateParts.length === 3) {
+            const year = parseInt(dueDateParts[0]);
+            const month = parseInt(dueDateParts[1]) - 1; // JS månad är 0-baserad
+            const day = parseInt(dueDateParts[2]);
+            
+            // Skapa ett nytt datum med klockan satt till 12:00 för att undvika tidszonsövergångar
+            const fixedDate = new Date(Date.UTC(year, month, day, 12, 0, 0));
+            taskData.dueDate = fixedDate.toISOString();
+          }
+        }
+        
+        // Konvertera e-postrapporten till en uppgift med korrigerat datum
+        await pendingEmailReportService.convertToTask(selectedTask.id, {
+          ...taskData,
+          assignedByUserId: currentUser.id
+        });
+      } else {
+        // Uppdatera uppgiften före godkännande för vanliga väntande uppgifter
+        // Fixa tidszonsproblemet även här för konsekvens
+        let taskData = { ...formData };
+        
+        if (taskData.dueDate) {
+          const dueDateParts = taskData.dueDate.split('-');
+          if (dueDateParts.length === 3) {
+            const year = parseInt(dueDateParts[0]);
+            const month = parseInt(dueDateParts[1]) - 1; // JS månad är 0-baserad
+            const day = parseInt(dueDateParts[2]);
+            
+            const fixedDate = new Date(Date.UTC(year, month, day, 12, 0, 0));
+            taskData.dueDate = fixedDate.toISOString();
+          }
+        }
+        
+        await taskService.updateTask(selectedTask.task.id, taskData);
+        
+        // Godkänn uppgiften
+        const reviewData = {
+          reviewedById: currentUser.id,
+          comment: reviewComments
+        };
+        await pendingTaskService.approvePendingTask(selectedTask.id, reviewData);
+      }
+      
       await fetchData();
       setIsReviewModalOpen(false);
       setSelectedTask(null);
@@ -223,15 +353,42 @@ const PendingTasks = () => {
 
   const handleReject = async () => {
     try {
-      // Uppdatera uppgiften före avvisning
-      await taskService.updateTask(selectedTask.task.id, formData);
+      const isEmailReport = !selectedTask.task && selectedTask.name;
       
-      // Avvisa uppgiften
-      const reviewData = {
-        reviewedById: currentUser.id,
-        comment: reviewComments
-      };
-      await pendingTaskService.rejectPendingTask(selectedTask.id, reviewData);
+      if (isEmailReport) {
+        // Avvisa e-postrapporten
+        await pendingEmailReportService.rejectEmailReport(
+          selectedTask.id,
+          currentUser.id,
+          reviewComments
+        );
+      } else {
+        // Uppdatera uppgiften före avvisning för vanliga väntande uppgifter
+        // Fixa tidszonsproblemet även här för avvisade uppgifter
+        let taskData = { ...formData };
+        
+        if (taskData.dueDate) {
+          const dueDateParts = taskData.dueDate.split('-');
+          if (dueDateParts.length === 3) {
+            const year = parseInt(dueDateParts[0]);
+            const month = parseInt(dueDateParts[1]) - 1; // JS månad är 0-baserad
+            const day = parseInt(dueDateParts[2]);
+            
+            const fixedDate = new Date(Date.UTC(year, month, day, 12, 0, 0));
+            taskData.dueDate = fixedDate.toISOString();
+          }
+        }
+        
+        await taskService.updateTask(selectedTask.task.id, taskData);
+        
+        // Avvisa uppgiften
+        const reviewData = {
+          reviewedById: currentUser.id,
+          comment: reviewComments
+        };
+        await pendingTaskService.rejectPendingTask(selectedTask.id, reviewData);
+      }
+      
       await fetchData();
       setIsReviewModalOpen(false);
       setSelectedTask(null);
@@ -261,8 +418,9 @@ const PendingTasks = () => {
   };
 
   const getDisplayData = () => {
+    // Visa endast e-postrapporter om vi är på fliken "VÄNTANDE UPPGIFTER"
     if (!showApproved) {
-      return pendingTasks;
+      return emailReports;
     }
     
     // Lägg till approved-flaggan för styling
@@ -272,10 +430,17 @@ const PendingTasks = () => {
       approved: true
     }));
     
-    console.log("Pending tasks:", pendingTasks);
-    console.log("Approved tasks:", approved);
-    
     return [...pendingTasks, ...approved];
+  };
+
+  const getColumns = () => {
+    // Använd e-postrapportkolumner om vi är på fliken "VÄNTANDE UPPGIFTER"
+    if (!showApproved) {
+      return emailReportColumns;
+    }
+    
+    // Annars använd vanliga väntande uppgiftskolumner
+    return pendingTaskColumns;
   };
 
   const getRowClassName = (row) => {
@@ -294,10 +459,15 @@ const PendingTasks = () => {
     );
   }
 
+  // Avgör om den valda uppgiften är en e-postrapport
+  const isEmailReport = selectedTask && !selectedTask.task && selectedTask.name;
+
   return (
     <div className="container mx-auto px-4 py-8">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-cinzel dark:text-white">{t('pendingTasks.title')}</h1>
+        <h1 className="text-3xl font-cinzel dark:text-white">
+          {!showApproved ? "VÄNTANDE UPPGIFTER" : t('pendingTasks.title')}
+        </h1>
         <div className="flex space-x-2 items-center">
           <label className="inline-flex items-center text-sm">
             <input
@@ -328,13 +498,15 @@ const PendingTasks = () => {
 
       {getDisplayData().length === 0 ? (
         <div className="text-center py-10">
-          <p className="text-gray-500 dark:text-gray-400">{t('pendingTasks.noTasks')}</p>
+          <p className="text-gray-500 dark:text-gray-400">
+            {!showApproved ? "Inga väntande uppgifter" : t('pendingTasks.noTasks')}
+          </p>
         </div>
       ) : (
         <DataTable
-          columns={columns}
+          columns={getColumns()}
           data={getDisplayData()}
-          onEdit={handleReviewClick}
+          onRowClick={handleRowClick}
           rowClassName={getRowClassName}
         />
       )}
@@ -347,10 +519,38 @@ const PendingTasks = () => {
             setSelectedTask(null);
             resetForm();
           }}
-          title={t('pendingTasks.reviewRequest')}
+          title={isEmailReport ? "Väntande uppgift" : t('pendingTasks.reviewRequest')}
           showFooter={false}
         >
           <div className="grid grid-cols-1 gap-4">
+            {/* Visa kontaktinformation endast för e-postrapporter */}
+            {isEmailReport && (
+              <>
+                <div>
+                  <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Från</h3>
+                  <p className="mt-1">{selectedTask.name || 'Ej angiven'}</p>
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Kontaktinformation</h3>
+                  <p className="mt-1">E-post: {selectedTask.email || 'Ej angiven'}</p>
+                  <p className="mt-1">Telefon: {selectedTask.phone || 'Ej angiven'}</p>
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Adress</h3>
+                  <p className="mt-1">
+                    {selectedTask.address || 'Ej angiven'}
+                    {selectedTask.apartment ? `, lgh ${selectedTask.apartment}` : ''}
+                  </p>
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">Beskrivning</h3>
+                  <div className="mt-1 border rounded p-3 bg-gray-50 dark:bg-gray-700 whitespace-pre-wrap">
+                    {selectedTask.requestComments || 'Ingen beskrivning'}
+                  </div>
+                </div>
+              </>
+            )}
+            
             <FormInput
               label={t('tasks.fields.title')}
               name="title"
@@ -416,11 +616,10 @@ const PendingTasks = () => {
                   required
                 >
                   <option value="">{t('common.select')}</option>
-                  <option value="PENDING">{t('tasks.status.PENDING')}</option>
-                  <option value="IN_PROGRESS">{t('tasks.status.IN_PROGRESS')}</option>
-                  <option value="COMPLETED">{t('tasks.status.COMPLETED')}</option>
-                  <option value="APPROVED">{t('tasks.status.APPROVED')}</option>
-                  <option value="REJECTED">{t('tasks.status.REJECTED')}</option>
+                  <option value="NEW">Väntande</option>
+                  <option value="IN_PROGRESS">Pågående</option>
+                  <option value="NOT_FEASIBLE">Ej genomförbar</option>
+                  <option value="COMPLETED">Avslutad</option>
                 </select>
               </div>
               
@@ -539,40 +738,44 @@ const PendingTasks = () => {
           </div>
             
           {/* Granskningssektion */}
+          {!isEmailReport && (
+            <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+                {t('pendingTasks.reviewRequest')}
+              </h3>
+              
+              <div className="mb-6">
+                <h4 className="text-md font-medium mb-2">{t('pendingTasks.fields.requestedBy')}</h4>
+                <p className="text-gray-700 dark:text-gray-300">
+                  {selectedTask.requestedBy ? `${selectedTask.requestedBy.firstName} ${selectedTask.requestedBy.lastName}` : '-'}
+                </p>
+              </div>
+              
+              <div className="mb-6">
+                <h4 className="text-md font-medium mb-2">{t('pendingTasks.fields.requestedAt')}</h4>
+                <p className="text-gray-700 dark:text-gray-300">
+                  {selectedTask.requestedAt ? new Date(selectedTask.requestedAt).toLocaleString() : '-'}
+                </p>
+              </div>
+              
+              <div className="mb-6">
+                <h4 className="text-md font-medium mb-2">{t('pendingTasks.fields.requestComments')}</h4>
+                <p className="text-gray-700 dark:text-gray-300">{selectedTask.requestComments || '-'}</p>
+              </div>
+            </div>
+          )}
+          
           <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-              {t('pendingTasks.reviewRequest')}
-            </h3>
-            
-            <div className="mb-6">
-              <h4 className="text-md font-medium mb-2">{t('pendingTasks.fields.requestedBy')}</h4>
-              <p className="text-gray-700 dark:text-gray-300">
-                {selectedTask.requestedBy ? `${selectedTask.requestedBy.firstName} ${selectedTask.requestedBy.lastName}` : '-'}
-              </p>
-            </div>
-            
-            <div className="mb-6">
-              <h4 className="text-md font-medium mb-2">{t('pendingTasks.fields.requestedAt')}</h4>
-              <p className="text-gray-700 dark:text-gray-300">
-                {selectedTask.requestedAt ? new Date(selectedTask.requestedAt).toLocaleString() : '-'}
-              </p>
-            </div>
-            
-            <div className="mb-6">
-              <h4 className="text-md font-medium mb-2">{t('pendingTasks.fields.requestComments')}</h4>
-              <p className="text-gray-700 dark:text-gray-300">{selectedTask.requestComments || '-'}</p>
-            </div>
-            
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                {t('pendingTasks.fields.reviewComments')}
+                {isEmailReport ? 'Anledning till avvisning' : t('pendingTasks.fields.reviewComments')}
               </label>
               <textarea
                 value={reviewComments}
                 onChange={handleReviewCommentsChange}
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                 rows="4"
-                placeholder={t('pendingTasks.placeholders.reviewComments')}
+                placeholder={isEmailReport ? 'Ange anledning vid avvisning' : t('pendingTasks.placeholders.reviewComments')}
               />
             </div>
           </div>
@@ -582,13 +785,13 @@ const PendingTasks = () => {
               onClick={handleReject}
               className="w-full sm:w-auto px-6 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
             >
-              {t('pendingTasks.actions.reject')}
+              {isEmailReport ? 'Avvisa' : t('pendingTasks.actions.reject')}
             </button>
             <button
               onClick={handleApprove}
               className="w-full sm:w-auto px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
             >
-              {t('pendingTasks.actions.approve')}
+              {isEmailReport ? 'Godkänn' : t('pendingTasks.actions.approve')}
             </button>
             <div className="flex-grow"></div>
             <button

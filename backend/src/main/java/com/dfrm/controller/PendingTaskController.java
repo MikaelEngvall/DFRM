@@ -178,7 +178,66 @@ public class PendingTaskController {
     
     @GetMapping("/email-reports")
     public ResponseEntity<List<PendingTask>> getEmailReports() {
-        return ResponseEntity.ok(pendingTaskService.findPendingTasksByStatus("NEW"));
+        List<PendingTask> emailReports = pendingTaskService.findPendingTasksByStatus("NEW");
+        
+        // Manuellt hantera requestedBy för e-postrapporter som kan ha tillfälliga användare
+        for (PendingTask report : emailReports) {
+            if (report.getRequestedBy() != null) {
+                // Om användaren har ett ID men inte har firstName/lastName, försök ladda den från databasen
+                if (report.getRequestedBy().getId() != null && 
+                    (report.getRequestedBy().getFirstName() == null || 
+                     report.getRequestedBy().getLastName() == null)) {
+                    try {
+                        userService.getUserById(report.getRequestedBy().getId())
+                                  .ifPresent(report::setRequestedBy);
+                    } catch (Exception e) {
+                        // Om användaren inte kan laddas, skapa en tillfällig
+                        if (report.getName() != null && !report.getName().isEmpty()) {
+                            User tempUser = new User();
+                            // Försök tolka namn
+                            String[] nameParts = report.getName().split(" ");
+                            if (nameParts.length > 1) {
+                                tempUser.setFirstName(nameParts[0]);
+                                tempUser.setLastName(nameParts[nameParts.length - 1]);
+                            } else {
+                                tempUser.setFirstName(report.getName());
+                                tempUser.setLastName("");
+                            }
+                            tempUser.setEmail(report.getEmail());
+                            report.setRequestedBy(tempUser);
+                        }
+                    }
+                }
+            } else if (report.getName() != null && !report.getName().isEmpty()) {
+                // Skapa en tillfällig användare om det inte finns någon requestedBy men det finns namn
+                User tempUser = new User();
+                // Försök tolka namn
+                String[] nameParts = report.getName().split(" ");
+                if (nameParts.length > 1) {
+                    tempUser.setFirstName(nameParts[0]);
+                    tempUser.setLastName(nameParts[nameParts.length - 1]);
+                } else {
+                    tempUser.setFirstName(report.getName());
+                    tempUser.setLastName("");
+                }
+                tempUser.setEmail(report.getEmail());
+                report.setRequestedBy(tempUser);
+            }
+            
+            // Sätt ett standardvärde för subject om det saknas
+            if (report.getSubject() == null || report.getSubject().isEmpty()) {
+                if (report.getDescription() != null && !report.getDescription().isEmpty()) {
+                    String shortDesc = report.getDescription().length() > 50 
+                        ? report.getDescription().substring(0, 47) + "..." 
+                        : report.getDescription();
+                    report.setSubject("Felanmälan: " + shortDesc);
+                } else {
+                    report.setSubject("Felanmälan via e-post");
+                }
+            }
+        }
+        
+        return ResponseEntity.ok(emailReports);
     }
     
     @PostMapping("/{id}/convert-to-task")

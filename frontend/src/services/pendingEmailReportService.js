@@ -7,7 +7,7 @@ const pendingEmailReportService = {
    */
   getAll: async () => {
     try {
-      const response = await api.get('/pending-tasks/email-reports');
+      const response = await api.get('/api/pending-tasks/email-reports');
       return response.data;
     } catch (error) {
       console.error('Fel vid hämtning av e-postrapporter:', error);
@@ -23,7 +23,7 @@ const pendingEmailReportService = {
    */
   convertToTask: async (id, taskData) => {
     try {
-      const response = await api.post(`/pending-tasks/${id}/convert-to-task`, taskData);
+      const response = await api.post(`/api/pending-tasks/${id}/convert-to-task`, taskData);
       return response.data;
     } catch (error) {
       console.error('Fel vid konvertering av e-postrapport till uppgift:', error);
@@ -40,7 +40,7 @@ const pendingEmailReportService = {
    */
   rejectEmailReport: async (id, reviewedById, reason) => {
     try {
-      const response = await api.post(`/pending-tasks/${id}/reject-email`, {
+      const response = await api.post(`/api/pending-tasks/${id}/reject-email`, {
         reviewedById,
         reason
       });
