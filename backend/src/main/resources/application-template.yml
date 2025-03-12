@@ -16,8 +16,8 @@ spring:
       date-time: yyyy-MM-dd HH:mm:ss
   mail:
     default-encoding: UTF-8
-    host: ${SMTP_HOST:mailcluster.loopia.se}
-    username: ${SMTP_USER:info@duggalsfastigheter.se}
+    host: ${SMTP_HOST:example.com}
+    username: ${SMTP_USER:example@example.com}
     password: ${SMTP_PASS:}
     port: ${SMTP_PORT:587}
     protocol: smtp
@@ -42,9 +42,9 @@ jwt:
 
 mail:
   imap:
-    host: ${EMAIL_HOST:mailcluster.loopia.se}
+    host: ${EMAIL_HOST:example.com}
     port: ${EMAIL_PORT:993}
-    username: ${EMAIL_USER:felanmalan@duggalsfastigheter.se}
+    username: ${EMAIL_USER:example@example.com}
     password: ${EMAIL_PASSWORD:}
 
 google:

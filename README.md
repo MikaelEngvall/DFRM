@@ -66,3 +66,39 @@ npm start
 
 ## API-dokumentation
 API-dokumentation finns tillgänglig på `http://localhost:8080/swagger-ui.html` när backend är igång. 
+
+## Konfigurera miljövariabler
+
+För att köra applikationen behöver du konfigurera miljövariabler för känsliga uppgifter. Följ dessa steg:
+
+1. Kopiera `.env.example` till en ny fil `.env` i projektets rot
+   ```
+   cp .env.example .env
+   ```
+
+2. Redigera `.env` filen och lägg till dina egna värden för alla miljövariabler
+
+3. För utvecklingsändamål kan du också kopiera `backend/src/main/resources/application-template.yml` till `backend/src/main/resources/application.yml` och anpassa värdena
+
+**OBS! Lägg aldrig till känsliga uppgifter i versionskontroll!**
+
+Följande miljövariabler är nödvändiga för att köra applikationen:
+
+### MongoDB-konfiguration
+- `MONGODB_URI` - Fullständig URI för MongoDB-anslutning
+- `MONGODB_DATABASE` - Databasnamn
+- Alternativt kan du använda separata variabler:
+  - `MONGO_USER` - MongoDB-användarnamn
+  - `MONGO_PASSWORD` - MongoDB-lösenord
+  - `MONGO_HOST` - MongoDB-värdnamn
+  - `MONGO_DATABASE` - MongoDB-databasnamn
+
+### E-postkonfiguration
+- `SMTP_HOST`, `SMTP_USER`, `SMTP_PASS`, `SMTP_PORT` - För utgående e-post
+- `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_USER`, `EMAIL_PASSWORD` - För inkommande e-post
+
+### JWT-säkerhet
+- `ACCESS_TOKEN_SECRET` - Hemlig nyckel för JWT-token
+
+### Google Translate API
+- `GOOGLE_TRANSLATE_API_KEY` - API-nyckel för Google Translate

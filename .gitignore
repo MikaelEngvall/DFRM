@@ -6,3 +6,12 @@
 /temp
 /cache
 .env
+
+# Känsliga konfigurationsfiler
+backend/src/main/resources/application.yml
+backend/src/main/resources/application-dev.yml
+backend/src/main/resources/application-prod.yml
+*.env
+
+# Men inkludera mallen
+!backend/src/main/resources/application-template.yml

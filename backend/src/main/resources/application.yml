@@ -2,6 +2,10 @@ server:
   port: ${PORT:8080}
 
 spring:
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:}
+      database: ${MONGODB_DATABASE:dfrm}
   jackson:
     time-zone: Europe/Stockholm
     serialization:
@@ -14,7 +18,7 @@ spring:
     default-encoding: UTF-8
     host: ${SMTP_HOST:mailcluster.loopia.se}
     username: ${SMTP_USER:info@duggalsfastigheter.se}
-    password: ${SMTP_PASS:!e8E$..n2MP2W_7}
+    password: ${SMTP_PASS:}
     port: ${SMTP_PORT:587}
     protocol: smtp
     properties:
@@ -33,7 +37,7 @@ spring:
       allow-credentials: true
 
 jwt:
-  secret: ${ACCESS_TOKEN_SECRET:DLMA/BDb+lF2rmS7TlxWAjBaKQmxAP4JNAmca9ltoLo=}
+  secret: ${ACCESS_TOKEN_SECRET:}
   expiration: 86400000
 
 mail:
@@ -41,12 +45,12 @@ mail:
     host: ${EMAIL_HOST:mailcluster.loopia.se}
     port: ${EMAIL_PORT:993}
     username: ${EMAIL_USER:felanmalan@duggalsfastigheter.se}
-    password: ${EMAIL_PASSWORD:EFtXeWpTXtn4d@?}
+    password: ${EMAIL_PASSWORD:}
 
 google:
   translate:
     api:
-      key: ${GOOGLE_TRANSLATE_API_KEY:AIzaSyB5ngQA09xhKB48kWqs5Dm0-LjWNNf2Tfk}
+      key: ${GOOGLE_TRANSLATE_API_KEY:}
 
 logging:
   level:
