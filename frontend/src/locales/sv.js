@@ -190,6 +190,8 @@ export default {
       tenant: 'Hyresgäst',
       isAvailable: 'Tillgänglig',
       description: 'Beskrivning',
+      noApartment: 'Ingen lägenhet',
+      noTenant: 'Ingen hyresgäst',
     },
     types: {
       D: 'Dörr',
@@ -199,6 +201,7 @@ export default {
       G: 'Garage',
       HN: 'Huvudnyckel',
       Ö: 'Övrigt',
+      selectType: 'Välj typ',
     },
     messages: {
       saveSuccess: 'Nyckeln har sparats',
