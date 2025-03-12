@@ -14,9 +14,9 @@ import com.dfrm.client.GoogleTranslateClient;
 import com.dfrm.config.JavaMailProperties;
 import com.dfrm.model.Language;
 import com.dfrm.model.PendingTask;
-import com.dfrm.model.User;
+import com.dfrm.model.Tenant;
 import com.dfrm.repository.PendingTaskRepository;
-import com.dfrm.repository.UserRepository;
+import com.dfrm.repository.TenantRepository;
 
 import jakarta.mail.Address;
 import jakarta.mail.BodyPart;
@@ -39,11 +39,11 @@ public class EmailListener {
     private final Environment environment;
     private final TranslationService translationService;
     private final GoogleTranslateClient googleTranslateClient;
-    private final UserRepository userRepository;
+    private final TenantRepository tenantRepository;
     
     private static final String TARGET_RECIPIENT = "felanmalan@duggalsfastigheter.se";
     private static final String TARGET_SENDER = "felanmalan@duggalsfastigheter.se";
-    private static final String TARGET_REPLY_TO = "mikael.engvall.me@gmail.com";
+    private static final String TARGET_REPLY_TO = "daria@mail.se";
 
     private boolean isDevEnvironment() {
         String[] activeProfiles = environment.getActiveProfiles();
@@ -249,294 +249,90 @@ public class EmailListener {
         // Rensa HTML först
         content = cleanHtmlContent(content);
         
-        log.info("Cleaned content:\n{}", content);
+        // Skapa en ny PendingTask
+        PendingTask pendingTask = new PendingTask();
         
-        // Kontrollera om innehållet är tomt
-        if (content == null || content.trim().isEmpty()) {
-            log.warn("Skipping empty email message");
-            return;
-        }
+        // Sätt grundläggande information
+        pendingTask.setReceived(LocalDateTime.now());
+        pendingTask.setStatus("NEW");
         
-        log.info("Raw content length: {}", content.length());
-        log.info("Raw content:\n{}", content);
-
-        // Parse email content
-        Map<String, String> extractedFields = new HashMap<>();
-        StringBuilder description = new StringBuilder();
-        boolean isDescription = false;
-        boolean pastSeparator = false;
-
-        // Dela upp innehållet i rader
-        String[] lines = content.split("\n");
-        boolean foundMeddelande = false;
-        
-        for (String line : lines) {
-            String trimmedLine = line.trim();
+        // Försök extrahera e-postadress och namn från avsändaren
+        Address[] fromAddresses = message.getFrom();
+        if (fromAddresses != null && fromAddresses.length > 0) {
+            InternetAddress from = (InternetAddress) fromAddresses[0];
+            String email = from.getAddress();
+            String name = from.getPersonal() != null ? from.getPersonal() : "";
             
-            // Hoppa över tomma rader
-            if (trimmedLine.isEmpty()) {
-                continue;
-            }
-            
-            // Kolla efter separatorn
-            if (trimmedLine.startsWith("---")) {
-                pastSeparator = true;
-                isDescription = false;
-                continue;
-            }
-            
-            // Hoppa över allt efter separatorn
-            if (pastSeparator) {
-                continue;
-            }
-            
-            // Hantera olika fält
-            if (trimmedLine.startsWith("Namn:")) {
-                extractedFields.put("name", trimmedLine.substring("Namn:".length()).trim());
-                isDescription = false;
-            } 
-            else if (trimmedLine.startsWith("E-post:")) {
-                extractedFields.put("email", trimmedLine.substring("E-post:".length()).trim());
-                isDescription = false;
-            } 
-            else if (trimmedLine.startsWith("Telefonnummer:")) {
-                extractedFields.put("phone", trimmedLine.substring("Telefonnummer:".length()).trim());
-                isDescription = false;
-            } 
-            else if (trimmedLine.startsWith("Adress:")) {
-                extractedFields.put("address", trimmedLine.substring("Adress:".length()).trim());
-                isDescription = false;
-            } 
-            else if (trimmedLine.startsWith("Lägenhetsnummer:")) {
-                extractedFields.put("apartment", trimmedLine.substring("Lägenhetsnummer:".length()).trim());
-                isDescription = false;
-            } 
-            else if (trimmedLine.startsWith("Meddelande:")) {
-                isDescription = true;
-                foundMeddelande = true;
-                String initialDescription = trimmedLine.substring("Meddelande:".length()).trim();
-                if (!initialDescription.isEmpty()) {
-                    description.append(initialDescription);
-                }
-            }
-            else if (isDescription && foundMeddelande) {
-                // Bevara radbrytningar genom att lägga till en ny rad
-                if (description.length() > 0) {
-                    description.append("\n");
-                }
-                description.append(trimmedLine);
-            }
-            else {
-                // Om vi har en rad som inte passar in i något mönster,
-                // kan vi behöva hantera sammanslagna fält
-                for (String fieldPrefix : new String[]{"Namn:", "E-post:", "Telefonnummer:", "Adress:", "Lägenhetsnummer:", "Meddelande:"}) {
-                    int index = trimmedLine.indexOf(fieldPrefix);
-                    if (index > 0) {
-                        // Vi hittade ett fältprefix i mitten av raden
-                        String beforePrefix = trimmedLine.substring(0, index).trim();
-                        String afterPrefix = trimmedLine.substring(index).trim();
-                        
-                        // Rekursiv behandling för att hantera multipla fält på samma rad
-                        processPartialLine(beforePrefix, extractedFields, description, isDescription);
-                        processPartialLine(afterPrefix, extractedFields, description, isDescription);
-                        break;
-                    }
-                }
-            }
-        }
-
-        // Rensa beskrivningen och ta bort eventuell text efter "---"
-        String finalDescription = description.toString().trim();
-        int separatorIndex = finalDescription.indexOf("---");
-        if (separatorIndex > 0) {
-            finalDescription = finalDescription.substring(0, separatorIndex).trim();
-        }
-        
-        if (finalDescription.isEmpty()) {
-            finalDescription = "Ingen beskrivning tillgänglig";
-        }
-        
-        // Identifiera språket i beskrivningen
-        String detectedLanguageCode = googleTranslateClient.detectLanguage(finalDescription);
-        Language detectedLanguage = null;
-        
-        try {
-            // Försök matcha den detekterade språkkoden mot enum Language
-            for (Language language : Language.values()) {
-                if (language.getCode().equals(detectedLanguageCode)) {
-                    detectedLanguage = language;
-                    break;
-                }
-            }
-            
-            // Om inget språk matchades, använd svenska som standard
-            if (detectedLanguage == null) {
-                detectedLanguage = Language.SV;
-                log.warn("Kunde inte matcha detekterat språk '{}', använder svenska som standard", detectedLanguageCode);
-            }
-        } catch (Exception e) {
-            detectedLanguage = Language.SV;
-            log.error("Fel vid språkdetektion, använder svenska som standard: {}", e.getMessage(), e);
-        }
-        
-        // Översätt beskrivningen till alla andra språk
-        Map<Language, String> translations = new HashMap<>();
-        for (Language targetLanguage : Language.values()) {
-            // Hoppa över originalspråket
-            if (targetLanguage == detectedLanguage) {
-                continue;
-            }
-            
-            try {
-                String translatedText = googleTranslateClient.translate(
-                    finalDescription, 
-                    detectedLanguage.getCode(), 
-                    targetLanguage.getCode()
-                );
-                translations.put(targetLanguage, translatedText);
-                log.info("Översatte beskrivning från {} till {}", detectedLanguage.getCode(), targetLanguage.getCode());
-            } catch (Exception e) {
-                log.error("Fel vid översättning till {}: {}", targetLanguage.getCode(), e.getMessage(), e);
-            }
-        }
-        
-        // Logga de extraherade fälten
-        log.info("Extracted fields:");
-        extractedFields.forEach((key, value) -> log.info("{} = {}", key, value));
-        log.info("description = {}", finalDescription);
-        
-        String name = extractedFields.getOrDefault("name", "");
-        String email = extractedFields.getOrDefault("email", "");
-        String phone = extractedFields.getOrDefault("phone", "");
-        String address = extractedFields.getOrDefault("address", "");
-        String apartment = extractedFields.getOrDefault("apartment", "");
-
-        LocalDateTime now = LocalDateTime.now();
-        
-        try {
-            // Skapa en ny PendingTask med korrekt struktur för att visas på e-postrapportsidan
-            PendingTask pendingTask = new PendingTask();
-            
-            // Sätt användare som begärde ärendet om e-postadressen finns i systemet
-            if (email != null && !email.isEmpty()) {
-                try {
-                    Optional<User> userOpt = userRepository.findByEmail(email);
-                    if (userOpt.isPresent()) {
-                        pendingTask.setRequestedBy(userOpt.get());
-                    }
-                } catch (Exception e) {
-                    log.error("Kunde inte hitta användare med e-post: {}", email, e);
-                }
-            }
-            
-            // Samla ihop all relevant information från e-postmeddelandet till requestComments
-            StringBuilder comments = new StringBuilder();
-            comments.append("Felanmälan från e-post\n\n");
-            
-            if (!name.isEmpty()) {
-                comments.append("Namn: ").append(name).append("\n");
-            }
-            if (!email.isEmpty()) {
-                comments.append("E-post: ").append(email).append("\n");
-            }
-            if (!phone.isEmpty()) {
-                comments.append("Telefon: ").append(phone).append("\n");
-            }
-            if (!address.isEmpty()) {
-                comments.append("Adress: ").append(address).append("\n");
-            }
-            if (!apartment.isEmpty()) {
-                comments.append("Lägenhet: ").append(apartment).append("\n");
-            }
-            
-            comments.append("\nBeskrivning:\n").append(finalDescription);
-            
-            String messageContent = comments.toString();
-            
-            // Sätt egenskaper på PendingTask
-            pendingTask.setName(name);
             pendingTask.setEmail(email);
-            pendingTask.setPhone(phone);
-            pendingTask.setAddress(address);
-            pendingTask.setApartment(apartment);
-            pendingTask.setDescription(finalDescription);
-            pendingTask.setDescriptionLanguage(detectedLanguage);
-            pendingTask.setDescriptionTranslations(translations);
-            pendingTask.setRequestComments(messageContent);
-            pendingTask.setRequestedAt(now);
-            pendingTask.setStatus("NEW"); // Sätt status till NEW för att markera som ny e-postrapport
-            pendingTask.setReceived(now);
+            if (!name.isEmpty()) {
+                pendingTask.setName(name);
+            }
             
-            // Sätt ett meningsfullt ämne baserat på beskrivningen
-            String subject = "Felanmälan: " + (finalDescription.length() > 50 
-                ? finalDescription.substring(0, 47) + "..." 
-                : finalDescription);
-            pendingTask.setSubject(subject);
-            
-            // Om ingen användare hittades med e-postadressen, skapa en tillfällig
-            if (pendingTask.getRequestedBy() == null && !name.isEmpty()) {
-                // Skapa en användare som motsvarar personen, endast för visning
-                User senderUser = new User();
-                
-                // Försök dela upp namnet i för- och efternamn
-                String[] nameParts = name.split(" ");
-                if (nameParts.length > 1) {
-                    senderUser.setFirstName(nameParts[0]);
-                    senderUser.setLastName(nameParts[nameParts.length - 1]);
-                } else {
-                    senderUser.setFirstName(name);
-                    senderUser.setLastName("");
+            // Försök hitta existerande hyresgäst baserat på e-post
+            try {
+                Optional<Tenant> tenantOpt = tenantRepository.findByEmail(email);
+                if (tenantOpt.isPresent()) {
+                    Tenant tenant = tenantOpt.get();
+                    pendingTask.setRequestedByTenant(tenant);
+                    pendingTask.setTenantId(tenant.getId());
+                    
+                    // Om hyresgästen har en lägenhet, sätt även den
+                    if (tenant.getApartment() != null) {
+                        pendingTask.setRequestedByApartment(tenant.getApartment());
+                        pendingTask.setApartmentId(tenant.getApartment().getId());
+                    }
+                } else if (!name.isEmpty()) {
+                    // Skapa en temporär hyresgäst för visning
+                    Tenant tempTenant = new Tenant();
+                    String[] nameParts = name.split(" ");
+                    if (nameParts.length > 1) {
+                        tempTenant.setFirstName(nameParts[0]);
+                        tempTenant.setLastName(nameParts[nameParts.length - 1]);
+                    } else {
+                        tempTenant.setFirstName(name);
+                        tempTenant.setLastName("");
+                    }
+                    tempTenant.setEmail(email);
+                    pendingTask.setRequestedByTenant(tempTenant);
                 }
-                
-                senderUser.setEmail(email);
-                pendingTask.setRequestedBy(senderUser);
+            } catch (Exception e) {
+                log.error("Error looking up tenant: {}", e.getMessage());
             }
-            
-            PendingTask savedTask = pendingTaskRepository.save(pendingTask);
-            
-            log.info("Successfully created email report with ID: {}", 
-                savedTask.getId());
-        } catch (Exception e) {
-            log.error("Failed to save email report: {}", e.getMessage(), e);
-            throw e;
-        }
-    }
-
-    private void processPartialLine(String line, Map<String, String> extractedFields, StringBuilder description, boolean isDescription) {
-        if (line.isEmpty()) {
-            return;
         }
         
-        String trimmedLine = line.trim();
+        // Sätt ämne
+        String subject = message.getSubject();
+        if (subject != null && !subject.trim().isEmpty()) {
+            pendingTask.setSubject(subject.trim());
+        }
         
-        if (trimmedLine.startsWith("Namn:")) {
-            extractedFields.put("name", trimmedLine.substring("Namn:".length()).trim());
-        } 
-        else if (trimmedLine.startsWith("E-post:")) {
-            extractedFields.put("email", trimmedLine.substring("E-post:".length()).trim());
-        } 
-        else if (trimmedLine.startsWith("Telefonnummer:")) {
-            extractedFields.put("phone", trimmedLine.substring("Telefonnummer:".length()).trim());
-        } 
-        else if (trimmedLine.startsWith("Adress:")) {
-            extractedFields.put("address", trimmedLine.substring("Adress:".length()).trim());
-        } 
-        else if (trimmedLine.startsWith("Lägenhetsnummer:")) {
-            extractedFields.put("apartment", trimmedLine.substring("Lägenhetsnummer:".length()).trim());
-        } 
-        else if (trimmedLine.startsWith("Meddelande:")) {
-            String initialDescription = trimmedLine.substring("Meddelande:".length()).trim();
-            if (!initialDescription.isEmpty()) {
-                description.append(initialDescription);
+        // Sätt beskrivning och identifiera språk
+        pendingTask.setDescription(content);
+        String detectedLanguageCode = googleTranslateClient.detectLanguage(content);
+        Language detectedLanguage = Language.SV; // Standard är svenska
+        
+        // Försök matcha språkkoden mot enum
+        for (Language language : Language.values()) {
+            if (language.getCode().equals(detectedLanguageCode)) {
+                detectedLanguage = language;
+                break;
             }
         }
-        else if (isDescription) {
-            // Bevara radbrytningar även i processPartialLine
-            if (description.length() > 0) {
-                description.append("\n");
-            }
-            description.append(trimmedLine);
+        
+        pendingTask.setDescriptionLanguage(detectedLanguage);
+        
+        // Om språket inte är svenska, översätt och spara översättningar
+        if (detectedLanguage != Language.SV) {
+            Map<Language, String> translations = new HashMap<>();
+            String translatedText = googleTranslateClient.translate(content, detectedLanguage.getCode(), "sv");
+            translations.put(Language.SV, translatedText);
+            pendingTask.setDescriptionTranslations(translations);
         }
+        
+        // Spara den nya uppgiften
+        pendingTaskRepository.save(pendingTask);
+        
+        log.info("Created new pending task from email with ID: {}", pendingTask.getId());
     }
 
     private String getTextFromMessage(Message message) throws Exception {
