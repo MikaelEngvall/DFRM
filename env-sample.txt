@@ -1,0 +1,28 @@
+# MongoDB inställningar
+MONGODB_URI=mongodb+srv://användarnamn:lösenord@hostnamn/databas?retryWrites=true&w=majority
+MONGODB_DATABASE=dfrm
+MONGO_USER=användarnamn
+MONGO_PASSWORD=lösenord
+MONGO_HOST=hostnamn
+MONGO_DATABASE=dfrm
+
+# E-post inställningar (SMTP)
+SMTP_HOST=mailcluster.loopia.se
+SMTP_USER=info@duggalsfastigheter.se
+SMTP_PASS=ditt_lösenord_här
+SMTP_PORT=587
+
+# E-post inställningar (IMAP)
+EMAIL_HOST=mailcluster.loopia.se
+EMAIL_PORT=993
+EMAIL_USER=felanmalan@duggalsfastigheter.se
+EMAIL_PASSWORD=ditt_lösenord_här
+
+# JWT säkerhet
+ACCESS_TOKEN_SECRET=din_hemliga_nyckel_här
+
+# Google Translate API
+GOOGLE_TRANSLATE_API_KEY=din_api_nyckel_här
+
+# Serverinställningar
+PORT=8080 

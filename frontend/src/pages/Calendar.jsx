@@ -120,27 +120,72 @@ const Calendar = () => {
     return new Date(year, month, 1).getDay();
   };
 
-  const handleTaskClick = (task) => {
-    setSelectedTask(task);
-    setFormData({
-      title: task.title || '',
-      description: task.description || '',
-      dueDate: Array.isArray(task.dueDate) 
-        ? `${task.dueDate[0]}-${task.dueDate[1].toString().padStart(2, '0')}-${task.dueDate[2].toString().padStart(2, '0')}` 
-        : typeof task.dueDate === 'string' 
-          ? task.dueDate.substring(0, 10)
-          : '',
-      priority: task.priority || '',
-      status: task.status || '',
-      assignedToUserId: task.assignedToUserId || '',
-      assignedByUserId: task.assignedByUserId || '',
-      apartmentId: task.apartmentId || '',
-      tenantId: task.tenantId || '',
-      comments: task.comments || '',
-      isRecurring: task.isRecurring || false,
-      recurringPattern: task.recurringPattern || '',
-    });
-    setIsTaskModalOpen(true);
+  const handleTaskClick = async (task) => {
+    try {
+      // Hämta fullständig uppgiftsinformation från API istället för att använda den begränsade 
+      // information som finns i kalenderuppgiften
+      const fullTaskData = await taskService.getTaskById(task.id);
+      setSelectedTask(fullTaskData);
+      
+      // Extrahera ID från objekt om det behövs (samma logik som i Tasks.jsx)
+      const assignedToUserId = fullTaskData.assignedToUserId || '';
+      
+      const apartmentId = fullTaskData.apartmentId ? 
+        (typeof fullTaskData.apartmentId === 'object' ? fullTaskData.apartmentId.id : fullTaskData.apartmentId) : '';
+      
+      const tenantId = fullTaskData.tenantId ? 
+        (typeof fullTaskData.tenantId === 'object' ? fullTaskData.tenantId.id : fullTaskData.tenantId) : '';
+      
+      // Hantera datumet korrekt för att undvika tidszonsförskjutning
+      let dueDateString = '';
+      if (fullTaskData.dueDate) {
+        const dueDate = new Date(fullTaskData.dueDate);
+        const year = dueDate.getFullYear();
+        const month = String(dueDate.getMonth() + 1).padStart(2, '0');
+        const day = String(dueDate.getDate()).padStart(2, '0');
+        dueDateString = `${year}-${month}-${day}`;
+      }
+      
+      setFormData({
+        title: fullTaskData.title || '',
+        description: fullTaskData.description || '',
+        dueDate: dueDateString,
+        priority: fullTaskData.priority || '',
+        status: fullTaskData.status || '',
+        assignedToUserId: assignedToUserId,
+        assignedByUserId: fullTaskData.assignedByUserId || '',
+        apartmentId: apartmentId,
+        tenantId: tenantId,
+        comments: fullTaskData.comments || '',
+        isRecurring: fullTaskData.isRecurring || false,
+        recurringPattern: fullTaskData.recurringPattern || '',
+      });
+      
+      setIsTaskModalOpen(true);
+    } catch (err) {
+      console.error('Error fetching full task details:', err);
+      // Fallback till den gamla metoden om något går fel
+      setSelectedTask(task);
+      setFormData({
+        title: task.title || '',
+        description: task.description || '',
+        dueDate: Array.isArray(task.dueDate) 
+          ? `${task.dueDate[0]}-${task.dueDate[1].toString().padStart(2, '0')}-${task.dueDate[2].toString().padStart(2, '0')}` 
+          : typeof task.dueDate === 'string' 
+            ? task.dueDate.substring(0, 10)
+            : '',
+        priority: task.priority || '',
+        status: task.status || '',
+        assignedToUserId: task.assignedToUserId || '',
+        assignedByUserId: task.assignedByUserId || '',
+        apartmentId: task.apartmentId || '',
+        tenantId: task.tenantId || '',
+        comments: task.comments || '',
+        isRecurring: task.isRecurring || false,
+        recurringPattern: task.recurringPattern || '',
+      });
+      setIsTaskModalOpen(true);
+    }
   };
 
   // Funktion för att hantera klick på en kalenderdag (för admin och superadmin)

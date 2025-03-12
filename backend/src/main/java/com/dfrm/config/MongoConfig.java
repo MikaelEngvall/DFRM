@@ -30,22 +30,64 @@ public class MongoConfig extends AbstractMongoClientConfiguration {
     @Override
     @Bean
     public MongoClient mongoClient() {
-        // Använd miljövariabel eller konfig från application.yml istället för hårdkodade värden
+        // Använd spring.data.mongodb.uri först, sedan MONGODB_URI miljövariabel, sedan bygg från separata miljövariabler
         String connectionUri = mongoUri;
+        
+        // Om ingen URI hittades i application.properties, försök med miljövariabel
         if (connectionUri == null || connectionUri.isEmpty()) {
-            // Fallback till att använda separata miljövariabler om URI inte är satt
-            String user = System.getenv("MONGO_USER");
-            String password = System.getenv("MONGO_PASSWORD");
-            String host = System.getenv("MONGO_HOST");
-            String dbName = System.getenv("MONGO_DATABASE");
+            connectionUri = System.getProperty("MONGODB_URI");
             
-            if (user != null && password != null && host != null) {
-                connectionUri = String.format("mongodb+srv://%s:%s@%s/%s?retryWrites=true&w=majority",
-                                             user, password, host, dbName != null ? dbName : "dfrm");
-            } else {
-                throw new IllegalStateException("MongoDB connection information missing. Set either spring.data.mongodb.uri or MONGO_USER, MONGO_PASSWORD, MONGO_HOST environment variables.");
+            // Om fortfarande ingen URI, försök med System.getenv
+            if (connectionUri == null || connectionUri.isEmpty()) {
+                connectionUri = System.getenv("MONGODB_URI");
+            }
+            
+            // Om fortfarande ingen URI, bygg från separata miljövariabler
+            if (connectionUri == null || connectionUri.isEmpty()) {
+                String user = System.getProperty("MONGO_USER");
+                if (user == null) user = System.getenv("MONGO_USER");
+                
+                String password = System.getProperty("MONGO_PASSWORD");
+                if (password == null) password = System.getenv("MONGO_PASSWORD");
+                
+                String host = System.getProperty("MONGO_HOST");
+                if (host == null) host = System.getenv("MONGO_HOST");
+                
+                String dbName = System.getProperty("MONGO_DATABASE");
+                if (dbName == null) dbName = System.getenv("MONGO_DATABASE");
+                if (dbName == null) dbName = databaseName;
+                
+                if (user != null && password != null && host != null) {
+                    // Skapa en förenklad anslutningssträng för att undvika problem med retryWrites-formatet
+                    connectionUri = String.format("mongodb+srv://%s:%s@%s/%s",
+                                                user, password, host, dbName);
+                }
             }
         }
+        
+        // Om vi fortfarande inte har en URI, kasta ett fel
+        if (connectionUri == null || connectionUri.isEmpty()) {
+            throw new IllegalStateException("MongoDB connection information missing. Set either spring.data.mongodb.uri or MONGO_USER, MONGO_PASSWORD, MONGO_HOST environment variables.");
+        }
+        
+        // Säkerställ att anslutningssträngen är korrekt formaterad
+        // Rensa bort eventuella problemparametrar
+        if (connectionUri.contains("retryWrites") && !connectionUri.contains("retryWrites=")) {
+            connectionUri = connectionUri.replaceAll("retryWrites[^&]*", "retryWrites=true");
+            // Ta bort extra & om det behövs
+            connectionUri = connectionUri.replaceAll("&&", "&");
+            connectionUri = connectionUri.replaceAll("\\?&", "?");
+            // Ta bort trailing & om det finns
+            if (connectionUri.endsWith("&")) {
+                connectionUri = connectionUri.substring(0, connectionUri.length() - 1);
+            }
+            // Ta bort ? om det är sista tecknet
+            if (connectionUri.endsWith("?")) {
+                connectionUri = connectionUri.substring(0, connectionUri.length() - 1);
+            }
+        }
+        
+        System.out.println("Using MongoDB connection URI: " + connectionUri.replaceAll(":[^:@]+@", ":***@"));
         
         ConnectionString connectionString = new ConnectionString(connectionUri);
         MongoClientSettings mongoClientSettings = MongoClientSettings.builder()
