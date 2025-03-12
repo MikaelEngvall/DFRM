@@ -374,10 +374,20 @@ const Tenants = () => {
         // Identifiera ändrade fält genom att jämföra med selectedTenant
         const changedFields = {};
         for (const key in tenantData) {
-          // Jämför värdena och lägg endast till ändrade fält som inte är tomma eller null
-          if (tenantData[key] !== selectedTenant[key] && tenantData[key] !== '' && tenantData[key] !== null) {
-            changedFields[key] = tenantData[key];
+          // Jämför värdena och lägg endast till ändrade fält
+          if (tenantData[key] !== selectedTenant[key]) {
+            // För resiliationDate, skicka explicit null om fältet är tomt
+            if (key === 'resiliationDate' && tenantData[key] === '') {
+              changedFields[key] = null;
+            } else if (tenantData[key] !== '' && tenantData[key] !== null) {
+              changedFields[key] = tenantData[key];
+            }
           }
+        }
+        
+        // Säkerställ att resiliationDate alltid skickas om det är ändrat
+        if (tenantData.resiliationDate === '' && selectedTenant.resiliationDate) {
+          changedFields.resiliationDate = null;
         }
       
         
