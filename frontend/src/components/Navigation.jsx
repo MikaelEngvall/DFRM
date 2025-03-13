@@ -173,7 +173,7 @@ const Navigation = () => {
       name: t('navigation.staff'),
       href: '/staff',
       icon: UserIcon,
-      roles: ['ADMIN', 'SUPERADMIN'] // Tagit bort MANAGER
+      roles: ['ADMIN', 'SUPERADMIN', 'USER'] // Lagt till USER för att ge åtkomst till personalfliken
     },
     {
       name: t('navigation.import'),

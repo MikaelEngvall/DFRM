@@ -180,9 +180,17 @@ const Staff = () => {
     try {
       setIsLoading(true);
       
-      // Alla användare kan se hela personallistan
+      // Hämta all användare
       const data = await userService.getAllUsers();
-      setUsers(data);
+      
+      // Filtrera listan baserat på användarens roll
+      if (isRegularUser()) {
+        // USER ser bara sin egen profil
+        setUsers(data.filter(u => u.id === currentUser.id));
+      } else {
+        // ADMIN och SUPERADMIN ser alla användare
+        setUsers(data);
+      }
       
       setError(null);
     } catch (err) {
