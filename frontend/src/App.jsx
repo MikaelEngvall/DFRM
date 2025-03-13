@@ -113,7 +113,7 @@ const App = () => {
                 } />
                 
                 <Route path="/import" element={
-                  <PrivateRoute>
+                  <PrivateRoute requiredRoles={['SUPERADMIN']}>
                     <NavigationWrapper>
                       <Import />
                     </NavigationWrapper>
