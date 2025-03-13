@@ -156,7 +156,9 @@ public class PendingTaskController {
 
     @GetMapping("/unreview-count")
     public ResponseEntity<Long> getUnreviewedCount() {
-        return ResponseEntity.ok(pendingTaskService.countByStatus("NEW"));
+        long newCount = pendingTaskService.countByStatus("NEW");
+        long pendingCount = pendingTaskService.countByStatus("PENDING");
+        return ResponseEntity.ok(newCount + pendingCount);
     }
     
     @GetMapping("/email-reports")

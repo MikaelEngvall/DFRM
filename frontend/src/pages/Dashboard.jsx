@@ -199,7 +199,9 @@ const Dashboard = () => {
           <div className="space-y-4">
             {unreviewedCount > 0 ? (
               <p className="text-blue-600 dark:text-blue-400 font-medium">
-                {unreviewedCount} {t('dashboard.sections.newReportsNeedReview')}
+                {unreviewedCount} {unreviewedCount === 1 ? 
+                  t('dashboard.sections.newReportNeedReview') : 
+                  t('dashboard.sections.newReportsNeedReview')}
               </p>
             ) : (
               <p className="text-gray-500 dark:text-gray-400">{t('dashboard.sections.noEvents')}</p>
