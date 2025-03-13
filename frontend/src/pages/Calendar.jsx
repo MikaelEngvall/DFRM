@@ -7,6 +7,7 @@ import FormInput from '../components/FormInput';
 import { formatShortDate } from '../utils/formatters';
 import Autocomplete from '../components/Autocomplete';
 import { PaperAirplaneIcon } from '@heroicons/react/24/outline';
+import TaskMessages from '../components/TaskMessages';
 
 const Calendar = () => {
   const { t, currentLocale } = useLocale();
@@ -771,6 +772,16 @@ const Calendar = () => {
               </div>
             )}
           </div>
+
+          {/* Visa befintliga meddelanden om en uppgift är vald */}
+          {selectedTask && selectedTask.id && (
+            <div className="mt-4 border-t pt-4 border-gray-200 dark:border-gray-700">
+              <TaskMessages 
+                taskId={selectedTask.id} 
+                canSendMessages={false} // Använd textfältet ovan istället för det inbyggda
+              />
+            </div>
+          )}
         </Modal>
       )}
     </div>

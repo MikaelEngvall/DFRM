@@ -27,7 +27,18 @@ public class GoogleTranslateClient {
                 sourceLanguage, targetLanguage, 
                 text.length() > 50 ? text.substring(0, 50) + "..." : text);
         
-        // I utvecklingsmiljö, returnera samma text för alla språk
+        // Skapa dummy-översättningar för utvecklingssyfte
+        if ("en".equals(targetLanguage)) {
+            return "[EN] " + text;
+        } else if ("pl".equals(targetLanguage)) {
+            return "[PL] " + text;
+        } else if ("uk".equals(targetLanguage)) {
+            return "[UK] " + text;
+        } else if ("sv".equals(targetLanguage)) {
+            return "[SV] " + text;
+        }
+        
+        // Fallback - returnera original texten
         return text;
     }
 } 

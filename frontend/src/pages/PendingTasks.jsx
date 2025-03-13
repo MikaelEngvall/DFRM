@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
+import AlertModal from '../components/AlertModal';
 import FormInput from '../components/FormInput';
 import { pendingTaskService, pendingEmailReportService, taskService, apartmentService, tenantService, userService, taskMessageService } from '../services';
 import { useLocale } from '../contexts/LocaleContext';
 import { useAuth } from '../contexts/AuthContext';
 import { PaperAirplaneIcon } from '@heroicons/react/24/outline';
+import TaskMessages from '../components/TaskMessages';
 
 const PendingTasks = () => {
   const { t, currentLocale } = useLocale();
@@ -863,6 +865,16 @@ const PendingTasks = () => {
               </div>
             </div>
           </div>
+
+          {/* Visa befintliga meddelanden om en uppgift är vald */}
+          {selectedTask && selectedTask.id && (
+            <div className="mt-4">
+              <TaskMessages 
+                taskId={selectedTask.id} 
+                canSendMessages={false} // Använd textfältet ovan istället för det inbyggda
+              />
+            </div>
+          )}
 
           <div className="flex flex-col space-y-4 sm:flex-row sm:space-y-0 sm:space-x-4 mt-8 pt-4 border-t border-gray-200 dark:border-gray-700">
             <button

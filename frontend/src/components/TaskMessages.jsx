@@ -105,6 +105,17 @@ const TaskMessages = ({ taskId, canSendMessages = true }) => {
     return message.sender === user.id;
   };
   
+  // Hämta avsändarens namn
+  const getSenderName = (message) => {
+    // Om message.sender är ett ID, visa bara "Användare"
+    if (typeof message.sender === 'string') {
+      return t('tasks.messages.unknownUser');
+    }
+    
+    // Om message.sender är ett objekt, visa användarens förnamn
+    return message.sender?.firstName || t('tasks.messages.unknownUser');
+  };
+  
   // Formatera tidpunkt
   const formatTimestamp = (timestamp) => {
     if (!timestamp) return '';
@@ -156,7 +167,7 @@ const TaskMessages = ({ taskId, canSendMessages = true }) => {
                 >
                   <div className="flex justify-between items-center mb-1">
                     <span className="text-xs font-medium">
-                      {message.senderName || t('tasks.messages.unknownUser')}
+                      {getSenderName(message)}
                     </span>
                     <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">
                       {formatTimestamp(message.timestamp)}

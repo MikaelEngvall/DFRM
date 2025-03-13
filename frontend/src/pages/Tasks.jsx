@@ -9,6 +9,7 @@ import { taskService, apartmentService, tenantService, userService, taskMessageS
 import { useLocale } from '../contexts/LocaleContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import TaskMessages from '../components/TaskMessages';
 
 const Tasks = () => {
   const { t, currentLocale } = useLocale();
@@ -718,6 +719,16 @@ const Tasks = () => {
         confirmText={t('common.delete')}
         cancelText={t('common.cancel')}
       />
+
+      {/* Visa befintliga meddelanden om en uppgift är vald */}
+      {selectedTask && selectedTask.id && (
+        <div className="mt-4 border-t pt-4 border-gray-200 dark:border-gray-700">
+          <TaskMessages 
+            taskId={selectedTask.id} 
+            canSendMessages={false} // Använd textfältet ovan istället för det inbyggda
+          />
+        </div>
+      )}
     </div>
   );
 };
