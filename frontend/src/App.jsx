@@ -14,6 +14,7 @@ import Tasks from './pages/Tasks';
 import PendingTasks from './pages/PendingTasks';
 import Calendar from './pages/Calendar';
 import Staff from './pages/Staff';
+import Import from './pages/Import';
 
 // Wrapper-komponent för sidor som kräver navigation
 const NavigationWrapper = ({ children }) => (
@@ -107,6 +108,14 @@ const App = () => {
                   <PrivateRoute>
                     <NavigationWrapper>
                       <Staff />
+                    </NavigationWrapper>
+                  </PrivateRoute>
+                } />
+                
+                <Route path="/import" element={
+                  <PrivateRoute>
+                    <NavigationWrapper>
+                      <Import />
                     </NavigationWrapper>
                   </PrivateRoute>
                 } />

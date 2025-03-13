@@ -51,6 +51,7 @@ export default {
     darkMode: 'Mörkt läge',
     lightMode: 'Ljust läge',
     staff: 'Personal',
+    import: 'Importera data',
   },
 
   auth: {
@@ -447,5 +448,23 @@ export default {
       superadminCanAll: 'SUPERADMIN kan hantera alla användare och roller',
       cantDeactivateSelf: 'Ingen kan inaktivera sitt eget konto',
     },
+  },
+
+  import: {
+    title: 'Importera data',
+    selectFile: 'Välj Excel-fil',
+    upload: 'Ladda upp',
+    success: 'Importen lyckades!',
+    fileFormat: 'Stöder Excel-filer (.xlsx, .xls), CSV och textfiler med kommaseparerade värden.',
+    results: 'Importresultat',
+    tenantsCreated: 'Hyresgäster skapade',
+    apartmentsCreated: 'Lägenheter skapade',
+    instructions: 'Instruktioner för filformat',
+    errors: {
+        noFile: 'Välj en fil att ladda upp',
+        uploadFailed: 'Kunde inte ladda upp filen. Kontrollera att du har rätt behörighet och att filen är i rätt format.',
+        unauthorized: 'Du saknar behörighet att importera data. ADMIN eller SUPERADMIN-behörighet krävs.',
+        title: 'Fel vid import'
+    }
   },
 }; 

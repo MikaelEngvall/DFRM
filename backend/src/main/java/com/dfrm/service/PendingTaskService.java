@@ -55,7 +55,7 @@ public class PendingTaskService {
         
         PendingTask pendingTask = new PendingTask();
         pendingTask.setTask(savedTask);
-        pendingTask.setRequestedBy(requestedBy);
+        pendingTask.setReviewedBy(requestedBy);
         pendingTask.setRequestedAt(LocalDateTime.now());
         pendingTask.setRequestComments(comments);
         

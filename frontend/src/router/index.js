@@ -12,6 +12,7 @@ import RequestPasswordReset from '../pages/RequestPasswordReset';
 import ResetPassword from '../pages/ResetPassword';
 import ConfirmEmailChange from '../pages/ConfirmEmailChange';
 import PrivateRoute from '../components/PrivateRoute';
+import Import from '../pages/Import';
 
 const routes = [
   {
@@ -61,6 +62,10 @@ const routes = [
   {
     path: '/staff',
     element: <PrivateRoute><Staff /></PrivateRoute>,
+  },
+  {
+    path: '/import',
+    element: <PrivateRoute><Import /></PrivateRoute>,
   },
 ];
 

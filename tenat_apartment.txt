@@ -1,0 +1,134 @@
+Glenn Almqvist	jimmy.almqvist@blekingerot.se	0708-493949	Lgh 1001/1	Chapmansgatan 6	30	Lägenhet	2023-01-01	Tillsvidare	Nej	12 044,75 kr	144 537,00 kr
+Sanna Bergqvist	sannabergqvist@outlook.com	0723964538	Lgh 1002/2	Chapmansgatan 6	40	Lägenhet	2025-02-01	Tillsvidare	Nej	6 863,99 kr	82 367,89 kr
+Aram Hovhannisyan	suzi.hov@hotmail.com	0708-744534	Lgh 1201/5	Chapmansgatan 6	30	Lägenhet	2023-01-01	Tillsvidare	Nej	12 071,26 kr	144 855,16 kr
+Marta Sargsyan	suzi.hov@hotmail.com	0708-744534	Lgh 1101/3	Chapmansgatan 6	30	Lägenhet	2023-01-01	Tillsvidare	Nej	11 282,28 kr	135 387,36 kr
+Hugo Danell	hugo.danell00@gmail.com	0729-699653	Lgh 1202/6	Chapmansgatan 6	32	Lägenhet	2023-01-01	Tillsvidare	Nej	11 107,69 kr	133 292,23 kr
+Fabian Arvidsson	fabian@wilfab.se	0704222231	Lgh 1102/4	Chapmansgatan 6	42	Lägenhet	2024-09-01	Tillsvidare	Nej	6 230,88 kr	74 770,62 kr
+Anne At All AB	anne@anneatall.se	0706482060	Lgh 1001/1	Fortifikationsgatan 1	0	Lägenhet	2025-06-01	Tillsvidare	Nej	29 166,67 kr	350 000,00 kr
+PM INDIAN SHORNA AB	alamsmejl@hotmail.com	0739711320	Lgh 1207/7	Fortifikationsgatan 1	0	Lägenhet	2023-06-01	Tillsvidare	Nej	12 024,41 kr	144 292,91 kr
+Alice Yu Håkansson	alice.uy.hakansson@gmail.com	0763128791	Lgh 1102/5	Fortifikationsgatan 10	23	Lägenhet	2024-08-01	Tillsvidare	Nej	5 801,53 kr	69 618,41 kr
+Towa Jenglér	jenglertowa@gmail.com	0709378441	Lgh 1002/2	Fortifikationsgatan 10	26	Lägenhet	2023-01-01	Tillsvidare	Nej	10 939,72 kr	131 276,61 kr
+Ehab Al Nawakil	ehabalnawakil@gmail.com	0760058318	Lgh 1003/3	Fortifikationsgatan 10	23	Lägenhet	2024-11-01	Tillsvidare	Nej	4 712,44 kr	56 549,25 kr
+Jonathan  Mikael	elsa3244@gmail.com	070 145 0872	Lgh 1101/4	Fortifikationsgatan 10	24	Lägenhet	2023-04-01	Tillsvidare	Nej	10 418,79 kr	125 025,45 kr
+Fredrik Gren	fredrikgren1@hotmail.com	0709-162457	Lgh 1103/6	Fortifikationsgatan 10	19	Lägenhet	2023-01-01	Tillsvidare	Nej	8 913,12 kr	106 957,40 kr
+Albin Valastig	albin.valastig@hotmail.com	0767847279	Lgh 1104/7	Fortifikationsgatan 10	23	Lägenhet	2024-08-01	Tillsvidare	Nej	5 801,53 kr	69 618,41 kr
+Ronja Palm	ronja.palm1@hotmail.com	0706711819	Lgh 1001/1	Fortifikationsgatan 10	31	Lägenhet	2024-09-01	Tillsvidare	Nej	6 726,72 kr	80 720,58 kr
+Zahra Alsalloum	ebrahimee250@gmail.com	0760-327146	Lgh 1203/13	Gångbrogatan 13	40	Lägenhet	2023-01-01	Tillsvidare	Nej	14 568,21 kr	174 818,56 kr
+Haneen Masoud	haneenmasoud199388@gmail.com	0735834362	Lgh 1202/12	Gångbrogatan 13	64	Lägenhet	2025-01-01	2025-03-31	Nej	6 500,00 kr	78 000,00 kr
+Ali Alshikh	ali.alshikh1986@gmail.com	0725777778	Lgh 1104/10	Gångbrogatan 13	48	Lägenhet	2025-03-01	Tillsvidare	Nej	3 750,00 kr	45 000,00 kr
+Ahmed Raimi	ahmadraimi020@gmail.com	0764072017	Lgh 1103/9	Gångbrogatan 13	40	Lägenhet	2022-11-01	Tillsvidare	Nej	9 945,21 kr	119 342,48 kr
+Sandra Widegren	sandrawidegren5@gmail.com	0735415614	Lgh 1001/8	Gångbrogatan 13	64	Lägenhet	2023-12-01	Tillsvidare	Nej	26 664,35 kr	319 972,25 kr
+Ibrahim Alshikh Mohamad	ebrahimee250@gmail.com	0768771887	Lgh 1201/11	Gångbrogatan 13	58	Lägenhet	2024-05-01	Tillsvidare	Nej	5 759,65 kr	69 115,75 kr
+Meja Holm	meja0330@gmail.com	0704448317	Lgh 1301/14	Gångbrogatan 13	35	Lägenhet	2024-09-01	Tillsvidare	Nej	5 183,68 kr	62 204,12 kr
+Ulrika Gustafsson	vanillo8006@gmail.com	0709103739	Lgh 1101/1	Hagagatan 5	57	Lägenhet	2025-03-01	Tillsvidare	Nej	5 791,67 kr	69 500,00 kr
+Catarina Lindström	catarinalindstrm@yahoo.com	0702-741467	Lgh 1001/2	Hagagatan 5	58	Lägenhet	2022-10-01	Tillsvidare	Nej	12 683,56 kr	152 202,67 kr
+Dan Altehed	alteheddan@yahoo.com	0763175685	Lgh 1101/4	Hagagatan 5	48	Lägenhet	2022-12-01	Tillsvidare	Nej	12 155,25 kr	145 863,03 kr
+Azra  Faller	azra_bihorac@hotmail.com	0723390733	Lgh 1002/3	Hagagatan 5	50	Lägenhet	2022-09-01	Tillsvidare	Nej	14 365,30 kr	172 383,58 kr
+Vivi-Anne  Svensson	viv.sve@outlook.com	0732066015	Lgh 1102/5	Hagagatan 5	58	Lägenhet	2023-03-09	Tillsvidare	Nej	11 487,50 kr	137 850,00 kr
+Nguyen Thanh Le	leebaguettevn@gmail.com	0702656666	Lokal 1	Kyrkogatan 15	0	Lokal	2024-07-01	2027-05-31	Nej	10 472,08 kr	125 665,00 kr
+Banes Kebab & Pizza	ayad373@yahoo.com		Lokal 2	Kyrkogatan 15	0	Lokal	2023-01-01	Tillsvidare	Nej	43 411,60 kr	520 939,16 kr
+Aron Pulkkanen	aronpulkkanen1@gmail.com	0723370636	Lgh 1102/2	Kyrkogatan 15	38	Lägenhet	2025-01-10	Tillsvidare	Nej	6 829,17 kr	81 950,00 kr
+Jesu Kristi Kyrka / Sista Dagars Heliga	2019205-fin@churchofjesuschrist.org	0735-230764	Lgh 1301/4	Kyrkogatan 15	70	Lägenhet	2023-01-01	Tillsvidare	Nej	17 583,12 kr	210 997,40 kr
+Phuong Nhung Lam	nhunglam9045@gmail.com	0790399993	Lgh 1201/3	Kyrkogatan 15	98	Lägenhet	2024-08-01	Tillsvidare	Nej	10 472,08 kr	125 665,00 kr
+Tamari Aptsiauri	tamaraaptsiauri@outlook.com	0736322112	Lgh 1101/1	Kyrkogatan 15	64	Lägenhet	2024-06-01	Tillsvidare	Nej	10 053,35 kr	120 640,20 kr
+Isak Karmberg	karmbergisac@gmail.com	0709725352	Lgh 1301/118	Landbrogatan 31 A	80	Lägenhet	2025-01-01	Tillsvidare	Nej	8 204,17 kr	98 450,00 kr
+Mhd Jaad Al jajeh	haitham.aljajeh2003@gmail.com	0737094428	Lgh 1101/114	Landbrogatan 31 A	60	Lägenhet	2024-05-01	Tillsvidare	Nej	7 854,06 kr	94 248,75 kr
+Jimmie Alfredsson	jimmie@alfredson.com	0733527762	Lgh 1202/115	Landbrogatan 31 A	84	Lägenhet	2025-01-01	Tillsvidare	Nej	9 487,50 kr	113 850,00 kr
+Gabriella Andersson	gabrieella.andersson@gmail.com	0766113211	Lgh 1302/117	Landbrogatan 31 A	60	Lägenhet	2024-12-01	Tillsvidare	Nej	16 470,83 kr	197 650,00 kr
+Yenna Andersson	yenna.andersson@icloud.com	0737572052	Lgh 1201/116	Landbrogatan 31 A	59	Lägenhet	2024-05-01	Tillsvidare	Nej	8 325,30 kr	99 903,62 kr
+Nadezhda  Zaitseva	yura051@mail.ru	0763406226	Lgh 1102/113	Landbrogatan 31 A	84	Lägenhet	2023-01-01	Tillsvidare	Nej	22 100,45 kr	265 205,39 kr
+Mita Zonnander	mita.zonnander@hotmail.com	0728834266	Lgh 1002/119	Landbrogatan 31 B	60	Lägenhet	2023-11-01	Tillsvidare	Nej	27 484,35 kr	329 812,16 kr
+Mattias Dolk	mattias.dolk@outlook.com	0736691476	Lgh 1001/120	Landbrogatan 31 B	84	Lägenhet	2024-11-11	Tillsvidare	Nej	8 479,17 kr	101 750,00 kr
+Issa Alobaid	isaobaid1979@gmail.com	0790-182093	Lgh 1302/124	Landbrogatan 31 B	84	Lägenhet	2023-01-01	Tillsvidare	Nej	21 437,44 kr	257 249,34 kr
+Darwish i Karlskrona AB	wesambarberare@gmail.com	0708723264	Lokal	Landbrogatan 31 B	0	Lokal	2023-01-01	Tillsvidare	Nej	42 583,42 kr	511 001,09 kr
+Louise Lundqvist	l.lundkvist76@gmail.com	0709593948	Lgh 1301/125	Landbrogatan 31 B	76	Lägenhet	2025-02-01	Tillsvidare	Nej	8 066,67 kr	96 800,00 kr
+Ronja Jespersen	ronja.jespersen1@gmail.com	0763-900610	Lgh 1102/121	Landbrogatan 31 B	53	Lägenhet	2023-01-01	Tillsvidare	Nej	14 365,30 kr	172 383,58 kr
+Qasem Khaled Al Qasimi	k55955521@gmail.com	0764069820	Lgh 1101/122	Landbrogatan 31 B	84	Lägenhet	2022-11-01	Tillsvidare	Nej	21 768,94 kr	261 227,31 kr
+Edvin Dapo	edvin321000@gmail.com	0765953020	Lgh 1202/123	Landbrogatan 31 B	59	Lägenhet	2024-12-01	Tillsvidare	Nej	8 020,83 kr	96 250,00 kr
+Daniel Jönsson	daniel_j76@hotmail.se	0709286757	Lgh 1301/5	S. Smedjegatan 3	58	Lägenhet	2025-03-01	Tillsvidare	Nej	7 041,67 kr	84 500,00 kr
+Lynn Larsson	larsson.lynn@gmail.com	0768-771593	Lgh 1201/4	S. Smedjegatan 3	58	Lägenhet	2022-10-01	Tillsvidare	Nej	15 344,02 kr	184 128,28 kr
+Liwaa Adin Omar Bhtiti	leoaa1976@hotmail.com	0455-340215, 0729264702	Lgh 1001/1	S. Smedjegatan 3	120	Lägenhet	2022-10-01	Tillsvidare	Nej	23 998,98 kr	287 987,82 kr
+Beiges Paola Orobio	orobio.col26@gmail.com	0735760819	Lgh 1201/2	S. Smedjegatan 3	78	Lägenhet	2024-04-01	Tillsvidare	Nej	9 372,51 kr	112 470,12 kr
+Bianca  Mejia	bmejia39@gmail.com	0793514290	Lgh 1101/3	S. Smedjegatan 3	80	Lägenhet	2023-07-01	Tillsvidare	Nej	20 995,44 kr	251 945,23 kr
+Christoph Samfass Dykfirma	unique.dive.travel@hotmail.com	070-8867431	Lokal 3	Styrmansgatan 38	0	Lokal	2023-01-01	Tillsvidare	Nej	20 434,67 kr	245 216,07 kr
+Ferdos Al Adawy	fardoos931@gmail.com	0790144037	Lokal 2	Styrmansgatan 38	0	Lokal	2024-11-01	2027-10-31	Nej	5 236,04 kr	62 832,50 kr
+Karin Persson	portalen2018@gmail.com	0708379390	Lgh 1001/1	Styrmansgatan 38	128	Lägenhet	2024-12-01	Tillsvidare	Nej	11 458,33 kr	137 500,00 kr
+Jenny  Al-Aezi Fransson	jennyalaezi@gmail.com	0762607822	Lgh 1001/3	Styrmansgatan 38	128	Lägenhet	2024-11-01	Tillsvidare	Nej	14 137,31 kr	169 647,75 kr
+Adnan Demirovic	demirovicadnan@yahoo.com	0760865620	Lgh 1101/2	Styrmansgatan 38	85	Lägenhet	2023-11-01	Tillsvidare	Nej	44 919,18 kr	539 030,12 kr
+Raji Abdelfattah Ali Jabr	alijabeer2@icloud.com	0723177634	Lgh 1101/4	Styrmansgatan 38	128	Lägenhet	2023-12-01	Tillsvidare	Nej	41 879,81 kr	502 557,75 kr
+Rukaya Alkhalaf	rukayaalkhalaf51@gmail.com	0700541384	Lgh 1001/3	Tingsgatan 9	68	Lägenhet	2025-03-01	Tillsvidare	Nej	9 166,67 kr	110 000,00 kr
+Khaled  Chekh Mohamed	kahlednor339@gmail.com	0760384486	Lgh 1201/6	Tingsgatan 9	70	Lägenhet	2024-08-01	Tillsvidare	Nej	12 851,67 kr	154 220,00 kr
+Silvana Yordanova Milteva	jjkhjjb357@gmail.com	0790404701	Lgh 1002/1	Tingsgatan 9	46	Lägenhet	2023-04-01	Tillsvidare	Nej	11 471,18 kr	137 654,21 kr
+Iman Alsheikh Mohamad	ebrahimee250@gmail.com	0765-174892	Lgh 1101/4	Tingsgatan 9	68	Lägenhet	2023-01-01	Tillsvidare	Nej	22 801,23 kr	273 614,72 kr
+Emma  Ahlborg	emma_sulan@hotmail.com	0733-898272	Lgh 1102/02	Utridarevägen 3 B	78	Lägenhet	2023-01-01	Tillsvidare	Nej	37 195,53 kr	446 346,36 kr
+Johan Lagerström	johsve5@gmail.com	0709218332	Lgh 1103/05	Utridarevägen 3 B	55	Lägenhet	2024-10-01	Tillsvidare	Nej	6 950,00 kr	83 400,00 kr
+Manuel Felipe Yelicich	sweyeli1@hotmail.com	0763453601	Lgh 1201/07	Utridarevägen 3 B	73	Lägenhet	2024-11-01	Tillsvidare	Nej	7 500,00 kr	90 000,00 kr
+Alfred Eriksson	alfred.ae.eriksson@gmail.com	0734-266607	Lgh 1201/09	Utridarevägen 3 B	37	Lägenhet	2023-01-01	Tillsvidare	Nej	11 742,95 kr	140 915,40 kr
+Alexandra  Håkansson	nettans-kryddbod@live.se	0733265925	Lgh 1202/10	Utridarevägen 3 B	54	Lägenhet	2024-08-20	Tillsvidare	Nej	6 750,00 kr	81 000,00 kr
+Ingemar Persson	afrim.beka@karlskrona.se		Lgh 1204/12	Utridarevägen 3 B	43	Lägenhet	2023-01-01	Tillsvidare	Nej	10 083,84 kr	121 006,08 kr
+Saqib Zaman	saqiati28@gmail.com	0793449544	Lgh 1501/22	Utridarevägen 3 B	87	Lägenhet	2023-08-27	Tillsvidare	Nej	17 467,50 kr	209 610,00 kr
+Alicia Persson	alicia.persson0007@gmail.com	0723078792	Lgh 1101/01	Utridarevägen 3 B	73	Lägenhet	2025-02-01	Tillsvidare	Nej	8 937,50 kr	107 250,00 kr
+Danny Simonsson	eye_of_the_sun82@hotmail.com	0708-862706	Lgh 1101/03	Utridarevägen 3 B	37	Lägenhet	2023-01-01	Tillsvidare	Nej	9 327,56 kr	111 930,72 kr
+Ananda Karaszi	ananda.himani@gmail.com	0720151003	Lgh 1302/14	Utridarevägen 3 B	54	Lägenhet	2024-10-01	Tillsvidare	Nej	6 950,00 kr	83 400,00 kr
+Khaled Hamdan	kh2017026@gmail.com	0735014326	Lgh 1403/16	Utridarevägen 3 B	91	Lägenhet	2022-12-01	Tillsvidare	Nej	21 327,08 kr	255 924,96 kr
+Tamer M A Darwish	tamer.darwish1981@gmail.com	0764020789	Lgh 1401/21	Utridarevägen 3 B	112	Lägenhet	2023-09-01	Tillsvidare	Nej	33 605,00 kr	403 260,00 kr
+Carolin Müller	carolin.muller.14@gmail.com	0709-112311	Lgh 1202/08	Utridarevägen 3 B	78	Lägenhet	2023-01-01	Tillsvidare	Nej	18 084,12 kr	217 009,44 kr
+Jade Manning	jademanning2022@gmail.com	0720310423	Lgh 1203/11	Utridarevägen 3 B	70	Lägenhet	2024-08-01	Tillsvidare	Nej	7 450,00 kr	89 400,00 kr
+Per Gunaropulos	pergun57@gmail.com	0723-947560	Lgh 1303/15	Utridarevägen 3 B	76	Lägenhet	2023-01-01	Tillsvidare	Nej	15 821,73 kr	189 860,76 kr
+Thitima Andersson	thitima.andersson@gmail.com	0761-958632	Lgh 1002/23	Utridarevägen 3 B	77	Lägenhet	2023-01-01	Tillsvidare	Nej	19 392,01 kr	232 704,12 kr
+Marcus Nilsson	marcusnilsson6@gmail.com	0708605267	Lgh 1404/19	Utridarevägen 3 B	58	Lägenhet	2024-05-01	Tillsvidare	Nej	7 652,66 kr	91 831,92 kr
+Thitima Andersson (2)	thitima.andersson@gmail.com	0761958632	Lgh 1001/25	Utridarevägen 3 B	22	Lägenhet	2023-08-01	Tillsvidare	Nej	9 247,50 kr	110 970,00 kr
+Ulrica Tillman	ulrica.tillman@gmail.com	0768-542268	Lgh 1401/18	Utridarevägen 3 B	73	Lägenhet	2023-01-01	Tillsvidare	Nej	16 730,99 kr	200 771,88 kr
+Hanan Nsaif Jasim	hanan.nsaief1985@gmail.com	0767-161436	Lgh 1102/04	Utridarevägen 3 B	54	Lägenhet	2023-01-01	Tillsvidare	Nej	14 819,80 kr	177 837,60 kr
+Magnus Berg	bazze1@live.se	0720-337503	Lgh 1104/06	Utridarevägen 3 B	43	Lägenhet	2023-01-01	Tillsvidare	Nej	10 083,84 kr	121 006,08 kr
+Eva-Lena Lindell	eva-lena.lindell@hotmail.com	0760-278336	Lgh 1301/13	Utridarevägen 3 B	73	Lägenhet	2023-01-01	Tillsvidare	Nej	15 673,05 kr	188 076,60 kr
+Albert Florinus	abbeflorinus@gmail.com	0760206395	Lgh 1402/17	Utridarevägen 3 B	121	Lägenhet	2023-01-01	Tillsvidare	Nej	24 959,66 kr	299 515,92 kr
+Pontus Lindroth	pontuslin99@gmail.com	0733117720	Lgh 1001/24	Utridarevägen 3 B	73	Lägenhet	2023-11-01	Tillsvidare	Nej	19 008,75 kr	228 105,00 kr
+Tindra Muller	ppiiiip97123@gmail.com	0768-859522	Lgh 1402/20	Utridarevägen 3 B	53	Lägenhet	2023-01-01	Tillsvidare	Nej	28 853,74 kr	346 244,88 kr
+Wilber Henriquez	wiber_gr@hotmail.com	0722-938564	Lgh 1102/4	V. Prinsgatan 44	58	Lägenhet	2023-01-01	Tillsvidare	Nej	14 528,93 kr	174 347,16 kr
+Christel Jönsson	christel8989@gmail.com	0724490412	Lgh 1301/9	V. Prinsgatan 44	73	Lägenhet	2024-07-08	Tillsvidare	Nej	8 950,00 kr	107 400,00 kr
+Iwona Slojka	iwona.slojka@gmail.com	0734-292399	Lgh 1303/11	V. Prinsgatan 44	69	Lägenhet	2023-01-01	Tillsvidare	Nej	16 627,56 kr	199 530,72 kr
+Annica Smålander	annica24@msn.com	0736-378177	Lgh 1001/1	V. Prinsgatan 44	69	Lägenhet	2023-01-01	Tillsvidare	Nej	20 540,44 kr	246 485,28 kr
+Ingrid Britt-Stina Berglund	britstina@hotmail.com	0705814837	Lgh 1002/2	V. Prinsgatan 44	58	Lägenhet	2023-11-01	Tillsvidare	Nej	23 380,58 kr	280 566,96 kr
+Konstantinos Kiouros	kiouros@hotmail.com	0760-943283	Lgh 1201/6	V. Prinsgatan 44	69	Lägenhet	2023-01-01	Tillsvidare	Nej	20 540,44 kr	246 485,28 kr
+Ludvig Nilsson	ludvig.nilsson15@gmail.com	0737886589	Lgh 1203/8	V. Prinsgatan 44	70	Lägenhet	2024-11-01	Tillsvidare	Nej	9 695,83 kr	116 349,96 kr
+Piyaphat Thongkham	auithongkham@hotmail.com	0765-657662	Lgh 1101/3	V. Prinsgatan 44	69	Lägenhet	2023-01-01	Tillsvidare	Nej	19 249,80 kr	230 997,60 kr
+Maj Britt Nilsson	gunilla.mansson@hotmail.se	0705-825543	Lgh 1103/5	V. Prinsgatan 44	69	Lägenhet	2023-01-01	Tillsvidare	Nej	27 788,71 kr	333 464,52 kr
+Ville Frank	ville.vf.frank@gmail.com	0720157531	Lgh 1202/7	V. Prinsgatan 44	69	Lägenhet	2024-06-01	Tillsvidare	Nej	8 400,00 kr	100 800,00 kr
+Jan Wallin	janwallin63@hotmail.com	0733-108039	Lgh 1302/10	V. Prinsgatan 44	58	Lägenhet	2023-01-01	Tillsvidare	Nej	29 481,14 kr	353 773,68 kr
+Tony  Mikael Brandt	henningssonronny@gmail.com	0706-709179	Lgh 1103/107	V. Vittusgatan 2	40	Lägenhet	2023-01-01	Tillsvidare	Nej	14 314,47 kr	171 773,61 kr
+Allan Jakoub	rinketallan@gmail.com	0733427973	Lgh 1202/110	V. Vittusgatan 2	60	Lägenhet	2024-12-01	Tillsvidare	Nej	7 592,26 kr	91 107,18 kr
+Obida Albasha	obidaalbassa873@gmail.com	0707435635	Lgh 1201/111	V. Vittusgatan 2	66	Lägenhet	2022-12-01	Tillsvidare	Nej	24 755,62 kr	297 067,47 kr
+Alina Yehorova	dizialina@gmail.com	0762-977985	Lgh 1001/105	V. Vittusgatan 2	85	Lägenhet	2023-01-01	Tillsvidare	Nej	20 995,44 kr	251 945,23 kr
+Sharmarke Ali Hussein	sharmarke.aliiihussein@gmail.com	0762757585 	Lgh 1002/106	V. Vittusgatan 2	40	Lägenhet	2024-09-01	Tillsvidare	Nej	6 545,06 kr	78 540,68 kr
+Konrad Karol Koblak	konrad.koblak@gmail.com	0703024958	Lgh 1102/108	V. Vittusgatan 2	40	Lägenhet	2024-05-01	Tillsvidare	Nej	7 278,09 kr	87 337,12 kr
+Sompong Rosenius	thomas.blissing@gmail.com	0709499170	Lgh 1101/109	V. Vittusgatan 2	60	Lägenhet	2024-04-09	Tillsvidare	Nej	7 801,71 kr	93 620,48 kr
+Johan Olofsson	stigsdotter.johnson@gmail.com	0734-066824	Lgh 1101C/111	Valhallav. 10	37	Lägenhet	2023-01-01	Tillsvidare	Nej	11 845,84 kr	142 150,06 kr
+Malin Jensen	malinjensen01@gmail.com	0709207104	Lgh 1002C/102	Valhallav. 10	52	Lägenhet	2024-02-01	Tillsvidare	Nej	21 560,34 kr	258 724,12 kr
+Karol Pundzis		0737-574943	Lgh 1002B/104	Valhallav. 10	48	Lägenhet	2023-01-01	Tillsvidare	Nej	10 734,51 kr	128 814,10 kr
+Jack Åkesson	jackakesson7@gmail.com	0763251722	Lgh 1001A/0108	Valhallav. 10	37	Lägenhet	2023-01-01	Tillsvidare	Nej	11 823,74 kr	141 884,83 kr
+Roland Runberg		0709-640022	Lgh 1202C/110	Valhallav. 10	48	Lägenhet	2023-01-01	Tillsvidare	Nej	12 128,73 kr	145 544,75 kr
+Anas Alhariri	anasalhariri0085@gmail.com	0707135200	Lgh 1102B/112	Valhallav. 10	48	Lägenhet	2023-11-27	Tillsvidare	Nej	15 253,39 kr	183 040,71 kr
+Alen Qenaj	alenqenaj2@gmail.com	0762-876855	Lgh 1102A/115	Valhallav. 10	48	Lägenhet	2023-01-01	Tillsvidare	Nej	15 470,31 kr	185 643,74 kr
+Michael  Moström	mikewestse@gmail.com	0760368890	Lgh 1201C/119	Valhallav. 10	37	Lägenhet	2023-03-01	Tillsvidare	Nej	12 102,63 kr	145 231,51 kr
+Bashir Rames	dragan.cado@karlskrona.se	0700-284-117	Lgh 0902C/126	Valhallav. 10	37	Lägenhet	2023-01-01	Tillsvidare	Nej	11 947,51 kr	143 370,11 kr
+Kayleigh Laura Mildner	kayleigh.laura.mildner@gmail.com	0760507221	Lgh 1201A/124	Valhallav. 10	34	Lägenhet	2025-03-01	Tillsvidare	Nej	4 958,33 kr	59 500,00 kr
+Jimmy Steen Karlman	kaptenssg@gmail.com	0708898929	Lgh 0903C/127	Valhallav. 10	48	Lägenhet	2025-03-01	Tillsvidare	Nej	5 125,00 kr	61 500,00 kr
+Omar Al Zoaabi	omar.alzoaabi@gmail.com	0700430083	Lgh 1202A/123	Valhallav. 10	48	Lägenhet	2025-04-01	Tillsvidare	Nej	5 250,00 kr	63 000,00 kr
+Zirak Ali Shaheen Rehman	zkgtmotors@gmail.com	0706101349	Lgh 1103A/114	Valhallav. 10	37	Lägenhet	2025-02-01	Tillsvidare	Nej	5 500,00 kr	66 000,00 kr
+Vidhyadhari Gurrala	vidhyadhari98@gmail.com	0793576762	Lgh 1001C/103	Valhallav. 10	37	Lägenhet	2025-04-01	Tillsvidare	Nej	3 937,50 kr	47 250,00 kr
+Nikita Karlsson	nikita.karlsson002@hotmail.com	0707691032	Lgh 1202A/123	Valhallav. 10	48	Lägenhet	2024-02-22	2025-03-31	Ja	21 715,46 kr	260 585,50 kr
+Savithri Venkata Tejeswar	savithrivenkatatejeswar@gmail.com	0793537281	Lgh 1002A/107	Valhallav. 10	48	Lägenhet	2024-11-01	Tillsvidare	Nej	7 330,46 kr	87 965,50 kr
+Kenneth Persson		0455-26435	Lgh 1103C/109	Valhallav. 10	34	Lägenhet	2023-01-01	Tillsvidare	Nej	8 234,64 kr	98 815,63 kr
+Jan Taxén	jantaxen49@hotmail.com	0733-662691	Lgh 1101B/113	Valhallav. 10	37	Lägenhet	2023-01-01	Tillsvidare	Nej	12 024,85 kr	144 298,24 kr
+Yaser Ziad Nofal Darwish	yy0477906@gmail.com	0762828283	Lgh 0901C/125	Valhallav. 10	45	Lägenhet	2024-11-01	Tillsvidare	Nej	6 806,85 kr	81 682,25 kr
+Jonathan Adam Lindh	lindh.jonathan@gmail.com	0727-172839	Lgh 1301B/121	Valhallav. 10	37	Lägenhet	2023-01-01	Tillsvidare	Nej	11 341,95 kr	136 103,42 kr
+Mohammad Mheear Al Rifai	mheearalrifai10@icloud.com	0735853228	Lgh 1003A/106	Valhallav. 10	37	Lägenhet	2024-08-01	Tillsvidare	Nej	6 323,42 kr	75 880,98 kr
+Joakim Rickardsson	spicycook1986@gmail.com	0705-822978	Lgh 1203C/117	Valhallav. 10	34	Lägenhet	2023-01-01	Tillsvidare	Nej	12 749,75 kr	152 997,04 kr
+Kabir Husseini	kabir.husseini.20011010@gmail.com	0763-226685	Lgh 1203A/122	Valhallav. 10	37	Lägenhet	2023-01-01	Tillsvidare	Nej	11 691,14 kr	140 293,69 kr
+Hassan Kassar	hasan.kassar1@gmail.com	0728-362350	Lgh 1001C/103	Valhallav. 10	37	Lägenhet	2023-01-01	2025-03-31	Ja	12 051,38 kr	144 616,51 kr
+Nikita Lillian Kristofikova	nlkristofikova@gmail.com	0733291504	Lgh 1003C/101	Valhallav. 10	34	Lägenhet	2024-09-01	Tillsvidare	Nej	6 021,44 kr	72 257,32 kr
+Eleonor Ålstig	eleonor.alstig@gmail.com	0727048845	Lgh 1001B/105	Valhallav. 10	37	Lägenhet	2024-12-01	Tillsvidare	Nej	5 560,50 kr	66 726,00 kr
+Mai Nantachad	mai_dahlberg@hotmail.com	0761057765	Lgh 1101A/116	Valhallav. 10	34	Lägenhet	2024-08-01	Tillsvidare	Nej	6 021,44 kr	72 257,32 kr
+Per-Anders Persson	solisofelix@gmail.com	0709-843806	Lgh 1202C/118	Valhallav. 10	48	Lägenhet	2023-01-01	Tillsvidare	Nej	10 731,97 kr	128 783,69 kr
+Mikael Persson	mikaelpersson123@yahoo.com	0704-085934	Lgh 1202B/120	Valhallav. 10	48	Lägenhet	2023-01-01	Tillsvidare	Nej	11 249,13 kr	134 989,58 kr

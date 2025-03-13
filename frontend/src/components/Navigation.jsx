@@ -14,6 +14,7 @@ import {
   SunIcon,
   MoonIcon,
   UserIcon,
+  DocumentArrowUpIcon,
 } from '@heroicons/react/24/outline';
 import { useAuth } from '../contexts/AuthContext';
 import { useLocale } from '../contexts/LocaleContext';
@@ -172,7 +173,13 @@ const Navigation = () => {
       name: t('navigation.staff'),
       href: '/staff',
       icon: UserIcon,
-      roles: ['ADMIN', 'USER', 'SUPERADMIN'] // Tagit bort MANAGER
+      roles: ['ADMIN', 'SUPERADMIN'] // Tagit bort MANAGER
+    },
+    {
+      name: t('navigation.import'),
+      href: '/import',
+      icon: DocumentArrowUpIcon,
+      roles: ['ADMIN', 'SUPERADMIN']
     },
   ];
   
