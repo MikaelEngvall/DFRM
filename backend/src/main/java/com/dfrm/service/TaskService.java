@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.dfrm.model.Task;
 import com.dfrm.repository.ApartmentRepository;
@@ -22,6 +23,7 @@ public class TaskService {
     private final TenantRepository tenantRepository;
     private final ApartmentRepository apartmentRepository;
     private final UserRepository userRepository;
+    private final TaskMessageService taskMessageService;
     
     public List<Task> getAllTasks(String status, String priority, String tenantId, String apartmentId) {
         // Här skulle man normalt implementera logik för att filtrera baserat på parametrarna
@@ -55,7 +57,17 @@ public class TaskService {
         return taskRepository.save(task);
     }
     
+    /**
+     * Tar bort en uppgift och alla dess meddelanden
+     * 
+     * @param id ID för uppgiften
+     */
+    @Transactional
     public void deleteTask(String id) {
+        // Ta bort alla meddelanden för uppgiften först
+        taskMessageService.deleteAllMessagesForTask(id);
+        
+        // Ta sedan bort själva uppgiften
         taskRepository.deleteById(id);
     }
     

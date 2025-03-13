@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLocale } from '../contexts/LocaleContext';
+import { useAuth } from '../contexts/AuthContext';
 import { taskService, apartmentService, tenantService, userService } from '../services';
 import {
   ClockIcon,
@@ -14,11 +15,13 @@ import {
 import Modal from '../components/Modal';
 import FormInput from '../components/FormInput';
 import AlertModal from '../components/AlertModal';
+import TaskMessages from '../components/TaskMessages';
 
 const TaskDetail = () => {
   const { id } = useParams();
   const { t } = useLocale();
   const navigate = useNavigate();
+  const { user: currentUser, hasRole } = useAuth();
   
   const [task, setTask] = useState(null);
   const [apartments, setApartments] = useState([]);
@@ -184,6 +187,21 @@ const TaskDetail = () => {
     if (!userId) return '-';
     const user = users.find(u => u.id === (typeof userId === 'object' ? userId.id : userId));
     return user ? `${user.firstName} ${user.lastName}` : '-';
+  };
+
+  // Kontrollera om användaren kan skicka meddelanden
+  const canSendMessages = () => {
+    // ADMIN och SUPERADMIN kan alltid skicka meddelanden
+    if (hasRole('ROLE_ADMIN') || hasRole('ROLE_SUPERADMIN')) {
+      return true;
+    }
+    
+    // Användare som har uppgiften tilldelad till sig kan skicka meddelanden
+    if (task && task.assignedToUserId === currentUser.id) {
+      return true;
+    }
+    
+    return false;
   };
 
   if (isLoading) {
@@ -379,6 +397,14 @@ const TaskDetail = () => {
             </div>
           </div>
         </div>
+      </div>
+      
+      {/* Lägg till meddelandekomponenten */}
+      <div className="mt-6">
+        <TaskMessages 
+          taskId={id} 
+          canSendMessages={canSendMessages()} 
+        />
       </div>
       
       {/* Redigeringsmodal */}
