@@ -45,6 +45,7 @@ export default {
     tasks: 'Tasks',
     staff: 'Staff',
     import: 'Import Data',
+    calendar: 'Calendar',
     pendingTasks: 'Pending Tasks',
     emailReports: 'Email Reports',
     logout: 'Log out',
