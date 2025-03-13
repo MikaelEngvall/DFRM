@@ -184,6 +184,21 @@ const apartmentService = {
     
     return response.data;
   },
+
+  // Partiell uppdatering av en lägenhet (PATCH)
+  patchApartment: async (id, patchData) => {
+    try {
+      const response = await api.patch(`/api/apartments/${id}`, patchData);
+      
+      // Invalidera cachen för lägenheter eftersom vi uppdaterat en
+      invalidateCache(CACHE_KEYS.APARTMENTS);
+      
+      return response.data;
+    } catch (error) {
+      console.error(`Error patching apartment with id ${id}:`, error);
+      throw error;
+    }
+  },
 };
 
 export default apartmentService; 

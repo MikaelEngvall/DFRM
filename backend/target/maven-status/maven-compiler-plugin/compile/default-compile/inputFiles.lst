@@ -51,4 +51,5 @@ C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\repository\TenantReposit
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\model\Language.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\service\EmailService.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\model\Tenant.java
+C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\controller\MailController.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\config\DotenvConfig.java

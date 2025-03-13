@@ -2,9 +2,10 @@ import React, { useState, useEffect, useMemo } from 'react';
 import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
 import AlertModal from '../components/AlertModal';
+import EmailModal from '../components/EmailModal';
 import FormInput from '../components/FormInput';
-import { PlusIcon, FunnelIcon, XMarkIcon } from '@heroicons/react/24/outline';
-import { apartmentService, tenantService, keyService } from '../services';
+import { PlusIcon, FunnelIcon, XMarkIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
+import { apartmentService, tenantService, keyService, emailService } from '../services';
 import { useLocation } from 'react-router-dom';
 import { useLocale } from '../contexts/LocaleContext';
 import RelatedTasks from '../components/RelatedTasks';
@@ -40,6 +41,8 @@ const Apartments = () => {
   const [isAlertOpen, setIsAlertOpen] = useState(false);
   const [apartmentToDelete, setApartmentToDelete] = useState(null);
   const [showOnlyVacant, setShowOnlyVacant] = useState(false);
+  const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
+  const [emailSendSuccess, setEmailSendSuccess] = useState(false);
   const [formData, setFormData] = useState({
     street: '',
     number: '',
@@ -74,6 +77,48 @@ const Apartments = () => {
   const uniqueStreets = useMemo(() => {
     return [...new Set(apartments.map(apt => apt.street))].filter(Boolean).sort();
   }, [apartments]);
+
+  // Samla e-postadresser från filtrerade hyresgäster
+  const filteredTenantEmails = useMemo(() => {
+    const emails = new Set();
+    
+    // Gå igenom alla filtrerade lägenheter
+    filteredApartments.forEach(apartment => {
+      // Kontrollera om lägenheten har hyresgäster
+      if (apartment.tenants && Array.isArray(apartment.tenants) && apartment.tenants.length > 0) {
+        // Hitta detaljerad information för varje hyresgäst
+        apartment.tenants.forEach(tenantRef => {
+          // Tenant kan vara antingen en sträng (ID) eller ett objekt med ID-fält
+          const tenantId = typeof tenantRef === 'object' ? tenantRef.id : tenantRef;
+          
+          // Hitta hyresgästen i tenants-listan
+          const tenant = tenants.find(t => t.id === tenantId);
+          
+          // Om hyresgästen hittades och har en e-postadress, lägg till den
+          if (tenant && tenant.email) {
+            emails.add(tenant.email);
+          }
+        });
+      }
+    });
+    
+    // Konvertera Set till Array
+    return Array.from(emails);
+  }, [filteredApartments, tenants]);
+  
+  // Hantera e-postutskick
+  const handleSendEmail = async (subject, content, recipients) => {
+    try {
+      await emailService.sendBulkEmail(subject, content, recipients);
+      setEmailSendSuccess(true);
+      // Visa bekräftelsemeddelande i 3 sekunder
+      setTimeout(() => setEmailSendSuccess(false), 3000);
+      return true;
+    } catch (error) {
+      console.error('Error sending email:', error);
+      throw new Error(t('email.errors.sendFailed'));
+    }
+  };
 
   // Kolumner för datatabellen
   const columns = [
@@ -756,6 +801,16 @@ const Apartments = () => {
           {activeTab === 'vacant' ? t('apartments.vacant') : t('apartments.title')}
         </h1>
         <div className="flex space-x-2">
+          {filteredTenantEmails.length > 0 && (
+            <button
+              onClick={() => setIsEmailModalOpen(true)}
+              className="flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800"
+              title={`${t('email.button')} (${filteredTenantEmails.length} ${t('email.recipients')})`}
+            >
+              <EnvelopeIcon className="h-5 w-5 mr-2" />
+              {t('email.button')}
+            </button>
+          )}
           <button
             onClick={() => setShowFilters(!showFilters)}
             className="flex items-center px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
@@ -1162,6 +1217,14 @@ const Apartments = () => {
         }) : ''}
         confirmText={t('common.delete')}
         cancelText={t('common.cancel')}
+      />
+
+      {/* E-post-modal */}
+      <EmailModal 
+        isOpen={isEmailModalOpen}
+        onClose={() => setIsEmailModalOpen(false)}
+        onSend={handleSendEmail}
+        recipients={filteredTenantEmails}
       />
     </div>
   );

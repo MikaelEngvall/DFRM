@@ -467,4 +467,24 @@ export default {
         title: 'Fel vid import'
     }
   },
+
+  email: {
+    title: 'Skicka e-post',
+    from: 'Från',
+    to: 'Till',
+    bcc: 'Dold kopia',
+    subject: 'Ämne',
+    content: 'Meddelande',
+    send: 'Skicka',
+    sending: 'Skickar...',
+    recipients: 'mottagare',
+    button: 'Maila',
+    success: 'E-posten har skickats',
+    errors: {
+      subjectRequired: 'Ämne är obligatoriskt',
+      contentRequired: 'Meddelande är obligatoriskt',
+      noRecipients: 'Det finns inga mottagare',
+      sendFailed: 'Det gick inte att skicka e-posten',
+    }
+  },
 }; 

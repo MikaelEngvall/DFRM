@@ -6,6 +6,7 @@ import userService from './userService';
 import authService from './authService';
 import pendingTaskService from './pendingTaskService';
 import pendingEmailReportService from './pendingEmailReportService';
+import emailService from './emailService';
 
 export {
   apartmentService,
@@ -15,5 +16,6 @@ export {
   userService,
   authService,
   pendingTaskService,
-  pendingEmailReportService
+  pendingEmailReportService,
+  emailService
 }; 
