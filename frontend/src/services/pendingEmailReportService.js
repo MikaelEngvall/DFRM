@@ -1,13 +1,26 @@
 import api from './api';
+import { getFromCache, saveToCache, invalidateCache, CACHE_KEYS } from '../utils/cacheManager';
 
 const pendingEmailReportService = {
   /**
    * Hämtar alla e-postrapporter
+   * @param {boolean} bypassCache - Om true, hämtas data direkt från API oavsett cache
    * @returns {Promise<Array>} Lista med e-postrapporter
    */
-  getAll: async () => {
+  getAll: async (bypassCache = false) => {
     try {
+      // Kontrollera om data finns i cache och om vi inte explicit vill gå förbi cachen
+      if (!bypassCache) {
+        const cachedData = getFromCache(CACHE_KEYS.EMAIL_REPORTS);
+        if (cachedData) return cachedData;
+      }
+      
+      // Hämta data från API om det inte finns i cache eller om vi vill gå förbi cachen
       const response = await api.get('/api/pending-tasks/email-reports');
+      
+      // Spara den nya datan i cache
+      saveToCache(CACHE_KEYS.EMAIL_REPORTS, response.data);
+      
       return response.data;
     } catch (error) {
       console.error('Fel vid hämtning av e-postrapporter:', error);
@@ -24,6 +37,10 @@ const pendingEmailReportService = {
   convertToTask: async (id, taskData) => {
     try {
       const response = await api.post(`/api/pending-tasks/${id}/convert-to-task`, taskData);
+      
+      // Invalidera cachen för e-postrapporter
+      invalidateCache(CACHE_KEYS.EMAIL_REPORTS);
+      
       return response.data;
     } catch (error) {
       console.error('Fel vid konvertering av e-postrapport till uppgift:', error);
@@ -44,6 +61,10 @@ const pendingEmailReportService = {
         reviewedById,
         reason
       });
+      
+      // Invalidera cachen för e-postrapporter
+      invalidateCache(CACHE_KEYS.EMAIL_REPORTS);
+      
       return response.data;
     } catch (error) {
       console.error('Fel vid avvisning av e-postrapport:', error);

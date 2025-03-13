@@ -51,6 +51,7 @@ export default {
     darkMode: 'Tryb ciemny',
     lightMode: 'Tryb jasny',
     staff: 'Personel',
+    import: 'Importuj dane',
   },
 
   auth: {

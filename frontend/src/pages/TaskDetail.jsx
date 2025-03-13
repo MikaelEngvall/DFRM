@@ -86,7 +86,6 @@ const TaskDetail = () => {
     try {
       // Skapa en kopia av formulärdatan
       const taskData = { ...formData };
-      console.log('Formulärdata före sparande:', taskData);
       
       // Säkerställ att tenantId och apartmentId är strängar, inte objekt
       if (taskData.tenantId && typeof taskData.tenantId === 'object') {

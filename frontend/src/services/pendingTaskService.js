@@ -1,8 +1,20 @@
 import axios from './api';
+import { getFromCache, saveToCache, invalidateCache, CACHE_KEYS } from '../utils/cacheManager';
 
-const getAll = async () => {
+const getAll = async (bypassCache = false) => {
   try {
+    // Kontrollera om data finns i cache och om vi inte explicit vill gå förbi cachen
+    if (!bypassCache) {
+      const cachedData = getFromCache(CACHE_KEYS.PENDING_TASKS);
+      if (cachedData) return cachedData;
+    }
+    
+    // Hämta data från API om det inte finns i cache eller om vi vill gå förbi cachen
     const response = await axios.get('/api/pending-tasks');
+    
+    // Spara den nya datan i cache
+    saveToCache(CACHE_KEYS.PENDING_TASKS, response.data);
+    
     return response.data;
   } catch (error) {
     console.error('Error fetching pending tasks:', error);
@@ -12,6 +24,14 @@ const getAll = async () => {
 
 const getById = async (id) => {
   try {
+    // Försök hitta uppgiften i cachen först
+    const cachedTasks = getFromCache(CACHE_KEYS.PENDING_TASKS);
+    if (cachedTasks) {
+      const cachedTask = cachedTasks.find(task => task.id === id);
+      if (cachedTask) return cachedTask;
+    }
+    
+    // Om den inte finns i cache, hämta från API
     const response = await axios.get(`/api/pending-tasks/${id}`);
     return response.data;
   } catch (error) {
@@ -20,9 +40,20 @@ const getById = async (id) => {
   }
 };
 
-const getUnreviewedCount = async () => {
+const getUnreviewedCount = async (bypassCache = false) => {
   try {
+    // Kontrollera om data finns i cache och om vi inte explicit vill gå förbi cachen
+    if (!bypassCache) {
+      const cachedCount = getFromCache(CACHE_KEYS.UNREVIEWED_COUNT);
+      if (cachedCount !== null) return cachedCount;
+    }
+    
+    // Hämta data från API om det inte finns i cache eller om vi vill gå förbi cachen
     const response = await axios.get('/api/pending-tasks/unreview-count');
+    
+    // Spara den nya datan i cache
+    saveToCache(CACHE_KEYS.UNREVIEWED_COUNT, response.data);
+    
     return response.data;
   } catch (error) {
     console.error('Error fetching unreviewd count:', error);
@@ -63,6 +94,11 @@ const getApprovedTasks = async () => {
 const approvePendingTask = async (pendingTaskId, reviewData) => {
   try {
     const response = await axios.post(`/api/pending-tasks/${pendingTaskId}/approve`, reviewData);
+    
+    // Invalidera cachen för väntande uppgifter och antal olästa
+    invalidateCache(CACHE_KEYS.PENDING_TASKS);
+    invalidateCache(CACHE_KEYS.UNREVIEWED_COUNT);
+    
     return response.data;
   } catch (error) {
     console.error(`Error approving pending task ${pendingTaskId}:`, error);
@@ -73,6 +109,11 @@ const approvePendingTask = async (pendingTaskId, reviewData) => {
 const rejectPendingTask = async (pendingTaskId, reviewData) => {
   try {
     const response = await axios.post(`/api/pending-tasks/${pendingTaskId}/reject`, reviewData);
+    
+    // Invalidera cachen för väntande uppgifter och antal olästa
+    invalidateCache(CACHE_KEYS.PENDING_TASKS);
+    invalidateCache(CACHE_KEYS.UNREVIEWED_COUNT);
+    
     return response.data;
   } catch (error) {
     console.error(`Error rejecting pending task ${pendingTaskId}:`, error);

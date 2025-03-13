@@ -419,7 +419,12 @@ const Calendar = () => {
     return days;
   };
 
-  const monthName = new Intl.DateTimeFormat('sv-SE', { month: 'long' }).format(currentDate);
+  // Använd översättningar för månaderna istället för Intl.DateTimeFormat
+  const monthNames = [
+    'january', 'february', 'march', 'april', 'may', 'june',
+    'july', 'august', 'september', 'october', 'november', 'december'
+  ];
+  const monthName = t(`calendar.months.${monthNames[currentDate.getMonth()]}`);
   const capitalizedMonthName = monthName.charAt(0).toUpperCase() + monthName.slice(1);
 
   if (isLoading && tasks.length === 0) {

@@ -105,11 +105,7 @@ const Keys = () => {
         apartmentService.getAllApartments(),
         tenantService.getAllTenants(),
       ]);
-      
-      console.log('Nycklar från API:', keysData);
-      console.log('Lägenheter från API:', apartmentsData);
-      console.log('Hyresgäster från API:', tenantsData);
-      
+
       // Bearbeta nycklar för att säkerställa att apartment och tenant-referenserna är korrekta
       const processedKeys = keysData.map(key => {
         // Skapa en kopia av nyckeln för att undvika referensproblem
@@ -118,7 +114,6 @@ const Keys = () => {
         return processedKey;
       });
       
-      console.log('Processade nycklar:', processedKeys);
       
       setKeys(processedKeys);
       setFilteredKeys(processedKeys);
@@ -211,13 +206,7 @@ const Keys = () => {
       const apartmentId = formData.apartment || null;
       const tenantId = formData.tenant || null;
       
-      // Loggning för felsökning
-      console.log('Sparar nyckel med följande data:', {
-        serie, number, copyNumber, type, isAvailable, description, apartmentId, tenantId
-      });
-      console.log('Användarroll:', localStorage.getItem('user_role'));
-      console.log('Token finns:', !!localStorage.getItem('auth_token'));
-      
+
       let keyData = {
         serie,
         number,
@@ -230,67 +219,52 @@ const Keys = () => {
       let savedKey;
       
       if (selectedKey && selectedKey.id) {
-        console.log('Uppdaterar befintlig nyckel:', selectedKey.id);
         keyData.id = selectedKey.id;
         savedKey = await keyService.updateKey(selectedKey.id, keyData);
-        console.log('Nyckel uppdaterad:', savedKey);
         
         // Uppdatera lägenhet (om nödvändigt)
         const currentApartmentId = (selectedKey.apartment && selectedKey.apartment.id) || null;
-        console.log('Nuvarande Apartment ID:', currentApartmentId, 'Ny Apartment ID:', apartmentId);
+
         
         if (apartmentId && apartmentId !== currentApartmentId) {
-          console.log('Tilldelar ny lägenhet:', apartmentId);
+
           try {
             const apartmentResult = await keyService.assignApartment(savedKey.id, apartmentId);
-            console.log('Resultat av lägenhetstilldelning:', apartmentResult);
+
             // Uppdatera savedKey med senaste versionen som har lägenhet kopplad
             savedKey = await keyService.getKeyById(savedKey.id);
           } catch (apartmentError) {
-            console.error('Fel vid tilldelning av lägenhet:', apartmentError);
-            console.log('Fortsätter trots fel med lägenhetstilldelning');
+
           }
         } else if (!apartmentId && currentApartmentId) {
-          console.log('Tar bort lägenhet från nyckel');
+
           try {
             const apartmentRemovalResult = await keyService.removeApartment(savedKey.id);
-            console.log('Resultat av lägenhets-borttagning:', apartmentRemovalResult);
-            // Uppdatera savedKey efter borttagning
+           // Uppdatera savedKey efter borttagning
             savedKey = await keyService.getKeyById(savedKey.id);
           } catch (removalError) {
             console.error('Fel vid borttagning av lägenhet:', removalError);
-            console.log('Fortsätter trots fel med lägenhets-borttagning');
           }
         }
         
         // Uppdatera hyresgäst (efter lägenhet) om nödvändigt
         const currentTenantId = (selectedKey.tenant && selectedKey.tenant.id) || null;
-        console.log('Nuvarande Tenant ID:', currentTenantId, 'Ny Tenant ID:', tenantId);
         
         if (tenantId && tenantId !== currentTenantId) {
-          console.log('Tilldelar ny hyresgäst:', tenantId);
           try {
             const tenantResult = await keyService.assignTenant(savedKey.id, tenantId);
-            console.log('Resultat av hyresgästtilldelning:', tenantResult);
           } catch (tenantError) {
             console.error('Fel vid tilldelning av hyresgäst:', tenantError);
-            console.log('Fortsätter trots fel med hyresgästtilldelning');
           }
         } else if (!tenantId && currentTenantId) {
-          console.log('Tar bort hyresgäst från nyckel');
           try {
             const tenantRemovalResult = await keyService.removeTenant(savedKey.id);
-            console.log('Resultat av hyresgäst-borttagning:', tenantRemovalResult);
           } catch (removalError) {
-            console.error('Fel vid borttagning av hyresgäst:', removalError);
-            console.log('Fortsätter trots fel med hyresgäst-borttagning');
           }
         }
       } else {
-        console.log('Skapar ny nyckel');
         try {
           savedKey = await keyService.createKey(keyData);
-          console.log('Nyckel skapad:', savedKey);
         } catch (createError) {
           console.error('Fel vid skapande av nyckel:', createError);
           throw createError;
@@ -300,39 +274,29 @@ const Keys = () => {
         
         // Steg 1: Tilldela lägenhet först (om det finns)
         if (apartmentId) {
-          console.log('Tilldelar lägenhet till ny nyckel:', apartmentId);
           try {
-            const apartmentResult = await keyService.assignApartment(savedKey.id, apartmentId);
-            console.log('Resultat av lägenhetstilldelning:', apartmentResult);
-            // Uppdatera savedKey med senaste versionen som har lägenhet kopplad
+            const apartmentResult = await keyService.assignApartment(savedKey.id, apartmentId);         // Uppdatera savedKey med senaste versionen som har lägenhet kopplad
             savedKey = await keyService.getKeyById(savedKey.id);
           } catch (apartmentError) {
-            console.error('Fel vid tilldelning av lägenhet till ny nyckel:', apartmentError);
-            console.log('Fortsätter trots fel med lägenhetstilldelning');
           }
         }
         
         // Steg 2: Tilldela hyresgäst efter att lägenhet har tilldelats (om det finns)
         if (tenantId) {
-          console.log('Tilldelar hyresgäst till ny nyckel:', tenantId);
           try {
             const tenantResult = await keyService.assignTenant(savedKey.id, tenantId);
-            console.log('Resultat av hyresgästtilldelning:', tenantResult);
           } catch (tenantError) {
             console.error('Fel vid tilldelning av hyresgäst till ny nyckel:', tenantError);
-            console.log('Fortsätter trots fel med hyresgästtilldelning');
           }
         }
       }
       
-      console.log('Uppdaterar data efter sparande/uppdatering');
       await fetchInitialData();
       setIsModalOpen(false);
       setSelectedKey(null);
       
     } catch (error) {
       console.error('Error saving key:', error);
-      console.log('Server svarade med:', error.response ? error.response.status : 'ingen statuskod');
       setError(error.response?.data?.message || 'Kunde inte spara nyckeln. Försök igen senare.');
     } finally {
       setIsLoading(false);
@@ -340,7 +304,6 @@ const Keys = () => {
   };
 
   const handleEdit = (key) => {
-    console.log('Redigerar nyckel:', key);
     
     setSelectedKey(key);
     
@@ -363,7 +326,6 @@ const Keys = () => {
       }
     }
     
-    console.log('Lägenhet ID:', apartmentId, 'Hyresgäst ID:', tenantId);
     
     setFormData({
       type: key.type || '',

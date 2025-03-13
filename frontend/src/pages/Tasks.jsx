@@ -131,7 +131,6 @@ const Tasks = () => {
 
   // Ny funktion för att hantera val av lägenhet
   const handleApartmentSelect = (apartment) => {
-    console.log('Vald lägenhet:', apartment);
     
     // Uppdatera alltid formData med vald lägenhet
     setFormData(prev => ({
@@ -147,7 +146,6 @@ const Tasks = () => {
         const relatedTenant = tenants.find(t => t.id === tenantId);
         
         if (relatedTenant) {
-          console.log(`Automatiskt vald hyresgäst (ID-baserad): ${relatedTenant.firstName} ${relatedTenant.lastName}`);
           setFormData(prev => ({
             ...prev,
             tenantId: relatedTenant.id
@@ -157,7 +155,6 @@ const Tasks = () => {
       // I andra API-implementationer kan det vara en array av objekt
       else if (apartment.tenants[0].id) {
         const tenantId = apartment.tenants[0].id;
-        console.log(`Automatiskt vald hyresgäst (objekt-baserad): ${apartment.tenants[0].firstName} ${apartment.tenants[0].lastName}`);
         setFormData(prev => ({
           ...prev,
           tenantId: tenantId

@@ -43,14 +43,15 @@ export default {
     tenants: 'Tenants',
     keys: 'Keys',
     tasks: 'Tasks',
-    calendar: 'Calendar',
+    staff: 'Staff',
+    import: 'Import Data',
     pendingTasks: 'Pending Tasks',
+    emailReports: 'Email Reports',
     logout: 'Log out',
     profile: 'Profile',
     settings: 'Settings',
     darkMode: 'Dark mode',
     lightMode: 'Light mode',
-    staff: 'Staff',
   },
 
   auth: {

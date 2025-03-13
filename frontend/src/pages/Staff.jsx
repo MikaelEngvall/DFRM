@@ -182,7 +182,6 @@ const Staff = () => {
       
       // Alla användare kan se hela personallistan
       const data = await userService.getAllUsers();
-      console.log('All users data:', data);
       setUsers(data);
       
       setError(null);

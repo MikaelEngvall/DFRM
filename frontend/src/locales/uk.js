@@ -51,6 +51,7 @@ export default {
     darkMode: 'Темний режим',
     lightMode: 'Світлий режим',
     staff: 'Персонал',
+    import: 'Імпорт даних',
   },
 
   auth: {

@@ -8,7 +8,11 @@ export const CACHE_KEYS = {
   APARTMENTS: 'cached_apartments',
   TENANTS: 'cached_tenants',
   USERS: 'cached_users',
-  KEYS: 'cached_keys'
+  KEYS: 'cached_keys',
+  TASKS: 'cached_tasks',
+  PENDING_TASKS: 'cached_pending_tasks',
+  UNREVIEWED_COUNT: 'cached_unreviewed_count',
+  EMAIL_REPORTS: 'cached_email_reports'
 };
 
 // Standardtid innan cache anses vara för gammal (i millisekunder)
