@@ -8,7 +8,6 @@ import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 
-import com.dfrm.client.GoogleTranslateClient;
 import com.dfrm.model.Language;
 import com.dfrm.model.TaskMessage;
 import com.dfrm.model.User;
@@ -25,7 +24,6 @@ public class TaskMessageService {
 
     private final TaskMessageRepository taskMessageRepository;
     private final UserRepository userRepository;
-    private final GoogleTranslateClient googleTranslateClient;
     
     /**
      * Hämtar alla meddelanden för en specifik uppgift
@@ -38,7 +36,7 @@ public class TaskMessageService {
     }
     
     /**
-     * Skapar ett nytt meddelande för en uppgift och översätter det till alla språk
+     * Skapar ett nytt meddelande för en uppgift
      * 
      * @param taskId ID för uppgiften
      * @param senderId ID för användaren som skickar meddelandet
@@ -61,13 +59,12 @@ public class TaskMessageService {
                 .language(language)
                 .build();
         
-        // Översätt meddelandet till alla språk
-        Map<Language, String> translations = new HashMap<>();
+        // I en riktig implementation skulle vi anropa en översättningstjänst här
+        // För enkelhets skull sätter vi samma innehåll för alla språk
+        Map<String, String> translations = new HashMap<>();
         for (Language targetLanguage : Language.values()) {
             if (targetLanguage != language) {
-                String translatedContent = googleTranslateClient.translate(
-                        content, language.getCode(), targetLanguage.getCode());
-                translations.put(targetLanguage, translatedContent);
+                translations.put(targetLanguage.getCode(), content);
             }
         }
         message.setTranslations(translations);

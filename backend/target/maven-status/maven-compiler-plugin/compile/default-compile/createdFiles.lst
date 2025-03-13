@@ -1,4 +1,5 @@
 com\dfrm\model\Tenant.class
+com\dfrm\service\ImportService.class
 com\dfrm\repository\TaskRepository.class
 com\dfrm\config\EnvConfig.class
 com\dfrm\repository\PendingTaskRepository.class
@@ -15,6 +16,8 @@ com\dfrm\service\SecurityTokenService.class
 com\dfrm\model\Key.class
 com\dfrm\config\KeyTypeDeserializer.class
 com\dfrm\controller\TenantController.class
+com\dfrm\model\TaskMessage$TaskMessageBuilder.class
+com\dfrm\controller\MailController.class
 com\dfrm\model\Task.class
 com\dfrm\config\DotenvConfig.class
 com\dfrm\config\JacksonConfig.class
@@ -22,6 +25,7 @@ com\dfrm\config\MailConfiguration.class
 com\dfrm\config\DataInitializer.class
 com\dfrm\filter\JwtAuthenticationFilter.class
 com\dfrm\model\TaskStatus.class
+com\dfrm\model\TaskMessage.class
 com\dfrm\model\Task$TaskBuilder.class
 com\dfrm\service\JwtService.class
 com\dfrm\model\PendingTask$PendingTaskBuilder.class
@@ -35,6 +39,9 @@ com\dfrm\model\User.class
 com\dfrm\service\EmailListener.class
 com\dfrm\service\ApartmentService.class
 com\dfrm\repository\SecurityTokenRepository.class
+com\dfrm\controller\ImportController.class
+com\dfrm\service\PendingTaskService.class
+com\dfrm\service\TaskMessageService.class
 com\dfrm\repository\ApartmentRepository.class
 com\dfrm\client\GoogleTranslateClient.class
 com\dfrm\service\KeyService.class
@@ -45,6 +52,7 @@ com\dfrm\service\TaskService.class
 com\dfrm\service\TranslationService.class
 com\dfrm\model\SecurityToken$TokenType.class
 com\dfrm\service\EmailService.class
+com\dfrm\config\ApplicationConfig.class
 com\dfrm\service\UserDetailsServiceImpl.class
 com\dfrm\config\SecurityConfig.class
 com\dfrm\config\MongoConfig.class
@@ -52,5 +60,7 @@ com\dfrm\model\User$UserBuilder.class
 com\dfrm\model\Apartment.class
 com\dfrm\model\PendingTask.class
 com\dfrm\config\AppConfig.class
+com\dfrm\controller\TaskMessageController.class
 com\dfrm\controller\ApartmentController.class
 com\dfrm\service\TenantService.class
+com\dfrm\repository\TaskMessageRepository.class

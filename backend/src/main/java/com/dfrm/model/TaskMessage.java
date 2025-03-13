@@ -51,5 +51,5 @@ public class TaskMessage {
     private Language language;
     
     // Översättningar av meddelandet till andra språk
-    private Map<Language, String> translations;
+    private Map<String, String> translations;
 } 

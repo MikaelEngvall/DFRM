@@ -38,6 +38,7 @@ const TaskMessages = ({ taskId, canSendMessages = true }) => {
       setIsLoading(true);
       setError(null);
       const data = await taskMessageService.getMessagesByTaskId(taskId);
+      console.log('Fetched messages:', data);
       setMessages(data);
     } catch (err) {
       console.error('Error fetching messages:', err);
@@ -55,6 +56,7 @@ const TaskMessages = ({ taskId, canSendMessages = true }) => {
     
     try {
       setError(null);
+      console.log('Sending message:', newMessage);
       await taskMessageService.createMessage(taskId, newMessage, currentLocale);
       setNewMessage('');
       fetchMessages(); // Hämta uppdaterade meddelanden
@@ -68,6 +70,7 @@ const TaskMessages = ({ taskId, canSendMessages = true }) => {
   const handleDeleteMessage = async (messageId) => {
     try {
       setError(null);
+      console.log('Deleting message:', messageId);
       await taskMessageService.deleteMessage(taskId, messageId);
       fetchMessages(); // Hämta uppdaterade meddelanden
     } catch (err) {
@@ -84,7 +87,7 @@ const TaskMessages = ({ taskId, canSendMessages = true }) => {
   // Hämta meddelandetext baserat på språk
   const getMessageContent = (message) => {
     // Om meddelandet är på samma språk som användaren, visa originalinnehållet
-    if (message.language && message.language === currentLocale) {
+    if (message.language === currentLocale) {
       return message.content;
     }
     
@@ -99,7 +102,7 @@ const TaskMessages = ({ taskId, canSendMessages = true }) => {
   
   // Kontrollera om användaren är avsändaren av ett meddelande
   const isCurrentUserSender = (message) => {
-    return message.sender && message.sender.id === user.id;
+    return message.sender === user.id;
   };
   
   // Formatera tidpunkt
@@ -153,7 +156,7 @@ const TaskMessages = ({ taskId, canSendMessages = true }) => {
                 >
                   <div className="flex justify-between items-center mb-1">
                     <span className="text-xs font-medium">
-                      {message.sender ? message.sender.firstName : t('tasks.messages.unknownUser')}
+                      {message.senderName || t('tasks.messages.unknownUser')}
                     </span>
                     <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">
                       {formatTimestamp(message.timestamp)}
