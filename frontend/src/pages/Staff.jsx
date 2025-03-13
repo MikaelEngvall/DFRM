@@ -180,26 +180,15 @@ const Staff = () => {
     try {
       setIsLoading(true);
       
-      // Hämta alla användare
+      // Hämta alla användare - alla roller ser alla användare
       const data = await userService.getAllUsers();
       
-      // Debugga isRegularUser och användarroller
+      // Debugga isRegularUser och användarroller för felsökning
       console.log('Current user role:', currentUser?.role);
       console.log('Is regular user:', isRegularUser());
-      console.log('Has USER role:', hasRole('USER'));
-      console.log('Has ADMIN role:', hasRole('ADMIN'));
-      console.log('Has SUPERADMIN role:', hasRole('SUPERADMIN'));
       
-      // Filtrera listan baserat på användarens roll
-      if (isRegularUser()) {
-        // USER ser bara sin egen profil
-        const filteredUsers = data.filter(u => u.id === currentUser.id);
-        console.log('Filtered users for USER role:', filteredUsers);
-        setUsers(filteredUsers);
-      } else {
-        // ADMIN och SUPERADMIN ser alla användare
-        setUsers(data);
-      }
+      // Alla roller ser alla användare - vi filtrerar inte här
+      setUsers(data);
       
       setError(null);
     } catch (err) {
@@ -376,7 +365,7 @@ const Staff = () => {
       
       <DataTable
         columns={columns}
-        data={isRegularUser() ? users.filter(u => u.id === currentUser.id) : users}
+        data={users} // Visa alla användare för alla roller
         isLoading={isLoading}
         onRowClick={(user) => {
           // Bara navigera till redigering om användaren har behörighet
