@@ -179,7 +179,7 @@ const Navigation = () => {
       name: t('navigation.import'),
       href: '/import',
       icon: DocumentArrowUpIcon,
-      roles: ['ADMIN', 'SUPERADMIN']
+      roles: ['SUPERADMIN']
     },
   ];
   
