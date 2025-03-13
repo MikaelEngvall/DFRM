@@ -1,10 +1,22 @@
 import api from './api';
+import { getFromCache, saveToCache, invalidateCache, CACHE_KEYS } from '../utils/cacheManager';
 
 const keyService = {
   // Hämta alla nycklar
-  getAllKeys: async () => {
+  getAllKeys: async (bypassCache = false) => {
     try {
+      // Kontrollera om data finns i cache och om vi inte explicit vill gå förbi cachen
+      if (!bypassCache) {
+        const cachedData = getFromCache(CACHE_KEYS.KEYS);
+        if (cachedData) return cachedData;
+      }
+      
+      // Hämta data från API om det inte finns i cache eller om vi vill gå förbi cachen
       const response = await api.get('/api/keys');
+      
+      // Spara den nya datan i cache
+      saveToCache(CACHE_KEYS.KEYS, response.data);
+      
       return response.data;
     } catch (error) {
       console.error('Fel vid hämtning av nycklar:', error);
@@ -15,6 +27,14 @@ const keyService = {
   // Hämta en specifik nyckel
   getKeyById: async (id) => {
     try {
+      // Försök hitta nyckeln i cachen först
+      const cachedKeys = getFromCache(CACHE_KEYS.KEYS);
+      if (cachedKeys) {
+        const cachedKey = cachedKeys.find(key => key.id === id);
+        if (cachedKey) return cachedKey;
+      }
+      
+      // Om den inte finns i cache, hämta från API
       const response = await api.get(`/api/keys/${id}`);
       return response.data;
     } catch (error) {
@@ -25,10 +45,23 @@ const keyService = {
 
   // Hämta nyckel via serie och nummer
   findBySerieAndNumber: async (serie, number) => {
-    const response = await api.get('/api/keys/search', {
-      params: { serie, number },
-    });
-    return response.data;
+    try {
+      // Försök hitta nyckeln i cachen först baserat på serie och nummer
+      const cachedKeys = getFromCache(CACHE_KEYS.KEYS);
+      if (cachedKeys) {
+        const cachedKey = cachedKeys.find(key => key.serie === serie && key.number === number);
+        if (cachedKey) return cachedKey;
+      }
+      
+      // Om den inte finns i cache, hämta från API
+      const response = await api.get('/api/keys/search', {
+        params: { serie, number },
+      });
+      return response.data;
+    } catch (error) {
+      console.error(`Fel vid sökning av nyckel (serie: ${serie}, nummer: ${number}):`, error);
+      throw error;
+    }
   },
 
   // Skapa en ny nyckel
@@ -36,6 +69,10 @@ const keyService = {
     try {
       console.log('Anropar API: POST /api/keys med data:', keyData);
       const response = await api.post('/api/keys', keyData);
+      
+      // Invalidera cachen för nycklar eftersom vi lagt till en ny
+      invalidateCache(CACHE_KEYS.KEYS);
+      
       console.log('Svar från createKey:', response.data);
       return response.data;
     } catch (error) {
@@ -48,6 +85,10 @@ const keyService = {
   updateKey: async (id, keyData) => {
     try {
       const response = await api.patch(`/api/keys/${id}`, keyData);
+      
+      // Invalidera cachen för nycklar eftersom vi uppdaterat en
+      invalidateCache(CACHE_KEYS.KEYS);
+      
       return response.data;
     } catch (error) {
       console.error(`Error updating key with ID ${id}:`, error);
@@ -57,8 +98,17 @@ const keyService = {
 
   // Partiell uppdatering av en nyckel (endast ändrade fält)
   patchKey: async (id, partialData) => {
-    const response = await api.patch(`/api/keys/${id}`, partialData);
-    return response.data;
+    try {
+      const response = await api.patch(`/api/keys/${id}`, partialData);
+      
+      // Invalidera cachen för nycklar eftersom vi uppdaterat en
+      invalidateCache(CACHE_KEYS.KEYS);
+      
+      return response.data;
+    } catch (error) {
+      console.error(`Error patching key with ID ${id}:`, error);
+      throw error;
+    }
   },
 
   // Ta bort en nyckel
@@ -66,6 +116,10 @@ const keyService = {
     try {
       console.log(`Anropar API: DELETE /api/keys/${id}`);
       const response = await api.delete(`/api/keys/${id}`);
+      
+      // Invalidera cachen för nycklar eftersom vi tagit bort en
+      invalidateCache(CACHE_KEYS.KEYS);
+      
       console.log('Nyckel borttagen');
       return response.data;
     } catch (error) {
@@ -98,6 +152,11 @@ const keyService = {
       console.log(`Försöker tilldela lägenhet ${apartmentId} till nyckel ${keyId} med PATCH`);
       try {
         const response = await api.patch(`/api/keys/${keyId}/apartment?apartmentId=${apartmentId}`);
+        
+        // Invalidera både nyckel- och lägenhetcache eftersom relationen har ändrats
+        invalidateCache(CACHE_KEYS.KEYS);
+        invalidateCache(CACHE_KEYS.APARTMENTS);
+        
         console.log('Framgångsrik tilldelning med PATCH');
         return response.data;
       } catch (patchError) {
@@ -105,6 +164,11 @@ const keyService = {
         if (patchError.response && patchError.response.status === 403) {
           console.log('PATCH misslyckades med 403, försöker med PUT istället');
           const putResponse = await api.put(`/api/keys/${keyId}/apartment?apartmentId=${apartmentId}`);
+          
+          // Invalidera både nyckel- och lägenhetcache eftersom relationen har ändrats
+          invalidateCache(CACHE_KEYS.KEYS);
+          invalidateCache(CACHE_KEYS.APARTMENTS);
+          
           console.log('Framgångsrik tilldelning med PUT som fallback');
           return putResponse.data;
         } else {
@@ -124,6 +188,11 @@ const keyService = {
       console.log(`Försöker tilldela hyresgäst ${tenantId} till nyckel ${keyId} med PATCH`);
       try {
         const response = await api.patch(`/api/keys/${keyId}/tenant?tenantId=${tenantId}`);
+        
+        // Invalidera både nyckel- och hyresgästcache eftersom relationen har ändrats
+        invalidateCache(CACHE_KEYS.KEYS);
+        invalidateCache(CACHE_KEYS.TENANTS);
+        
         console.log('Framgångsrik tilldelning med PATCH');
         return response.data;
       } catch (patchError) {
@@ -131,6 +200,11 @@ const keyService = {
         if (patchError.response && patchError.response.status === 403) {
           console.log('PATCH misslyckades med 403, försöker med PUT istället');
           const putResponse = await api.put(`/api/keys/${keyId}/tenant?tenantId=${tenantId}`);
+          
+          // Invalidera både nyckel- och hyresgästcache eftersom relationen har ändrats
+          invalidateCache(CACHE_KEYS.KEYS);
+          invalidateCache(CACHE_KEYS.TENANTS);
+          
           console.log('Framgångsrik tilldelning med PUT som fallback');
           return putResponse.data;
         } else {
@@ -149,6 +223,11 @@ const keyService = {
     try {
       console.log(`Anropar API: DELETE /api/keys/${keyId}/apartment`);
       const response = await api.delete(`/api/keys/${keyId}/apartment`);
+      
+      // Invalidera både nyckel- och lägenhetcache eftersom relationen har ändrats
+      invalidateCache(CACHE_KEYS.KEYS);
+      invalidateCache(CACHE_KEYS.APARTMENTS);
+      
       console.log('Svar från removeApartment:', response.data);
       return response.data;
     } catch (error) {
@@ -162,6 +241,11 @@ const keyService = {
     try {
       console.log(`Anropar API: DELETE /api/keys/${keyId}/tenant`);
       const response = await api.delete(`/api/keys/${keyId}/tenant`);
+      
+      // Invalidera både nyckel- och hyresgästcache eftersom relationen har ändrats
+      invalidateCache(CACHE_KEYS.KEYS);
+      invalidateCache(CACHE_KEYS.TENANTS);
+      
       console.log('Svar från removeTenant:', response.data);
       return response.data;
     } catch (error) {

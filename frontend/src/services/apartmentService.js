@@ -1,45 +1,76 @@
 import api from './api';
+import { getFromCache, saveToCache, invalidateCache, CACHE_KEYS } from '../utils/cacheManager';
 
 const apartmentService = {
   // Hämta alla lägenheter
-  getAllApartments: async () => {
+  getAllApartments: async (bypassCache = false) => {
     try {
+      // Kontrollera om data finns i cache och om vi inte explicit vill gå förbi cachen
+      if (!bypassCache) {
+        const cachedData = getFromCache(CACHE_KEYS.APARTMENTS);
+        if (cachedData) return cachedData;
+      }
+      
+      // Hämta data från API om det inte finns i cache eller om vi vill gå förbi cachen
       const response = await api.get('/api/apartments');
+      
+      // Spara den nya datan i cache
+      saveToCache(CACHE_KEYS.APARTMENTS, response.data);
+      
       return response.data;
     } catch (error) {
+      console.error('Error fetching apartments:', error);
+      throw error;
+    }
+  },
+
+  // Hämta lägenheter med detaljer om hyresgäster
+  getAllApartmentsWithTenants: async () => {
+    try {
+      // Vi använder samma cache som getAllApartments eftersom båda API-anropen
+      // levererar samma data i denna implementation
+      const cachedData = getFromCache(CACHE_KEYS.APARTMENTS);
+      if (cachedData) return cachedData;
+      
+      const response = await api.get('/api/apartments');
+      saveToCache(CACHE_KEYS.APARTMENTS, response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching apartments with tenants:', error);
       throw error;
     }
   },
 
   // Hämta en specifik lägenhet
   getApartmentById: async (id) => {
-    const response = await api.get(`/api/apartments/${id}`);
-    return response.data;
+    try {
+      // Försök hitta lägenheten i cachen först
+      const cachedApartments = getFromCache(CACHE_KEYS.APARTMENTS);
+      if (cachedApartments) {
+        const cachedApartment = cachedApartments.find(apt => apt.id === id);
+        if (cachedApartment) return cachedApartment;
+      }
+      
+      // Om den inte finns i cache, hämta från API
+      const response = await api.get(`/api/apartments/${id}`);
+      return response.data;
+    } catch (error) {
+      console.error(`Error fetching apartment with id ${id}:`, error);
+      throw error;
+    }
   },
 
   // Skapa en ny lägenhet
   createApartment: async (apartmentData) => {
     try {
-      // Skapa en exakt kopia av det format som fungerar i Postman
-      const postmanExactData = {
-        street: apartmentData.street,
-        number: apartmentData.number,
-        apartmentNumber: apartmentData.apartmentNumber,
-        postalCode: apartmentData.postalCode,
-        city: apartmentData.city,
-        rooms: typeof apartmentData.rooms === 'string' ? parseInt(apartmentData.rooms, 10) : apartmentData.rooms,
-        area: typeof apartmentData.area === 'string' ? parseFloat(apartmentData.area) : apartmentData.area,
-        price: typeof apartmentData.price === 'string' ? parseFloat(apartmentData.price) : apartmentData.price,
-        electricity: apartmentData.electricity,
-        storage: apartmentData.storage,
-        internet: apartmentData.internet,
-        tenants: null,
-        keys: null
-      };
+      const response = await api.post('/api/apartments', apartmentData);
       
-      const response = await api.post('/api/apartments', postmanExactData);
+      // Invalidera cachen för lägenheter eftersom vi lagt till en ny
+      invalidateCache(CACHE_KEYS.APARTMENTS);
+      
       return response.data;
     } catch (error) {
+      console.error('Error creating apartment:', error);
       throw error;
     }
   },
@@ -47,29 +78,30 @@ const apartmentService = {
   // Uppdatera en lägenhet
   updateApartment: async (id, apartmentData) => {
     try {
-      const response = await api.patch(`/api/apartments/${id}`, apartmentData);
+      const response = await api.put(`/api/apartments/${id}`, apartmentData);
+      
+      // Invalidera cachen för lägenheter eftersom vi uppdaterat en
+      invalidateCache(CACHE_KEYS.APARTMENTS);
+      
       return response.data;
     } catch (error) {
-      throw error;
-    }
-  },
-
-  // Partiell uppdatering av en lägenhet (endast ändrade fält)
-  patchApartment: async (id, partialData) => {
-    try {
-      console.log(`Anropar PATCH /api/apartments/${id} med data:`, partialData);
-      const response = await api.patch(`/api/apartments/${id}`, partialData);
-      return response.data;
-    } catch (error) {
-      console.error(`Fel vid PATCH /api/apartments/${id}:`, error);
+      console.error(`Error updating apartment with id ${id}:`, error);
       throw error;
     }
   },
 
   // Ta bort en lägenhet
   deleteApartment: async (id) => {
-    const response = await api.delete(`/api/apartments/${id}`);
-    return response.data;
+    try {
+      await api.delete(`/api/apartments/${id}`);
+      
+      // Invalidera cachen för lägenheter eftersom vi tagit bort en
+      invalidateCache(CACHE_KEYS.APARTMENTS);
+      
+    } catch (error) {
+      console.error(`Error deleting apartment with id ${id}:`, error);
+      throw error;
+    }
   },
 
   // Sök lägenheter efter stad
@@ -92,16 +124,24 @@ const apartmentService = {
 
   // Sök lägenheter efter adress
   findByAddress: async (street, number, apartmentNumber) => {
-    const response = await api.get('/api/apartments/search/address', {
-      params: { street, number, apartmentNumber },
-    });
-    return response.data;
+    try {
+      const response = await api.get(`/api/apartments/search/address?street=${street}&number=${number}&apartmentNumber=${apartmentNumber}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error searching apartments by address:', error);
+      throw error;
+    }
   },
 
   // Tilldela en hyresgäst till en lägenhet
   assignTenant: async (apartmentId, tenantId) => {
     try {
       const response = await api.patch(`/api/apartments/${apartmentId}/tenant?tenantId=${tenantId}`);
+      
+      // Invalidera både lägenhet- och hyresgästcache eftersom relationen har ändrats
+      invalidateCache(CACHE_KEYS.APARTMENTS);
+      invalidateCache(CACHE_KEYS.TENANTS);
+      
       return response.data;
     } catch (error) {
       throw error;
@@ -112,6 +152,11 @@ const apartmentService = {
   assignKey: async (apartmentId, keyId) => {
     try {
       const response = await api.patch(`/api/apartments/${apartmentId}/key?keyId=${keyId}`);
+      
+      // Invalidera både lägenhet- och nyckelcache
+      invalidateCache(CACHE_KEYS.APARTMENTS);
+      invalidateCache(CACHE_KEYS.KEYS);
+      
       return response.data;
     } catch (error) {
       throw error;
@@ -121,12 +166,22 @@ const apartmentService = {
   // Ta bort en hyresgäst från en lägenhet
   removeTenant: async (apartmentId, tenantId) => {
     const response = await api.delete(`/api/apartments/${apartmentId}/tenant/${tenantId}`);
+    
+    // Invalidera både lägenhet- och hyresgästcache
+    invalidateCache(CACHE_KEYS.APARTMENTS);
+    invalidateCache(CACHE_KEYS.TENANTS);
+    
     return response.data;
   },
 
   // Ta bort en nyckel från en lägenhet
   removeKey: async (apartmentId, keyId) => {
     const response = await api.delete(`/api/apartments/${apartmentId}/key/${keyId}`);
+    
+    // Invalidera både lägenhet- och nyckelcache
+    invalidateCache(CACHE_KEYS.APARTMENTS);
+    invalidateCache(CACHE_KEYS.KEYS);
+    
     return response.data;
   },
 };

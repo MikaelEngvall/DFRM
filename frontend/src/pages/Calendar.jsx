@@ -4,6 +4,8 @@ import { useLocale } from '../contexts/LocaleContext';
 import { useAuth } from '../contexts/AuthContext';
 import Modal from '../components/Modal';
 import FormInput from '../components/FormInput';
+import { formatShortDate } from '../utils/formatters';
+import Autocomplete from '../components/Autocomplete';
 
 const Calendar = () => {
   const { t } = useLocale();
@@ -45,10 +47,11 @@ const Calendar = () => {
 
   const fetchReferenceData = async () => {
     try {
+      // Använd cachad data om den finns tillgänglig, annars hämta från API
       const [usersData, apartmentsData, tenantsData] = await Promise.all([
-        userService.getAllUsers(),
-        apartmentService.getAllApartments(),
-        tenantService.getAllTenants(),
+        userService.getAllUsers(), // Använder cache automatiskt
+        apartmentService.getAllApartments(), // Använder cache automatiskt
+        tenantService.getAllTenants(), // Använder cache automatiskt
       ]);
       
       setUsers(usersData);
@@ -245,6 +248,15 @@ const Calendar = () => {
     e.preventDefault();
     try {
       const taskData = { ...formData };
+      
+      // Säkerställ att tenantId och apartmentId är strängar, inte objekt
+      if (taskData.tenantId && typeof taskData.tenantId === 'object') {
+        taskData.tenantId = taskData.tenantId.id;
+      }
+      
+      if (taskData.apartmentId && typeof taskData.apartmentId === 'object') {
+        taskData.apartmentId = taskData.apartmentId.id;
+      }
       
       // Hantera dueDate korrekt genom att använda ISO-formatet YYYY-MM-DD
       // vilket backend kan tolka korrekt till LocalDate utan tidszonsförskjutningar
@@ -635,41 +647,52 @@ const Calendar = () => {
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  {t('tasks.fields.apartment')}
-                </label>
-                <select
+                <Autocomplete
+                  label={t('tasks.fields.apartment')}
                   name="apartmentId"
                   value={formData.apartmentId}
                   onChange={handleInputChange}
-                  className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                >
-                  <option value="">{t('common.select')}</option>
-                  {apartments.map((apartment) => (
-                    <option key={apartment.id} value={apartment.id}>
-                      {apartment.street} {apartment.number}, LGH {apartment.apartmentNumber}
-                    </option>
-                  ))}
-                </select>
+                  onSelect={(apartment) => {
+                    // Hitta relaterade hyresgäster för denna lägenhet
+                    const relatedTenants = tenants.filter(tenant => 
+                      tenant.apartment && 
+                      (tenant.apartment.id === apartment.id || tenant.apartment === apartment.id)
+                    );
+                    
+                    // Om det finns hyresgäster kopplade till lägenheten, välj den första automatiskt
+                    if (relatedTenants.length > 0) {
+                      console.log('Väljer automatiskt hyresgäst:', relatedTenants[0].firstName, relatedTenants[0].lastName);
+                      setFormData(prev => ({
+                        ...prev,
+                        apartmentId: apartment.id,
+                        tenantId: relatedTenants[0].id
+                      }));
+                    } else {
+                      setFormData(prev => ({
+                        ...prev,
+                        apartmentId: apartment.id
+                      }));
+                      console.log('Hittade inga relaterade hyresgäster för denna lägenhet');
+                    }
+                  }}
+                  options={apartments}
+                  displayField={(apartment) => `${apartment.street} ${apartment.number}, LGH ${apartment.apartmentNumber}`}
+                  placeholder={t('common.search')}
+                  className="mb-0"
+                />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  {t('tasks.fields.tenant')}
-                </label>
-                <select
+                <Autocomplete
+                  label={t('tasks.fields.tenant')}
                   name="tenantId"
                   value={formData.tenantId}
                   onChange={handleInputChange}
-                  className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                >
-                  <option value="">{t('common.select')}</option>
-                  {tenants.map((tenant) => (
-                    <option key={tenant.id} value={tenant.id}>
-                      {tenant.firstName} {tenant.lastName}
-                    </option>
-                  ))}
-                </select>
+                  options={tenants}
+                  displayField={(tenant) => `${tenant.firstName} ${tenant.lastName}`}
+                  placeholder={t('common.search')}
+                  className="mb-0"
+                />
               </div>
             </div>
             

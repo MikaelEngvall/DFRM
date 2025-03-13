@@ -3,6 +3,7 @@ import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
 import AlertModal from '../components/AlertModal';
 import FormInput from '../components/FormInput';
+import Autocomplete from '../components/Autocomplete';
 import { PlusIcon } from '@heroicons/react/24/outline';
 import { taskService, apartmentService, tenantService, userService } from '../services';
 import { useLocale } from '../contexts/LocaleContext';
@@ -100,11 +101,11 @@ const Tasks = () => {
       // Hämta uppgifter med filter
       const tasksData = await taskService.getAllTasks(filters);
       
-      // Hämta referensdata för att visa detaljer
+      // Hämta referensdata för att visa detaljer (använder cache automatiskt)
       const [apartmentsData, tenantsData, usersData] = await Promise.all([
-        apartmentService.getAllApartments(),
-        tenantService.getAllTenants(),
-        userService.getAllUsers(),
+        apartmentService.getAllApartmentsWithTenants(), // Använder cache automatiskt
+        tenantService.getAllTenants(), // Använder cache automatiskt
+        userService.getAllUsers(), // Använder cache automatiskt
       ]);
       
       setTasks(tasksData);
@@ -126,6 +127,64 @@ const Tasks = () => {
       ...prev,
       [name]: type === 'checkbox' ? checked : value,
     }));
+  };
+
+  // Ny funktion för att hantera val av lägenhet
+  const handleApartmentSelect = (apartment) => {
+    console.log('Vald lägenhet:', apartment);
+    
+    // Uppdatera alltid formData med vald lägenhet
+    setFormData(prev => ({
+      ...prev,
+      apartmentId: apartment.id
+    }));
+    
+    // Om lägenheten har kopplade hyresgäster
+    if (apartment && apartment.tenants && apartment.tenants.length > 0) {
+      // I vissa API-implementationer kan tenants vara en array av ID:n
+      if (typeof apartment.tenants[0] === 'string') {
+        const tenantId = apartment.tenants[0];
+        const relatedTenant = tenants.find(t => t.id === tenantId);
+        
+        if (relatedTenant) {
+          console.log(`Automatiskt vald hyresgäst (ID-baserad): ${relatedTenant.firstName} ${relatedTenant.lastName}`);
+          setFormData(prev => ({
+            ...prev,
+            tenantId: relatedTenant.id
+          }));
+        }
+      } 
+      // I andra API-implementationer kan det vara en array av objekt
+      else if (apartment.tenants[0].id) {
+        const tenantId = apartment.tenants[0].id;
+        console.log(`Automatiskt vald hyresgäst (objekt-baserad): ${apartment.tenants[0].firstName} ${apartment.tenants[0].lastName}`);
+        setFormData(prev => ({
+          ...prev,
+          tenantId: tenantId
+        }));
+      }
+    } else {
+      console.log('Lägenheten har inga kopplade hyresgäster, söker efter relaterade hyresgäster...');
+      
+      // Alternativ metod: Sök efter alla hyresgäster som har denna lägenhet kopplad till sig
+      const relatedTenants = tenants.filter(tenant => 
+        tenant.apartment && (
+          tenant.apartment === apartment.id || 
+          tenant.apartment.id === apartment.id || 
+          tenant.apartmentId === apartment.id
+        )
+      );
+      
+      if (relatedTenants.length > 0) {
+        console.log(`Hittade relaterad hyresgäst genom sökning: ${relatedTenants[0].firstName} ${relatedTenants[0].lastName}`);
+        setFormData(prev => ({
+          ...prev,
+          tenantId: relatedTenants[0].id
+        }));
+      } else {
+        console.log('Hittade inga relaterade hyresgäster för denna lägenhet');
+      }
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -552,41 +611,30 @@ const Tasks = () => {
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                {t('tasks.fields.apartment')}
-              </label>
-              <select
+              <Autocomplete
+                label={t('tasks.fields.apartment')}
                 name="apartmentId"
                 value={formData.apartmentId}
                 onChange={handleInputChange}
-                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              >
-                <option value="">{t('common.select')}</option>
-                {apartments.map((apartment) => (
-                  <option key={apartment.id} value={apartment.id}>
-                    {apartment.street} {apartment.number}, LGH {apartment.apartmentNumber}
-                  </option>
-                ))}
-              </select>
+                onSelect={handleApartmentSelect}
+                options={apartments}
+                displayField={(apartment) => `${apartment.street} ${apartment.number}, LGH ${apartment.apartmentNumber}`}
+                placeholder={t('common.search')}
+                className="mb-0"
+              />
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                {t('tasks.fields.tenant')}
-              </label>
-              <select
+              <Autocomplete
+                label={t('tasks.fields.tenant')}
                 name="tenantId"
                 value={formData.tenantId}
                 onChange={handleInputChange}
-                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              >
-                <option value="">{t('common.select')}</option>
-                {tenants.map((tenant) => (
-                  <option key={tenant.id} value={tenant.id}>
-                    {tenant.firstName} {tenant.lastName}
-                  </option>
-                ))}
-              </select>
+                options={tenants}
+                displayField={(tenant) => `${tenant.firstName} ${tenant.lastName}`}
+                placeholder={t('common.search')}
+                className="mb-0"
+              />
             </div>
           </div>
           
@@ -602,23 +650,25 @@ const Tasks = () => {
               rows="2"
             />
           </div>
-          
-          <div className="flex items-center">
-            <input
-              id="isRecurring"
-              name="isRecurring"
-              type="checkbox"
-              checked={formData.isRecurring}
-              onChange={handleInputChange}
-              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-            />
-            <label htmlFor="isRecurring" className="ml-2 block text-sm text-gray-900 dark:text-gray-300">
-              {t('tasks.fields.isRecurring')}
-            </label>
+
+          <div className="mb-3">
+            <div className="flex items-center">
+              <input
+                id="isRecurring"
+                name="isRecurring"
+                type="checkbox"
+                checked={formData.isRecurring}
+                onChange={handleInputChange}
+                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              />
+              <label htmlFor="isRecurring" className="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                {t('tasks.fields.isRecurring')}
+              </label>
+            </div>
           </div>
-          
+
           {formData.isRecurring && (
-            <div className="mt-3">
+            <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 {t('tasks.fields.recurringPattern')}
               </label>
@@ -630,16 +680,13 @@ const Tasks = () => {
                 required={formData.isRecurring}
               >
                 <option value="">{t('common.select')}</option>
-                <option value="DAILY">{t('tasks.recurringPatterns.DAILY')}</option>
-                <option value="WEEKLY">{t('tasks.recurringPatterns.WEEKLY')}</option>
-                <option value="BIWEEKLY">{t('tasks.recurringPatterns.BIWEEKLY')}</option>
-                <option value="MONTHLY">{t('tasks.recurringPatterns.MONTHLY')}</option>
-                <option value="QUARTERLY">{t('tasks.recurringPatterns.QUARTERLY')}</option>
-                <option value="YEARLY">{t('tasks.recurringPatterns.YEARLY')}</option>
+                <option value="DAILY">{t('tasks.recurring.DAILY')}</option>
+                <option value="WEEKLY">{t('tasks.recurring.WEEKLY')}</option>
+                <option value="BIWEEKLY">{t('tasks.recurring.BIWEEKLY')}</option>
+                <option value="MONTHLY">{t('tasks.recurring.MONTHLY')}</option>
+                <option value="QUARTERLY">{t('tasks.recurring.QUARTERLY')}</option>
+                <option value="YEARLY">{t('tasks.recurring.YEARLY')}</option>
               </select>
-              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                {t('tasks.recurringPatternHelp')}
-              </p>
             </div>
           )}
         </div>
