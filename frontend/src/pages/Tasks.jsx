@@ -4,14 +4,14 @@ import Modal from '../components/Modal';
 import AlertModal from '../components/AlertModal';
 import FormInput from '../components/FormInput';
 import Autocomplete from '../components/Autocomplete';
-import { PlusIcon } from '@heroicons/react/24/outline';
-import { taskService, apartmentService, tenantService, userService } from '../services';
+import { PlusIcon, PaperAirplaneIcon } from '@heroicons/react/24/outline';
+import { taskService, apartmentService, tenantService, userService, taskMessageService } from '../services';
 import { useLocale } from '../contexts/LocaleContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 
 const Tasks = () => {
-  const { t } = useLocale();
+  const { t, currentLocale } = useLocale();
   const { user: currentUser } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
@@ -637,15 +637,34 @@ const Tasks = () => {
           
           <div className="mb-3">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              {t('tasks.fields.comments')}
+              {t('tasks.messages.title')}
             </label>
-            <textarea
-              name="comments"
-              value={formData.comments}
-              onChange={handleInputChange}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              rows="2"
-            />
+            <div className="relative">
+              <textarea
+                name="comments"
+                value={formData.comments}
+                onChange={handleInputChange}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                rows="4"
+                placeholder={t('tasks.messages.inputPlaceholder')}
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  if (formData.comments.trim()) {
+                    // Spara meddelandet om uppgiften har ett ID
+                    if (selectedTask && selectedTask.id) {
+                      taskMessageService.createMessage(selectedTask.id, formData.comments, currentLocale);
+                      setFormData({...formData, comments: ''});
+                    }
+                  }
+                }}
+                disabled={!formData.comments.trim() || !selectedTask || !selectedTask.id}
+                className="absolute bottom-2 right-2 p-1 rounded-full bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <PaperAirplaneIcon className="h-5 w-5" />
+              </button>
+            </div>
           </div>
 
           <div className="mb-3">

@@ -294,7 +294,7 @@ export default {
       fetchError: 'Ett fel uppstod vid hämtning av meddelanden',
       sendError: 'Ett fel uppstod vid skickande av meddelande',
       deleteError: 'Ett fel uppstod vid borttagning av meddelande',
-      title: 'Meddelanden',
+      title: 'Meddelande',
       noMessages: 'Inga meddelanden än',
       inputPlaceholder: 'Skriv ett meddelande...',
       send: 'Skicka',
