@@ -10,11 +10,16 @@ const emailService = {
    */
   sendBulkEmail: async (subject, content, recipients) => {
     try {
+      console.log(`emailService.sendBulkEmail: skickar till ${recipients.length} mottagare`);
+      console.log('Mottagarlista:', recipients);
+      
       const response = await api.post('/api/mail/bulk', {
         subject,
         content,
         recipients
       });
+      
+      console.log('Svar från API:', response.data);
       return response.data;
     } catch (error) {
       console.error('Error sending bulk email:', error);

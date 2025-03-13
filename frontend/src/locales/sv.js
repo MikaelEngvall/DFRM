@@ -480,21 +480,21 @@ export default {
 
   email: {
     title: 'Skicka e-post',
+    button: 'Skicka e-post',
     from: 'Från',
     to: 'Till',
-    bcc: 'Dold kopia',
+    bcc: 'BCC',
     subject: 'Ämne',
-    content: 'Meddelande',
+    content: 'Innehåll',
     send: 'Skicka',
     sending: 'Skickar...',
     recipients: 'mottagare',
-    button: 'Maila',
-    success: 'E-posten har skickats',
+    showRecipients: 'Visa mottagarlista',
     errors: {
       subjectRequired: 'Ämne är obligatoriskt',
-      contentRequired: 'Meddelande är obligatoriskt',
-      noRecipients: 'Det finns inga mottagare',
-      sendFailed: 'Det gick inte att skicka e-posten',
+      contentRequired: 'Innehåll är obligatoriskt',
+      noRecipients: 'Inga mottagare valda',
+      sendFailed: 'Kunde inte skicka e-post. Försök igen senare.'
     }
   },
 }; 

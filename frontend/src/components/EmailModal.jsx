@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Modal from './Modal';
 import FormInput from './FormInput';
 import { useLocale } from '../contexts/LocaleContext';
@@ -19,6 +19,13 @@ const EmailModal = ({ isOpen, onClose, onSend, recipients = [], sender = "info@d
   const [content, setContent] = useState('');
   const [sending, setSending] = useState(false);
   const [error, setError] = useState(null);
+
+  // Logga mottagarlistan när komponenten renderas eller när den ändras
+  useEffect(() => {
+    if (isOpen) {
+      console.log(`EmailModal: Mottog ${recipients.length} mottagare:`, recipients);
+    }
+  }, [isOpen, recipients]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -41,7 +48,9 @@ const EmailModal = ({ isOpen, onClose, onSend, recipients = [], sender = "info@d
     try {
       setSending(true);
       setError(null);
+      console.log(`EmailModal handleSubmit: Skickar e-post till ${recipients.length} mottagare...`);
       await onSend(subject, content, recipients);
+      console.log('E-post skickad framgångsrikt');
       
       // Rensa formuläret efter framgångsrik sändning
       setSubject('');
@@ -49,6 +58,7 @@ const EmailModal = ({ isOpen, onClose, onSend, recipients = [], sender = "info@d
       setSending(false);
       onClose();
     } catch (err) {
+      console.error('E-post kunde inte skickas:', err);
       setError(err.message || t('email.errors.sendFailed'));
       setSending(false);
     }
@@ -94,6 +104,22 @@ const EmailModal = ({ isOpen, onClose, onSend, recipients = [], sender = "info@d
             </span>
           </div>
         </div>
+        
+        {/* Knapp för att visa mottagarlistan */}
+        {recipients.length > 0 && (
+          <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-md">
+            <button 
+              type="button"
+              onClick={() => console.log('Mottagarlista:', recipients)}
+              className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+            >
+              {t('email.showRecipients')}
+            </button>
+            <div className="mt-2 text-xs text-gray-600 dark:text-gray-400 overflow-auto max-h-20">
+              {recipients.join(', ')}
+            </div>
+          </div>
+        )}
         
         <FormInput
           label={t('email.subject')}

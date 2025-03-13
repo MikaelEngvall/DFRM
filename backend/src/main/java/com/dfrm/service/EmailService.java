@@ -65,8 +65,19 @@ public class EmailService {
             
             // Lägg till alla mottagare som dold kopia (BCC)
             if (recipients != null && !recipients.isEmpty()) {
+                // Logga detaljerad information om BCC-mottagarna
+                log.info("Lägger till följande e-postadresser som BCC-mottagare:");
+                for (int i = 0; i < recipients.size(); i++) {
+                    log.info("  [{}] {}", i+1, recipients.get(i));
+                }
+                
                 String[] bccArray = recipients.toArray(new String[0]);
                 helper.setBcc(bccArray);
+                
+                // Logga det faktiska BCC-arrayen som används
+                log.info("BCC-array längd: {}", bccArray.length);
+            } else {
+                log.warn("Inga BCC-mottagare att skicka till!");
             }
             
             helper.setSubject(subject);

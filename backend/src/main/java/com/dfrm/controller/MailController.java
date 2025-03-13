@@ -39,13 +39,20 @@ public class MailController {
             
             log.info("Sending bulk email to {} recipients", recipients.size());
             
+            // Logga alla e-postadresser i BCC-listan
+            log.info("BCC recipients list:");
+            for (String recipient : recipients) {
+                log.info(" - {}", recipient);
+            }
+            
             // Skicka till varje mottagare som dold kopia (BCC)
             emailService.sendBulkEmail(subject, content, recipients);
             
             return ResponseEntity.ok(Map.of(
                 "success", true,
                 "message", "Email sent successfully",
-                "recipientCount", recipients.size()
+                "recipientCount", recipients.size(),
+                "recipients", recipients // Lägg till mottagarlistan i svaret
             ));
             
         } catch (Exception e) {
