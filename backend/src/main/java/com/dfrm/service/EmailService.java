@@ -95,7 +95,17 @@ public class EmailService {
             helper.setSubject(subject);
             
             // Sätt innehållet som HTML för bättre formatering
-            helper.setText(content, true);
+            // Konvertera radbrytningar till HTML-br-taggar om innehållet inte redan är HTML
+            String htmlContent = content;
+            if (!content.trim().startsWith("<html") && !content.trim().startsWith("<!DOCTYPE")) {
+                // Ersätt alla radbrytningar med <br> för korrekt visning i e-post
+                htmlContent = content.replaceAll("\\r\\n|\\n|\\r", "<br>");
+                // Omslut innehållet i HTML-struktur
+                htmlContent = "<html><body>" + htmlContent + "</body></html>";
+                log.info("Konverterade text med radbrytningar till HTML-format");
+            }
+            
+            helper.setText(htmlContent, true);
             
             log.info("Försöker skicka bulk-e-post...");
             mailSender.send(message);

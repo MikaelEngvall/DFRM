@@ -105,12 +105,33 @@ const Calendar = () => {
     }
   };
 
+  // Uppdatera navigeringsfunktioner för att hantera olika vyer
   const goToPreviousMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1));
+    setCurrentDate(prevDate => {
+      const newDate = new Date(prevDate);
+      if (view === 'month') {
+        newDate.setMonth(newDate.getMonth() - 1);
+      } else if (view === 'week') {
+        newDate.setDate(newDate.getDate() - 7);
+      } else if (view === 'day') {
+        newDate.setDate(newDate.getDate() - 1);
+      }
+      return newDate;
+    });
   };
 
   const goToNextMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
+    setCurrentDate(prevDate => {
+      const newDate = new Date(prevDate);
+      if (view === 'month') {
+        newDate.setMonth(newDate.getMonth() + 1);
+      } else if (view === 'week') {
+        newDate.setDate(newDate.getDate() + 7);
+      } else if (view === 'day') {
+        newDate.setDate(newDate.getDate() + 1);
+      }
+      return newDate;
+    });
   };
 
   const goToToday = () => {
@@ -123,6 +144,13 @@ const Calendar = () => {
 
   const getFirstDayOfMonth = (year, month) => {
     return new Date(year, month, 1).getDay();
+  };
+
+  const isDateToday = (date) => {
+    const today = new Date();
+    return date.getDate() === today.getDate() &&
+           date.getMonth() === today.getMonth() &&
+           date.getFullYear() === today.getFullYear();
   };
 
   const handleTaskClick = async (task) => {
@@ -325,6 +353,26 @@ const Calendar = () => {
     }
   };
 
+  const renderTaskItem = (task) => {
+    return (
+      <div
+        key={task.id}
+        className={`px-2 py-1 rounded text-xs mb-1 cursor-pointer ${getPriorityColor(task.priority)}`}
+        onClick={(e) => {
+          e.stopPropagation();
+          handleTaskClick(task);
+        }}
+      >
+        <div className="truncate font-medium">{task.title}</div>
+        {task.assignedToUser && (
+          <div className="truncate text-xs opacity-80">
+            {task.assignedToUser.firstName} {task.assignedToUser.lastName}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const renderMonthlyCalendar = () => {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
@@ -394,20 +442,7 @@ const Calendar = () => {
           </div>
           <div className="px-1">
             {dayTasks.length > 0 ? (
-              dayTasks.map(task => (
-                <div 
-                  key={task.id}
-                  className={`mb-1 p-1 text-xs rounded border ${getPriorityColor(task.priority)} cursor-pointer hover:opacity-80`}
-                  onClick={() => handleTaskClick(task)}
-                >
-                  <div className="font-semibold truncate">{task.title}</div>
-                  <div className="flex justify-between mt-1">
-                    <span className={`px-1 rounded-sm text-xxs ${getStatusColor(task.status)}`}>
-                      {t(`tasks.status.${task.status}`)}
-                    </span>
-                  </div>
-                </div>
-              ))
+              dayTasks.map(task => renderTaskItem(task))
             ) : (
               <div className="text-xs text-gray-400 dark:text-gray-600 p-1">
                 {t('calendar.noEvents')}
@@ -421,6 +456,136 @@ const Calendar = () => {
     return days;
   };
 
+  // Lägg till renderWeeklyCalendar-funktion efter renderMonthlyCalendar
+  const renderWeeklyCalendar = () => {
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    const date = currentDate.getDate();
+    
+    // Hitta första dagen i veckan (måndag)
+    const currentDay = new Date(year, month, date);
+    const dayOfWeek = currentDay.getDay(); // 0 är söndag, 1 är måndag, etc.
+    const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Konvertera till vecka som börjar på måndag
+    
+    const weekStart = new Date(year, month, date - diff);
+    const days = [];
+    
+    // Skapa 7 dagar från veckans början
+    for (let i = 0; i < 7; i++) {
+      const day = new Date(weekStart);
+      day.setDate(weekStart.getDate() + i);
+      
+      const dayYear = day.getFullYear();
+      const dayMonth = day.getMonth();
+      const dayDate = day.getDate();
+      const dateString = day.toISOString().split('T')[0];
+      
+      // Filtrera uppgifter för denna dag
+      const dayTasks = tasks.filter(task => {
+        const taskDate = new Date(task.dueDate);
+        return taskDate.getFullYear() === dayYear && 
+              taskDate.getMonth() === dayMonth && 
+              taskDate.getDate() === dayDate;
+      });
+      
+      const isToday = isDateToday(day);
+      
+      days.push(
+        <div 
+          key={`day-${i}`} 
+          className={`border-b border-r border-gray-200 dark:border-gray-700 p-2 ${
+            isToday ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+          } min-h-[200px]`}
+          onClick={() => isAdminOrSuperAdmin() && handleDayClick(dateString)}
+        >
+          <div className="flex justify-between items-center mb-2">
+            <span className={`text-sm font-medium ${
+              isToday ? 'text-blue-700 dark:text-blue-300' : 'text-gray-700 dark:text-gray-300'
+            }`}>
+              {dayDate} {t(`calendar.monthsShort.${dayMonth}`)}
+            </span>
+          </div>
+          
+          <div className="space-y-1">
+            {dayTasks.map(task => renderTaskItem(task))}
+          </div>
+        </div>
+      );
+    }
+    
+    return days;
+  };
+  
+  // Lägg till renderDailyCalendar-funktion
+  const renderDailyCalendar = () => {
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    const date = currentDate.getDate();
+    const selectedDate = new Date(year, month, date);
+    const dateString = selectedDate.toISOString().split('T')[0];
+    
+    // Filtrera uppgifter för vald dag
+    const dayTasks = tasks.filter(task => {
+      const taskDate = new Date(task.dueDate);
+      return taskDate.getFullYear() === year && 
+            taskDate.getMonth() === month && 
+            taskDate.getDate() === date;
+    });
+    
+    // Sortera uppgifter efter prioritet
+    const sortedTasks = [...dayTasks].sort((a, b) => {
+      const priorityOrder = { HIGH: 0, MEDIUM: 1, LOW: 2 };
+      return priorityOrder[a.priority] - priorityOrder[b.priority];
+    });
+    
+    return (
+      <div 
+        className="border border-gray-200 dark:border-gray-700 rounded-md p-4 min-h-[600px]"
+        onClick={() => isAdminOrSuperAdmin() && handleDayClick(dateString)}
+      >
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-medium text-gray-800 dark:text-white">
+            {date} {t(`calendar.months.${month}`)} {year}
+          </h2>
+        </div>
+        
+        {sortedTasks.length > 0 ? (
+          <div className="space-y-3">
+            {sortedTasks.map(task => (
+              <div 
+                key={task.id} 
+                className="p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-sm hover:shadow-md transition-shadow duration-200 cursor-pointer"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleTaskClick(task);
+                }}
+              >
+                <div className="flex justify-between items-start">
+                  <div>
+                    <h3 className="font-medium text-gray-900 dark:text-white">{task.title}</h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">{task.description}</p>
+                  </div>
+                  <div className={`px-2 py-1 text-xs font-medium rounded-full ${getPriorityColor(task.priority)}`}>
+                    {t(`tasks.priorities.${task.priority.toLowerCase()}`)}
+                  </div>
+                </div>
+                
+                <div className="mt-2 flex justify-between text-xs text-gray-500 dark:text-gray-400">
+                  <span>{task.assignedToUser ? task.assignedToUser.firstName + ' ' + task.assignedToUser.lastName : '-'}</span>
+                  <span>{formatShortDate(task.dueDate, currentLocale)}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="flex justify-center items-center h-64 text-gray-500 dark:text-gray-400">
+            {t('calendar.noTasks')}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   // Använd översättningar för månaderna istället för Intl.DateTimeFormat
   const monthNames = [
     'january', 'february', 'march', 'april', 'may', 'june',
@@ -428,6 +593,37 @@ const Calendar = () => {
   ];
   const monthName = t(`calendar.months.${monthNames[currentDate.getMonth()]}`);
   const capitalizedMonthName = monthName.charAt(0).toUpperCase() + monthName.slice(1);
+
+  // Formaterar rubriker för olika kalendervyer
+  const getCalendarTitle = () => {
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+    const date = currentDate.getDate();
+    
+    if (view === 'month') {
+      return `${t(`calendar.months.${month}`)} ${year}`;
+    } else if (view === 'week') {
+      // Hitta första dagen i veckan (måndag)
+      const currentDay = new Date(year, month, date);
+      const dayOfWeek = currentDay.getDay(); // 0 är söndag, 1 är måndag, etc.
+      const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Konvertera till vecka som börjar på måndag
+      
+      const weekStart = new Date(year, month, date - diff);
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekStart.getDate() + 6);
+      
+      // Om veckan sträcker sig över två månader
+      if (weekStart.getMonth() !== weekEnd.getMonth()) {
+        return `${weekStart.getDate()} ${t(`calendar.monthsShort.${weekStart.getMonth()}`)} - ${weekEnd.getDate()} ${t(`calendar.monthsShort.${weekEnd.getMonth()}`)} ${year}`;
+      }
+      
+      return `${weekStart.getDate()} - ${weekEnd.getDate()} ${t(`calendar.months.${month}`)} ${year}`;
+    } else if (view === 'day') {
+      return `${date} ${t(`calendar.months.${month}`)} ${year}`;
+    }
+    
+    return '';
+  };
 
   if (isLoading && tasks.length === 0) {
     return (
@@ -484,7 +680,7 @@ const Calendar = () => {
             </svg>
           </button>
           <h2 className="text-xl font-medium text-gray-900 dark:text-white">
-            {capitalizedMonthName} {currentDate.getFullYear()}
+            {getCalendarTitle()}
           </h2>
           <button
             onClick={goToNextMonth}
@@ -521,20 +717,44 @@ const Calendar = () => {
 
       <div className="bg-white dark:bg-gray-900 rounded-lg shadow overflow-hidden">
         {/* Veckodagar */}
-        <div className="grid grid-cols-7 bg-gray-50 dark:bg-gray-800">
-          <div className="py-2 text-center text-sm text-gray-600 dark:text-gray-400 font-medium">{t('calendar.weekdaysShort.mon')}</div>
-          <div className="py-2 text-center text-sm text-gray-600 dark:text-gray-400 font-medium">{t('calendar.weekdaysShort.tue')}</div>
-          <div className="py-2 text-center text-sm text-gray-600 dark:text-gray-400 font-medium">{t('calendar.weekdaysShort.wed')}</div>
-          <div className="py-2 text-center text-sm text-gray-600 dark:text-gray-400 font-medium">{t('calendar.weekdaysShort.thu')}</div>
-          <div className="py-2 text-center text-sm text-gray-600 dark:text-gray-400 font-medium">{t('calendar.weekdaysShort.fri')}</div>
-          <div className="py-2 text-center text-sm text-gray-600 dark:text-gray-400 font-medium">{t('calendar.weekdaysShort.sat')}</div>
-          <div className="py-2 text-center text-sm text-gray-600 dark:text-gray-400 font-medium">{t('calendar.weekdaysShort.sun')}</div>
-        </div>
+        {view === 'month' && (
+          <div className="grid grid-cols-7 bg-gray-50 dark:bg-gray-800">
+            <div className="py-2 text-center text-sm text-gray-600 dark:text-gray-400 font-medium">{t('calendar.weekdaysShort.mon')}</div>
+            <div className="py-2 text-center text-sm text-gray-600 dark:text-gray-400 font-medium">{t('calendar.weekdaysShort.tue')}</div>
+            <div className="py-2 text-center text-sm text-gray-600 dark:text-gray-400 font-medium">{t('calendar.weekdaysShort.wed')}</div>
+            <div className="py-2 text-center text-sm text-gray-600 dark:text-gray-400 font-medium">{t('calendar.weekdaysShort.thu')}</div>
+            <div className="py-2 text-center text-sm text-gray-600 dark:text-gray-400 font-medium">{t('calendar.weekdaysShort.fri')}</div>
+            <div className="py-2 text-center text-sm text-gray-600 dark:text-gray-400 font-medium">{t('calendar.weekdaysShort.sat')}</div>
+            <div className="py-2 text-center text-sm text-gray-600 dark:text-gray-400 font-medium">{t('calendar.weekdaysShort.sun')}</div>
+          </div>
+        )}
+        
+        {view === 'week' && (
+          <div className="grid grid-cols-7 bg-gray-50 dark:bg-gray-800">
+            <div className="py-2 text-center text-sm text-gray-600 dark:text-gray-400 font-medium">{t('calendar.weekdays.mon')}</div>
+            <div className="py-2 text-center text-sm text-gray-600 dark:text-gray-400 font-medium">{t('calendar.weekdays.tue')}</div>
+            <div className="py-2 text-center text-sm text-gray-600 dark:text-gray-400 font-medium">{t('calendar.weekdays.wed')}</div>
+            <div className="py-2 text-center text-sm text-gray-600 dark:text-gray-400 font-medium">{t('calendar.weekdays.thu')}</div>
+            <div className="py-2 text-center text-sm text-gray-600 dark:text-gray-400 font-medium">{t('calendar.weekdays.fri')}</div>
+            <div className="py-2 text-center text-sm text-gray-600 dark:text-gray-400 font-medium">{t('calendar.weekdays.sat')}</div>
+            <div className="py-2 text-center text-sm text-gray-600 dark:text-gray-400 font-medium">{t('calendar.weekdays.sun')}</div>
+          </div>
+        )}
         
         {/* Kalender */}
-        <div className="grid grid-cols-7">
-          {renderMonthlyCalendar()}
-        </div>
+        {view === 'month' && (
+          <div className="grid grid-cols-7">
+            {renderMonthlyCalendar()}
+          </div>
+        )}
+        {view === 'week' && (
+          <div className="grid grid-cols-7">
+            {renderWeeklyCalendar()}
+          </div>
+        )}
+        {view === 'day' && (
+          renderDailyCalendar()
+        )}
       </div>
 
       {/* Task Modal */}
