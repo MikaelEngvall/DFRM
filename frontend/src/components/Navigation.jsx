@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 import {
   HomeIcon,
   BuildingOffice2Icon,
@@ -18,7 +18,6 @@ import {
 } from '@heroicons/react/24/outline';
 import { useAuth } from '../contexts/AuthContext';
 import { useLocale } from '../contexts/LocaleContext';
-import { useTheme } from '../contexts/ThemeContext';
 import LanguageSelector from './LanguageSelector';
 
 // Flyttar Tooltip-komponenten utanför Navigation-komponenten
@@ -75,20 +74,13 @@ function DesktopNavLink({ to, icon: Icon, label, tooltips, showTooltip, hideTool
 const Navigation = () => {
   const { user, logout, hasRole } = useAuth();
   const { t } = useLocale();
-  const { theme, toggleTheme } = useTheme();
-  const navigate = useNavigate();
-  const location = useLocation();
-  // States för tooltip-synlighet
   const [tooltips, setTooltips] = useState({});
-  const [logoutTooltipVisible, setLogoutTooltipVisible] = useState(false);
-  const [themeTooltipVisible, setThemeTooltipVisible] = useState(false);
-  // State för mobilmenyn
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [darkMode, setDarkMode] = useState(
     localStorage.getItem('darkMode') === 'true' || 
     (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)
   );
-  
+
   useEffect(() => {
     if (darkMode) {
       document.documentElement.classList.add('dark');
@@ -259,7 +251,7 @@ const Navigation = () => {
       {/* Desktop navigation - top bar */}
       <div className="fixed top-0 left-0 right-0 h-16 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between px-4 z-10">
         <div className="flex items-center">
-          <div className="hidden md:block">
+          <div className="hidden lg:block">
             <LanguageSelector />
           </div>
         </div>
@@ -275,7 +267,7 @@ const Navigation = () => {
       </div>
 
       {/* Desktop navigation - sidebar */}
-      <div className="hidden lg:block fixed top-0 left-0 bottom-0 w-60 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 pt-16">
+      <div className={`hidden ${authorizedNavItems.length > 0 ? 'lg:block' : ''} fixed top-0 left-0 bottom-0 w-60 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 pt-16`}>
         <div className="p-4">
           <h2 className="text-xl font-bold text-gray-800 dark:text-white">DFRM</h2>
           <p className="text-gray-600 dark:text-gray-400">{t('common.greeting')}, {getFirstName()}</p>
@@ -288,7 +280,7 @@ const Navigation = () => {
       </div>
 
       {/* Desktop navigation - collapsed sidebar for small screens */}
-      <div className="fixed top-0 left-0 bottom-0 w-16 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 pt-16 hidden md:block lg:hidden">
+      <div className={`hidden ${authorizedNavItems.length > 0 ? 'md:block lg:hidden' : ''} fixed top-0 left-0 bottom-0 w-16 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 pt-16`}>
         <nav className="mt-6 px-2 space-y-1">
           {authorizedNavItems.map((item) => (
             <DesktopNavLink key={item.name} to={item.href} icon={item.icon} label={item.name} tooltips={tooltips} showTooltip={showTooltip} hideTooltip={hideTooltip} collapsed />
