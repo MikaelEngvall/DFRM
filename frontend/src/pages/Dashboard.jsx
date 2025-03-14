@@ -18,6 +18,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isDark, setIsDark] = useState(document.documentElement.classList.contains('dark'));
   const [stats, setStats] = useState({
     totalApartments: 0,
     activeTenantsCount: 0,
@@ -32,6 +33,24 @@ const Dashboard = () => {
       navigate('/calendar');
     }
   }, [user, hasRole, navigate]);
+
+  // Lägg till en effect som lyssnar på ändringar i dokumentets klasser
+  useEffect(() => {
+    const observer = new MutationObserver((mutations) => {
+      mutations.forEach((mutation) => {
+        if (mutation.attributeName === 'class') {
+          setIsDark(document.documentElement.classList.contains('dark'));
+        }
+      });
+    });
+
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ['class'],
+    });
+
+    return () => observer.disconnect();
+  }, []);
 
   // Funktion för att hämta olästa uppgifter utan cache
   const fetchUnreviewedCount = async () => {
@@ -237,10 +256,10 @@ const Dashboard = () => {
       {/* Logotyp sektion */}
       <div className="mt-8">
         <img 
-          src={theme === 'dark' 
+          src={isDark
             ? "/Transparent Logo White Text.png" 
             : "/Transparent Logo Black Text.png"}
-          alt={`DFRM Logotype (${theme} mode)`}
+          alt="DFRM Logotype"
           className="w-full h-auto px-4 sm:px-6 lg:px-8"
         />
       </div>
