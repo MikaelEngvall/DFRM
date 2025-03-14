@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   HomeIcon,
@@ -18,7 +18,6 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [isDarkMode, setIsDarkMode] = useState(document.documentElement.classList.contains('dark'));
   const [stats, setStats] = useState({
     totalApartments: 0,
     activeTenantsCount: 0,
@@ -107,38 +106,6 @@ const Dashboard = () => {
       window.removeEventListener('focus', handleFocus);
     };
   }, [t]);
-
-  // Lägg till en effect som lyssnar på förändringar i HTML-dokumentets klasser
-  useEffect(() => {
-    // Funktion som kontrollerar om mörkt läge är aktivt
-    const checkDarkMode = () => {
-      const isDark = document.documentElement.classList.contains('dark');
-      setIsDarkMode(isDark);
-    };
-    
-    // Kör en första kontroll
-    checkDarkMode();
-    
-    // Sätt upp en MutationObserver för att lyssna på klassändringar
-    const observer = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        if (
-          mutation.type === 'attributes' &&
-          mutation.attributeName === 'class'
-        ) {
-          checkDarkMode();
-        }
-      });
-    });
-    
-    // Starta observationen av HTML-dokumentet
-    observer.observe(document.documentElement, { attributes: true });
-    
-    // Städa upp observern när komponenten avmonteras
-    return () => {
-      observer.disconnect();
-    };
-  }, []);
 
   // Om användaren är USER, visa ingenting medan omdirigeringen sker
   if (user && hasRole('USER')) {
@@ -270,10 +237,10 @@ const Dashboard = () => {
       {/* Logotyp sektion */}
       <div className="mt-8">
         <img 
-          src={isDarkMode 
+          src={theme === 'dark' 
             ? "/Transparent Logo White Text.png" 
             : "/Transparent Logo Black Text.png"}
-          alt={`DFRM Logotype (${isDarkMode ? 'dark' : 'light'} mode)`}
+          alt={`DFRM Logotype (${theme} mode)`}
           className="w-full h-auto px-4 sm:px-6 lg:px-8"
         />
       </div>
