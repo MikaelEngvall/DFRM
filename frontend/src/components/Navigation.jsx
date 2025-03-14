@@ -8,7 +8,7 @@ import {
   ClipboardDocumentListIcon,
   ClipboardDocumentCheckIcon,
   CalendarIcon,
-  ArrowRightOnRectangleIcon,
+  ArrowRightStartOnRectangleIcon,
   Bars3Icon,
   XMarkIcon,
   SunIcon,
@@ -248,7 +248,7 @@ const Navigation = () => {
                 className="w-full flex items-center px-2 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md"
                 onClick={handleLogout}
               >
-                {React.createElement(ArrowRightOnRectangleIcon, { className: "h-6 w-6 mr-3" })}
+                {React.createElement(ArrowRightStartOnRectangleIcon, { className: "h-6 w-6 mr-3" })}
                 <span>{t('navigation.logout')}</span>
               </button>
             </div>
@@ -269,7 +269,7 @@ const Navigation = () => {
             className="text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white"
             onClick={handleLogout}
           >
-            {React.createElement(ArrowRightOnRectangleIcon, { className: "h-6 w-6" })}
+            {React.createElement(ArrowRightStartOnRectangleIcon, { className: "h-6 w-6" })}
           </button>
         </div>
       </div>
