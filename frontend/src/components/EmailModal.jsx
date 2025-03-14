@@ -22,12 +22,7 @@ const EmailModal = ({ isOpen, onClose, onSend, recipients = [], sender = "info@d
   // Lägg till en timer-referens för att hantera timeout
   const [timeoutTimer, setTimeoutTimer] = useState(null);
 
-  // Logga mottagarlistan när komponenten renderas eller när den ändras
-  useEffect(() => {
-    if (isOpen) {
-      console.log(`EmailModal: Mottog ${recipients.length} mottagare:`, recipients);
-    }
-  }, [isOpen, recipients]);
+
   
   // Rensa timern när komponenten avmonteras
   useEffect(() => {
