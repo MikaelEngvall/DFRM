@@ -37,6 +37,13 @@ export default {
     notSpecified: 'Nie określono',
   },
 
+  languages: {
+    swedish: 'szwedzki',
+    english: 'angielski',
+    polish: 'polski',
+    ukrainian: 'ukraiński',
+  },
+
   navigation: {
     dashboard: 'Panel główny',
     apartments: 'Mieszkania',
@@ -304,6 +311,13 @@ export default {
       noMessages: 'Brak wiadomości',
       inputPlaceholder: 'Napisz wiadomość...',
       send: 'Wyślij',
+      translatedFrom: 'Przetłumaczone z {language}',
+      translatedFrom: {
+        SV: 'Przetłumaczone ze szwedzkiego',
+        EN: 'Przetłumaczone z angielskiego',
+        PL: 'Przetłumaczone z polskiego',
+        UK: 'Przetłumaczone z ukraińskiego'
+      },
       delete: 'Usuń',
       unknownUser: 'Nieznany użytkownik',
     },

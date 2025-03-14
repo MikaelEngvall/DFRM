@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { taskMessageService } from '../services';
+import { taskMessageService, userService } from '../services';
 import { useLocale } from '../contexts/LocaleContext';
 import { useAuth } from '../contexts/AuthContext';
 import { PaperAirplaneIcon, TrashIcon } from '@heroicons/react/24/outline';
@@ -13,12 +13,13 @@ import { PaperAirplaneIcon, TrashIcon } from '@heroicons/react/24/outline';
  */
 const TaskMessages = ({ taskId, canSendMessages = true }) => {
   const { t, currentLocale } = useLocale();
-  const { user } = useAuth();
+  const { user, users = [] } = useAuth();
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const messagesEndRef = useRef(null);
+  const [cachedUsers, setCachedUsers] = useState({});
   
   // Hämta meddelanden när komponenten laddas eller taskId ändras
   useEffect(() => {
@@ -26,6 +27,32 @@ const TaskMessages = ({ taskId, canSendMessages = true }) => {
       fetchMessages();
     }
   }, [taskId]);
+
+  // Hämta användare om de inte finns tillgängliga i auth-kontexten
+  useEffect(() => {
+    if (users.length === 0) {
+      const fetchUsers = async () => {
+        try {
+          const fetchedUsers = await userService.getAllUsers();
+          const userMap = {};
+          fetchedUsers.forEach(user => {
+            userMap[user.id] = user;
+          });
+          setCachedUsers(userMap);
+        } catch (err) {
+          console.error('Error fetching users:', err);
+        }
+      };
+      fetchUsers();
+    } else {
+      // Skapa en map av användare från auth-kontexten
+      const userMap = {};
+      users.forEach(user => {
+        userMap[user.id] = user;
+      });
+      setCachedUsers(userMap);
+    }
+  }, [users]);
   
   // Scrolla till botten när nya meddelanden läggs till
   useEffect(() => {
@@ -100,6 +127,35 @@ const TaskMessages = ({ taskId, canSendMessages = true }) => {
     return message.content;
   };
   
+  // Kontrollera om meddelandet visas på originalspråket
+  const isOriginalLanguage = (message) => {
+    return message.language === currentLocale;
+  };
+  
+  // Hämta språknamn baserat på språkkod
+  const getLanguageName = (languageCode) => {
+    switch (languageCode) {
+      case 'sv': return t('languages.swedish');
+      case 'en': return t('languages.english');
+      case 'pl': return t('languages.polish');
+      case 'uk': return t('languages.ukrainian');
+      default: return languageCode;
+    }
+  };
+  
+  // Hämta översättningsfrån-text med fallback till vanlig text
+  const getTranslatedFromText = (languageCode) => {
+    try {
+      // Använd språkspecifika översättningsnycklar
+      return t(`tasks.messages.translatedFrom.${languageCode}`, { 
+        defaultValue: `${t('tasks.messages.translatedFrom', { defaultValue: 'Översatt från' })} ${getLanguageName(languageCode)}`
+      });
+    } catch (error) {
+      // Om det blir fel, använd en generisk text
+      return t('tasks.messages.translatedGeneric', { defaultValue: 'Översatt' });
+    }
+  };
+  
   // Kontrollera om användaren är avsändaren av ett meddelande
   const isCurrentUserSender = (message) => {
     return message.sender === user.id;
@@ -107,13 +163,29 @@ const TaskMessages = ({ taskId, canSendMessages = true }) => {
   
   // Hämta avsändarens namn
   const getSenderName = (message) => {
-    // Om message.sender är ett ID, visa bara "Användare"
-    if (typeof message.sender === 'string') {
-      return t('tasks.messages.unknownUser');
+    // Om message.sender är ett objekt med firstName, använd det
+    if (typeof message.sender === 'object' && message.sender?.firstName) {
+      return message.sender.firstName;
     }
     
-    // Om message.sender är ett objekt, visa användarens förnamn
-    return message.sender?.firstName || t('tasks.messages.unknownUser');
+    // Om message.sender är ett ID, försök hitta användaren i cachedUsers
+    if (typeof message.sender === 'string') {
+      const senderId = message.sender;
+      
+      // Kontrollera först om användaren finns i cachedUsers
+      if (cachedUsers[senderId]) {
+        return `${cachedUsers[senderId].firstName} ${cachedUsers[senderId].lastName || ''}`;
+      }
+      
+      // Om användaren inte finns i cachedUsers, kolla users-arrayen från auth-kontexten
+      const foundUser = users.find(u => u.id === senderId);
+      if (foundUser) {
+        return `${foundUser.firstName} ${foundUser.lastName || ''}`;
+      }
+    }
+    
+    // Om vi inte kunde hitta användarinformation, visa "Okänd användare"
+    return t('tasks.messages.unknownUser');
   };
   
   // Formatera tidpunkt
@@ -176,16 +248,23 @@ const TaskMessages = ({ taskId, canSendMessages = true }) => {
                   <p className="text-sm whitespace-pre-wrap break-words">
                     {getMessageContent(message)}
                   </p>
-                  {isCurrentUserSender(message) && (
-                    <button 
-                      onClick={() => handleDeleteMessage(message.id)}
-                      className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 mt-1 text-xs flex items-center"
-                      aria-label={t('tasks.messages.delete')}
-                    >
-                      <TrashIcon className="h-3 w-3 mr-1" />
-                      {t('tasks.messages.delete')}
-                    </button>
-                  )}
+                  <div className="flex justify-between items-center mt-1">
+                    {!isOriginalLanguage(message) && (
+                      <span className="text-xs text-gray-500 dark:text-gray-400 italic">
+                        {getTranslatedFromText(message.language)}
+                      </span>
+                    )}
+                    {isCurrentUserSender(message) && (
+                      <button 
+                        onClick={() => handleDeleteMessage(message.id)}
+                        className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 text-xs flex items-center"
+                        aria-label={t('tasks.messages.delete')}
+                      >
+                        <TrashIcon className="h-3 w-3 mr-1" />
+                        {t('tasks.messages.delete')}
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}

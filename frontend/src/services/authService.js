@@ -59,13 +59,10 @@ const login = async (credentials) => {
 };
 
 const logout = async () => {
-  try {
-    await api.post('/api/auth/logout');
-  } catch (error) {
-    console.error('Logout error:', error);
-  } finally {
-    removeToken();
-  }
+  // JWT autentisering kräver ingen serveranrop för utloggning, 
+  // vi behöver bara ta bort token från klienten
+  removeToken();
+  return Promise.resolve(); // Returnerar en upplöst Promise för att matcha async-signaturen
 };
 
 const getCurrentUser = async () => {

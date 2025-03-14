@@ -118,12 +118,14 @@ const Tenants = () => {
     {
       key: 'movedInDate',
       label: t('tenants.fields.movedInDate'),
-      render: (value) => formatShortDate(value)
+      render: (value) => formatShortDate(value),
+      getSortValue: (value) => value || '' // Hantera sortering av null-värden
     },
     {
       key: 'resiliationDate',
       label: t('tenants.fields.resiliationDate'),
-      render: (value) => formatShortDate(value)
+      render: (value) => formatShortDate(value),
+      getSortValue: (value) => value || '' // Hantera sortering av null-värden
     },
     {
       key: 'apartment',
@@ -134,6 +136,14 @@ const Tenants = () => {
         return apartment 
           ? `${apartment.street} ${apartment.number}, LGH ${apartment.apartmentNumber}` 
           : '-';
+      },
+      // Sortera efter gatunamn, sedan nummer, sedan lägenhetsnummer
+      getSortValue: (apartmentId) => {
+        if (!apartmentId) return '';
+        const apartment = apartments.find(a => a.id === apartmentId);
+        return apartment 
+          ? `${apartment.street} ${apartment.number.toString().padStart(5, '0')} ${apartment.apartmentNumber}` 
+          : '';
       }
     },
     {

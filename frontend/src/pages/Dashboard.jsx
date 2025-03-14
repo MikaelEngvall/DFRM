@@ -31,17 +31,27 @@ const Dashboard = () => {
     }
   }, [user, hasRole, navigate]);
 
+  // Funktion för att hämta olästa uppgifter utan cache
+  const fetchUnreviewedCount = async () => {
+    try {
+      // Skicka true för att ignorera cache
+      const count = await pendingTaskService.getUnreviewedCount(true);
+      setUnreviewedCount(count);
+    } catch (err) {
+      console.error('Error fetching unreviewed count:', err);
+    }
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       try {
         setIsLoading(true);
         
         // Hämta statistik
-        const [apartments, tenants, keys, unreviewedCount] = await Promise.all([
+        const [apartments, tenants, keys] = await Promise.all([
           apartmentService.getAllApartments(),
           tenantService.getAllTenants(),
-          keyService.getAllKeys(),
-          pendingTaskService.getUnreviewedCount()
+          keyService.getAllKeys()
         ]);
         
         const totalApartments = apartments?.length || 0;
@@ -69,7 +79,8 @@ const Dashboard = () => {
           vacantApartments
         });
         
-        setUnreviewedCount(unreviewedCount);
+        // Hämta olästa uppgifter utan cache
+        await fetchUnreviewedCount();
         
         setError(null);
       } catch (err) {
@@ -81,6 +92,17 @@ const Dashboard = () => {
     };
     
     fetchData();
+    
+    // Lägg till en fokushanterare för att uppdatera olästa uppgifter när fönstret får fokus
+    const handleFocus = () => {
+      fetchUnreviewedCount();
+    };
+    
+    window.addEventListener('focus', handleFocus);
+    
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+    };
   }, [t]);
 
   // Om användaren är USER, visa ingenting medan omdirigeringen sker

@@ -22,7 +22,7 @@ public class MailConfiguration {
     @Value("${spring.mail.host:mailcluster.loopia.se}")
     private String host;
     
-    @Value("${spring.mail.port:993}")
+    @Value("${spring.mail.port:587}")
     private int port;
     
     @Value("${spring.mail.username:felanmalan@duggalsfastigheter.se}")
@@ -47,9 +47,17 @@ public class MailConfiguration {
             
         Properties props = mailSender.getJavaMailProperties();
         
-        // SMTP-inställningar
+        // SMTP-inställningar för port 587 (STARTTLS)
+        props.put("mail.transport.protocol", "smtp");
         props.put("mail.smtp.auth", "true");
         props.put("mail.smtp.starttls.enable", "true");
+        props.put("mail.smtp.starttls.required", "true");
+        props.put("mail.smtp.ssl.enable", "false");
+        
+        // Timeout-inställningar för SMTP (utökade till 30 sekunder)
+        props.put("mail.smtp.connectiontimeout", "30000");
+        props.put("mail.smtp.timeout", "30000");
+        props.put("mail.smtp.writetimeout", "30000");
         
         // IMAPS-inställningar
         props.put("mail.store.protocol", "imaps");
@@ -59,10 +67,10 @@ public class MailConfiguration {
         props.put("mail.imaps.connectiontimeout", "20000");
         props.put("mail.imaps.timeout", "20000");
         
-        // Socket factory för SSL
+        // Socket factory för IMAPS SSL
         props.put("mail.imaps.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
         props.put("mail.imaps.socketFactory.fallback", "false");
-        props.put("mail.imaps.socketFactory.port", String.valueOf(port));
+        props.put("mail.imaps.socketFactory.port", "993");
         
         // Debug för utveckling
         boolean isDev = isDevelopmentEnvironment();

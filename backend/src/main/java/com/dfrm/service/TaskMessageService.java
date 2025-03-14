@@ -8,6 +8,7 @@ import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 
+import com.dfrm.client.GoogleTranslateClient;
 import com.dfrm.model.Language;
 import com.dfrm.model.TaskMessage;
 import com.dfrm.model.User;
@@ -24,6 +25,7 @@ public class TaskMessageService {
 
     private final TaskMessageRepository taskMessageRepository;
     private final UserRepository userRepository;
+    private final GoogleTranslateClient googleTranslateClient;
     
     /**
      * Hämtar alla meddelanden för en specifik uppgift
@@ -50,6 +52,25 @@ public class TaskMessageService {
             throw new IllegalArgumentException("Användaren hittades inte");
         }
         
+        // Om inget explicit språk anges, försök identifiera språket
+        if (language == null) {
+            String detectedCode = googleTranslateClient.detectLanguage(content);
+            log.info("Upptäckt språk för meddelande: {}", detectedCode);
+            
+            // Hitta motsvarande Language-enum
+            for (Language lang : Language.values()) {
+                if (lang.getCode().equals(detectedCode)) {
+                    language = lang;
+                    break;
+                }
+            }
+            
+            // Fallback till svenska om vi inte kunde identifiera språket
+            if (language == null) {
+                language = Language.SV;
+            }
+        }
+        
         // Skapa ett nytt meddelande
         TaskMessage message = TaskMessage.builder()
                 .taskId(taskId)
@@ -59,15 +80,29 @@ public class TaskMessageService {
                 .language(language)
                 .build();
         
-        // I en riktig implementation skulle vi anropa en översättningstjänst här
-        // För enkelhets skull sätter vi samma innehåll för alla språk
-        Map<String, String> translations = new HashMap<>();
-        for (Language targetLanguage : Language.values()) {
-            if (targetLanguage != language) {
-                translations.put(targetLanguage.getCode(), content);
+        // Använd GoogleTranslateClient för att översätta meddelandet till alla språk
+        try {
+            Map<String, String> translations = new HashMap<>();
+            for (Language targetLanguage : Language.values()) {
+                if (targetLanguage != language) {
+                    // Använd GoogleTranslateClient för att översätta innehållet
+                    String translatedContent = googleTranslateClient.translate(content, language.getCode(), targetLanguage.getCode());
+                    translations.put(targetLanguage.getCode(), translatedContent);
+                    log.info("Översatt meddelande från {} till {}: {}", language.getCode(), targetLanguage.getCode(), translatedContent);
+                }
             }
+            message.setTranslations(translations);
+        } catch (Exception e) {
+            log.error("Fel vid översättning av meddelande", e);
+            // Om översättningen misslyckas, använd originalinnehållet för alla språk
+            Map<String, String> fallbackTranslations = new HashMap<>();
+            for (Language targetLanguage : Language.values()) {
+                if (targetLanguage != language) {
+                    fallbackTranslations.put(targetLanguage.getCode(), content);
+                }
+            }
+            message.setTranslations(fallbackTranslations);
         }
-        message.setTranslations(translations);
         
         // Spara och returnera meddelandet
         return taskMessageRepository.save(message);
@@ -89,5 +124,15 @@ public class TaskMessageService {
      */
     public void deleteAllMessagesForTask(String taskId) {
         taskMessageRepository.deleteByTaskId(taskId);
+    }
+    
+    /**
+     * Hämtar ett meddelande baserat på dess ID
+     * 
+     * @param messageId ID för meddelandet
+     * @return Meddelandet om det finns, annars tom Optional
+     */
+    public Optional<TaskMessage> getMessageById(String messageId) {
+        return taskMessageRepository.findById(messageId);
     }
 } 

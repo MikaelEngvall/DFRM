@@ -396,6 +396,10 @@ const PendingTasks = () => {
         await pendingTaskService.approvePendingTask(selectedTask.id, reviewData);
       }
       
+      // Uppdatera antalet olästa uppgifter genom att hämta det direkt från API:et
+      // Detta säkerställer att Dashboard-sidan visar rätt antal
+      await pendingTaskService.getUnreviewedCount(true);
+      
       await fetchData();
       setIsReviewModalOpen(false);
       setSelectedTask(null);
@@ -458,6 +462,10 @@ const PendingTasks = () => {
         };
         await pendingTaskService.rejectPendingTask(selectedTask.id, reviewData);
       }
+      
+      // Uppdatera antalet olästa uppgifter genom att hämta det direkt från API:et
+      // Detta säkerställer att Dashboard-sidan visar rätt antal
+      await pendingTaskService.getUnreviewedCount(true);
       
       await fetchData();
       setIsReviewModalOpen(false);

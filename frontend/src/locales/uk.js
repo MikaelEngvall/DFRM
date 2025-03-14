@@ -1,7 +1,7 @@
 export default {
   common: {
     loading: 'Завантаження...',
-    error: 'Сталася помилка',
+    error: 'Виникла помилка',
     save: 'Зберегти',
     cancel: 'Скасувати',
     delete: 'Видалити',
@@ -16,15 +16,15 @@ export default {
     saveChanges: 'Зберегти зміни',
     confirmDelete: 'Підтвердити видалення',
     actions: 'Дії',
-    noData: 'Немає даних',
+    noData: 'Немає доступних даних',
     back: 'Назад',
     next: 'Далі',
     select: 'Вибрати',
     none: 'Немає',
-    all: 'Усі',
+    all: 'Всі',
     optional: 'Необов\'язково',
     status: 'Статус',
-    rooms: 'кімн.',
+    rooms: 'кімнати',
     viewAll: 'Переглянути всі',
     clear: 'Очистити',
     apply: 'Застосувати',
@@ -33,8 +33,15 @@ export default {
     noResults: 'Немає результатів',
     greeting: 'Привіт',
     permissions: 'Дозволи',
-    unauthorized: 'У вас немає дозволу на виконання цієї дії',
+    unauthorized: 'У вас немає прав для виконання цієї дії',
     notSpecified: 'Не вказано',
+  },
+
+  languages: {
+    swedish: 'шведська',
+    english: 'англійська',
+    polish: 'польська',
+    ukrainian: 'українська',
   },
 
   navigation: {
@@ -304,6 +311,13 @@ export default {
       noMessages: 'Немає повідомлень',
       inputPlaceholder: 'Напишіть повідомлення...',
       send: 'Надіслати',
+      translatedFrom: 'Перекладено з {language}',
+      translatedFrom: {
+        SV: 'Перекладено зі шведської',
+        EN: 'Перекладено з англійської',
+        PL: 'Перекладено з польської',
+        UK: 'Перекладено з української'
+      },
       delete: 'Видалити',
       unknownUser: 'Невідомий користувач',
     },

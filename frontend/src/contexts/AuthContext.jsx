@@ -1,6 +1,6 @@
 import React, { createContext, useState, useContext, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { authService } from '../services';
+import { authService, userService } from '../services';
 import sessionManager from '../utils/sessionManager';
 import SessionWarning from '../components/SessionWarning';
 
@@ -9,10 +9,21 @@ const AuthContext = createContext(null);
 export const AuthProvider = ({ children }) => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
+  const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showSessionWarning, setShowSessionWarning] = useState(false);
   const [sessionRemainingTime, setSessionRemainingTime] = useState(0);
   const authCheckRef = useRef(false);
+
+  // Hämta alla användare
+  const fetchUsers = useCallback(async () => {
+    try {
+      const allUsers = await userService.getAllUsers();
+      setUsers(allUsers);
+    } catch (error) {
+      console.error('Error fetching users in auth context:', error);
+    }
+  }, []);
 
   const checkAuthStatus = useCallback(async () => {
     if (authCheckRef.current) return;
@@ -27,13 +38,16 @@ export const AuthProvider = ({ children }) => {
 
       const userData = await authService.getCurrentUser();
       setUser(userData);
+      
+      // Hämta alla användare om inloggad
+      fetchUsers();
     } catch (error) {
       setUser(null);
       console.error('Auth check error:', error);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [fetchUsers]);
 
   useEffect(() => {
     checkAuthStatus();
@@ -82,14 +96,12 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = async () => {
-    try {
-      await authService.logout();
-    } finally {
-      setUser(null);
-      setShowSessionWarning(false);
-      localStorage.removeItem('auth_token');
-      navigate('/login');
-    }
+    // JWT-baserad autentisering hanterar utloggning på klientsidan
+    await authService.logout();
+    setUser(null);
+    setShowSessionWarning(false);
+    localStorage.removeItem('auth_token');
+    navigate('/login');
   };
 
   const extendSession = () => {
@@ -120,10 +132,12 @@ export const AuthProvider = ({ children }) => {
 
   const value = {
     user,
+    users,
     login,
     logout,
     extendSession,
     hasRole,
+    fetchUsers,
   };
 
   return (

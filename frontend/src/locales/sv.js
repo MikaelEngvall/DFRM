@@ -37,6 +37,13 @@ export default {
     notSpecified: 'Ej angiven',
   },
 
+  languages: {
+    swedish: 'svenska',
+    english: 'engelska',
+    polish: 'polska',
+    ukrainian: 'ukrainska',
+  },
+
   navigation: {
     dashboard: 'Översikt',
     apartments: 'Lägenheter',
@@ -298,6 +305,13 @@ export default {
       noMessages: 'Inga meddelanden än',
       inputPlaceholder: 'Skriv ett meddelande...',
       send: 'Skicka',
+      translatedFrom: 'Översatt från {language}',
+      translatedFrom: {
+        SV: 'Översatt från svenska',
+        EN: 'Översatt från engelska',
+        PL: 'Översatt från polska',
+        UK: 'Översatt från ukrainska'
+      },
       delete: 'Ta bort',
       unknownUser: 'Okänd användare',
     },
@@ -495,6 +509,11 @@ export default {
       contentRequired: 'Innehåll är obligatoriskt',
       noRecipients: 'Inga mottagare valda',
       sendFailed: 'Kunde inte skicka e-post. Försök igen senare.'
-    }
+    },
+    inputPlaceholder: 'Skriv ett meddelande...',
+    send: 'Skicka',
+    translatedFrom: 'Översatt från {language}',
+    delete: 'Ta bort',
+    unknownUser: 'Okänd användare',
   },
 }; 

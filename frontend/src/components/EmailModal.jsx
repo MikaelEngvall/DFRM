@@ -19,6 +19,8 @@ const EmailModal = ({ isOpen, onClose, onSend, recipients = [], sender = "info@d
   const [content, setContent] = useState('');
   const [sending, setSending] = useState(false);
   const [error, setError] = useState(null);
+  // Lägg till en timer-referens för att hantera timeout
+  const [timeoutTimer, setTimeoutTimer] = useState(null);
 
   // Logga mottagarlistan när komponenten renderas eller när den ändras
   useEffect(() => {
@@ -26,6 +28,15 @@ const EmailModal = ({ isOpen, onClose, onSend, recipients = [], sender = "info@d
       console.log(`EmailModal: Mottog ${recipients.length} mottagare:`, recipients);
     }
   }, [isOpen, recipients]);
+  
+  // Rensa timern när komponenten avmonteras
+  useEffect(() => {
+    return () => {
+      if (timeoutTimer) {
+        clearTimeout(timeoutTimer);
+      }
+    };
+  }, [timeoutTimer]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -49,7 +60,25 @@ const EmailModal = ({ isOpen, onClose, onSend, recipients = [], sender = "info@d
       setSending(true);
       setError(null);
       console.log(`EmailModal handleSubmit: Skickar e-post till ${recipients.length} mottagare...`);
+      
+      // Sätt en fallback-timer som avbryter sändningen om den tar för lång tid
+      // Detta är en extra säkerhet utöver timeout i API-anropet
+      const timer = setTimeout(() => {
+        if (sending) {
+          setSending(false);
+          setError('E-postuppsändningen tog för lång tid. Servern kanske har problem.');
+          console.error('E-post timeout i UI-lagret');
+        }
+      }, 30000); // 30 sekunder
+      
+      setTimeoutTimer(timer);
+      
       await onSend(subject, content, recipients);
+      
+      // Rensa timern eftersom sändningen lyckades
+      clearTimeout(timer);
+      setTimeoutTimer(null);
+      
       console.log('E-post skickad framgångsrikt');
       
       // Rensa formuläret efter framgångsrik sändning
@@ -58,8 +87,25 @@ const EmailModal = ({ isOpen, onClose, onSend, recipients = [], sender = "info@d
       setSending(false);
       onClose();
     } catch (err) {
+      // Rensa timern om ett fel uppstod
+      if (timeoutTimer) {
+        clearTimeout(timeoutTimer);
+        setTimeoutTimer(null);
+      }
+      
       console.error('E-post kunde inte skickas:', err);
-      setError(err.message || t('email.errors.sendFailed'));
+      
+      // Visa ett mer informativt felmeddelande
+      let errorMessage = err.message || t('email.errors.sendFailed');
+      
+      // Lägg till tips baserat på feltypen
+      if (errorMessage.includes('Timeout') || errorMessage.includes('tog för lång tid')) {
+        errorMessage += ' Kontrollera att e-postservern är korrekt konfigurerad.';
+      } else if (errorMessage.includes('Ingen respons')) {
+        errorMessage += ' Kontrollera nätverksanslutningen eller serverstatusen.';
+      }
+      
+      setError(errorMessage);
       setSending(false);
     }
   };
@@ -69,7 +115,20 @@ const EmailModal = ({ isOpen, onClose, onSend, recipients = [], sender = "info@d
   return (
     <Modal
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={() => {
+        // Säkerställ att timern rensas om modalen stängs
+        if (timeoutTimer) {
+          clearTimeout(timeoutTimer);
+          setTimeoutTimer(null);
+        }
+        // Återställ formen innan stängning
+        if (!sending) {
+          setError(null);
+          setSubject('');
+          setContent('');
+          onClose();
+        }
+      }}
       title={t('email.title')}
       size="medium"
     >
@@ -146,7 +205,17 @@ const EmailModal = ({ isOpen, onClose, onSend, recipients = [], sender = "info@d
         <div className="flex justify-end space-x-3 mt-6">
           <button
             type="button"
-            onClick={onClose}
+            onClick={() => {
+              // Säkerställ att timern rensas om modalen stängs
+              if (timeoutTimer) {
+                clearTimeout(timeoutTimer);
+                setTimeoutTimer(null);
+              }
+              setError(null);
+              setSubject('');
+              setContent('');
+              onClose();
+            }}
             disabled={sending}
             className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50"
           >

@@ -343,8 +343,16 @@ const Tasks = () => {
     fetchInitialData();
   };
 
-  const handleRowClick = (task) => {
-    handleEdit(task);
+  const handleRowClick = async (task) => {
+    try {
+      // Hämta fullständig uppgiftsinformation från API för att garantera att alla detaljer finns
+      const fullTaskData = await taskService.getTaskById(task.id);
+      handleEdit(fullTaskData);
+    } catch (err) {
+      console.error('Error fetching full task data:', err);
+      // Fallback till att använda uppgiften från listan om API-anropet misslyckas
+      handleEdit(task);
+    }
   };
 
   if (isLoading) {

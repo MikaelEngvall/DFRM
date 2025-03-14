@@ -1,5 +1,6 @@
 import React from 'react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
+import { useLocale } from '../contexts/LocaleContext';
 
 const Modal = ({ 
   isOpen, 
@@ -11,6 +12,8 @@ const Modal = ({
   submitButtonText,
   showFooter = true
 }) => {
+  const { t } = useLocale();
+  
   if (!isOpen) return null;
 
   // Avgör vilken breddinställning som ska användas baserat på size-prop
@@ -50,7 +53,7 @@ const Modal = ({
                 type="button"
                 className="bg-white dark:bg-gray-800 rounded-md text-gray-400 hover:text-gray-500 dark:text-gray-300 dark:hover:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary dark:focus:ring-offset-gray-800"
               >
-                <span className="sr-only">Stäng</span>
+                <span className="sr-only">{t('common.close')}</span>
                 <XMarkIcon className="h-6 w-6" aria-hidden="true" />
               </button>
             </div>
@@ -65,7 +68,7 @@ const Modal = ({
                       onClick={handleSubmit}
                       className="px-4 py-2 bg-primary text-white rounded-md hover:bg-secondary dark:bg-primary dark:hover:bg-secondary"
                     >
-                      {submitButtonText || 'Spara ändringar'}
+                      {submitButtonText || t('common.save')}
                     </button>
                   )}
                   <div className="flex-grow"></div>
@@ -74,7 +77,7 @@ const Modal = ({
                     onClick={onClose}
                     className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
                   >
-                    {onSubmit ? 'Avbryt' : 'Stäng'}
+                    {onSubmit ? t('common.cancel') : t('common.close')}
                   </button>
                 </div>
               )}

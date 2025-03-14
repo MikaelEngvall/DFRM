@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.dfrm.client.GoogleTranslateClient;
 import com.dfrm.model.Language;
 import com.dfrm.model.TaskMessage;
 import com.dfrm.model.User;
@@ -33,6 +34,7 @@ public class TaskMessageController {
     private final TaskMessageService taskMessageService;
     private final TaskService taskService;
     private final UserService userService;
+    private final GoogleTranslateClient googleTranslateClient;
     
     /**
      * Hämtar alla meddelanden för en specifik uppgift
@@ -80,10 +82,11 @@ public class TaskMessageController {
             return ResponseEntity.badRequest().body(Map.of("error", "Meddelandeinnehåll saknas"));
         }
         
-        // Bestäm språk (använd användarens föredragna språk eller svenska som standard)
+        // Bestäm språk
         String languageCode = messageData.get("language");
-        Language language = Language.SV; // Standard är svenska
+        Language language = null;
         
+        // Om språkkod anges explicit i förfrågan, använd den
         if (languageCode != null) {
             for (Language lang : Language.values()) {
                 if (lang.getCode().equals(languageCode)) {
@@ -91,13 +94,34 @@ public class TaskMessageController {
                     break;
                 }
             }
-        } else if (currentUser.getPreferredLanguage() != null) {
+        }
+        
+        // Om inget språk anges, försök identifiera språket från innehållet
+        if (language == null) {
+            String detectedLanguageCode = googleTranslateClient.detectLanguage(content);
+            log.info("Detekterat språk för meddelande: {}", detectedLanguageCode);
+            
+            for (Language lang : Language.values()) {
+                if (lang.getCode().equals(detectedLanguageCode)) {
+                    language = lang;
+                    break;
+                }
+            }
+        }
+        
+        // Fallback till användarens föredragna språk eller svenska
+        if (language == null && currentUser.getPreferredLanguage() != null) {
             for (Language lang : Language.values()) {
                 if (lang.getCode().equals(currentUser.getPreferredLanguage())) {
                     language = lang;
                     break;
                 }
             }
+        }
+        
+        // Standard är svenska om inget annat identifieras
+        if (language == null) {
+            language = Language.SV;
         }
         
         try {
@@ -126,9 +150,31 @@ public class TaskMessageController {
             return ResponseEntity.notFound().build();
         }
         
+        // Hämta inloggad användare
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String email = auth.getName();
+        User currentUser = userService.findByEmail(email)
+                .orElseThrow(() -> new IllegalStateException("Inloggad användare hittades inte"));
+        
         try {
+            // Hämta meddelandet
+            TaskMessage message = taskMessageService.getMessageById(messageId)
+                .orElseThrow(() -> new IllegalArgumentException("Meddelande hittades inte"));
+                
+            // Kontrollera om användaren har rätt att ta bort meddelandet
+            boolean isAdmin = auth.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN") || a.getAuthority().equals("ROLE_SUPERADMIN"));
+                
+            // USER får bara ta bort egna meddelanden, ADMIN/SUPERADMIN får ta bort alla
+            if (!isAdmin && !message.getSender().getId().equals(currentUser.getId())) {
+                return ResponseEntity.status(403).build(); // Forbidden
+            }
+            
             taskMessageService.deleteMessage(messageId);
             return ResponseEntity.noContent().build();
+        } catch (IllegalArgumentException e) {
+            log.error("Meddelande hittades inte: {}", e.getMessage());
+            return ResponseEntity.notFound().build();
         } catch (Exception e) {
             log.error("Fel vid borttagning av meddelande", e);
             return ResponseEntity.badRequest().build();

@@ -61,6 +61,12 @@ public class SecurityConfig {
                         // E-postbyte för autentiserade användare
                         .requestMatchers("/api/security/request-email-change").authenticated()
                         
+                        // Tillåt alla autentiserade användare att skicka meddelanden i uppgifter
+                        .requestMatchers(HttpMethod.POST, "/api/tasks/*/messages").authenticated()
+                        
+                        // Tillåt alla autentiserade användare att ta bort meddelanden i uppgifter
+                        .requestMatchers(HttpMethod.DELETE, "/api/tasks/*/messages/**").authenticated()
+                        
                         // Generella skrivbehörigheter som kräver roller (lägre prioritet kommer först)
                         .requestMatchers(HttpMethod.POST, "/api/apartments/**", "/api/tenants/**", "/api/keys/**", "/api/tasks/**", "/api/users/**", "/api/pending-tasks/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_SUPERADMIN")
                         .requestMatchers(HttpMethod.PUT, "/api/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_SUPERADMIN")

@@ -37,6 +37,13 @@ export default {
     notSpecified: 'Not specified',
   },
 
+  languages: {
+    swedish: 'Swedish',
+    english: 'English',
+    polish: 'Polish',
+    ukrainian: 'Ukrainian',
+  },
+
   navigation: {
     dashboard: 'Dashboard',
     apartments: 'Apartments',
@@ -305,6 +312,13 @@ export default {
       noMessages: 'No messages yet',
       inputPlaceholder: 'Write a message...',
       send: 'Send',
+      translatedFrom: 'Translated from {language}',
+      translatedFrom: {
+        SV: 'Translated from Swedish',
+        EN: 'Translated from English',
+        PL: 'Translated from Polish',
+        UK: 'Translated from Ukrainian'
+      },
       delete: 'Delete',
       unknownUser: 'Unknown user',
     },

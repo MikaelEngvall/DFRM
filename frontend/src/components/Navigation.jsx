@@ -99,13 +99,8 @@ const Navigation = () => {
     }
   }, [darkMode]);
 
-  const handleLogout = async () => {
-    try {
-      await logout();
-      navigate('/login');
-    } catch (error) {
-      console.error('Logout error:', error);
-    }
+  const handleLogout = () => {
+    logout();
   };
 
   const getFirstName = () => {

@@ -47,7 +47,7 @@ public class EmailListener {
     
     private static final String TARGET_RECIPIENT = "felanmalan@duggalsfastigheter.se";
     private static final String TARGET_SENDER = "felanmalan@duggalsfastigheter.se";
-    private static final String TARGET_REPLY_TO = "daria@mail.se";
+    private static final String TARGET_REPLY_TO = "mikael.engvall.me@gmail.com";
 
     private boolean isDevEnvironment() {
         String[] activeProfiles = environment.getActiveProfiles();
@@ -66,8 +66,8 @@ public class EmailListener {
         // Skydda mot null-värden
         if (mailProperties == null || 
             mailProperties.getHost() == null || 
-            mailProperties.getUsername() == null || 
-            mailProperties.getPassword() == null) {
+            mailProperties.getListeningUsername() == null || 
+            mailProperties.getListeningPassword() == null) {
             log.error("Mail properties are not properly configured: {}", mailProperties);
             return;
         }
@@ -76,24 +76,25 @@ public class EmailListener {
         boolean isDev = isDevEnvironment();
         if (isDev) {
             log.info("Running in dev environment - will look for emails with Reply-To: {}", TARGET_REPLY_TO);
-            log.info("Mail properties: host={}, port={}, username={}", 
-                mailProperties.getHost(), mailProperties.getPort(), mailProperties.getUsername());
+            log.info("Mail listening properties: host={}, port={}, username={}", 
+                mailProperties.getHost(), mailProperties.getListeningPort(), mailProperties.getListeningUsername());
         }
         
+        // Använd port 993 för IMAPS (inkommande e-post) oavsett konfiguration
         Properties properties = System.getProperties();
         properties.put("mail.store.protocol", "imaps");
         properties.put("mail.imaps.host", mailProperties.getHost());
-        properties.put("mail.imaps.port", mailProperties.getPort());
+        properties.put("mail.imaps.port", "993");
         
-        // SSL-inställningar
+        // SSL-inställningar för IMAPS
         properties.put("mail.imaps.ssl.enable", "true");
         properties.put("mail.imaps.ssl.trust", "*");
         properties.put("mail.imaps.ssl.protocols", "TLSv1.2 TLSv1.1 TLSv1");
         
-        // Socket factory för SSL
+        // Socket factory för IMAPS SSL
         properties.put("mail.imaps.socketFactory.class", "javax.net.ssl.SSLSocketFactory");
         properties.put("mail.imaps.socketFactory.fallback", "false");
-        properties.put("mail.imaps.socketFactory.port", String.valueOf(mailProperties.getPort()));
+        properties.put("mail.imaps.socketFactory.port", "993");
         
         // Debug och timeouts
         properties.put("mail.debug", isDev ? "true" : "false");
@@ -107,137 +108,117 @@ public class EmailListener {
         }
 
         try {
-            log.info("Creating mail session with host: {}, port: {}", 
-                mailProperties.getHost(), mailProperties.getPort());
+            log.info("Creating mail session with host: {}, port: 993 (IMAPS)", 
+                mailProperties.getHost());
                 
             Session session = Session.getInstance(properties);
             session.setDebug(isDev);
             
-            log.info("Connecting to mail server with username: {}", mailProperties.getUsername());
+            log.info("Connecting to mail server with username: {}", mailProperties.getListeningUsername());
             
-            try {
-                // Testa först att skapa en socket för att kontrollera att anslutningen fungerar
-                try (javax.net.ssl.SSLSocket socket = (javax.net.ssl.SSLSocket) 
-                        ((javax.net.ssl.SSLSocketFactory) javax.net.ssl.SSLSocketFactory.getDefault())
-                        .createSocket(mailProperties.getHost(), mailProperties.getPort())) 
-                {
-                    socket.startHandshake();
-                    log.info("SSL handshake successful with host {}:{}", 
-                        mailProperties.getHost(), mailProperties.getPort());
-                } catch (Exception e) {
-                    log.error("SSL handshake failed: {}", e.getMessage(), e);
-                    return;
-                }
+            // Använd try-with-resources för att säkerställa att Store stängs ordentligt
+            try (Store store = session.getStore("imaps")) {
+                store.connect(
+                    mailProperties.getHost(),
+                    mailProperties.getListeningPort(), // Använd den specifika porten för lyssning
+                    mailProperties.getListeningUsername(), // Använd det specifika användarnamnet för lyssning
+                    mailProperties.getListeningPassword() // Använd det specifika lösenordet för lyssning
+                );
                 
-                // Använd try-with-resources för att säkerställa att Store stängs ordentligt
-                try (Store store = session.getStore("imaps")) {
-                    store.connect(
-                        mailProperties.getHost(),
-                        mailProperties.getUsername(),
-                        mailProperties.getPassword()
-                    );
+                log.info("Successfully connected to mail server");
+
+                Folder inbox = store.getFolder("INBOX");
+                inbox.open(Folder.READ_WRITE);
+                
+                // Hämta alla olästa meddelanden
+                Message[] messages = inbox.search(
+                    new jakarta.mail.search.FlagTerm(
+                        new jakarta.mail.Flags(jakarta.mail.Flags.Flag.SEEN), 
+                        false
+                    )
+                );
+                
+                log.info("Found {} unread messages", messages.length);
+                
+                for (Message message : messages) {
+                    // Kontrollera avsändare, Reply-To och mottagare
+                    boolean isFromTargetSender = false;
+                    boolean hasTargetReplyTo = false;
+                    boolean isToTargetRecipient = false;
                     
-                    log.info("Successfully connected to mail server");
-    
-                    Folder inbox = store.getFolder("INBOX");
-                    inbox.open(Folder.READ_WRITE);
-                    
-                    // Hämta alla olästa meddelanden
-                    Message[] messages = inbox.search(
-                        new jakarta.mail.search.FlagTerm(
-                            new jakarta.mail.Flags(jakarta.mail.Flags.Flag.SEEN), 
-                            false
-                        )
-                    );
-                    
-                    log.info("Found {} unread messages", messages.length);
-                    
-                    for (Message message : messages) {
-                        // Kontrollera avsändare, Reply-To och mottagare
-                        boolean isFromTargetSender = false;
-                        boolean hasTargetReplyTo = false;
-                        boolean isToTargetRecipient = false;
-                        
-                        // Kolla avsändare
-                        Address[] fromAddresses = message.getFrom();
-                        if (fromAddresses != null && fromAddresses.length > 0) {
-                            for (Address address : fromAddresses) {
-                                if (address instanceof InternetAddress) {
-                                    String sender = ((InternetAddress) address).getAddress();
-                                    log.info("Message from: {}", sender);
-                                    if (TARGET_SENDER.equalsIgnoreCase(sender)) {
-                                        isFromTargetSender = true;
-                                        break;
-                                    }
+                    // Kolla avsändare
+                    Address[] fromAddresses = message.getFrom();
+                    if (fromAddresses != null && fromAddresses.length > 0) {
+                        for (Address address : fromAddresses) {
+                            if (address instanceof InternetAddress) {
+                                String sender = ((InternetAddress) address).getAddress();
+                                log.info("Message from: {}", sender);
+                                if (TARGET_SENDER.equalsIgnoreCase(sender)) {
+                                    isFromTargetSender = true;
+                                    break;
                                 }
                             }
                         }
-                        
-                        // Kolla Reply-To
-                        Address[] replyToAddresses = message.getReplyTo();
-                        if (replyToAddresses != null && replyToAddresses.length > 0) {
-                            for (Address address : replyToAddresses) {
-                                if (address instanceof InternetAddress) {
-                                    String replyTo = ((InternetAddress) address).getAddress();
-                                    log.info("Message reply-to: {}", replyTo);
-                                    if (TARGET_REPLY_TO.equalsIgnoreCase(replyTo)) {
-                                        hasTargetReplyTo = true;
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                        
-                        // Kolla mottagare
-                        Address[] recipients = message.getRecipients(Message.RecipientType.TO);
-                        if (recipients != null && recipients.length > 0) {
-                            for (Address address : recipients) {
-                                if (address instanceof InternetAddress) {
-                                    String recipient = ((InternetAddress) address).getAddress();
-                                    log.info("Message to: {}", recipient);
-                                    if (TARGET_RECIPIENT.equalsIgnoreCase(recipient)) {
-                                        isToTargetRecipient = true;
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                        
-                        // Fortsätt bara om meddelandet är från rätt avsändare till rätt mottagare och har rätt Reply-To
-                        boolean shouldProcess = false;
-                        
-                        if (isDevEnvironment()) {
-                            // I utvecklingsmiljö, kolla efter Reply-To
-                            if (isFromTargetSender && hasTargetReplyTo) {
-                                shouldProcess = true;
-                                log.info("Processing message with Reply-To: {}", TARGET_REPLY_TO);
-                            }
-                        } else {
-                            // I produktion, tillåt alla mail från rätt avsändare till rätt mottagare
-                            if (isFromTargetSender && isToTargetRecipient) {
-                                shouldProcess = true;
-                                log.info("Processing message in production");
-                            }
-                        }
-                        
-                        if (shouldProcess) {
-                            processEmail(message);
-                        } else {
-                            log.info("Skipping message - not matching criteria");
-                        }
-                        
-                        // Markera meddelandet som läst oavsett
-                        message.setFlag(jakarta.mail.Flags.Flag.SEEN, true);
                     }
                     
-                    inbox.close(false);
+                    // Kolla Reply-To
+                    Address[] replyToAddresses = message.getReplyTo();
+                    if (replyToAddresses != null && replyToAddresses.length > 0) {
+                        for (Address address : replyToAddresses) {
+                            if (address instanceof InternetAddress) {
+                                String replyTo = ((InternetAddress) address).getAddress();
+                                log.info("Message reply-to: {}", replyTo);
+                                if (TARGET_REPLY_TO.equalsIgnoreCase(replyTo)) {
+                                    hasTargetReplyTo = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Kolla mottagare
+                    Address[] recipients = message.getRecipients(Message.RecipientType.TO);
+                    if (recipients != null && recipients.length > 0) {
+                        for (Address address : recipients) {
+                            if (address instanceof InternetAddress) {
+                                String recipient = ((InternetAddress) address).getAddress();
+                                log.info("Message to: {}", recipient);
+                                if (TARGET_RECIPIENT.equalsIgnoreCase(recipient)) {
+                                    isToTargetRecipient = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Fortsätt bara om meddelandet är från rätt avsändare till rätt mottagare och har rätt Reply-To
+                    boolean shouldProcess = false;
+                    
+                    if (isDevEnvironment()) {
+                        // I utvecklingsmiljö, kolla efter Reply-To
+                        if (isFromTargetSender && hasTargetReplyTo) {
+                            shouldProcess = true;
+                            log.info("Processing message with Reply-To: {}", TARGET_REPLY_TO);
+                        }
+                    } else {
+                        // I produktion, tillåt alla mail från rätt avsändare till rätt mottagare
+                        if (isFromTargetSender && isToTargetRecipient) {
+                            shouldProcess = true;
+                            log.info("Processing message in production");
+                        }
+                    }
+                    
+                    if (shouldProcess) {
+                        processEmail(message);
+                    } else {
+                        log.info("Skipping message - not matching criteria");
+                    }
+                    
+                    // Markera meddelandet som läst oavsett
+                    message.setFlag(jakarta.mail.Flags.Flag.SEEN, true);
                 }
-            } catch (Exception e) {
-                log.error("Failed to connect to mail server: {}", e.getMessage(), e);
-                // Logga mer detaljer om vad som gick fel
-                if (e.getCause() != null) {
-                    log.error("Caused by: {}", e.getCause().getMessage(), e.getCause());
-                }
+                
+                inbox.close(false);
             }
         } catch (Exception e) {
             log.error("Error checking emails: {}", e.getMessage(), e);
