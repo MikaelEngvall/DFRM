@@ -49,7 +49,6 @@ function readLocaleFile(language) {
  * Huvudfunktion för att kontrollera översättningar
  */
 function verifyTranslations() {
-  console.log('Verifying translation key structure...');
   
   // Läs in alla språkfiler
   const locales = {};
@@ -59,7 +58,6 @@ function verifyTranslations() {
   
   // Extrahera nycklar från svenska (referensspråk)
   const svKeys = extractKeys(locales.sv).sort();
-  console.log(`\nSwedish (reference) contains ${svKeys.length} translation keys.`);
   
   // Kontrollera varje språk mot svenska
   let hasErrors = false;

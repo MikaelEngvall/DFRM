@@ -182,12 +182,7 @@ const Staff = () => {
       
       // Hämta alla användare - alla roller ser alla användare
       const data = await userService.getAllUsers();
-      
-      // Debugga isRegularUser och användarroller för felsökning
-      console.log('Current user role:', currentUser?.role);
-      console.log('Is regular user:', isRegularUser());
-      
-      // Alla roller ser alla användare - vi filtrerar inte här
+       // Alla roller ser alla användare - vi filtrerar inte här
       setUsers(data);
       
       setError(null);

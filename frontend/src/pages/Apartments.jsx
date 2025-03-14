@@ -82,14 +82,10 @@ const Apartments = () => {
   const filteredTenantEmails = useMemo(() => {
     const emails = new Set();
     
-    console.log("Filtrerar e-postadresser från", filteredApartments.length, "filtrerade lägenheter");
-    
     // Gå igenom alla filtrerade lägenheter
     filteredApartments.forEach(apartment => {
-      console.log(`Lägenhet ${apartment.street} ${apartment.number}, ${apartment.apartmentNumber}`);
       // Kontrollera om lägenheten har hyresgäster
       if (apartment.tenants && Array.isArray(apartment.tenants) && apartment.tenants.length > 0) {
-        console.log(` - Antal hyresgäster: ${apartment.tenants.length}`);
         // Hitta detaljerad information för varje hyresgäst
         apartment.tenants.forEach(tenantRef => {
           // Tenant kan vara antingen en sträng (ID) eller ett objekt med ID-fält
@@ -100,12 +96,8 @@ const Apartments = () => {
           
           // Om hyresgästen hittades och har en e-postadress, lägg till den
           if (tenant && tenant.email) {
-            console.log(`   - Lägger till ${tenant.firstName} ${tenant.lastName}: ${tenant.email}`);
             emails.add(tenant.email);
-          } else if (tenant) {
-            console.log(`   - Hyresgäst ${tenant.firstName} ${tenant.lastName} saknar e-postadress`);
-          } else {
-            console.log(`   - Kunde inte hitta hyresgästen med ID: ${tenantId}`);
+
           }
         });
       } else {
@@ -115,14 +107,12 @@ const Apartments = () => {
     
     // Konvertera Set till Array
     const emailArray = Array.from(emails);
-    console.log(`Totalt ${emailArray.length} unika e-postadresser:`, emailArray);
     return emailArray;
   }, [filteredApartments, tenants]);
   
   // Hantera e-postutskick
   const handleSendEmail = async (subject, content, recipients) => {
     try {
-      console.log("Skickar e-post till", recipients.length, "mottagare:", recipients);
       await emailService.sendBulkEmail(subject, content, recipients);
       setEmailSendSuccess(true);
       // Visa bekräftelsemeddelande i 3 sekunder
@@ -524,11 +514,9 @@ const Apartments = () => {
         try {
           // Prova först att använda apartmentService
           savedApartment = await apartmentService.createApartment(apartmentData);
-          console.log('✅ LÄGENHET SKAPAD - SVARSDATA:', savedApartment);
           
           // Om det inte fungerade, prova direkt fetch
           if (!savedApartment || !savedApartment.id) {
-            console.log('⚠️ Inget ID returnerades - provar med direkt fetch...');
             
             // Skapa ett alternativt fetch-anrop för att testa
             try {
@@ -558,7 +546,6 @@ const Apartments = () => {
               
               if (fetchResponse.ok) {
                 const fetchData = await fetchResponse.json();
-                console.log('✅ LÄGENHET SKAPAD MED FETCH - SVARSDATA:', fetchData);
                 
                 if (!savedApartment) {
                   savedApartment = fetchData;

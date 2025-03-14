@@ -531,6 +531,7 @@ const Keys = () => {
         onClose={() => setIsModalOpen(false)}
         title={selectedKey ? t('keys.edit') : t('keys.addNew')}
         onSubmit={handleSubmit}
+        showFooter={false}
       >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
@@ -618,6 +619,37 @@ const Keys = () => {
               </option>
             ))}
           </select>
+        </div>
+        
+        <div className="flex justify-between gap-4 mt-6">
+          <div>
+            {selectedKey && (
+              <button
+                type="button"
+                onClick={() => handleDelete(selectedKey)}
+                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800"
+              >
+                {t('common.delete')}
+              </button>
+            )}
+          </div>
+          
+          <div className="flex gap-4">
+            <button
+              type="submit"
+              onClick={handleSubmit}
+              className="px-4 py-2 bg-primary text-white rounded-md hover:bg-secondary dark:bg-primary dark:hover:bg-secondary"
+            >
+              {t('common.save')}
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsModalOpen(false)}
+              className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700"
+            >
+              {t('common.cancel')}
+            </button>
+          </div>
         </div>
       </Modal>
 

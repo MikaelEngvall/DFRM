@@ -65,7 +65,6 @@ const TaskMessages = ({ taskId, canSendMessages = true }) => {
       setIsLoading(true);
       setError(null);
       const data = await taskMessageService.getMessagesByTaskId(taskId);
-      console.log('Fetched messages:', data);
       setMessages(data);
     } catch (err) {
       console.error('Error fetching messages:', err);
@@ -83,7 +82,6 @@ const TaskMessages = ({ taskId, canSendMessages = true }) => {
     
     try {
       setError(null);
-      console.log('Sending message:', newMessage);
       await taskMessageService.createMessage(taskId, newMessage, currentLocale);
       setNewMessage('');
       fetchMessages(); // Hämta uppdaterade meddelanden
@@ -97,7 +95,6 @@ const TaskMessages = ({ taskId, canSendMessages = true }) => {
   const handleDeleteMessage = async (messageId) => {
     try {
       setError(null);
-      console.log('Deleting message:', messageId);
       await taskMessageService.deleteMessage(taskId, messageId);
       fetchMessages(); // Hämta uppdaterade meddelanden
     } catch (err) {

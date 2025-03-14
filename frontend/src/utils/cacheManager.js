@@ -36,11 +36,9 @@ export const getFromCache = (cacheKey, ttl = DEFAULT_CACHE_TTL) => {
     
     // Kontrollera om cachen är för gammal
     if (now - timestamp > ttl) {
-      console.log(`Cache för ${cacheKey} har utgått`);
       return null;
     }
     
-    console.log(`Använder cachad data för ${cacheKey}`);
     return data;
   } catch (error) {
     console.error('Fel vid läsning från cache:', error);
@@ -61,7 +59,6 @@ export const saveToCache = (cacheKey, data) => {
     };
     
     localStorage.setItem(cacheKey, JSON.stringify(cacheObject));
-    console.log(`Data sparad i cache för ${cacheKey}`);
   } catch (error) {
     console.error('Fel vid skrivning till cache:', error);
   }
@@ -74,7 +71,6 @@ export const saveToCache = (cacheKey, data) => {
 export const invalidateCache = (cacheKey) => {
   try {
     localStorage.removeItem(cacheKey);
-    console.log(`Cache invaliderad för ${cacheKey}`);
   } catch (error) {
     console.error('Fel vid invalidering av cache:', error);
   }
@@ -85,7 +81,6 @@ export const invalidateCache = (cacheKey) => {
  */
 export const invalidateAllEntityCaches = () => {
   Object.values(CACHE_KEYS).forEach(key => invalidateCache(key));
-  console.log('Alla entitetscacher har invaliderats');
 };
 
 /**

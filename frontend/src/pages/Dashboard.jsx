@@ -15,7 +15,6 @@ const Dashboard = () => {
   const { t } = useLocale();
   const { user, hasRole } = useAuth();
   const { theme } = useTheme();
-  console.log('Current theme:', theme);
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -270,7 +269,6 @@ const Dashboard = () => {
 
       {/* Logotyp sektion */}
       <div className="mt-8">
-        {console.log('Uppdaterat isDarkMode state:', isDarkMode)}
         <img 
           src={isDarkMode 
             ? "/Transparent Logo White Text.png" 

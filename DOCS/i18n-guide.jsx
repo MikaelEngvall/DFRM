@@ -24,7 +24,6 @@ const ExampleComponent = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     // Logik för att hantera formulärinlämning
-    console.log('Form submitted:', formData);
   };
 
   // Steg 3: Använd t() funktionen för ALLA texter som visas i användargränssnittet

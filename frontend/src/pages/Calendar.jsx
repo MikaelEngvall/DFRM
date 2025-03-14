@@ -288,12 +288,6 @@ const Calendar = () => {
         taskData.apartmentId = taskData.apartmentId.id;
       }
       
-      // Hantera dueDate korrekt genom att använda ISO-formatet YYYY-MM-DD
-      // vilket backend kan tolka korrekt till LocalDate utan tidszonsförskjutningar
-      if (taskData.dueDate) {
-        // Logga det datum som skickas till servern
-        console.log('Skickar dueDate till server:', taskData.dueDate);
-      }
       
       if (selectedTask) {
         // För existerande uppgift, uppdatera återkommande mönster om det har ändrats
@@ -888,7 +882,6 @@ const Calendar = () => {
                     
                     // Om det finns hyresgäster kopplade till lägenheten, välj den första automatiskt
                     if (relatedTenants.length > 0) {
-                      console.log('Väljer automatiskt hyresgäst:', relatedTenants[0].firstName, relatedTenants[0].lastName);
                       setFormData(prev => ({
                         ...prev,
                         apartmentId: apartment.id,
@@ -899,7 +892,7 @@ const Calendar = () => {
                         ...prev,
                         apartmentId: apartment.id
                       }));
-                      console.log('Hittade inga relaterade hyresgäster för denna lägenhet');
+
                     }
                   }}
                   options={apartments}

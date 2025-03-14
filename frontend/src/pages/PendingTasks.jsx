@@ -231,17 +231,13 @@ const PendingTasks = () => {
     // Kontrollera om det är en e-postrapport (om det har name, email, etc. men ingen task)
     const isEmailReport = !item.task && item.name;
     
-    if (isEmailReport) {
-      // Logga objektet för felsökning
-      console.log('E-postrapport:', item);
-      
+    if (isEmailReport) {      
       // Hitta lägenhetsobjekt baserat på apartmentId om det finns
       let apartmentObj = '';
       if (item.apartmentId) {
         const foundApartment = apartments.find(apt => apt.id === item.apartmentId);
         if (foundApartment) {
           apartmentObj = foundApartment.id;
-          console.log('Hittade lägenhet:', foundApartment);
         }
       }
       
@@ -251,7 +247,6 @@ const PendingTasks = () => {
         const foundTenant = tenants.find(t => t.id === item.tenantId);
         if (foundTenant) {
           tenantObj = foundTenant.id;
-          console.log('Hittade hyresgäst:', foundTenant);
         }
       }
       
@@ -332,7 +327,6 @@ const PendingTasks = () => {
       
       // Skapa en kopia av formulärdatan och logga för felsökning
       let taskData = { ...formData };
-      console.log('Formulärdata före behandling:', taskData);
       
       // Säkerställ att tenantId och apartmentId är strängar, inte objekt
       if (taskData.tenantId && typeof taskData.tenantId === 'object') {
