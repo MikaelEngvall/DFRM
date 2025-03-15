@@ -44,11 +44,12 @@ function ThemeToggle({ darkMode, setDarkMode }) {
   );
 }
 
-function MobileNavLink({ to, icon, label }) {
+function MobileNavLink({ to, icon, label, onNavigate }) {
   return (
     <NavLink 
       to={to} 
       className={({ isActive }) => `flex items-center px-2 py-2 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md ${isActive ? 'bg-gray-100 dark:bg-gray-800' : ''}`}
+      onClick={onNavigate}
     >
       {React.createElement(icon, { className: "h-6 w-6 mr-3" })}
       <span>{label}</span>
@@ -217,7 +218,13 @@ const Navigation = () => {
           </div>
           <nav className="space-y-1">
             {authorizedNavItems.map((item) => (
-              <MobileNavLink key={item.name} to={item.href} icon={item.icon} label={item.name} />
+              <MobileNavLink 
+                key={item.name} 
+                to={item.href} 
+                icon={item.icon} 
+                label={item.name} 
+                onNavigate={() => setMobileMenuOpen(false)}
+              />
             ))}
             <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
               <button 
