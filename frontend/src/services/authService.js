@@ -1,4 +1,5 @@
 import api from './api';
+import { secureStorage } from '../utils/secureStorage';
 
 const TOKEN_KEY = 'auth_token';
 
@@ -10,14 +11,20 @@ class AuthError extends Error {
   }
 }
 
-const setToken = (token) => {
-  localStorage.setItem(TOKEN_KEY, token);
-  api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+export const setAuthToken = (token) => {
+  if (token) {
+    secureStorage.setItem(TOKEN_KEY, token);
+    api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+  }
 };
 
-const removeToken = () => {
-  localStorage.removeItem(TOKEN_KEY);
+export const removeAuthToken = () => {
+  secureStorage.removeItem(TOKEN_KEY);
   delete api.defaults.headers.common['Authorization'];
+};
+
+export const getAuthToken = () => {
+  return secureStorage.getItem(TOKEN_KEY);
 };
 
 const handleApiError = (error) => {
@@ -51,7 +58,7 @@ const login = async (credentials) => {
   try {
     const response = await api.post('/api/auth/login', credentials);
     const { token, user } = response.data;
-    setToken(token);
+    setAuthToken(token);
     return user;
   } catch (error) {
     handleApiError(error);
@@ -61,13 +68,13 @@ const login = async (credentials) => {
 const logout = async () => {
   // JWT autentisering kräver ingen serveranrop för utloggning, 
   // vi behöver bara ta bort token från klienten
-  removeToken();
+  removeAuthToken();
   return Promise.resolve(); // Returnerar en upplöst Promise för att matcha async-signaturen
 };
 
 const getCurrentUser = async () => {
   try {
-    const token = localStorage.getItem(TOKEN_KEY);
+    const token = getAuthToken();
     if (!token) {
       throw new AuthError('Ingen token hittades', 401);
     }
@@ -76,7 +83,7 @@ const getCurrentUser = async () => {
     const response = await api.get('/api/auth/me');
     return response.data;
   } catch (error) {
-    removeToken();
+    removeAuthToken();
     handleApiError(error);
   }
 };
@@ -85,7 +92,7 @@ const register = async (userData) => {
   try {
     const response = await api.post('/api/auth/register', userData);
     const { token, user } = response.data;
-    setToken(token);
+    setAuthToken(token);
     return user;
   } catch (error) {
     handleApiError(error);
@@ -136,7 +143,7 @@ const resetPassword = async (token, newPassword) => {
 };
 
 const isAuthenticated = () => {
-  return !!localStorage.getItem(TOKEN_KEY);
+  return !!getAuthToken();
 };
 
 const authService = {

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { authService, userService } from '../services';
 import sessionManager from '../utils/sessionManager';
 import SessionWarning from '../components/SessionWarning';
+import { getAuthToken, removeAuthToken } from '../services/authService';
 
 const AuthContext = createContext(null);
 
@@ -25,33 +26,26 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  const checkAuthStatus = useCallback(async () => {
-    if (authCheckRef.current) return;
-    authCheckRef.current = true;
-
+  const checkAuth = useCallback(async () => {
     try {
-      const token = localStorage.getItem('auth_token');
+      const token = getAuthToken();
       if (!token) {
-        setUser(null);
+        setLoading(false);
         return;
       }
 
-      const userData = await authService.getCurrentUser();
-      setUser(userData);
+      // Implementera token-validering här om det behövs
       
-      // Hämta alla användare om inloggad
-      fetchUsers();
+      setLoading(false);
     } catch (error) {
-      setUser(null);
       console.error('Auth check error:', error);
-    } finally {
       setLoading(false);
     }
-  }, [fetchUsers]);
+  }, []);
 
   useEffect(() => {
-    checkAuthStatus();
-  }, [checkAuthStatus]);
+    checkAuth();
+  }, [checkAuth]);
 
   useEffect(() => {
     if (user) {
@@ -95,14 +89,12 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = async () => {
-    // JWT-baserad autentisering hanterar utloggning på klientsidan
-    await authService.logout();
+  const logout = useCallback(() => {
     setUser(null);
+    removeAuthToken();
     setShowSessionWarning(false);
-    localStorage.removeItem('auth_token');
     navigate('/login');
-  };
+  }, [navigate]);
 
   const extendSession = () => {
     sessionManager.handleUserActivity();

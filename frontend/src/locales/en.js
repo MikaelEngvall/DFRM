@@ -508,4 +508,17 @@ export default {
       deactivate: 'Deactivate'
     }
   },
+
+  email: {
+    title: 'Send Email',
+    button: 'Send Email',
+    from: 'From',
+    to: 'To',
+    bcc: 'BCC',
+    subject: 'Subject',
+    content: 'Content',
+    send: 'Send',
+    recipients: 'recipients',
+    showRecipients: 'Show recipient list',
+  },
 }; 

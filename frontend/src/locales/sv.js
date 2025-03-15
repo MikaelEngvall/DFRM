@@ -1,4 +1,4 @@
-export default {
+const translations = {
   common: {
     loading: 'Laddar...',
     error: 'Ett fel uppstod',
@@ -35,6 +35,7 @@ export default {
     permissions: 'Behörigheter',
     unauthorized: 'Du har inte behörighet att utföra denna åtgärd',
     notSpecified: 'Ej angiven',
+    send: 'Skicka',
   },
 
   languages: {
@@ -295,17 +296,13 @@ export default {
       saveSuccess: 'Uppgiften har sparats',
       saveError: 'Ett fel uppstod vid sparande av uppgiften',
       deleteSuccess: 'Uppgiften har tagits bort',
-      deleteError: 'Ett fel uppstod vid borttagning av uppgiften',
       statusUpdateSuccess: 'Uppgiftens status har uppdaterats',
       statusUpdateError: 'Ett fel uppstod vid statusuppdatering',
       fetchError: 'Ett fel uppstod vid hämtning av meddelanden',
       sendError: 'Ett fel uppstod vid skickande av meddelande',
-      deleteError: 'Ett fel uppstod vid borttagning av meddelande',
       title: 'Meddelande',
       noMessages: 'Inga meddelanden än',
       inputPlaceholder: 'Skriv ett meddelande...',
-      send: 'Skicka',
-      translatedFrom: 'Översatt från {language}',
       translatedFrom: {
         SV: 'Översatt från svenska',
         EN: 'Översatt från engelska',
@@ -545,9 +542,10 @@ export default {
       sendFailed: 'Kunde inte skicka e-post. Försök igen senare.'
     },
     inputPlaceholder: 'Skriv ett meddelande...',
-    send: 'Skicka',
     translatedFrom: 'Översatt från {language}',
     delete: 'Ta bort',
     unknownUser: 'Okänd användare',
   },
-}; 
+};
+
+export default translations; 

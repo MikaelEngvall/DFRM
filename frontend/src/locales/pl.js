@@ -507,4 +507,17 @@ export default {
       deactivate: 'Dezaktywuj'
     }
   },
+
+  email: {
+    title: 'Wyślij e-mail',
+    button: 'Wyślij e-mail',
+    from: 'Od',
+    to: 'Do',
+    bcc: 'UDW',
+    subject: 'Temat',
+    content: 'Treść',
+    send: 'Wyślij',
+    recipients: 'odbiorcy',
+    showRecipients: 'Pokaż listę odbiorców',
+  },
 }; 

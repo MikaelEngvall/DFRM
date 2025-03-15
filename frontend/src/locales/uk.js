@@ -1,4 +1,4 @@
-export default {
+const translations = {
   common: {
     loading: 'Завантаження...',
     error: 'Виникла помилка',
@@ -301,17 +301,14 @@ export default {
       saveSuccess: 'Завдання збережено',
       saveError: 'Помилка при збереженні завдання',
       deleteSuccess: 'Завдання видалено',
-      deleteError: 'Помилка при видаленні завдання',
       statusUpdateSuccess: 'Статус завдання оновлено',
       statusUpdateError: 'Помилка при оновленні статусу завдання',
       fetchError: 'Помилка при отриманні повідомлень',
       sendError: 'Помилка при відправленні повідомлення',
-      deleteError: 'Помилка при видаленні повідомлення',
       title: 'Повідомлення',
       noMessages: 'Немає повідомлень',
       inputPlaceholder: 'Напишіть повідомлення...',
       send: 'Надіслати',
-      translatedFrom: 'Перекладено з {language}',
       translatedFrom: {
         SV: 'Перекладено зі шведської',
         EN: 'Перекладено з англійської',
@@ -507,4 +504,19 @@ export default {
       deactivate: 'Деактивувати'
     }
   },
-}; 
+
+  email: {
+    title: 'Надіслати електронний лист',
+    button: 'Надіслати електронний лист',
+    from: 'Від',
+    to: 'Кому',
+    bcc: 'Прихована копія',
+    subject: 'Тема',
+    content: 'Зміст',
+    send: 'Надіслати',
+    recipients: 'одержувачі',
+    showRecipients: 'Показати список одержувачів',
+  },
+};
+
+export default translations; 

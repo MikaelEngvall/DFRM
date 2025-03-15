@@ -3,6 +3,8 @@
  * Används för att minska antalet API-anrop och förbättra prestandan
  */
 
+import { secureStorage } from './secureStorage';
+
 // Cache-nycklar för olika datatyper
 export const CACHE_KEYS = {
   APARTMENTS: 'cached_apartments',
@@ -19,6 +21,63 @@ export const CACHE_KEYS = {
 // 30 minuter = 30 * 60 * 1000
 const DEFAULT_CACHE_TTL = 30 * 60 * 1000;
 
+const CACHE_PREFIX = 'cached_';
+const DEFAULT_CACHE_TIME = 5 * 60 * 1000; // 5 minuter
+
+export class CacheManager {
+  constructor(key, maxAge = DEFAULT_CACHE_TIME) {
+    this.cacheKey = `${CACHE_PREFIX}${key}`;
+    this.maxAge = maxAge;
+  }
+
+  getData() {
+    try {
+      const cachedData = secureStorage.getItem(this.cacheKey);
+      
+      if (!cachedData) {
+        return null;
+      }
+
+      const now = Date.now();
+      if (now - cachedData.timestamp > this.maxAge) {
+        this.clearCache();
+        return null;
+      }
+
+      return cachedData.data;
+    } catch (error) {
+      console.error('Error reading from cache:', error);
+      return null;
+    }
+  }
+
+  setData(data) {
+    try {
+      const cacheObject = {
+        timestamp: Date.now(),
+        data: data
+      };
+      
+      secureStorage.setItem(this.cacheKey, cacheObject);
+    } catch (error) {
+      console.error('Error writing to cache:', error);
+    }
+  }
+
+  clearCache() {
+    try {
+      secureStorage.removeItem(this.cacheKey);
+    } catch (error) {
+      console.error('Error clearing cache:', error);
+    }
+  }
+}
+
+// Exportera en funktion för att skapa nya cache managers
+export const createCacheManager = (key, maxAge) => {
+  return new CacheManager(key, maxAge);
+};
+
 /**
  * Hämtar data från cache om den finns och är giltig
  * @param {string} cacheKey - Nyckeln för cachen
@@ -27,19 +86,16 @@ const DEFAULT_CACHE_TTL = 30 * 60 * 1000;
  */
 export const getFromCache = (cacheKey, ttl = DEFAULT_CACHE_TTL) => {
   try {
-    const cachedData = localStorage.getItem(cacheKey);
-    
-    if (!cachedData) return null;
-    
-    const { timestamp, data } = JSON.parse(cachedData);
-    const now = new Date().getTime();
-    
-    // Kontrollera om cachen är för gammal
-    if (now - timestamp > ttl) {
+    const cachedItem = secureStorage.getItem(cacheKey);
+    if (!cachedItem) return null;
+
+    const now = Date.now();
+    if (now - cachedItem.timestamp > ttl) {
+      secureStorage.removeItem(cacheKey);
       return null;
     }
-    
-    return data;
+
+    return cachedItem.data;
   } catch (error) {
     console.error('Fel vid läsning från cache:', error);
     return null;
@@ -54,11 +110,10 @@ export const getFromCache = (cacheKey, ttl = DEFAULT_CACHE_TTL) => {
 export const saveToCache = (cacheKey, data) => {
   try {
     const cacheObject = {
-      timestamp: new Date().getTime(),
+      timestamp: Date.now(),
       data
     };
-    
-    localStorage.setItem(cacheKey, JSON.stringify(cacheObject));
+    secureStorage.setItem(cacheKey, cacheObject);
   } catch (error) {
     console.error('Fel vid skrivning till cache:', error);
   }
@@ -70,7 +125,7 @@ export const saveToCache = (cacheKey, data) => {
  */
 export const invalidateCache = (cacheKey) => {
   try {
-    localStorage.removeItem(cacheKey);
+    secureStorage.removeItem(cacheKey);
   } catch (error) {
     console.error('Fel vid invalidering av cache:', error);
   }
