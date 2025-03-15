@@ -285,15 +285,6 @@ const Navigation = () => {
           ))}
         </nav>
       </div>
-
-      {/* Desktop navigation - collapsed sidebar for small screens */}
-      <div className={`hidden ${authorizedNavItems.length > 0 ? 'md:block lg:hidden' : ''} fixed top-0 left-0 bottom-0 w-16 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 pt-16`}>
-        <nav className="mt-6 px-2 space-y-1">
-          {authorizedNavItems.map((item) => (
-            <DesktopNavLink key={item.name} to={item.href} icon={item.icon} label={item.name} tooltips={tooltips} showTooltip={showTooltip} hideTooltip={hideTooltip} collapsed />
-          ))}
-        </nav>
-      </div>
     </>
   );
 };

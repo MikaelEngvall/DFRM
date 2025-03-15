@@ -1,6 +1,6 @@
-import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from './contexts/AuthContext';
+import React, { useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { LocaleProvider } from './contexts/LocaleContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import PrivateRoute from './components/PrivateRoute';
@@ -17,14 +17,27 @@ import Staff from './pages/Staff';
 import Import from './pages/Import';
 
 // Wrapper-komponent för sidor som kräver navigation
-const NavigationWrapper = ({ children }) => (
-  <div className="flex min-h-screen">
-    <Navigation />
-    <div className="flex-1 overflow-auto mt-16 ml-16 lg:ml-60 bg-gray-100 dark:bg-gray-800">
-      {children}
+const NavigationWrapper = ({ children }) => {
+  const { user, hasRole } = useAuth();
+  const location = useLocation();
+  
+  // Kontrollera om användaren har behörighet att se sidopanelen
+  const showSidebar = user && (
+    hasRole(['ADMIN', 'SUPERADMIN']) || 
+    (hasRole('USER') && location.pathname === '/calendar')
+  );
+  
+  return (
+    <div className="flex min-h-screen">
+      <Navigation />
+      <div className={`flex-1 overflow-auto mt-16 ${
+        showSidebar && location.pathname !== '/calendar' ? 'lg:ml-60' : ''
+      } bg-gray-100 dark:bg-gray-800`}>
+        {children}
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 const App = () => {
   return (
