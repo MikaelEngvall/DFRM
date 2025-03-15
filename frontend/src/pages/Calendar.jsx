@@ -12,7 +12,6 @@ import TaskMessages from '../components/TaskMessages';
 const Calendar = () => {
   const { t, currentLocale } = useLocale();
   const { user: currentUser, hasRole } = useAuth();
-  const [view, setView] = useState('month'); // month, week, day
   const [currentDate, setCurrentDate] = useState(new Date());
   const [tasks, setTasks] = useState([]);
   const [selectedTask, setSelectedTask] = useState(null);
@@ -49,11 +48,10 @@ const Calendar = () => {
 
   const fetchReferenceData = async () => {
     try {
-      // Använd cachad data om den finns tillgänglig, annars hämta från API
       const [usersData, apartmentsData, tenantsData] = await Promise.all([
-        userService.getAllUsers(), // Använder cache automatiskt
-        apartmentService.getAllApartments(), // Använder cache automatiskt
-        tenantService.getAllTenants(), // Använder cache automatiskt
+        userService.getAllUsers(),
+        apartmentService.getAllApartments(),
+        tenantService.getAllTenants(),
       ]);
       
       setUsers(usersData);
@@ -63,30 +61,11 @@ const Calendar = () => {
       console.error('Error fetching reference data:', err);
     }
   };
-  
-  const getAssignedUserName = (userId) => {
-    if (!userId) return '-';
-    const user = users.find(u => u.id === userId);
-    return user ? `${user.firstName} ${user.lastName}` : '-';
-  };
-  
-  const getApartmentInfo = (apartmentId) => {
-    if (!apartmentId) return '-';
-    const apt = apartments.find(a => a.id === apartmentId);
-    return apt ? `${apt.street} ${apt.number}, LGH ${apt.apartmentNumber}` : '-';
-  };
-  
-  const getTenantName = (tenantId) => {
-    if (!tenantId) return '-';
-    const tenant = tenants.find(t => t.id === tenantId);
-    return tenant ? `${tenant.firstName} ${tenant.lastName}` : '-';
-  };
 
   const fetchTasks = async () => {
     try {
       setIsLoading(true);
       
-      // Beräkna första och sista dag i månaden
       const startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
       const endDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
       
@@ -105,17 +84,10 @@ const Calendar = () => {
     }
   };
 
-  // Uppdatera navigeringsfunktioner för att hantera olika vyer
   const goToPreviousMonth = () => {
     setCurrentDate(prevDate => {
       const newDate = new Date(prevDate);
-      if (view === 'month') {
-        newDate.setMonth(newDate.getMonth() - 1);
-      } else if (view === 'week') {
-        newDate.setDate(newDate.getDate() - 7);
-      } else if (view === 'day') {
-        newDate.setDate(newDate.getDate() - 1);
-      }
+      newDate.setMonth(newDate.getMonth() - 1);
       return newDate;
     });
   };
@@ -123,13 +95,7 @@ const Calendar = () => {
   const goToNextMonth = () => {
     setCurrentDate(prevDate => {
       const newDate = new Date(prevDate);
-      if (view === 'month') {
-        newDate.setMonth(newDate.getMonth() + 1);
-      } else if (view === 'week') {
-        newDate.setDate(newDate.getDate() + 7);
-      } else if (view === 'day') {
-        newDate.setDate(newDate.getDate() + 1);
-      }
+      newDate.setMonth(newDate.getMonth() + 1);
       return newDate;
     });
   };
@@ -155,21 +121,15 @@ const Calendar = () => {
 
   const handleTaskClick = async (task) => {
     try {
-      // Hämta fullständig uppgiftsinformation från API istället för att använda den begränsade 
-      // information som finns i kalenderuppgiften
       const fullTaskData = await taskService.getTaskById(task.id);
       setSelectedTask(fullTaskData);
       
-      // Extrahera ID från objekt om det behövs (samma logik som i Tasks.jsx)
       const assignedToUserId = fullTaskData.assignedToUserId || '';
-      
       const apartmentId = fullTaskData.apartmentId ? 
         (typeof fullTaskData.apartmentId === 'object' ? fullTaskData.apartmentId.id : fullTaskData.apartmentId) : '';
-      
       const tenantId = fullTaskData.tenantId ? 
         (typeof fullTaskData.tenantId === 'object' ? fullTaskData.tenantId.id : fullTaskData.tenantId) : '';
       
-      // Hantera datumet korrekt för att undvika tidszonsförskjutning
       let dueDateString = '';
       if (fullTaskData.dueDate) {
         const dueDate = new Date(fullTaskData.dueDate);
@@ -197,39 +157,15 @@ const Calendar = () => {
       setIsTaskModalOpen(true);
     } catch (err) {
       console.error('Error fetching full task details:', err);
-      // Fallback till den gamla metoden om något går fel
-      setSelectedTask(task);
-      setFormData({
-        title: task.title || '',
-        description: task.description || '',
-        dueDate: Array.isArray(task.dueDate) 
-          ? `${task.dueDate[0]}-${task.dueDate[1].toString().padStart(2, '0')}-${task.dueDate[2].toString().padStart(2, '0')}` 
-          : typeof task.dueDate === 'string' 
-            ? task.dueDate.substring(0, 10)
-            : '',
-        priority: task.priority || '',
-        status: task.status || '',
-        assignedToUserId: task.assignedToUserId || '',
-        assignedByUserId: task.assignedByUserId || '',
-        apartmentId: task.apartmentId || '',
-        tenantId: task.tenantId || '',
-        comments: task.comments || '',
-        isRecurring: task.isRecurring || false,
-        recurringPattern: task.recurringPattern || '',
-      });
-      setIsTaskModalOpen(true);
+      setError(t('common.error'));
     }
   };
 
-  // Funktion för att hantera klick på en kalenderdag (för admin och superadmin)
   const handleDayClick = (date) => {
-    // Endast admin och superadmin kan skapa uppgifter genom att klicka på en dag
     if (!isAdminOrSuperAdmin()) return;
     
-    // Formatera datumet för input-fältet (YYYY-MM-DD)
     const formattedDate = date.toISOString().split('T')[0];
     
-    // Reset formdata och sätt selectedTask till null för att indikera att det är en ny uppgift
     setSelectedTask(null);
     setFormData({
       title: '',
@@ -279,7 +215,6 @@ const Calendar = () => {
     try {
       const taskData = { ...formData };
       
-      // Säkerställ att tenantId och apartmentId är strängar, inte objekt
       if (taskData.tenantId && typeof taskData.tenantId === 'object') {
         taskData.tenantId = taskData.tenantId.id;
       }
@@ -288,19 +223,15 @@ const Calendar = () => {
         taskData.apartmentId = taskData.apartmentId.id;
       }
       
-      
       if (selectedTask) {
-        // För existerande uppgift, uppdatera återkommande mönster om det har ändrats
         if (selectedTask.isRecurring !== taskData.isRecurring || 
             selectedTask.recurringPattern !== taskData.recurringPattern) {
           await taskService.updateRecurringPattern(selectedTask.id, taskData.recurringPattern);
         }
         await taskService.updateTask(selectedTask.id, taskData);
       } else {
-        // För ny uppgift, sätt automatiskt assignedByUserId till aktuell användare
         taskData.assignedByUserId = currentUser.id;
         
-        // Skapa normal eller återkommande beroende på valet
         if (taskData.isRecurring && taskData.recurringPattern) {
           await taskService.createRecurringTask(taskData);
         } else {
@@ -308,7 +239,6 @@ const Calendar = () => {
         }
       }
       
-      // Uppdatera kalendervyn med nya data
       await fetchTasks();
       setIsTaskModalOpen(false);
       setSelectedTask(null);
@@ -334,19 +264,6 @@ const Calendar = () => {
     }
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'PENDING':
-        return 'bg-gray-100 text-gray-800 border-gray-300';
-      case 'IN_PROGRESS':
-        return 'bg-blue-100 text-blue-800 border-blue-300';
-      case 'COMPLETED':
-        return 'bg-green-100 text-green-800 border-green-300';
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-300';
-    }
-  };
-
   const renderTaskItem = (task) => {
     return (
       <div
@@ -367,43 +284,38 @@ const Calendar = () => {
     );
   };
 
-  const renderMonthlyCalendar = () => {
+  const renderCalendar = () => {
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
     const daysInMonth = getDaysInMonth(year, month);
     const firstDayOfMonth = getFirstDayOfMonth(year, month);
-    
-    // Justera för veckan som börjar på måndag (0=måndag istället för söndag i Sverige)
     const adjustedFirstDay = firstDayOfMonth === 0 ? 6 : firstDayOfMonth - 1;
-    
     const days = [];
     
-    // Lägg till tomma dagar för början av månaden
     for (let i = 0; i < adjustedFirstDay; i++) {
-      days.push(<div key={`empty-${i}`} className="bg-gray-50 dark:bg-gray-800 border-b border-r border-gray-200 dark:border-gray-700 h-32"></div>);
+      days.push(
+        <div 
+          key={`empty-${i}`} 
+          className="bg-gray-50 dark:bg-gray-800 border-b border-r border-gray-200 dark:border-gray-700"
+        />
+      );
     }
     
-    // Lägg till alla dagar i månaden
     for (let day = 1; day <= daysInMonth; day++) {
       const date = new Date(year, month, day);
       const dateString = date.toISOString().split('T')[0];
       
-      // Filtrera uppgifter för denna dag
       const dayTasks = tasks.filter(task => {
         if (!task.dueDate) return false;
         
-        // Skapa datumobjektet och hantera LocalDate från backend korrekt
         let taskYear, taskMonth, taskDay;
         
         if (Array.isArray(task.dueDate) && task.dueDate.length >= 3) {
-          // LocalDate kommer från backend som en array [år, månad, dag]
           [taskYear, taskMonth, taskDay] = task.dueDate;
-          // Jämför dagens datum mot uppgiftens datum (månad är 1-indexerad i Java)
           return taskDay === day && 
                  taskMonth === month + 1 && 
                  taskYear === year;
         } else if (typeof task.dueDate === 'string') {
-          // Om det är en sträng, parsa det
           const date = new Date(task.dueDate);
           if (!isNaN(date.getTime())) {
             return date.getDate() === day && 
@@ -415,22 +327,21 @@ const Calendar = () => {
         return false;
       });
       
-      const isToday = 
-        new Date().getDate() === day &&
-        new Date().getMonth() === month &&
-        new Date().getFullYear() === year;
-      
-      // Lägg till cursor-pointer om användaren är admin eller superadmin
+      const isToday = isDateToday(date);
       const isClickable = isAdminOrSuperAdmin();
       
       days.push(
         <div 
           key={day} 
-          className={`bg-white dark:bg-gray-900 border-b border-r border-gray-200 dark:border-gray-700 h-32 overflow-y-auto ${isToday ? 'bg-blue-50 dark:bg-blue-900/20' : ''} ${isClickable ? 'cursor-pointer' : ''}`}
-          onClick={() => isClickable && handleDayClick(new Date(year, month, day))}
+          className={`bg-white dark:bg-gray-900 border-b border-r border-gray-200 dark:border-gray-700 overflow-y-auto ${
+            isToday ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+          } ${isClickable ? 'cursor-pointer' : ''}`}
+          onClick={() => isClickable && handleDayClick(date)}
         >
           <div className="p-2 sticky top-0 bg-white dark:bg-gray-900 z-10">
-            <span className={`text-sm font-medium ${isToday ? 'text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'}`}>
+            <span className={`text-sm font-medium ${
+              isToday ? 'text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'
+            }`}>
               {day}
             </span>
           </div>
@@ -450,175 +361,6 @@ const Calendar = () => {
     return days;
   };
 
-  // Lägg till renderWeeklyCalendar-funktion efter renderMonthlyCalendar
-  const renderWeeklyCalendar = () => {
-    const year = currentDate.getFullYear();
-    const month = currentDate.getMonth();
-    const date = currentDate.getDate();
-    
-    // Hitta första dagen i veckan (måndag)
-    const currentDay = new Date(year, month, date);
-    const dayOfWeek = currentDay.getDay(); // 0 är söndag, 1 är måndag, etc.
-    const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Konvertera till vecka som börjar på måndag
-    
-    const weekStart = new Date(year, month, date - diff);
-    const days = [];
-    
-    // Skapa 7 dagar från veckans början
-    for (let i = 0; i < 7; i++) {
-      const day = new Date(weekStart);
-      day.setDate(weekStart.getDate() + i);
-      
-      const dayYear = day.getFullYear();
-      const dayMonth = day.getMonth();
-      const dayDate = day.getDate();
-      const dateString = day.toISOString().split('T')[0];
-      
-      // Filtrera uppgifter för denna dag
-      const dayTasks = tasks.filter(task => {
-        const taskDate = new Date(task.dueDate);
-        return taskDate.getFullYear() === dayYear && 
-              taskDate.getMonth() === dayMonth && 
-              taskDate.getDate() === dayDate;
-      });
-      
-      const isToday = isDateToday(day);
-      
-      days.push(
-        <div 
-          key={`day-${i}`} 
-          className={`border-b border-r border-gray-200 dark:border-gray-700 p-2 ${
-            isToday ? 'bg-blue-50 dark:bg-blue-900/20' : ''
-          } min-h-[200px]`}
-          onClick={() => isAdminOrSuperAdmin() && handleDayClick(dateString)}
-        >
-          <div className="flex justify-between items-center mb-2">
-            <span className={`text-sm font-medium ${
-              isToday ? 'text-blue-700 dark:text-blue-300' : 'text-gray-700 dark:text-gray-300'
-            }`}>
-              {dayDate} {t(`calendar.monthsShort.${dayMonth}`)}
-            </span>
-          </div>
-          
-          <div className="space-y-1">
-            {dayTasks.map(task => renderTaskItem(task))}
-          </div>
-        </div>
-      );
-    }
-    
-    return days;
-  };
-  
-  // Lägg till renderDailyCalendar-funktion
-  const renderDailyCalendar = () => {
-    const year = currentDate.getFullYear();
-    const month = currentDate.getMonth();
-    const date = currentDate.getDate();
-    const selectedDate = new Date(year, month, date);
-    const dateString = selectedDate.toISOString().split('T')[0];
-    
-    // Filtrera uppgifter för vald dag
-    const dayTasks = tasks.filter(task => {
-      const taskDate = new Date(task.dueDate);
-      return taskDate.getFullYear() === year && 
-            taskDate.getMonth() === month && 
-            taskDate.getDate() === date;
-    });
-    
-    // Sortera uppgifter efter prioritet
-    const sortedTasks = [...dayTasks].sort((a, b) => {
-      const priorityOrder = { HIGH: 0, MEDIUM: 1, LOW: 2 };
-      return priorityOrder[a.priority] - priorityOrder[b.priority];
-    });
-    
-    return (
-      <div 
-        className="border border-gray-200 dark:border-gray-700 rounded-md p-4 min-h-[600px]"
-        onClick={() => isAdminOrSuperAdmin() && handleDayClick(dateString)}
-      >
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-medium text-gray-800 dark:text-white">
-            {date} {t(`calendar.months.${month}`)} {year}
-          </h2>
-        </div>
-        
-        {sortedTasks.length > 0 ? (
-          <div className="space-y-3">
-            {sortedTasks.map(task => (
-              <div 
-                key={task.id} 
-                className="p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-sm hover:shadow-md transition-shadow duration-200 cursor-pointer"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleTaskClick(task);
-                }}
-              >
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h3 className="font-medium text-gray-900 dark:text-white">{task.title}</h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">{task.description}</p>
-                  </div>
-                  <div className={`px-2 py-1 text-xs font-medium rounded-full ${getPriorityColor(task.priority)}`}>
-                    {t(`tasks.priorities.${task.priority.toLowerCase()}`)}
-                  </div>
-                </div>
-                
-                <div className="mt-2 flex justify-between text-xs text-gray-500 dark:text-gray-400">
-                  <span>{task.assignedToUser ? task.assignedToUser.firstName + ' ' + task.assignedToUser.lastName : '-'}</span>
-                  <span>{formatShortDate(task.dueDate, currentLocale)}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="flex justify-center items-center h-64 text-gray-500 dark:text-gray-400">
-            {t('calendar.noTasks')}
-          </div>
-        )}
-      </div>
-    );
-  };
-
-  // Använd översättningar för månaderna istället för Intl.DateTimeFormat
-  const monthNames = [
-    'january', 'february', 'march', 'april', 'may', 'june',
-    'july', 'august', 'september', 'october', 'november', 'december'
-  ];
-  const monthName = t(`calendar.months.${monthNames[currentDate.getMonth()]}`);
-  const capitalizedMonthName = monthName.charAt(0).toUpperCase() + monthName.slice(1);
-
-  // Formaterar rubriker för olika kalendervyer
-  const getCalendarTitle = () => {
-    const year = currentDate.getFullYear();
-    const month = currentDate.getMonth();
-    const date = currentDate.getDate();
-    
-    if (view === 'month') {
-      return `${t(`calendar.months.${month}`)} ${year}`;
-    } else if (view === 'week') {
-      // Hitta första dagen i veckan (måndag)
-      const currentDay = new Date(year, month, date);
-      const dayOfWeek = currentDay.getDay(); // 0 är söndag, 1 är måndag, etc.
-      const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Konvertera till vecka som börjar på måndag
-      
-      const weekStart = new Date(year, month, date - diff);
-      const weekEnd = new Date(weekStart);
-      weekEnd.setDate(weekStart.getDate() + 6);
-      
-      // Om veckan sträcker sig över två månader
-      if (weekStart.getMonth() !== weekEnd.getMonth()) {
-        return `${weekStart.getDate()} ${t(`calendar.monthsShort.${weekStart.getMonth()}`)} - ${weekEnd.getDate()} ${t(`calendar.monthsShort.${weekEnd.getMonth()}`)} ${year}`;
-      }
-      
-      return `${weekStart.getDate()} - ${weekEnd.getDate()} ${t(`calendar.months.${month}`)} ${year}`;
-    } else if (view === 'day') {
-      return `${date} ${t(`calendar.months.${month}`)} ${year}`;
-    }
-    
-    return '';
-  };
-
   if (isLoading && tasks.length === 0) {
     return (
       <div className="flex justify-center items-center h-full">
@@ -628,42 +370,8 @@ const Calendar = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-cinzel dark:text-white">{t('calendar.title')}</h1>
-        
-        <div className="flex space-x-3">
-          <div className="flex rounded-md overflow-hidden">
-            <button
-              onClick={() => setView('month')}
-              className={`px-3 py-1 text-sm ${view === 'month' ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}
-            >
-              {t('calendar.month')}
-            </button>
-            <button
-              onClick={() => setView('week')}
-              className={`px-3 py-1 text-sm ${view === 'week' ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}
-            >
-              {t('calendar.week')}
-            </button>
-            <button
-              onClick={() => setView('day')}
-              className={`px-3 py-1 text-sm ${view === 'day' ? 'bg-blue-600 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'}`}
-            >
-              {t('calendar.day')}
-            </button>
-          </div>
-        </div>
-      </div>
-      
-      {/* Info för admin och superadmin */}
-      {isAdminOrSuperAdmin() && (
-        <div className="mb-4 bg-blue-50 dark:bg-blue-900/20 p-3 rounded-md border border-blue-200 dark:border-blue-800">
-          <p className="text-sm text-blue-700 dark:text-blue-300">{t('calendar.clickToAddTask')}</p>
-        </div>
-      )}
-      
-      <div className="flex justify-between items-center mb-6">
+    <div className="h-screen flex flex-col">
+      <div className="flex justify-between items-center p-4 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center space-x-4">
           <button
             onClick={goToPreviousMonth}
@@ -674,7 +382,7 @@ const Calendar = () => {
             </svg>
           </button>
           <h2 className="text-xl font-medium text-gray-900 dark:text-white">
-            {getCalendarTitle()}
+            {t(`calendar.months.${currentDate.getMonth()}`)} {currentDate.getFullYear()}
           </h2>
           <button
             onClick={goToNextMonth}
@@ -684,18 +392,17 @@ const Calendar = () => {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </button>
+          <button
+            onClick={goToToday}
+            className="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
+          >
+            {t('calendar.today')}
+          </button>
         </div>
-        
-        <button
-          onClick={goToToday}
-          className="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
-        >
-          {t('calendar.today')}
-        </button>
       </div>
 
       {error && (
-        <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-4">
+        <div className="bg-red-50 border-l-4 border-red-400 p-4">
           <div className="flex">
             <div className="flex-shrink-0">
               <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
@@ -709,49 +416,21 @@ const Calendar = () => {
         </div>
       )}
 
-      <div className="bg-white dark:bg-gray-900 rounded-lg shadow overflow-hidden">
-        {/* Veckodagar */}
-        {view === 'month' && (
-          <div className="grid grid-cols-7 bg-gray-50 dark:bg-gray-800">
-            <div className="py-2 text-center text-sm text-gray-600 dark:text-gray-400 font-medium">{t('calendar.weekdaysShort.mon')}</div>
-            <div className="py-2 text-center text-sm text-gray-600 dark:text-gray-400 font-medium">{t('calendar.weekdaysShort.tue')}</div>
-            <div className="py-2 text-center text-sm text-gray-600 dark:text-gray-400 font-medium">{t('calendar.weekdaysShort.wed')}</div>
-            <div className="py-2 text-center text-sm text-gray-600 dark:text-gray-400 font-medium">{t('calendar.weekdaysShort.thu')}</div>
-            <div className="py-2 text-center text-sm text-gray-600 dark:text-gray-400 font-medium">{t('calendar.weekdaysShort.fri')}</div>
-            <div className="py-2 text-center text-sm text-gray-600 dark:text-gray-400 font-medium">{t('calendar.weekdaysShort.sat')}</div>
-            <div className="py-2 text-center text-sm text-gray-600 dark:text-gray-400 font-medium">{t('calendar.weekdaysShort.sun')}</div>
-          </div>
-        )}
-        
-        {view === 'week' && (
-          <div className="grid grid-cols-7 bg-gray-50 dark:bg-gray-800">
-            <div className="py-2 text-center text-sm text-gray-600 dark:text-gray-400 font-medium">{t('calendar.weekdays.mon')}</div>
-            <div className="py-2 text-center text-sm text-gray-600 dark:text-gray-400 font-medium">{t('calendar.weekdays.tue')}</div>
-            <div className="py-2 text-center text-sm text-gray-600 dark:text-gray-400 font-medium">{t('calendar.weekdays.wed')}</div>
-            <div className="py-2 text-center text-sm text-gray-600 dark:text-gray-400 font-medium">{t('calendar.weekdays.thu')}</div>
-            <div className="py-2 text-center text-sm text-gray-600 dark:text-gray-400 font-medium">{t('calendar.weekdays.fri')}</div>
-            <div className="py-2 text-center text-sm text-gray-600 dark:text-gray-400 font-medium">{t('calendar.weekdays.sat')}</div>
-            <div className="py-2 text-center text-sm text-gray-600 dark:text-gray-400 font-medium">{t('calendar.weekdays.sun')}</div>
-          </div>
-        )}
-        
-        {/* Kalender */}
-        {view === 'month' && (
-          <div className="grid grid-cols-7">
-            {renderMonthlyCalendar()}
-          </div>
-        )}
-        {view === 'week' && (
-          <div className="grid grid-cols-7">
-            {renderWeeklyCalendar()}
-          </div>
-        )}
-        {view === 'day' && (
-          renderDailyCalendar()
-        )}
+      <div className="flex-1 overflow-hidden">
+        <div className="grid grid-cols-7 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+          <div className="py-2 text-center text-sm text-gray-600 dark:text-gray-400 font-medium">{t('calendar.weekdaysShort.mon')}</div>
+          <div className="py-2 text-center text-sm text-gray-600 dark:text-gray-400 font-medium">{t('calendar.weekdaysShort.tue')}</div>
+          <div className="py-2 text-center text-sm text-gray-600 dark:text-gray-400 font-medium">{t('calendar.weekdaysShort.wed')}</div>
+          <div className="py-2 text-center text-sm text-gray-600 dark:text-gray-400 font-medium">{t('calendar.weekdaysShort.thu')}</div>
+          <div className="py-2 text-center text-sm text-gray-600 dark:text-gray-400 font-medium">{t('calendar.weekdaysShort.fri')}</div>
+          <div className="py-2 text-center text-sm text-gray-600 dark:text-gray-400 font-medium">{t('calendar.weekdaysShort.sat')}</div>
+          <div className="py-2 text-center text-sm text-gray-600 dark:text-gray-400 font-medium">{t('calendar.weekdaysShort.sun')}</div>
+        </div>
+        <div className="grid grid-cols-7 h-[calc(100vh-8.5rem)]">
+          {renderCalendar()}
+        </div>
       </div>
 
-      {/* Task Modal */}
       {isTaskModalOpen && (
         <Modal
           isOpen={isTaskModalOpen}
@@ -874,13 +553,11 @@ const Calendar = () => {
                   value={formData.apartmentId}
                   onChange={handleInputChange}
                   onSelect={(apartment) => {
-                    // Hitta relaterade hyresgäster för denna lägenhet
                     const relatedTenants = tenants.filter(tenant => 
                       tenant.apartment && 
                       (tenant.apartment.id === apartment.id || tenant.apartment === apartment.id)
                     );
                     
-                    // Om det finns hyresgäster kopplade till lägenheten, välj den första automatiskt
                     if (relatedTenants.length > 0) {
                       setFormData(prev => ({
                         ...prev,
@@ -892,7 +569,6 @@ const Calendar = () => {
                         ...prev,
                         apartmentId: apartment.id
                       }));
-
                     }
                   }}
                   options={apartments}
@@ -986,12 +662,11 @@ const Calendar = () => {
             )}
           </div>
 
-          {/* Visa befintliga meddelanden om en uppgift är vald */}
           {selectedTask && selectedTask.id && (
             <div className="mt-4 border-t pt-4 border-gray-200 dark:border-gray-700">
               <TaskMessages 
                 taskId={selectedTask.id} 
-                canSendMessages={false} // Använd textfältet ovan istället för det inbyggda
+                canSendMessages={false}
               />
             </div>
           )}
