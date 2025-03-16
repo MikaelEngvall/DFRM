@@ -5,9 +5,10 @@ import java.util.List;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -24,74 +25,51 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import com.dfrm.filter.JwtAuthenticationFilter;
 
+import lombok.RequiredArgsConstructor;
+
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final UserDetailsService userDetailsService;
     private final JwtAuthenticationFilter jwtAuthFilter;
-
-    public SecurityConfig(UserDetailsService userDetailsService, JwtAuthenticationFilter jwtAuthFilter) {
-        this.userDetailsService = userDetailsService;
-        this.jwtAuthFilter = jwtAuthFilter;
-    }
+    private final UserDetailsService userDetailsService;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        return http
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .csrf(AbstractHttpConfigurer::disable)
-                .authorizeHttpRequests(auth -> auth
-                        // Publika endpoints (ingen autentisering krävs)
-                        .requestMatchers("/api/auth/**", "/api-docs/**", "/swagger-ui/**").permitAll()
-                        
-                        // Lösenordsåterställning och e-postbekräftelse - ingen autentisering krävs
-                        .requestMatchers("/api/security/request-password-reset", "/api/security/reset-password", "/api/security/confirm-email").permitAll()
-                        
-                        // För testning - tillåt alla att se approved uppgifter
-                        .requestMatchers("/api/pending-tasks/approved").permitAll()
-                        
-                        // Specifika endpoints för alla autentiserade användare
-                        .requestMatchers("/api/pending-tasks/for-review").authenticated()
-                        
-                        // Ge alla inloggade användare tillgång till basics GET endpoints
-                        .requestMatchers(HttpMethod.GET, "/api/**").authenticated()
-                        
-                        // E-postbyte för autentiserade användare
-                        .requestMatchers("/api/security/request-email-change").authenticated()
-                        
-                        // Tillåt alla autentiserade användare att skicka meddelanden i uppgifter
-                        .requestMatchers(HttpMethod.POST, "/api/tasks/*/messages").authenticated()
-                        
-                        // Tillåt alla autentiserade användare att ta bort meddelanden i uppgifter
-                        .requestMatchers(HttpMethod.DELETE, "/api/tasks/*/messages/**").authenticated()
-                        
-                        // Generella skrivbehörigheter som kräver roller (lägre prioritet kommer först)
-                        .requestMatchers(HttpMethod.POST, "/api/apartments/**", "/api/tenants/**", "/api/keys/**", "/api/tasks/**", "/api/users/**", "/api/pending-tasks/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_SUPERADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/api/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_SUPERADMIN")
-                        .requestMatchers(HttpMethod.PATCH, "/api/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_SUPERADMIN", "ROLE_USER")
-                        .requestMatchers(HttpMethod.DELETE, "/api/**").hasAnyAuthority("ROLE_ADMIN", "ROLE_SUPERADMIN")
-                        
-                        // Specifika PATCH-endpoints som alla autentiserade användare kan använda (högre prioritet kommer sist)
-                        .requestMatchers(HttpMethod.PATCH, "/api/tasks/*/status", "/api/tasks/*/recurring", "/api/keys/*/apartment", "/api/keys/*/tenant").authenticated()
-                        
-                        // Övriga endpoints - kräver autentisering
-                        .anyRequest().authenticated()
-                )
-                .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                )
-                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
-                .build();
+        http
+            .csrf(AbstractHttpConfigurer::disable)
+            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers(
+                    "/api/auth/login",
+                    "/api/auth/register",
+                    "/api/security/request-password-reset",
+                    "/api/security/reset-password"
+                ).permitAll()
+                .anyRequest().authenticated()
+            )
+            .sessionManagement(session -> session
+                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+            )
+            .authenticationProvider(authenticationProvider())
+            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
+
+        return http.build();
     }
 
     @Bean
-    public AuthenticationManager authenticationManager() {
-        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
-        provider.setUserDetailsService(userDetailsService);
-        provider.setPasswordEncoder(passwordEncoder());
-        return provider::authenticate;
+    public AuthenticationProvider authenticationProvider() {
+        DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
+        authProvider.setUserDetailsService(userDetailsService);
+        authProvider.setPasswordEncoder(passwordEncoder());
+        return authProvider;
+    }
+
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+        return config.getAuthenticationManager();
     }
 
     @Bean

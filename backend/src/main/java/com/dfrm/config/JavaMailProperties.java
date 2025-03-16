@@ -29,12 +29,12 @@ public class JavaMailProperties {
     private boolean starttlsEnable;
     
     // Separata konfigurationer för inkommande mail (IMAPS)
-    @Value("${EMAIL_PORTListening:993}")
+    @Value("${EMAIL_PORT_LISTENING:993}")
     private int listeningPort;
     
-    @Value("${EMAIL_USERListening:felanmalan@duggalsfastigheter.se}")
+    @Value("${EMAIL_USER_LISTENING:felanmalan@duggalsfastigheter.se}")
     private String listeningUsername;
     
-    @Value("${EMAIL_PASSWORDListening:}")
+    @Value("${EMAIL_PASSWORD_LISTENING:}")
     private String listeningPassword;
 } 

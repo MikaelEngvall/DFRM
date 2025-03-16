@@ -11,6 +11,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.dfrm.model.User;
 import com.dfrm.repository.UserRepository;
 import com.dfrm.service.JwtService;
+import com.dfrm.service.UserService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -31,6 +33,43 @@ public class AuthController {
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
     private final UserRepository userRepository;
+    private final UserService userService;
+    private final PasswordEncoder passwordEncoder;
+
+    @PostMapping("/register")
+    public ResponseEntity<?> register(@RequestBody User user) {
+        if (userService.existsByEmail(user.getEmail())) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("message", "E-postadressen är redan registrerad"));
+        }
+
+        // Sätt standardvärden
+        user.setCreatedAt(LocalDateTime.now());
+        user.setUpdatedAt(LocalDateTime.now());
+        user.setActive(true);
+        if (user.getRole() == null) {
+            user.setRole("USER");
+        }
+        
+        // Hasha lösenordet
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
+        
+        User savedUser = userRepository.save(user);
+        String token = jwtService.generateToken(savedUser);
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("token", token);
+        response.put("user", Map.of(
+            "id", savedUser.getId(),
+            "email", savedUser.getEmail(),
+            "firstName", savedUser.getFirstName(),
+            "lastName", savedUser.getLastName(),
+            "role", savedUser.getRole(),
+            "preferredLanguage", savedUser.getPreferredLanguage()
+        ));
+        
+        return ResponseEntity.ok(response);
+    }
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody Map<String, String> loginRequest) {
