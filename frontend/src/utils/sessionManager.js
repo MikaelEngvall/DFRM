@@ -1,4 +1,5 @@
-const SESSION_TIMEOUT = 30 * 60 * 1000; // 30 minuter i millisekunder
+const ADMIN_SESSION_TIMEOUT = 30 * 60 * 1000; // 30 minuter för admin
+const USER_SESSION_TIMEOUT = 4 * 60 * 60 * 1000; // 4 timmar för vanliga användare
 const ACTIVITY_CHECK_INTERVAL = 1000; // Kontrollera aktivitet varje sekund
 const WARNING_BEFORE_TIMEOUT = 5 * 60 * 1000; // Visa varning 5 minuter innan timeout
 
@@ -9,13 +10,19 @@ class SessionManager {
     this.warningCallback = null;
     this.logoutCallback = null;
     this.warningShown = false;
+    this.userRole = null;
   }
 
-  init(warningCallback, logoutCallback) {
+  init(warningCallback, logoutCallback, userRole = 'ADMIN') {
     this.warningCallback = warningCallback;
     this.logoutCallback = logoutCallback;
+    this.userRole = userRole;
     this.startActivityMonitoring();
     this.resetTimeout();
+  }
+
+  getSessionTimeout() {
+    return this.userRole === 'USER' ? USER_SESSION_TIMEOUT : ADMIN_SESSION_TIMEOUT;
   }
 
   startActivityMonitoring() {
@@ -43,24 +50,25 @@ class SessionManager {
       if (this.logoutCallback) {
         this.logoutCallback();
       }
-    }, SESSION_TIMEOUT);
+    }, this.getSessionTimeout());
   }
 
   checkSession() {
     const timeSinceLastActivity = Date.now() - this.lastActivity;
+    const sessionTimeout = this.getSessionTimeout();
     
     // Visa varning om tiden närmar sig timeout
     if (!this.warningShown && 
-        timeSinceLastActivity > (SESSION_TIMEOUT - WARNING_BEFORE_TIMEOUT)) {
+        timeSinceLastActivity > (sessionTimeout - WARNING_BEFORE_TIMEOUT)) {
       this.warningShown = true;
       if (this.warningCallback) {
-        const remainingTime = Math.ceil((SESSION_TIMEOUT - timeSinceLastActivity) / 60000);
+        const remainingTime = Math.ceil((sessionTimeout - timeSinceLastActivity) / 60000);
         this.warningCallback(remainingTime);
       }
     }
 
     // Logga ut om tiden har gått ut
-    if (timeSinceLastActivity >= SESSION_TIMEOUT) {
+    if (timeSinceLastActivity >= sessionTimeout) {
       if (this.logoutCallback) {
         this.logoutCallback();
       }

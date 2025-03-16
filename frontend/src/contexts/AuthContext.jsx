@@ -74,7 +74,9 @@ export const AuthProvider = ({ children }) => {
       // Utloggningshanterare
       () => {
         logout();
-      }
+      },
+      // Skicka med användarrollen
+      user.role
     );
   };
 
