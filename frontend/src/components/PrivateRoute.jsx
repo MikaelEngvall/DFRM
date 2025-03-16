@@ -7,7 +7,9 @@ const PrivateRoute = ({ children, requiredRoles = [] }) => {
   const location = useLocation();
 
   if (!user) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    // Spara den aktuella sidan i sessionStorage
+    sessionStorage.setItem('savedLocation', location.pathname + location.search);
+    return <Navigate to="/login" replace />;
   }
 
   // Om det finns requiredRoles, kontrollera att användaren har någon av dem

@@ -76,8 +76,14 @@ export const AuthProvider = ({ children }) => {
       console.log('Användare inloggad med roll:', userData.role);
       setUser(userData);
       
-      // Omdirigera USER till kalendersidan, andra roller till dashboard
-      if (userData.role === 'ROLE_USER' || userData.role === 'USER') {
+      // Hämta den sparade sidan från sessionStorage
+      const savedLocation = sessionStorage.getItem('savedLocation');
+      sessionStorage.removeItem('savedLocation');
+      
+      // Omdirigera till sparad sida om den finns, annars till standardsida
+      if (savedLocation) {
+        navigate(savedLocation);
+      } else if (userData.role === 'ROLE_USER' || userData.role === 'USER') {
         navigate('/calendar');
       } else {
         navigate('/');
