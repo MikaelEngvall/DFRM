@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { authService, userService } from '../services';
 import sessionManager from '../utils/sessionManager';
 import SessionWarning from '../components/SessionWarning';
-import { getAuthToken, removeAuthToken } from '../services/authService';
+import { getAuthToken, removeAuthToken } from '../utils/tokenStorage';
 
 const AuthContext = createContext(null);
 

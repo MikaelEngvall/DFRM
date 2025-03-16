@@ -96,14 +96,18 @@ public class AuthController {
             
             Map<String, Object> response = new HashMap<>();
             response.put("token", token);
-            response.put("user", Map.of(
-                "id", user.getId(),
-                "email", user.getEmail(),
-                "firstName", user.getFirstName(),
-                "lastName", user.getLastName(),
-                "role", user.getRole(),
-                "preferredLanguage", user.getPreferredLanguage()
-            ));
+            
+            // Använd HashMap istället för Map.of för att kunna lägga till fler fält
+            Map<String, Object> userMap = new HashMap<>();
+            userMap.put("id", user.getId());
+            userMap.put("email", user.getEmail());
+            userMap.put("firstName", user.getFirstName());
+            userMap.put("lastName", user.getLastName());
+            userMap.put("role", user.getRole());
+            userMap.put("preferredLanguage", user.getPreferredLanguage());
+            userMap.put("lastLoginAt", user.getLastLoginAt());
+            
+            response.put("user", userMap);
             
             return ResponseEntity.ok(response);
         } catch (BadCredentialsException e) {

@@ -1,8 +1,8 @@
 import CryptoJS from 'crypto-js';
 
 class SecureStorage {
-  constructor(storageKey = 'secure_storage_key') {
-    this.storageKey = storageKey;
+  constructor(namespace) {
+    this.namespace = namespace;
     this.secretKey = process.env.REACT_APP_STORAGE_KEY || 'default-secret-key-change-in-production';
   }
 
@@ -20,25 +20,37 @@ class SecureStorage {
   }
 
   setItem(key, value) {
-    const encryptedValue = this.encrypt(value);
-    localStorage.setItem(`${this.storageKey}_${key}`, encryptedValue);
+    try {
+      const storageKey = `${this.namespace}_${key}`;
+      const encryptedValue = this.encrypt(value);
+      localStorage.setItem(storageKey, encryptedValue);
+    } catch (error) {
+      console.error('Fel vid kryptering och sparande av data:', error);
+    }
   }
 
   getItem(key) {
-    const encryptedValue = localStorage.getItem(`${this.storageKey}_${key}`);
-    if (!encryptedValue) return null;
-    return this.decrypt(encryptedValue);
+    try {
+      const storageKey = `${this.namespace}_${key}`;
+      const encryptedValue = localStorage.getItem(storageKey);
+      if (!encryptedValue) return null;
+      return this.decrypt(encryptedValue);
+    } catch (error) {
+      console.error('Fel vid dekryptering av data:', error);
+      return null;
+    }
   }
 
   removeItem(key) {
-    localStorage.removeItem(`${this.storageKey}_${key}`);
+    const storageKey = `${this.namespace}_${key}`;
+    localStorage.removeItem(storageKey);
   }
 
   clear() {
     Object.keys(localStorage)
-      .filter(key => key.startsWith(this.storageKey))
+      .filter(key => key.startsWith(this.namespace))
       .forEach(key => localStorage.removeItem(key));
   }
 }
 
-export const secureStorage = new SecureStorage(); 
+export default SecureStorage; 

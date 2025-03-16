@@ -1,5 +1,5 @@
 import api from './api';
-import { secureStorage } from '../utils/secureStorage';
+import { setAuthToken, removeAuthToken, getAuthToken } from '../utils/tokenStorage';
 
 const TOKEN_KEY = 'auth_token';
 
@@ -10,22 +10,6 @@ class AuthError extends Error {
     this.statusCode = statusCode;
   }
 }
-
-export const setAuthToken = (token) => {
-  if (token) {
-    secureStorage.setItem(TOKEN_KEY, token);
-    api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-  }
-};
-
-export const removeAuthToken = () => {
-  secureStorage.removeItem(TOKEN_KEY);
-  delete api.defaults.headers.common['Authorization'];
-};
-
-export const getAuthToken = () => {
-  return secureStorage.getItem(TOKEN_KEY);
-};
 
 const handleApiError = (error) => {
   if (error.response) {
@@ -61,30 +45,22 @@ const login = async (credentials) => {
     setAuthToken(token);
     return user;
   } catch (error) {
-    handleApiError(error);
+    console.error('Login error:', error);
+    throw error;
   }
 };
 
-const logout = async () => {
-  // JWT autentisering kräver ingen serveranrop för utloggning, 
-  // vi behöver bara ta bort token från klienten
+const logout = () => {
   removeAuthToken();
-  return Promise.resolve(); // Returnerar en upplöst Promise för att matcha async-signaturen
 };
 
 const getCurrentUser = async () => {
   try {
-    const token = getAuthToken();
-    if (!token) {
-      throw new AuthError('Ingen token hittades', 401);
-    }
-    
-    api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     const response = await api.get('/api/auth/me');
     return response.data;
   } catch (error) {
-    removeAuthToken();
-    handleApiError(error);
+    console.error('Get current user error:', error);
+    throw error;
   }
 };
 

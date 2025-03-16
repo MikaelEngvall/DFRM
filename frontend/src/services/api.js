@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { getAuthToken } from './authService';
+import { getAuthToken, removeAuthToken } from '../utils/tokenStorage';
 
 const api = axios.create({
   baseURL: 'http://localhost:8080',
@@ -13,6 +13,11 @@ api.interceptors.request.use((config) => {
   const token = getAuthToken();
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
+    console.log('API Request:', config.method.toUpperCase(), config.url);
+    console.log('Token finns i headers');
+  } else {
+    console.log('API Request:', config.method.toUpperCase(), config.url);
+    console.log('Token saknas i headers');
   }
   return config;
 });
@@ -20,42 +25,35 @@ api.interceptors.request.use((config) => {
 // Interceptor för att hantera fel
 api.interceptors.response.use(
   (response) => {
-    // Loggning för specifika endpoints
-    
     return response;
   },
   (error) => {
     if (error.response) {
+      const { status, config } = error.response;
+      console.log(`API Error (${status}):`, config.method.toUpperCase(), config.url);
       
       // Hantera specifika felkoder
-      switch (error.response.status) {
+      switch (status) {
         case 401:
-          // Omdirigera till inloggningssidan vid ogiltig token
-          localStorage.removeItem('auth_token');
+          console.log('401 Unauthorized - Tar bort token och omdirigerar till login');
+          removeAuthToken();
           window.location.href = '/login';
           break;
         case 403:
-          console.log('403 Forbidden:', error.config.url);
+          console.log('403 Forbidden - Behåller token men användaren saknar behörighet');
           break;
         case 404:
-          console.log('404 Not Found:', error.config.url);
+          console.log('404 Not Found - Resursen finns inte');
           break;
         default:
-          console.log(`${error.response.status} Error:`, error.config.url);
+          console.log(`Oväntat fel (${status})`);
           break;
       }
     } else if (error.request) {
-      // Behåll bara loggning för POST till /api/apartments
-      if (error.config && error.config.method.toUpperCase() === 'POST' && error.config.url === '/api/apartments') {
-        console.log('==== INGET SVAR VID POST TILL /api/apartments ====');
-        console.log('REQUEST:', error.request);
-      }
+      console.log('Nätverksfel - Ingen respons från servern:', error.config?.url);
+      console.log('Felmeddelande:', error.message);
     } else {
-      // Behåll bara loggning för POST till /api/apartments
-      if (error.config && error.config.method.toUpperCase() === 'POST' && error.config.url === '/api/apartments') {
-        console.log('==== FEL VID REQUEST SETUP FÖR /api/apartments ====');
-        console.log('ERROR MESSAGE:', error.message);
-      }
+      console.log('Fel vid request setup:', error.message);
     }
     return Promise.reject(error);
   }
