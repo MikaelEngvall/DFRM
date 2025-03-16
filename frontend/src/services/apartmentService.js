@@ -1,5 +1,5 @@
 import api from './api';
-import { getFromCache, saveToCache, invalidateCache, CACHE_KEYS } from '../utils/cacheManager';
+import { getFromCache, saveToCache, addToCache, updateInCache, removeFromCache, CACHE_KEYS } from '../utils/cacheManager';
 
 const apartmentService = {
   // Hämta alla lägenheter
@@ -14,8 +14,10 @@ const apartmentService = {
       // Hämta data från API om det inte finns i cache eller om vi vill gå förbi cachen
       const response = await api.get('/api/apartments');
       
-      // Spara den nya datan i cache
-      saveToCache(CACHE_KEYS.APARTMENTS, response.data);
+      // Spara den nya datan i cache endast om API-anropet lyckades
+      if (response.data) {
+        saveToCache(CACHE_KEYS.APARTMENTS, response.data);
+      }
       
       return response.data;
     } catch (error) {
@@ -47,15 +49,14 @@ const apartmentService = {
       // Försök hitta lägenheten i cachen först
       const cachedApartments = getFromCache(CACHE_KEYS.APARTMENTS);
       if (cachedApartments) {
-        const cachedApartment = cachedApartments.find(apt => apt.id === id);
+        const cachedApartment = cachedApartments.find(apartment => apartment.id === id);
         if (cachedApartment) return cachedApartment;
       }
       
-      // Om den inte finns i cache, hämta från API
       const response = await api.get(`/api/apartments/${id}`);
       return response.data;
     } catch (error) {
-      console.error(`Error fetching apartment with id ${id}:`, error);
+      console.error(`Error fetching apartment ${id}:`, error);
       throw error;
     }
   },
@@ -63,10 +64,13 @@ const apartmentService = {
   // Skapa en ny lägenhet
   createApartment: async (apartmentData) => {
     try {
+      // Skapa lägenheten i databasen först
       const response = await api.post('/api/apartments', apartmentData);
       
-      // Invalidera cachen för lägenheter eftersom vi lagt till en ny
-      invalidateCache(CACHE_KEYS.APARTMENTS);
+      // Om databasen uppdaterades framgångsrikt, uppdatera cachen
+      if (response.data) {
+        addToCache(CACHE_KEYS.APARTMENTS, response.data);
+      }
       
       return response.data;
     } catch (error) {
@@ -78,14 +82,17 @@ const apartmentService = {
   // Uppdatera en lägenhet
   updateApartment: async (id, apartmentData) => {
     try {
-      const response = await api.put(`/api/apartments/${id}`, apartmentData);
+      // Uppdatera i databasen först
+      const response = await api.patch(`/api/apartments/${id}`, apartmentData);
       
-      // Invalidera cachen för lägenheter eftersom vi uppdaterat en
-      invalidateCache(CACHE_KEYS.APARTMENTS);
+      // Om databasen uppdaterades framgångsrikt, uppdatera cachen
+      if (response.data) {
+        updateInCache(CACHE_KEYS.APARTMENTS, id, response.data);
+      }
       
       return response.data;
     } catch (error) {
-      console.error(`Error updating apartment with id ${id}:`, error);
+      console.error(`Error updating apartment ${id}:`, error);
       throw error;
     }
   },
@@ -93,13 +100,13 @@ const apartmentService = {
   // Ta bort en lägenhet
   deleteApartment: async (id) => {
     try {
+      // Ta bort från databasen först
       await api.delete(`/api/apartments/${id}`);
       
-      // Invalidera cachen för lägenheter eftersom vi tagit bort en
-      invalidateCache(CACHE_KEYS.APARTMENTS);
-      
+      // Om borttagningen lyckades, uppdatera cachen
+      removeFromCache(CACHE_KEYS.APARTMENTS, id);
     } catch (error) {
-      console.error(`Error deleting apartment with id ${id}:`, error);
+      console.error(`Error deleting apartment ${id}:`, error);
       throw error;
     }
   },
@@ -136,14 +143,17 @@ const apartmentService = {
   // Tilldela en hyresgäst till en lägenhet
   assignTenant: async (apartmentId, tenantId) => {
     try {
-      const response = await api.patch(`/api/apartments/${apartmentId}/tenant?tenantId=${tenantId}`);
+      // Uppdatera i databasen först
+      const response = await api.patch(`/api/apartments/${apartmentId}/tenant/${tenantId}`);
       
-      // Invalidera både lägenhet- och hyresgästcache eftersom relationen har ändrats
-      invalidateCache(CACHE_KEYS.APARTMENTS);
-      invalidateCache(CACHE_KEYS.TENANTS);
+      // Om databasen uppdaterades framgångsrikt, uppdatera cachen
+      if (response.data) {
+        updateInCache(CACHE_KEYS.APARTMENTS, apartmentId, response.data);
+      }
       
       return response.data;
     } catch (error) {
+      console.error(`Error assigning tenant ${tenantId} to apartment ${apartmentId}:`, error);
       throw error;
     }
   },
@@ -151,51 +161,73 @@ const apartmentService = {
   // Tilldela en nyckel till en lägenhet
   assignKey: async (apartmentId, keyId) => {
     try {
-      const response = await api.patch(`/api/apartments/${apartmentId}/key?keyId=${keyId}`);
+      // Uppdatera i databasen först
+      const response = await api.patch(`/api/apartments/${apartmentId}/key/${keyId}`);
       
-      // Invalidera både lägenhet- och nyckelcache
-      invalidateCache(CACHE_KEYS.APARTMENTS);
-      invalidateCache(CACHE_KEYS.KEYS);
+      // Om databasen uppdaterades framgångsrikt, uppdatera båda cacherna
+      if (response.data) {
+        updateInCache(CACHE_KEYS.APARTMENTS, apartmentId, response.data.apartment);
+        updateInCache(CACHE_KEYS.KEYS, keyId, response.data.key);
+      }
       
       return response.data;
     } catch (error) {
+      console.error(`Error assigning key ${keyId} to apartment ${apartmentId}:`, error);
       throw error;
     }
   },
 
-  // Ta bort en hyresgäst från en lägenhet
-  removeTenant: async (apartmentId, tenantId) => {
-    const response = await api.delete(`/api/apartments/${apartmentId}/tenant/${tenantId}`);
-    
-    // Invalidera både lägenhet- och hyresgästcache
-    invalidateCache(CACHE_KEYS.APARTMENTS);
-    invalidateCache(CACHE_KEYS.TENANTS);
-    
-    return response.data;
+  // Ta bort hyresgäst från lägenhet
+  removeTenant: async (apartmentId) => {
+    try {
+      // Uppdatera i databasen först
+      const response = await api.delete(`/api/apartments/${apartmentId}/tenant`);
+      
+      // Om databasen uppdaterades framgångsrikt, uppdatera cachen
+      if (response.data) {
+        updateInCache(CACHE_KEYS.APARTMENTS, apartmentId, response.data);
+      }
+      
+      return response.data;
+    } catch (error) {
+      console.error(`Error removing tenant from apartment ${apartmentId}:`, error);
+      throw error;
+    }
   },
 
   // Ta bort en nyckel från en lägenhet
   removeKey: async (apartmentId, keyId) => {
-    const response = await api.delete(`/api/apartments/${apartmentId}/key/${keyId}`);
-    
-    // Invalidera både lägenhet- och nyckelcache
-    invalidateCache(CACHE_KEYS.APARTMENTS);
-    invalidateCache(CACHE_KEYS.KEYS);
-    
-    return response.data;
+    try {
+      // Uppdatera i databasen först
+      const response = await api.delete(`/api/apartments/${apartmentId}/key/${keyId}`);
+      
+      // Om databasen uppdaterades framgångsrikt, uppdatera båda cacherna
+      if (response.data) {
+        updateInCache(CACHE_KEYS.APARTMENTS, apartmentId, response.data.apartment);
+        updateInCache(CACHE_KEYS.KEYS, keyId, response.data.key);
+      }
+      
+      return response.data;
+    } catch (error) {
+      console.error(`Error removing key ${keyId} from apartment ${apartmentId}:`, error);
+      throw error;
+    }
   },
 
   // Partiell uppdatering av en lägenhet (PATCH)
   patchApartment: async (id, patchData) => {
     try {
+      // Uppdatera i databasen först
       const response = await api.patch(`/api/apartments/${id}`, patchData);
       
-      // Invalidera cachen för lägenheter eftersom vi uppdaterat en
-      invalidateCache(CACHE_KEYS.APARTMENTS);
+      // Om databasen uppdaterades framgångsrikt, uppdatera cachen
+      if (response.data) {
+        updateInCache(CACHE_KEYS.APARTMENTS, id, response.data);
+      }
       
       return response.data;
     } catch (error) {
-      console.error(`Error patching apartment with id ${id}:`, error);
+      console.error(`Error patching apartment ${id}:`, error);
       throw error;
     }
   },

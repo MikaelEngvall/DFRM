@@ -323,10 +323,12 @@ const PendingTasks = () => {
 
   const handleApprove = async () => {
     try {
-      const isEmailReport = !selectedTask.task && selectedTask.name;
+      // Kontrollera om det är en e-postrapport eller en vanlig uppgift
+      const isEmailReport = selectedTask && !selectedTask.task && selectedTask.name;
       
       // Skapa en kopia av formulärdatan och logga för felsökning
       let taskData = { ...formData };
+      console.log('Formulärdata före godkännande:', taskData);
       
       // Säkerställ att tenantId och apartmentId är strängar, inte objekt
       if (taskData.tenantId && typeof taskData.tenantId === 'object') {
@@ -337,49 +339,25 @@ const PendingTasks = () => {
         taskData.apartmentId = taskData.apartmentId.id;
       }
       
+      // Fixa tidszonsproblemet för dueDate
+      if (taskData.dueDate) {
+        const dueDateParts = taskData.dueDate.split('-');
+        if (dueDateParts.length === 3) {
+          const year = parseInt(dueDateParts[0]);
+          const month = parseInt(dueDateParts[1]) - 1; // JS månad är 0-baserad
+          const day = parseInt(dueDateParts[2]);
+          
+          const fixedDate = new Date(Date.UTC(year, month, day, 12, 0, 0));
+          taskData.dueDate = fixedDate.toISOString();
+        }
+      }
+
       if (isEmailReport) {
-        // Fixa tidszonsproblemet för dueDate
-        
-        if (taskData.dueDate) {
-          // Konvertera datumet till en "tidlös" ISO-sträng för att undvika tidszonsförskjutningar
-          // Datumet sparas som "YYYY-MM-DDT12:00:00Z" för att säkerställa att det inte ändras
-          const dueDateParts = taskData.dueDate.split('-');
-          if (dueDateParts.length === 3) {
-            const year = parseInt(dueDateParts[0]);
-            const month = parseInt(dueDateParts[1]) - 1; // JS månad är 0-baserad
-            const day = parseInt(dueDateParts[2]);
-            
-            // Skapa ett nytt datum med klockan satt till 12:00 för att undvika tidszonsövergångar
-            const fixedDate = new Date(Date.UTC(year, month, day, 12, 0, 0));
-            taskData.dueDate = fixedDate.toISOString();
-          }
-        }
-        
-        console.log('Skickar e-postrapportdata till servern:', taskData);
-        
-        // Konvertera e-postrapporten till en uppgift med korrigerat datum
-        await pendingEmailReportService.convertToTask(selectedTask.id, {
-          ...taskData,
-          assignedByUserId: currentUser.id
-        });
-      } else {
-        // Uppdatera uppgiften före godkännande för vanliga väntande uppgifter
-        // Fixa tidszonsproblemet även här för konsekvens
-        
-        if (taskData.dueDate) {
-          const dueDateParts = taskData.dueDate.split('-');
-          if (dueDateParts.length === 3) {
-            const year = parseInt(dueDateParts[0]);
-            const month = parseInt(dueDateParts[1]) - 1; // JS månad är 0-baserad
-            const day = parseInt(dueDateParts[2]);
-            
-            const fixedDate = new Date(Date.UTC(year, month, day, 12, 0, 0));
-            taskData.dueDate = fixedDate.toISOString();
-          }
-        }
-        
-        console.log('Skickar uppgiftsdata till servern:', taskData);
-        
+        // För e-postrapporter, konvertera till en uppgift med pendingEmailReportService
+        const newTask = await pendingEmailReportService.convertToTask(selectedTask.id, taskData);
+        console.log('Konverterad e-postrapport till uppgift:', newTask);
+      } else if (selectedTask && selectedTask.task) {
+        // För vanliga uppgifter, uppdatera först uppgiften
         await taskService.updateTask(selectedTask.task.id, taskData);
         
         // Godkänn uppgiften
@@ -388,10 +366,11 @@ const PendingTasks = () => {
           comment: reviewComments
         };
         await pendingTaskService.approvePendingTask(selectedTask.id, reviewData);
+      } else {
+        throw new Error('Ogiltig uppgiftstyp');
       }
       
-      // Uppdatera antalet olästa uppgifter genom att hämta det direkt från API:et
-      // Detta säkerställer att Dashboard-sidan visar rätt antal
+      // Uppdatera antalet olästa uppgifter
       await pendingTaskService.getUnreviewedCount(true);
       
       await fetchData();
@@ -400,8 +379,8 @@ const PendingTasks = () => {
       setReviewComments('');
       resetForm();
     } catch (err) {
-      setError(t('pendingTasks.messages.approveError'));
       console.error('Error approving task:', err);
+      setError(t('pendingTasks.messages.approveError'));
     }
   };
 
@@ -868,11 +847,11 @@ const PendingTasks = () => {
             </div>
           </div>
 
-          {/* Visa befintliga meddelanden om en uppgift är vald */}
-          {selectedTask && selectedTask.id && (
+          {/* Visa befintliga meddelanden om en uppgift är vald och det INTE är en e-postrapport */}
+          {selectedTask && selectedTask.task && selectedTask.task.id && (
             <div className="mt-4">
               <TaskMessages 
-                taskId={selectedTask.id} 
+                taskId={selectedTask.task.id} 
                 canSendMessages={false} // Använd textfältet ovan istället för det inbyggda
               />
             </div>

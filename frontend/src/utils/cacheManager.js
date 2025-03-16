@@ -123,6 +123,74 @@ export const saveToCache = (cacheKey, data) => {
 };
 
 /**
+ * Uppdaterar cache genom att lägga till en ny post
+ * @param {string} cacheKey - Nyckeln för cachen
+ * @param {Object} newItem - Den nya posten som ska läggas till
+ * @returns {boolean} - True om uppdateringen lyckades, annars false
+ */
+export const addToCache = (cacheKey, newItem) => {
+  try {
+    const cachedData = getFromCache(cacheKey);
+    if (!cachedData) {
+      // Om det inte finns någon cache, skapa en ny med bara den nya posten
+      saveToCache(cacheKey, [newItem]);
+      return true;
+    }
+
+    // Lägg till den nya posten i den befintliga cachen
+    const updatedData = [...cachedData, newItem];
+    saveToCache(cacheKey, updatedData);
+    return true;
+  } catch (error) {
+    console.error('Fel vid uppdatering av cache:', error);
+    return false;
+  }
+};
+
+/**
+ * Uppdaterar en befintlig post i cachen
+ * @param {string} cacheKey - Nyckeln för cachen
+ * @param {string} itemId - ID för posten som ska uppdateras
+ * @param {Object} updatedItem - Den uppdaterade posten
+ * @returns {boolean} - True om uppdateringen lyckades, annars false
+ */
+export const updateInCache = (cacheKey, itemId, updatedItem) => {
+  try {
+    const cachedData = getFromCache(cacheKey);
+    if (!cachedData) return false;
+
+    const updatedData = cachedData.map(item => 
+      item.id === itemId ? { ...item, ...updatedItem } : item
+    );
+    saveToCache(cacheKey, updatedData);
+    return true;
+  } catch (error) {
+    console.error('Fel vid uppdatering av cache:', error);
+    return false;
+  }
+};
+
+/**
+ * Tar bort en post från cachen
+ * @param {string} cacheKey - Nyckeln för cachen
+ * @param {string} itemId - ID för posten som ska tas bort
+ * @returns {boolean} - True om borttagningen lyckades, annars false
+ */
+export const removeFromCache = (cacheKey, itemId) => {
+  try {
+    const cachedData = getFromCache(cacheKey);
+    if (!cachedData) return false;
+
+    const updatedData = cachedData.filter(item => item.id !== itemId);
+    saveToCache(cacheKey, updatedData);
+    return true;
+  } catch (error) {
+    console.error('Fel vid borttagning från cache:', error);
+    return false;
+  }
+};
+
+/**
  * Invaliderar (tar bort) en specifik cache
  * @param {string} cacheKey - Nyckeln för cachen som ska invalideras
  */

@@ -1,5 +1,5 @@
 import api from './api';
-import { getFromCache, saveToCache, invalidateCache, CACHE_KEYS } from '../utils/cacheManager';
+import { getFromCache, saveToCache, addToCache, updateInCache, removeFromCache, CACHE_KEYS } from '../utils/cacheManager';
 
 // Lägg till sökparametrar till alla förfrågningar
 const withQueryParams = (params) => {
@@ -13,23 +13,20 @@ const withQueryParams = (params) => {
   return queryParams ? `?${queryParams}` : '';
 };
 
-export const getAllTasks = async (params, bypassCache = false) => {
+const getAllTasks = async (params = {}, bypassCache = false) => {
   try {
-    // Om det finns parametrar eller vi explicit vill gå förbi cachen, hämta från API
-    if (params || bypassCache) {
-      const response = await api.get(`/api/tasks${withQueryParams(params)}`);
-      return response.data;
+    // Kontrollera om data finns i cache och om vi inte explicit vill gå förbi cachen
+    if (!bypassCache) {
+      const cachedData = getFromCache(CACHE_KEYS.TASKS);
+      if (cachedData) return cachedData;
     }
     
-    // Kontrollera om data finns i cache
-    const cachedData = getFromCache(CACHE_KEYS.TASKS);
-    if (cachedData) return cachedData;
+    const response = await api.get('/api/tasks', { params });
     
-    // Hämta data från API om det inte finns i cache
-    const response = await api.get('/api/tasks');
-    
-    // Spara den nya datan i cache
-    saveToCache(CACHE_KEYS.TASKS, response.data);
+    // Spara den nya datan i cache endast om API-anropet lyckades
+    if (response.data) {
+      saveToCache(CACHE_KEYS.TASKS, response.data);
+    }
     
     return response.data;
   } catch (error) {
@@ -38,7 +35,7 @@ export const getAllTasks = async (params, bypassCache = false) => {
   }
 };
 
-export const getTaskById = async (id) => {
+const getTaskById = async (id) => {
   try {
     // Försök hitta uppgiften i cachen först
     const cachedTasks = getFromCache(CACHE_KEYS.TASKS);
@@ -47,7 +44,6 @@ export const getTaskById = async (id) => {
       if (cachedTask) return cachedTask;
     }
     
-    // Om den inte finns i cache, hämta från API
     const response = await api.get(`/api/tasks/${id}`);
     return response.data;
   } catch (error) {
@@ -56,12 +52,15 @@ export const getTaskById = async (id) => {
   }
 };
 
-export const createTask = async (taskData) => {
+const createTask = async (taskData) => {
   try {
+    // Skapa uppgiften i databasen först
     const response = await api.post('/api/tasks', taskData);
     
-    // Invalidera cachen för uppgifter eftersom vi lagt till en ny
-    invalidateCache(CACHE_KEYS.TASKS);
+    // Om databasen uppdaterades framgångsrikt, uppdatera cachen
+    if (response.data) {
+      addToCache(CACHE_KEYS.TASKS, response.data);
+    }
     
     return response.data;
   } catch (error) {
@@ -70,12 +69,15 @@ export const createTask = async (taskData) => {
   }
 };
 
-export const updateTask = async (id, taskData) => {
+const updateTask = async (id, taskData) => {
   try {
+    // Uppdatera i databasen först
     const response = await api.patch(`/api/tasks/${id}`, taskData);
     
-    // Invalidera cachen för uppgifter eftersom vi uppdaterat en
-    invalidateCache(CACHE_KEYS.TASKS);
+    // Om databasen uppdaterades framgångsrikt, uppdatera cachen
+    if (response.data) {
+      updateInCache(CACHE_KEYS.TASKS, id, response.data);
+    }
     
     return response.data;
   } catch (error) {
@@ -84,67 +86,102 @@ export const updateTask = async (id, taskData) => {
   }
 };
 
-export const deleteTask = async (id) => {
+const deleteTask = async (id) => {
   try {
-    const response = await api.delete(`/api/tasks/${id}`);
+    // Ta bort från databasen först
+    await api.delete(`/api/tasks/${id}`);
     
-    // Invalidera cachen för uppgifter eftersom vi tagit bort en
-    invalidateCache(CACHE_KEYS.TASKS);
-    
-    return response.data;
+    // Om borttagningen lyckades, uppdatera cachen
+    removeFromCache(CACHE_KEYS.TASKS, id);
   } catch (error) {
     console.error(`Error deleting task with ID ${id}:`, error);
     throw error;
   }
 };
 
-export const updateTaskStatus = async (id, status) => {
+const updateTaskStatus = async (id, status) => {
   try {
+    // Uppdatera i databasen först
     const response = await api.patch(`/api/tasks/${id}/status`, { status });
     
-    // Invalidera cachen för uppgifter eftersom vi uppdaterat en
-    invalidateCache(CACHE_KEYS.TASKS);
+    // Om databasen uppdaterades framgångsrikt, uppdatera cachen
+    if (response.data) {
+      updateInCache(CACHE_KEYS.TASKS, id, response.data);
+    }
     
     return response.data;
   } catch (error) {
-    console.error(`Error updating status for task with ID ${id}:`, error);
+    console.error(`Error updating status for task ${id}:`, error);
     throw error;
   }
 };
 
-export const getTasksByAssignedUser = async (userId) => {
+const getTasksByAssignedUser = async (userId, bypassCache = false) => {
   try {
+    // Kontrollera om data finns i cache och om vi inte explicit vill gå förbi cachen
+    if (!bypassCache) {
+      const cachedTasks = getFromCache(CACHE_KEYS.TASKS);
+      if (cachedTasks) {
+        return cachedTasks.filter(task => task.assignedToUserId === userId);
+      }
+    }
+    
     const response = await api.get(`/api/tasks/assigned/${userId}`);
     return response.data;
   } catch (error) {
-    console.error(`Error fetching tasks for user with ID ${userId}:`, error);
+    console.error(`Error fetching tasks for user ${userId}:`, error);
     throw error;
   }
 };
 
-export const getTasksByApartment = async (apartmentId) => {
+const getTasksByApartment = async (apartmentId, bypassCache = false) => {
   try {
+    // Försök hitta i cachen först
+    const cachedTasks = getFromCache(CACHE_KEYS.TASKS);
+    if (cachedTasks) {
+      return cachedTasks.filter(task => task.apartmentId === apartmentId);
+    }
+    
     const response = await api.get(`/api/tasks/apartment/${apartmentId}`);
     return response.data;
   } catch (error) {
-    console.error(`Error fetching tasks for apartment with ID ${apartmentId}:`, error);
+    console.error(`Error fetching tasks for apartment ${apartmentId}:`, error);
     throw error;
   }
 };
 
-export const getTasksByTenant = async (tenantId) => {
+const getTasksByTenant = async (tenantId, bypassCache = false) => {
   try {
+    // Försök hitta i cachen först
+    const cachedTasks = getFromCache(CACHE_KEYS.TASKS);
+    if (cachedTasks) {
+      return cachedTasks.filter(task => task.assignedToUserId === tenantId);
+    }
+    
     const response = await api.get(`/api/tasks/tenant/${tenantId}`);
     return response.data;
   } catch (error) {
-    console.error(`Error fetching tasks for tenant with ID ${tenantId}:`, error);
+    console.error(`Error fetching tasks for tenant ${tenantId}:`, error);
     throw error;
   }
 };
 
-export const getTasksByDateRange = async (startDate, endDate) => {
+const getTasksByDateRange = async (startDate, endDate, bypassCache = false) => {
   try {
-    const response = await api.get(`/api/tasks/date-range/${startDate}/${endDate}`);
+    // Kontrollera om data finns i cache och om vi inte explicit vill gå förbi cachen
+    if (!bypassCache) {
+      const cachedTasks = getFromCache(CACHE_KEYS.TASKS);
+      if (cachedTasks) {
+        return cachedTasks.filter(task => {
+          const taskDate = new Date(task.dueDate);
+          return taskDate >= startDate && taskDate <= endDate;
+        });
+      }
+    }
+    
+    const response = await api.get('/api/tasks/date-range', {
+      params: { startDate, endDate }
+    });
     return response.data;
   } catch (error) {
     console.error('Error fetching tasks by date range:', error);
@@ -152,8 +189,14 @@ export const getTasksByDateRange = async (startDate, endDate) => {
   }
 };
 
-export const getTasksByStatus = async (status) => {
+const getTasksByStatus = async (status, bypassCache = false) => {
   try {
+    // Försök hitta i cachen först
+    const cachedTasks = getFromCache(CACHE_KEYS.TASKS);
+    if (cachedTasks) {
+      return cachedTasks.filter(task => task.status === status);
+    }
+    
     const response = await api.get(`/api/tasks/status/${status}`);
     return response.data;
   } catch (error) {
@@ -162,8 +205,20 @@ export const getTasksByStatus = async (status) => {
   }
 };
 
-export const getOverdueTasks = async () => {
+const getOverdueTasks = async (bypassCache = false) => {
   try {
+    // Kontrollera om data finns i cache och om vi inte explicit vill gå förbi cachen
+    if (!bypassCache) {
+      const cachedTasks = getFromCache(CACHE_KEYS.TASKS);
+      if (cachedTasks) {
+        const today = new Date();
+        return cachedTasks.filter(task => {
+          const dueDate = new Date(task.dueDate);
+          return dueDate < today && task.status !== 'COMPLETED';
+        });
+      }
+    }
+    
     const response = await api.get('/api/tasks/overdue');
     return response.data;
   } catch (error) {
@@ -173,12 +228,12 @@ export const getOverdueTasks = async () => {
 };
 
 // För återkommande uppgifter
-export const createRecurringTask = async (taskData) => {
+const createRecurringTask = async (taskData) => {
   try {
     const response = await api.post('/api/tasks/recurring', taskData);
     
     // Invalidera cachen för uppgifter eftersom vi lagt till en ny
-    invalidateCache(CACHE_KEYS.TASKS);
+    removeFromCache(CACHE_KEYS.TASKS);
     
     return response.data;
   } catch (error) {
@@ -187,16 +242,16 @@ export const createRecurringTask = async (taskData) => {
   }
 };
 
-export const updateRecurringPattern = async (id, pattern) => {
+const updateRecurringPattern = async (id, pattern) => {
   try {
-    const response = await api.patch(`/api/tasks/${id}/recurring`, { recurringPattern: pattern });
+    const response = await api.patch(`/api/tasks/${id}/recurring`, pattern);
     
     // Invalidera cachen för uppgifter eftersom vi uppdaterat en
-    invalidateCache(CACHE_KEYS.TASKS);
+    removeFromCache(CACHE_KEYS.TASKS);
     
     return response.data;
   } catch (error) {
-    console.error(`Error updating recurring pattern for task with ID ${id}:`, error);
+    console.error(`Error updating recurring pattern for task ${id}:`, error);
     throw error;
   }
 };

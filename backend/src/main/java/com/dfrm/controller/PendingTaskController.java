@@ -1,5 +1,6 @@
 package com.dfrm.controller;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -101,10 +102,10 @@ public class PendingTaskController {
     @PostMapping("/{id}/approve")
     public ResponseEntity<Task> approveTask(
             @PathVariable String id,
-            @RequestBody Map<String, String> approvalData) {
+            @RequestBody Map<String, Object> approvalData) {
         
-        String reviewedById = approvalData.get("reviewedById");
-        String comment = approvalData.get("comment");
+        String reviewedById = (String) approvalData.get("reviewedById");
+        String comment = (String) approvalData.get("comment");
         
         if (reviewedById == null) {
             return ResponseEntity.badRequest().build();
@@ -114,8 +115,30 @@ public class PendingTaskController {
             User reviewedBy = userService.getUserById(reviewedById)
                 .orElseThrow(() -> new IllegalArgumentException("Invalid user ID"));
             
-            Task task = pendingTaskService.approveTask(id, reviewedBy, comment);
-            return ResponseEntity.ok(task);
+            // Hämta den väntande uppgiften
+            PendingTask pendingTask = pendingTaskService.getPendingTaskById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid pending task ID"));
+            
+            // Uppdatera uppgiften med nya värden från approvalData
+            Task task = pendingTask.getTask();
+            if (approvalData.containsKey("dueDate")) {
+                String dueDateStr = (String) approvalData.get("dueDate");
+                task.setDueDate(LocalDate.parse(dueDateStr.substring(0, 10))); // Ta bara YYYY-MM-DD delen
+            }
+            if (approvalData.containsKey("assignedToUserId")) {
+                String assignedToUserId = (String) approvalData.get("assignedToUserId");
+                User assignedTo = userService.getUserById(assignedToUserId)
+                    .orElseThrow(() -> new IllegalArgumentException("Invalid assigned user ID"));
+                task.setAssignedUser(assignedTo); // Sätt assignedUser referensen
+                task.setAssignedToUserId(assignedToUserId); // Sätt assignedToUserId
+            }
+            if (approvalData.containsKey("priority")) {
+                task.setPriority((String) approvalData.get("priority"));
+            }
+            
+            // Godkänn uppgiften
+            Task updatedTask = pendingTaskService.approveTask(id, reviewedBy, comment);
+            return ResponseEntity.ok(updatedTask);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().build();
         }

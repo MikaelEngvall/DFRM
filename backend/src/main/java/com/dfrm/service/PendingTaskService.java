@@ -69,15 +69,21 @@ public class PendingTaskService {
         }
         
         PendingTask pendingTask = pendingTaskOpt.get();
+        
+        // Uppdatera granskningsinformation
         pendingTask.setReviewedBy(reviewedBy);
         pendingTask.setReviewedAt(LocalDateTime.now());
         pendingTask.setReviewComments(reviewComments);
+        pendingTask.setStatus("REVIEWED");
         
+        // Uppdatera uppgiftens status
         Task task = pendingTask.getTask();
         task.setStatus(TaskStatus.APPROVED.name());
-        Task savedTask = taskRepository.save(task);
         
+        // Spara ändringarna
+        Task savedTask = taskRepository.save(task);
         pendingTaskRepository.save(pendingTask);
+        
         return savedTask;
     }
     
@@ -117,28 +123,15 @@ public class PendingTaskService {
         // Säkerställ att uppgiftens data är korrekt
         newTask.setAssignedByUserId(reviewedBy.getId());
         
-        // Sätt tenantId från e-postrapporten om det inte redan är satt i uppgiften
+        // Använd befintliga ID:n från e-postrapporten
         if ((newTask.getTenantId() == null || newTask.getTenantId().isEmpty()) && emailReport.getTenantId() != null) {
             log.info("Använder tenantId från e-postrapporten: {}", emailReport.getTenantId());
             newTask.setTenantId(emailReport.getTenantId());
-            
-            // Uppdatera också tenant-referensen om det behövs
-            if (emailReport.getRequestedByTenant() != null) {
-                newTask.setTenant(emailReport.getRequestedByTenant());
-                log.info("Satte tenant {} på uppgift", emailReport.getRequestedByTenant().getId());
-            }
         }
         
-        // Sätt apartmentId från e-postrapporten om det inte redan är satt i uppgiften
         if ((newTask.getApartmentId() == null || newTask.getApartmentId().isEmpty()) && emailReport.getApartmentId() != null) {
             log.info("Använder apartmentId från e-postrapporten: {}", emailReport.getApartmentId());
             newTask.setApartmentId(emailReport.getApartmentId());
-            
-            // Uppdatera också apartment-referensen om det behövs
-            if (emailReport.getRequestedByApartment() != null) {
-                newTask.setApartment(emailReport.getRequestedByApartment());
-                log.info("Satte apartment {} på uppgift", emailReport.getRequestedByApartment().getId());
-            }
         }
         
         // Sätt standardvärden för den nya uppgiften om de inte är angivna
@@ -169,13 +162,6 @@ public class PendingTaskService {
                 newTask.setTitle(emailReport.getAddress());
             } else {
                 newTask.setTitle("Felanmälan från " + emailReport.getName());
-            }
-        }
-        
-        // Överför värden från emailReport till den nya uppgiften
-        if (newTask.getApartmentId() == null || newTask.getApartmentId().isEmpty()) {
-            if (emailReport.getApartment() != null && !emailReport.getApartment().isEmpty()) {
-                newTask.setApartmentId(emailReport.getApartment());
             }
         }
         

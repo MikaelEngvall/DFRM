@@ -95,15 +95,16 @@ public class TenantService {
                                 apartment.setTenants(new ArrayList<>());
                             }
                             
-                            // Kontrollera om hyresgästen redan finns i lägenheten (undvik dubbletter)
-                            boolean alreadyExists = apartment.getTenants().stream()
-                                .anyMatch(t -> t.getId().equals(tenant.getId()));
-                                
-                            if (!alreadyExists) {
-                                apartment.getTenants().add(tenant);
-                            }
+                            // Ta först bort hyresgästen om den redan finns (för att undvika dubbletter)
+                            apartment.getTenants().removeIf(t -> t.getId().equals(tenant.getId()));
+                            
+                            // Lägg till hyresgästen i lägenheten
+                            apartment.getTenants().add(tenant);
 
+                            // Spara först lägenheten för att uppdatera dess hyresgästlista
                             apartmentRepository.save(apartment);
+                            
+                            // Spara och returnera den uppdaterade hyresgästen
                             return tenantRepository.save(tenant);
                         }));
     }
