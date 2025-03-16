@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { getAuthToken } from './authService';
 
 const api = axios.create({
   baseURL: 'http://localhost:8080',
@@ -9,10 +10,9 @@ const api = axios.create({
 
 // Interceptor för att hantera autentisering
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('auth_token');
+  const token = getAuthToken();
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
-
   }
   return config;
 });
@@ -35,10 +35,13 @@ api.interceptors.response.use(
           window.location.href = '/login';
           break;
         case 403:
+          console.log('403 Forbidden:', error.config.url);
           break;
         case 404:
+          console.log('404 Not Found:', error.config.url);
           break;
         default:
+          console.log(`${error.response.status} Error:`, error.config.url);
           break;
       }
     } else if (error.request) {

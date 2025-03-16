@@ -27,18 +27,26 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const checkAuth = useCallback(async () => {
+    if (authCheckRef.current) return;
+    authCheckRef.current = true;
+
     try {
       const token = getAuthToken();
       if (!token) {
+        setUser(null);
         setLoading(false);
         return;
       }
 
-      // Implementera token-validering här om det behövs
+      // Hämta användardata från backend
+      const userData = await authService.getCurrentUser();
+      setUser(userData);
       
-      setLoading(false);
     } catch (error) {
       console.error('Auth check error:', error);
+      setUser(null);
+      removeAuthToken();
+    } finally {
       setLoading(false);
     }
   }, []);
@@ -73,7 +81,6 @@ export const AuthProvider = ({ children }) => {
   const login = async (credentials) => {
     try {
       const userData = await authService.login(credentials);
-      console.log('Användare inloggad med roll:', userData.role);
       setUser(userData);
       
       // Hämta den sparade sidan från sessionStorage
