@@ -177,8 +177,8 @@ const PendingTasks = () => {
       setIsLoading(true);
       // Hämta både vanliga väntande uppgifter och e-postrapporter
       const [pendingData, emailReportsData] = await Promise.all([
-        pendingTaskService.getPendingTasksForReview(),
-        pendingTaskService.getEmailReports()
+        pendingTaskService.getUnreviewedTasks(),
+        pendingEmailReportService.getAll()
       ]);
       
       setPendingTasks(pendingData);
@@ -199,8 +199,14 @@ const PendingTasks = () => {
 
   const fetchApprovedTasks = async () => {
     try {
-      const approvedData = await pendingTaskService.getApprovedTasks();
-      setApprovedTasks(approvedData);
+      // Hämta både APPROVED och CONVERTED uppgifter
+      const [approvedData, convertedData] = await Promise.all([
+        pendingTaskService.getPendingTasksByStatus('APPROVED'),
+        pendingTaskService.getPendingTasksByStatus('CONVERTED')
+      ]);
+      
+      // Kombinera de två listorna
+      setApprovedTasks([...approvedData, ...convertedData]);
       return true;
     } catch (err) {
       console.error('Error fetching approved tasks:', err);
