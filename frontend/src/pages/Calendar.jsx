@@ -34,6 +34,7 @@ const Calendar = () => {
     comments: '',
     isRecurring: false,
     recurringPattern: '',
+    descriptionLanguage: '',
   });
 
   // Funktion för att kontrollera om användaren är admin eller superadmin
@@ -69,10 +70,14 @@ const Calendar = () => {
       const startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
       const endDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
       
-      const data = await taskService.getTasksByDateRange(
-        startDate.toISOString().split('T')[0], 
-        endDate.toISOString().split('T')[0]
-      );
+      const startDateString = startDate.toISOString().split('T')[0];
+      const endDateString = endDate.toISOString().split('T')[0];
+      
+      console.log(`Hämtar uppgifter från ${startDateString} till ${endDateString}`);
+      
+      const data = await taskService.getTasksByDateRange(startDateString, endDateString);
+      
+      console.log('Hämtade uppgifter:', data.length, data);
       
       setTasks(data);
       setError(null);
@@ -121,37 +126,34 @@ const Calendar = () => {
 
   const handleTaskClick = async (task) => {
     try {
+      // Hämta fullständig uppgiftsinformation från API för att garantera att alla detaljer finns
       const fullTaskData = await taskService.getTaskById(task.id);
       setSelectedTask(fullTaskData);
       
+      // Extrahera ID från objekt om det behövs (samma logik som i Tasks.jsx)
       const assignedToUserId = fullTaskData.assignedToUserId || '';
+      
       const apartmentId = fullTaskData.apartmentId ? 
         (typeof fullTaskData.apartmentId === 'object' ? fullTaskData.apartmentId.id : fullTaskData.apartmentId) : '';
+      
       const tenantId = fullTaskData.tenantId ? 
         (typeof fullTaskData.tenantId === 'object' ? fullTaskData.tenantId.id : fullTaskData.tenantId) : '';
       
-      let dueDateString = '';
-      if (fullTaskData.dueDate) {
-        const dueDate = new Date(fullTaskData.dueDate);
-        const year = dueDate.getFullYear();
-        const month = String(dueDate.getMonth() + 1).padStart(2, '0');
-        const day = String(dueDate.getDate()).padStart(2, '0');
-        dueDateString = `${year}-${month}-${day}`;
-      }
-      
+      // Sätt formData exakt som i Tasks.jsx
       setFormData({
         title: fullTaskData.title || '',
         description: fullTaskData.description || '',
-        dueDate: dueDateString,
+        dueDate: fullTaskData.dueDate ? new Date(fullTaskData.dueDate).toISOString().split('T')[0] : '',
         priority: fullTaskData.priority || '',
         status: fullTaskData.status || '',
-        assignedToUserId: assignedToUserId,
+        assignedToUserId,
         assignedByUserId: fullTaskData.assignedByUserId || '',
-        apartmentId: apartmentId,
-        tenantId: tenantId,
+        apartmentId,
+        tenantId,
         comments: fullTaskData.comments || '',
         isRecurring: fullTaskData.isRecurring || false,
         recurringPattern: fullTaskData.recurringPattern || '',
+        descriptionLanguage: fullTaskData.descriptionLanguage || currentLocale
       });
       
       setIsTaskModalOpen(true);
@@ -199,6 +201,7 @@ const Calendar = () => {
       comments: '',
       isRecurring: false,
       recurringPattern: '',
+      descriptionLanguage: '',
     });
   };
 
@@ -292,6 +295,9 @@ const Calendar = () => {
     const adjustedFirstDay = firstDayOfMonth === 0 ? 6 : firstDayOfMonth - 1;
     const days = [];
     
+    console.log('Renderar kalender för', year, month + 1);
+    console.log('Uppgifter att visa:', tasks.length);
+    
     for (let i = 0; i < adjustedFirstDay; i++) {
       days.push(
         <div 
@@ -305,27 +311,21 @@ const Calendar = () => {
       const date = new Date(year, month, day);
       const dateString = date.toISOString().split('T')[0];
       
+      // Förenkla filtreringen för att se om något matchas
       const dayTasks = tasks.filter(task => {
         if (!task.dueDate) return false;
         
-        let taskYear, taskMonth, taskDay;
+        const taskDate = new Date(task.dueDate);
+        // Konvertera till strängformat för enklare jämförelse
+        const taskDateString = taskDate.toISOString().split('T')[0];
         
-        if (Array.isArray(task.dueDate) && task.dueDate.length >= 3) {
-          [taskYear, taskMonth, taskDay] = task.dueDate;
-          return taskDay === day && 
-                 taskMonth === month + 1 && 
-                 taskYear === year;
-        } else if (typeof task.dueDate === 'string') {
-          const date = new Date(task.dueDate);
-          if (!isNaN(date.getTime())) {
-            return date.getDate() === day && 
-                   date.getMonth() === month && 
-                   date.getFullYear() === year;
-          }
-        }
-        
-        return false;
+        // Bara jämför datumen som strängar (YYYY-MM-DD)
+        return taskDateString === dateString;
       });
+      
+      if (dayTasks.length > 0) {
+        console.log(`Dag ${day} har ${dayTasks.length} uppgifter:`, dayTasks);
+      }
       
       const isToday = isDateToday(date);
       const isClickable = isAdminOrSuperAdmin();

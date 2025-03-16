@@ -317,6 +317,11 @@ const TaskDetail = () => {
                   </p>
                   <p className="mt-1 text-sm text-gray-900 dark:text-white whitespace-pre-wrap">
                     {task.description || '-'}
+                    {task.descriptionLanguage && task.descriptionLanguage !== currentLocale && task.descriptionTranslations && task.descriptionTranslations[currentLocale] && (
+                      <span className="block mt-2 text-xs italic text-gray-500 dark:text-gray-400">
+                        {t('tasks.translatedFrom', { language: t(`languages.${task.descriptionLanguage}`) })}
+                      </span>
+                    )}
                   </p>
                 </div>
                 

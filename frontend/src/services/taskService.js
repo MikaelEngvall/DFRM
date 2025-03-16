@@ -172,9 +172,19 @@ const getTasksByDateRange = async (startDate, endDate, bypassCache = false) => {
     if (!bypassCache) {
       const cachedTasks = getFromCache(CACHE_KEYS.TASKS);
       if (cachedTasks) {
+        // Konvertera sträng-datumen till Date-objekt för att jämförelsen ska fungera
+        const startDateObj = new Date(startDate);
+        const endDateObj = new Date(endDate);
+        
         return cachedTasks.filter(task => {
+          if (!task.dueDate) return false;
+          
+          // Konvertera task.dueDate till endast datum (utan tid)
           const taskDate = new Date(task.dueDate);
-          return taskDate >= startDate && taskDate <= endDate;
+          const taskDateString = taskDate.toISOString().split('T')[0];
+          const taskDateObj = new Date(taskDateString);
+          
+          return taskDateObj >= startDateObj && taskDateObj <= endDateObj;
         });
       }
     }
