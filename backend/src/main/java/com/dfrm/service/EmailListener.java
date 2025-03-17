@@ -207,13 +207,11 @@ public class EmailListener {
                 log.info("Hittade start på meddelande på rad {}: {}", i, line);
                 isMessageContent = true;
                 foundMessageStart = true;
-                // Om "Meddelande:" är i början av en rad, skippa den raden 
-                // annars ta med texten som kommer efter "Meddelande:"
-                if (!line.startsWith("Meddelande:")) {
-                    String remainingText = line.substring(line.indexOf("Meddelande:") + "Meddelande:".length()).trim();
-                    if (!remainingText.isEmpty()) {
-                        messageContent.append(remainingText).append("\n");
-                    }
+                
+                // Extrahera text efter "Meddelande:" på denna rad
+                String remainingText = line.substring(line.indexOf("Meddelande:") + "Meddelande:".length()).trim();
+                if (!remainingText.isEmpty()) {
+                    messageContent.append(remainingText).append("\n");
                 }
                 continue;
             } else if (line.contains("---") && foundMessageStart) {
