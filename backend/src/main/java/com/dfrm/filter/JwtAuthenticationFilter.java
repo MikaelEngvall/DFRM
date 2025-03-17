@@ -1,8 +1,11 @@
 package com.dfrm.filter;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -21,6 +24,8 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Component
 @RequiredArgsConstructor
@@ -28,6 +33,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
     private final UserDetailsService userDetailsService;
+    private static final Logger log = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
@@ -56,8 +62,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
             
-            if (jwtService.validateToken(jwt, userEmail)) {
+            if (jwtService.validateToken(jwt, userDetails.getUsername())) {
                 Collection<SimpleGrantedAuthority> authorities = extractAuthorities(jwt);
+                
+                // Logga alla användarens roller för debugging
+                log.info("Användarroller för {}: {}", userEmail, 
+                    authorities.stream().map(Object::toString).collect(Collectors.joining(", ")));
                 
                 UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                     userDetails,
@@ -82,7 +92,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             if (roleObj != null) {
                 String role = roleObj.toString();
                 logger.info("Extraherade roll från token: " + role);
-                return Collections.singletonList(new SimpleGrantedAuthority(role));
+                List<SimpleGrantedAuthority> authorities = new ArrayList<>();
+                if (role.startsWith("ROLE_")) {
+                    authorities.add(new SimpleGrantedAuthority(role));
+                } else {
+                    authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
+                }
+                return authorities;
             } else {
                 logger.warn("Ingen roll hittades i token");
             }

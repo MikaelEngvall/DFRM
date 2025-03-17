@@ -141,81 +141,29 @@ public class EmailListener {
                 log.info("Found {} unread messages", messages.length);
                 
                 for (Message message : messages) {
-                    // Kontrollera avsändare, Reply-To och mottagare
-                    boolean isFromTargetSender = false;
-                    boolean hasTargetReplyTo = false;
-                    boolean isToTargetRecipient = false;
-                    
-                    // Kolla avsändare
-                    Address[] fromAddresses = message.getFrom();
-                    if (fromAddresses != null && fromAddresses.length > 0) {
-                        for (Address address : fromAddresses) {
-                            if (address instanceof InternetAddress) {
-                                String sender = ((InternetAddress) address).getAddress();
-                                log.info("Message from: {}", sender);
-                                if (TARGET_SENDER.equalsIgnoreCase(sender)) {
-                                    isFromTargetSender = true;
+                    try {
+                        // Kontrollera reply-to adressen före bearbetning
+                        Address[] replyTo = message.getReplyTo();
+                        boolean validReplyTo = false;
+                        
+                        if (replyTo != null && replyTo.length > 0) {
+                            for (Address address : replyTo) {
+                                if (address instanceof InternetAddress 
+                                    && TARGET_REPLY_TO.equals(((InternetAddress) address).getAddress())) {
+                                    validReplyTo = true;
                                     break;
                                 }
                             }
                         }
-                    }
-                    
-                    // Kolla Reply-To
-                    Address[] replyToAddresses = message.getReplyTo();
-                    if (replyToAddresses != null && replyToAddresses.length > 0) {
-                        for (Address address : replyToAddresses) {
-                            if (address instanceof InternetAddress) {
-                                String replyTo = ((InternetAddress) address).getAddress();
-                                log.info("Message reply-to: {}", replyTo);
-                                if (TARGET_REPLY_TO.equalsIgnoreCase(replyTo)) {
-                                    hasTargetReplyTo = true;
-                                    break;
-                                }
-                            }
+                        
+                        if (validReplyTo) {
+                            processEmail(message);
+                        } else {
+                            log.info("E-post ignorerad - ogiltig reply-to adress");
                         }
+                    } catch (Exception e) {
+                        log.error("Fel vid bearbetning av e-post: {}", e.getMessage(), e);
                     }
-                    
-                    // Kolla mottagare
-                    Address[] recipients = message.getRecipients(Message.RecipientType.TO);
-                    if (recipients != null && recipients.length > 0) {
-                        for (Address address : recipients) {
-                            if (address instanceof InternetAddress) {
-                                String recipient = ((InternetAddress) address).getAddress();
-                                log.info("Message to: {}", recipient);
-                                if (TARGET_RECIPIENT.equalsIgnoreCase(recipient)) {
-                                    isToTargetRecipient = true;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-                    
-                    // Fortsätt bara om meddelandet är från rätt avsändare till rätt mottagare och har rätt Reply-To
-                    boolean shouldProcess = false;
-                    
-                    if (isDevEnvironment()) {
-                        // I utvecklingsmiljö, kolla efter Reply-To
-                        if (isFromTargetSender && hasTargetReplyTo) {
-                            shouldProcess = true;
-                            log.info("Processing message with Reply-To: {}", TARGET_REPLY_TO);
-                        }
-                    } else {
-                        // I produktion, tillåt alla mail från rätt avsändare till rätt mottagare
-                        if (isFromTargetSender && isToTargetRecipient) {
-                            shouldProcess = true;
-                            log.info("Processing message in production");
-                        }
-                    }
-                    
-                    if (shouldProcess) {
-                        processEmail(message);
-                    } else {
-                        log.info("Skipping message - not matching criteria");
-                    }
-                    
-                    // Markera meddelandet som läst oavsett
-                    message.setFlag(jakarta.mail.Flags.Flag.SEEN, true);
                 }
                 
                 inbox.close(false);

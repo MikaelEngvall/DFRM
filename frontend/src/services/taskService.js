@@ -252,16 +252,13 @@ const createRecurringTask = async (taskData) => {
   }
 };
 
-const updateRecurringPattern = async (id, pattern) => {
+export const updateRecurringPattern = async (id, pattern) => {
   try {
-    const response = await api.patch(`/api/tasks/${id}/recurring`, pattern);
-    
-    // Invalidera cachen för uppgifter eftersom vi uppdaterat en
-    removeFromCache(CACHE_KEYS.TASKS);
-    
+    const response = await api.patch(`/api/tasks/${id}/recurring`, { pattern });
+    // Uppdatera cache om det behövs
     return response.data;
   } catch (error) {
-    console.error(`Error updating recurring pattern for task ${id}:`, error);
+    console.error(`Error updating recurring pattern for task ${id}: `, error);
     throw error;
   }
 };

@@ -7,6 +7,7 @@ import java.util.Optional;
 
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -182,19 +183,18 @@ public class TaskController {
     }
 
     @PatchMapping("/{id}/recurring")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Task> updateRecurringPattern(@PathVariable String id, @RequestBody Map<String, String> payload) {
-        if (!taskService.existsById(id)) {
-            return ResponseEntity.notFound().build();
-        }
-        
-        String pattern = payload.get("recurringPattern");
-        if (pattern == null) {
+        if (!payload.containsKey("pattern")) {
             return ResponseEntity.badRequest().build();
         }
         
+        String pattern = payload.get("pattern");
+        
         Optional<Task> updatedTask = taskService.updateRecurringPattern(id, pattern);
+        
         return updatedTask.map(ResponseEntity::ok)
-                .orElse(ResponseEntity.badRequest().build());
+                      .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @GetMapping("/date-range")
