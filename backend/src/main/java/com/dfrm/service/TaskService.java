@@ -54,6 +54,13 @@ public class TaskService {
             userRepository.findById(task.getAssignedToUserId()).ifPresent(task::setAssignedUser);
         }
         
+        // Om datumet har en tidsdel, ta bort den
+        if (task.getDueDate() != null) {
+            // Garantera att vi bara har LocalDate utan tidsdel
+            LocalDate dueDate = task.getDueDate();
+            task.setDueDate(dueDate); // Detta säkerställer att endast datumdelen används
+        }
+        
         return taskRepository.save(task);
     }
     

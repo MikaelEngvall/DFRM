@@ -54,8 +54,20 @@ const getTaskById = async (id) => {
 
 const createTask = async (taskData) => {
   try {
+    // Fixera tidzonsproblem innan vi skickar till backend
+    const fixedTaskData = { ...taskData };
+    
+    if (fixedTaskData.dueDate) {
+      // Garantera att datumet är i formatet "YYYY-MM-DD" utan tidsdel
+      const dueDate = new Date(fixedTaskData.dueDate);
+      const year = dueDate.getFullYear();
+      const month = String(dueDate.getMonth() + 1).padStart(2, '0');
+      const day = String(dueDate.getDate()).padStart(2, '0');
+      fixedTaskData.dueDate = `${year}-${month}-${day}`;
+    }
+    
     // Skapa uppgiften i databasen först
-    const response = await api.post('/api/tasks', taskData);
+    const response = await api.post('/api/tasks', fixedTaskData);
     
     // Om databasen uppdaterades framgångsrikt, uppdatera cachen
     if (response.data) {
@@ -71,8 +83,20 @@ const createTask = async (taskData) => {
 
 const updateTask = async (id, taskData) => {
   try {
+    // Fixera tidzonsproblem innan vi skickar till backend
+    const fixedTaskData = { ...taskData };
+    
+    if (fixedTaskData.dueDate) {
+      // Garantera att datumet är i formatet "YYYY-MM-DD" utan tidsdel
+      const dueDate = new Date(fixedTaskData.dueDate);
+      const year = dueDate.getFullYear();
+      const month = String(dueDate.getMonth() + 1).padStart(2, '0');
+      const day = String(dueDate.getDate()).padStart(2, '0');
+      fixedTaskData.dueDate = `${year}-${month}-${day}`;
+    }
+    
     // Uppdatera i databasen först
-    const response = await api.patch(`/api/tasks/${id}`, taskData);
+    const response = await api.patch(`/api/tasks/${id}`, fixedTaskData);
     
     // Om databasen uppdaterades framgångsrikt, uppdatera cachen
     if (response.data) {

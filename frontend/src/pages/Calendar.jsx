@@ -315,8 +315,7 @@ const Calendar = () => {
       const dayTasks = tasks.filter(task => {
         if (!task.dueDate) return false;
         
-        const taskDate = new Date(task.dueDate);
-        // Konvertera till strängformat för enklare jämförelse
+        const taskDate = new Date(task.dueDate + 'T00:00:00');
         const taskDateString = taskDate.toISOString().split('T')[0];
         
         // Bara jämför datumen som strängar (YYYY-MM-DD)
