@@ -9,6 +9,17 @@ import Autocomplete from '../components/Autocomplete';
 import { PaperAirplaneIcon } from '@heroicons/react/24/outline';
 import TaskMessages from '../components/TaskMessages';
 
+// Definiera blinkingStyle som en konstant utanför komponenten för att förhindra onödig återskapning
+const BLINKING_STYLE = `
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+  }
+  .animate-blink {
+    animation: blink 1s infinite;
+  }
+`;
+
 const Calendar = () => {
   const { t, currentLocale } = useLocale();
   const { user: currentUser, hasRole } = useAuth();
@@ -268,17 +279,6 @@ const Calendar = () => {
   };
 
   const renderTaskItem = (task) => {
-    // Lägg till den anpassade animeringen för blinkande prickar
-    const blinkingStyle = `
-      @keyframes blink {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0; }
-      }
-      .animate-blink {
-        animation: blink 1s infinite;
-      }
-    `;
-
     // Statusfärger
     const getStatusColor = (status) => {
       switch (status) {
@@ -327,10 +327,9 @@ const Calendar = () => {
     const cardClasses = `px-2 py-1 rounded text-xs mb-1 cursor-pointer transition-shadow ${getStatusColor(task.status)} ${getPriorityGlow(task.priority)}`;
     
     return (
-      <>
-        <style>{blinkingStyle}</style>
+      <React.Fragment key={task.id}>
+        <style>{BLINKING_STYLE}</style>
         <div
-          key={task.id}
           className={cardClasses}
           onClick={(e) => {
             e.stopPropagation();
@@ -347,7 +346,7 @@ const Calendar = () => {
             </div>
           )}
         </div>
-      </>
+      </React.Fragment>
     );
   };
 
@@ -478,13 +477,11 @@ const Calendar = () => {
 
       <div className="flex-1 overflow-hidden">
         <div className="grid grid-cols-7 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-          <div className="py-2 text-center text-sm text-gray-600 dark:text-gray-400 font-medium">{t('calendar.weekdaysShort.mon')}</div>
-          <div className="py-2 text-center text-sm text-gray-600 dark:text-gray-400 font-medium">{t('calendar.weekdaysShort.tue')}</div>
-          <div className="py-2 text-center text-sm text-gray-600 dark:text-gray-400 font-medium">{t('calendar.weekdaysShort.wed')}</div>
-          <div className="py-2 text-center text-sm text-gray-600 dark:text-gray-400 font-medium">{t('calendar.weekdaysShort.thu')}</div>
-          <div className="py-2 text-center text-sm text-gray-600 dark:text-gray-400 font-medium">{t('calendar.weekdaysShort.fri')}</div>
-          <div className="py-2 text-center text-sm text-gray-600 dark:text-gray-400 font-medium">{t('calendar.weekdaysShort.sat')}</div>
-          <div className="py-2 text-center text-sm text-gray-600 dark:text-gray-400 font-medium">{t('calendar.weekdaysShort.sun')}</div>
+          {['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'].map((day) => (
+            <div key={day} className="py-2 text-center text-sm text-gray-600 dark:text-gray-400 font-medium">
+              {t(`calendar.weekdaysShort.${day}`)}
+            </div>
+          ))}
         </div>
         <div className="grid grid-cols-7 h-[calc(100vh-8.5rem)]">
           {renderCalendar()}

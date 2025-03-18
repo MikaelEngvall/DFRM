@@ -200,15 +200,24 @@ public class TaskController {
 
     @GetMapping("/date-range")
     public List<Task> getTasksByDateRange(
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
-        return taskService.getTasksByDateRange(startDate, endDate);
-    }
-
-    @GetMapping("/date-range/{startDate}/{endDate}")
-    public List<Task> getTasksByDateRangePath(
-            @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @PathVariable @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @PathVariable(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Map<String, LocalDate> pathVars) {
+        
+        // Om startDate och endDate är null, använd variabler från path
+        if (startDate == null && pathVars != null && pathVars.containsKey("startDate")) {
+            startDate = pathVars.get("startDate");
+        }
+        
+        if (endDate == null && pathVars != null && pathVars.containsKey("endDate")) {
+            endDate = pathVars.get("endDate");
+        }
+        
+        // Validera att båda datumen finns
+        if (startDate == null || endDate == null) {
+            throw new IllegalArgumentException("Both startDate and endDate are required");
+        }
+        
         return taskService.getTasksByDateRange(startDate, endDate);
     }
 } 

@@ -1,5 +1,41 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { PencilIcon, TrashIcon, ChevronUpIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
+
+// Hjälpfunktioner för sortering
+const getSortValue = (item, key, column) => {
+  const value = item[key];
+  // Använd getSortValue-funktionen om den finns
+  if (column && column.getSortValue) {
+    return column.getSortValue(value, item);
+  }
+  return value;
+};
+
+const compareValues = (valueA, valueB, direction) => {
+  // Hantera null/undefined värden
+  if (valueA == null && valueB == null) return 0;
+  if (valueA == null) return direction === 'asc' ? -1 : 1;
+  if (valueB == null) return direction === 'asc' ? 1 : -1;
+  
+  // Sortera datum
+  if (valueA instanceof Date && valueB instanceof Date) {
+    return direction === 'asc' 
+      ? valueA.getTime() - valueB.getTime()
+      : valueB.getTime() - valueA.getTime();
+  }
+  
+  // Sortera strängar med svenska tecken korrekt
+  if (typeof valueA === 'string' && typeof valueB === 'string') {
+    return direction === 'asc' 
+      ? valueA.localeCompare(valueB, 'sv', { sensitivity: 'base' })
+      : valueB.localeCompare(valueA, 'sv', { sensitivity: 'base' });
+  }
+  
+  // Sortera nummer och andra typer
+  if (valueA < valueB) return direction === 'asc' ? -1 : 1;
+  if (valueA > valueB) return direction === 'asc' ? 1 : -1;
+  return 0;
+};
 
 const DataTable = ({ 
   columns, 
@@ -24,45 +60,16 @@ const DataTable = ({
     setSortConfig({ key, direction });
   };
   
-  const sortedData = React.useMemo(() => {
+  const sortedData = useMemo(() => {
     if (!sortConfig.key) return data;
     
+    const column = columns.find(col => col.key === sortConfig.key);
+    
     return [...data].sort((a, b) => {
-      // Hitta motsvarande kolumndefinition
-      const column = columns.find(col => col.key === sortConfig.key);
+      const valueA = getSortValue(a, sortConfig.key, column);
+      const valueB = getSortValue(b, sortConfig.key, column);
       
-      let valueA = a[sortConfig.key];
-      let valueB = b[sortConfig.key];
-      
-      // Om kolumnen har en getSortValue funktion, använd den för sortering
-      if (column && column.getSortValue) {
-        valueA = column.getSortValue(valueA, a);
-        valueB = column.getSortValue(valueB, b);
-      }
-      
-      // Hantera null/undefined värden
-      if (valueA === null || valueA === undefined) return sortConfig.direction === 'asc' ? -1 : 1;
-      if (valueB === null || valueB === undefined) return sortConfig.direction === 'asc' ? 1 : -1;
-      
-      // Sortera datum
-      if (valueA instanceof Date && valueB instanceof Date) {
-        return sortConfig.direction === 'asc' 
-          ? valueA.getTime() - valueB.getTime()
-          : valueB.getTime() - valueA.getTime();
-      }
-      
-      // Sortera strängar med svenska tecken korrekt
-      if (typeof valueA === 'string' && typeof valueB === 'string') {
-        // Använd svenska collation-regler
-        return sortConfig.direction === 'asc' 
-          ? valueA.localeCompare(valueB, 'sv', { sensitivity: 'base' })
-          : valueB.localeCompare(valueA, 'sv', { sensitivity: 'base' });
-      }
-      
-      // Sortera nummer och andra typer
-      if (valueA < valueB) return sortConfig.direction === 'asc' ? -1 : 1;
-      if (valueA > valueB) return sortConfig.direction === 'asc' ? 1 : -1;
-      return 0;
+      return compareValues(valueA, valueB, sortConfig.direction);
     });
   }, [data, sortConfig, columns]);
   

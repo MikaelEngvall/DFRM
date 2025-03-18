@@ -1,14 +1,13 @@
 package com.dfrm.filter;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.env.Environment;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -34,6 +33,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtService jwtService;
     private final UserDetailsService userDetailsService;
     private static final Logger log = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
+    private final Environment environment;
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
@@ -65,9 +65,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             if (jwtService.validateToken(jwt, userDetails.getUsername())) {
                 Collection<SimpleGrantedAuthority> authorities = extractAuthorities(jwt);
                 
-                // Logga alla användarens roller för debugging
-                log.info("Användarroller för {}: {}", userEmail, 
+                // Logga bara i utvecklingsmiljö
+                if (isDevEnvironment()) {
+                    log.info("Användarroller för {}: {}", userEmail, 
                     authorities.stream().map(Object::toString).collect(Collectors.joining(", ")));
+                }
                 
                 UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                     userDetails,
@@ -83,7 +85,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         filterChain.doFilter(request, response);
     }
     
-    // Hjälpmetod för att extrahera behörigheter från token
+    // Förenklad metod för att extrahera behörigheter
     private Collection<SimpleGrantedAuthority> extractAuthorities(String token) {
         try {
             Claims claims = jwtService.extractAllClaims(token);
@@ -91,22 +93,33 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             
             if (roleObj != null) {
                 String role = roleObj.toString();
-                log.info("Extraherade roll från token: " + role);
-                List<SimpleGrantedAuthority> authorities = new ArrayList<>();
-                if (role.startsWith("ROLE_")) {
-                    authorities.add(new SimpleGrantedAuthority(role));
-                } else {
-                    authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
+                // Logga bara i utvecklingsmiljö
+                if (isDevEnvironment()) {
+                    log.info("Extraherade roll från token: " + role);
                 }
-                return authorities;
-            } else {
-                log.warn("Ingen roll hittades i token");
+                
+                // Enkelt returnera rollen med korrekt prefix
+                String prefixedRole = role.startsWith("ROLE_") ? role : "ROLE_" + role;
+                return Collections.singletonList(new SimpleGrantedAuthority(prefixedRole));
             }
         } catch (Exception e) {
-            log.error("Kunde inte extrahera roller från token", e);
+            // Logga bara i utvecklingsmiljö
+            if (isDevEnvironment()) {
+                log.warn("Kunde inte extrahera roller från token", e);
+            }
         }
         
-        log.warn("Returnerar tom rollsamling");
         return Collections.emptyList();
+    }
+
+    // Hjälpmetod för att kontrollera om vi är i utvecklingsmiljö
+    private boolean isDevEnvironment() {
+        String[] activeProfiles = environment.getActiveProfiles();
+        for (String profile : activeProfiles) {
+            if ("dev".equals(profile)) {
+                return true;
+            }
+        }
+        return false;
     }
 } 

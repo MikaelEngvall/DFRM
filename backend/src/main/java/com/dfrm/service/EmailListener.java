@@ -1,10 +1,5 @@
 package com.dfrm.service;
 
-import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import java.util.Properties;
 
 import org.springframework.core.env.Environment;
@@ -13,10 +8,6 @@ import org.springframework.stereotype.Service;
 
 import com.dfrm.client.GoogleTranslateClient;
 import com.dfrm.config.JavaMailProperties;
-import com.dfrm.model.Apartment;
-import com.dfrm.model.Language;
-import com.dfrm.model.PendingTask;
-import com.dfrm.model.Tenant;
 import com.dfrm.repository.ApartmentRepository;
 import com.dfrm.repository.PendingTaskRepository;
 import com.dfrm.repository.TenantRepository;
@@ -235,8 +226,22 @@ public class EmailListener {
     }
 
     private String cleanHtmlContent(String content) {
-        // Många regex-operationer som körs sekventiellt
-        // Kunde kombineras till färre operationer eller använt en HTML-parser
-        // ...
+        if (content == null) {
+            return "";
+        }
+        
+        // Ta bort HTML-taggar
+        String result = content.replaceAll("<[^>]*>", " ");
+        
+        // Ta bort överflödiga mellanslag
+        result = result.replaceAll("\\s+", " ");
+        
+        // Konvertera HTML-entiteter
+        result = result.replaceAll("&nbsp;", " ")
+                       .replaceAll("&amp;", "&")
+                       .replaceAll("&lt;", "<")
+                       .replaceAll("&gt;", ">");
+        
+        return result.trim();
     }
 } 

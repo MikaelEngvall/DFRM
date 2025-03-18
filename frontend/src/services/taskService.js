@@ -1,18 +1,6 @@
 import api from './api';
 import { getFromCache, saveToCache, addToCache, updateInCache, removeFromCache, CACHE_KEYS } from '../utils/cacheManager';
 
-// Lägg till sökparametrar till alla förfrågningar
-const withQueryParams = (params) => {
-  if (!params) return '';
-  
-  const queryParams = Object.entries(params)
-    .filter(([_, value]) => value !== undefined && value !== null && value !== '')
-    .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
-    .join('&');
-  
-  return queryParams ? `?${queryParams}` : '';
-};
-
 const getAllTasks = async (params = {}, bypassCache = false) => {
   try {
     // Kontrollera om data finns i cache och om vi inte explicit vill gå förbi cachen

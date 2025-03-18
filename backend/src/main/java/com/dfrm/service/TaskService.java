@@ -26,8 +26,17 @@ public class TaskService {
     private final TaskMessageService taskMessageService;
     
     public List<Task> getAllTasks(String status, String priority, String tenantId, String apartmentId) {
-        // Här skulle man normalt implementera logik för att filtrera baserat på parametrarna
-        // Men för att få grundläggande funktionalitet att fungera returnerar vi alla uppgifter för tillfället
+        // Använd specifika repository-metoder baserat på parametrarna
+        if (status != null && !status.isEmpty()) {
+            return taskRepository.findByStatus(status);
+        } else if (priority != null && !priority.isEmpty()) {
+            return taskRepository.findByPriority(priority);
+        } else if (tenantId != null && !tenantId.isEmpty()) {
+            return taskRepository.findByTenantId(tenantId);
+        } else if (apartmentId != null && !apartmentId.isEmpty()) {
+            return taskRepository.findByApartmentId(apartmentId);
+        }
+        
         return taskRepository.findAll();
     }
     
@@ -94,41 +103,23 @@ public class TaskService {
     }
     
     public List<Task> getTasksByStatus(String status) {
-        // Detta skulle normalt implementeras med en repository-metod
-        return taskRepository.findAll().stream()
-                .filter(task -> status.equals(task.getStatus()))
-                .toList();
+        return taskRepository.findByStatus(status);
     }
     
     public List<Task> getTasksByPriority(String priority) {
-        // Detta skulle normalt implementeras med en repository-metod
-        return taskRepository.findAll().stream()
-                .filter(task -> priority.equals(task.getPriority()))
-                .toList();
+        return taskRepository.findByPriority(priority);
     }
     
     public List<Task> getTasksByTenantId(String tenantId) {
-        // Använd både det direkta tenant-ID-fältet och referensen
-        return taskRepository.findAll().stream()
-                .filter(task -> (tenantId.equals(task.getTenantId())) || 
-                                (task.getTenant() != null && tenantId.equals(task.getTenant().getId())))
-                .toList();
+        return taskRepository.findByTenantId(tenantId);
     }
     
     public List<Task> getTasksByApartmentId(String apartmentId) {
-        // Använd både det direkta apartment-ID-fältet och referensen
-        return taskRepository.findAll().stream()
-                .filter(task -> (apartmentId.equals(task.getApartmentId())) ||
-                                (task.getApartment() != null && apartmentId.equals(task.getApartment().getId())))
-                .toList();
+        return taskRepository.findByApartmentId(apartmentId);
     }
     
     public List<Task> getTasksByAssignedUserId(String userId) {
-        // Använd både assignedToUserId och den gamla assignedUser-referensen
-        return taskRepository.findAll().stream()
-                .filter(task -> (userId.equals(task.getAssignedToUserId())) ||
-                                (task.getAssignedUser() != null && userId.equals(task.getAssignedUser().getId())))
-                .toList();
+        return taskRepository.findByAssignedUserId(userId);
     }
     
     // Ny metod för att hämta uppgifter baserat på vem som tilldelade dem
@@ -140,13 +131,8 @@ public class TaskService {
     
     public List<Task> getOverdueTasks() {
         LocalDate today = LocalDate.now();
-        // Detta skulle normalt implementeras med en repository-metod
-        return taskRepository.findAll().stream()
-                .filter(task -> task.getDueDate() != null && 
-                               task.getDueDate().isBefore(today) && 
-                               !"COMPLETED".equals(task.getStatus()) &&
-                               !"APPROVED".equals(task.getStatus()))
-                .toList();
+        List<String> completedStatuses = List.of("COMPLETED", "APPROVED");
+        return taskRepository.findByDueDateBeforeAndStatusNotIn(today, completedStatuses);
     }
     
     public Task createRecurringTask(Task task) {
