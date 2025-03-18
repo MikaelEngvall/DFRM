@@ -1,6 +1,6 @@
 # DFRM (Digital Fastighets- och Resurshantering)
 
-Ett modernt system för hantering av lägenheter, hyresgäster och nycklar.
+Ett modernt system för hantering av lägenheter, hyresgäster, nycklar och arbetsuppgifter för fastighetsförvaltning.
 ![image](https://github.com/user-attachments/assets/b5f2d656-3e36-4ade-b0cc-ec721e5afedc)
 
 ## Teknisk Stack
@@ -10,11 +10,12 @@ Ett modernt system för hantering av lägenheter, hyresgäster och nycklar.
 - Spring Boot
 - MongoDB
 - Spring Security (JWT Authentication)
+- E-postintegrering (IMAP/SMTP)
 
 ### Frontend
 - React
 - TailwindCSS
-- Express
+- Heroicons
 - Cinzel font
 
 ## Projektstruktur
@@ -57,12 +58,18 @@ npm start
 4. Öppna webbläsaren och gå till `http://localhost:3000`
 
 ## Funktioner
-- Hantering av lägenheter
-- Hantering av hyresgäster
-- Nyckelhantering
-- Sökfunktioner
-- Responsiv design
-- Svensk lokalisering
+- **Lägenhetshantering** - Hantera lägenheter, deras egenskaper och kopplingar till hyresgäster
+- **Hyresgästhantering** - Administrera hyresgästinformation och deras kontaktuppgifter
+- **Nyckelhantering** - Spåra nycklar, deras typer och användning
+- **Personalhantering** - Hantera personal och deras behörigheter
+- **Uppgiftshantering** - Skapa, tilldela och spåra arbetsuppgifter för fastigheten
+- **Kalender** - Visualisera uppgifter i ett kalenderformat
+- **E-postintegrering** - Automatiserad hantering av inkommande och utgående e-post
+- **E-postrapporter** - Skicka systemgenererade rapporter via e-post
+- **Importverktyg** - Importera data från Excel-filer
+- **Responsiv design** - Fungerar på både desktop och mobila enheter
+- **Svensk lokalisering** - Fullt stöd för svenska
+- **Mörkt läge** - Stöd för mörkt och ljust gränssnitt
 
 ## API-dokumentation
 API-dokumentation finns tillgänglig på `http://localhost:8080/swagger-ui.html` när backend är igång. 
@@ -102,3 +109,7 @@ Följande miljövariabler är nödvändiga för att köra applikationen:
 
 ### Google Translate API
 - `GOOGLE_TRANSLATE_API_KEY` - API-nyckel för Google Translate
+
+## Noterade problem och begränsningar
+- Sorteringsfunktionaliteten för hyresgästkolumnen i lägenhetstabellen behöver förbättras.
+- E-postlyssnartjänsten kan vara känslig för vissa formaterade e-postmeddelanden.
