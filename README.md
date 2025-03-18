@@ -21,10 +21,49 @@ Ett modernt system för hantering av lägenheter, hyresgäster, nycklar och arbe
 ## Projektstruktur
 ```
 dfrm/
-├── backend/         # Java Spring Boot backend
-├── frontend/        # React frontend
-└── docker/          # Docker-filer för utveckling
+├── backend/                     # Java Spring Boot backend
+│   ├── src/main/java/com/dfrm/
+│   │   ├── client/              # Externa API-klienter (t.ex. Google Translate)
+│   │   ├── config/              # Konfigurationsklasser för Spring Boot, MongoDB, mail, etc.
+│   │   ├── controller/          # REST API-endpoints
+│   │   ├── filter/              # Säkerhetsfilter (JWT-autentisering)
+│   │   ├── model/               # Datamodeller och entiteter
+│   │   ├── repository/          # MongoDB-repositories för dataåtkomst
+│   │   └── service/             # Affärslogik och tjänster
+│   └── src/main/resources/      # Konfigurationsfiler, översättningar, etc.
+│
+├── frontend/                    # React frontend
+│   ├── public/                  # Statiska filer
+│   └── src/
+│       ├── components/          # Återanvändbara React-komponenter
+│       ├── contexts/            # React context providers (auth, locale, theme)
+│       ├── locales/             # Språkfiler för flerspråksstöd
+│       ├── pages/               # Sidkomponenter (routes)
+│       ├── router/              # Routing-konfiguration
+│       ├── services/            # API-klienter och tjänster
+│       └── utils/               # Hjälpfunktioner (formatter, validation, cache)
+│
+└── docker/                      # Docker-filer för utveckling
 ```
+
+### Backend-struktur
+
+Backend är byggd med Spring Boot och följer en traditionell lagerarkitektur:
+
+- **Controller-lager**: Hanterar HTTP-requests och definierar API-endpoints
+- **Service-lager**: Innehåller affärslogik och koordinerar dataflödet
+- **Repository-lager**: Ansvarar för dataåtkomst mot MongoDB
+- **Model-lager**: Definierar datamodeller och entiteter
+
+### Frontend-struktur
+
+Frontend är byggd med React och använder följande struktur:
+
+- **Components**: Återanvändbara UI-komponenter som DataTable, Modal, etc.
+- **Pages**: Sidspecifika komponenter som representerar olika vyer (Apartments, Tenants, etc.)
+- **Services**: Funktioner för att interagera med backend-API
+- **Contexts**: Tillståndhantering för global data (autentisering, språk, tema)
+- **Utils**: Hjälpfunktioner för formatering, validering och cachehantering
 
 ## Kom igång
 
@@ -73,6 +112,38 @@ npm start
 
 ## API-dokumentation
 API-dokumentation finns tillgänglig på `http://localhost:8080/swagger-ui.html` när backend är igång. 
+
+## Kodstandarder (.cursorrules)
+
+Projektet använder en `.cursorrules`-fil för att definiera kodstandarder och riktlinjer som ska följas. Dessa regler hjälper till att upprätthålla kodkvalitet och konsekvent kodstil i hela projektet. Några av de viktigaste riktlinjerna är:
+
+### Backend-regler
+- Använd dependency injection istället för att skapa instanser manuellt
+- Lägg affärslogik i service-lagret, inte i controllers
+- Repository-klasser ska bara hantera databasoperationer
+- Använd miljövariabler för känslig data
+
+### Frontend-regler
+- Skriv komponenter som funktioner, inte klasser
+- Använd React hooks för state-hantering
+- Lägg API-anrop i services/-mappen, inte direkt i komponenter
+- Följ TailwindCSS-konventioner för styling
+- Skriv UI-komponenter modulärt och återanvändbart
+
+### Internationalisering
+- Språkfiler ska ha stöd för svenska, engelska, polska och ukrainska
+- Undvik hårdkodad text i komponenter
+
+### Säkerhetsriktlinjer
+- Använd JWT för autentisering
+- Lagra lösenord med bcrypt
+- Sanera och validera all användarinmatning
+
+### Kodstil och formattering
+- Använd Prettier för TypeScript och React-kod
+- Använd Checkstyle och Spotless för Java-kod
+- Undvik långa funktioner – håll dem under 50 rader
+- Namnge variabler och metoder beskrivande
 
 ## Konfigurera miljövariabler
 

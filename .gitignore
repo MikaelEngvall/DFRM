@@ -16,6 +16,7 @@
 .env.production
 *.env
 *.env.cmd
+.cursorrules
 backend/.env*
 frontend/.env*
 run-dev.ps1
