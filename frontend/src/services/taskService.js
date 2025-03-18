@@ -142,7 +142,6 @@ const updateTaskStatus = async (id, status) => {
 
 const getTasksByAssignedUser = async (userId, bypassCache = false) => {
   try {
-    // Kontrollera om data finns i cache och om vi inte explicit vill gå förbi cachen
     if (!bypassCache) {
       const cachedTasks = getFromCache(CACHE_KEYS.TASKS);
       if (cachedTasks) {

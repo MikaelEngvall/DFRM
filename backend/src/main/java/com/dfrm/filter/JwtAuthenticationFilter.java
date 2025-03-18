@@ -7,6 +7,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -24,8 +26,6 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @Component
 @RequiredArgsConstructor
@@ -91,7 +91,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             
             if (roleObj != null) {
                 String role = roleObj.toString();
-                logger.info("Extraherade roll från token: " + role);
+                log.info("Extraherade roll från token: " + role);
                 List<SimpleGrantedAuthority> authorities = new ArrayList<>();
                 if (role.startsWith("ROLE_")) {
                     authorities.add(new SimpleGrantedAuthority(role));
@@ -100,13 +100,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 }
                 return authorities;
             } else {
-                logger.warn("Ingen roll hittades i token");
+                log.warn("Ingen roll hittades i token");
             }
         } catch (Exception e) {
-            logger.error("Kunde inte extrahera roller från token", e);
+            log.error("Kunde inte extrahera roller från token", e);
         }
         
-        logger.warn("Returnerar tom rollsamling");
+        log.warn("Returnerar tom rollsamling");
         return Collections.emptyList();
     }
 } 

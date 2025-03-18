@@ -71,7 +71,8 @@ public class TaskController {
         
         Task existingTask = existingTaskOpt.get();
         
-        // Uppdatera endast fält som inte är null i patchTask
+        // Detta kunde ersättas med reflection eller en utility-metod
+        // som applicerar ändringar från patchTask till existingTask
         if (patchTask.getTitle() != null) {
             existingTask.setTitle(patchTask.getTitle());
         }

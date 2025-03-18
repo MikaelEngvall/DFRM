@@ -359,9 +359,6 @@ const Calendar = () => {
     const adjustedFirstDay = firstDayOfMonth === 0 ? 6 : firstDayOfMonth - 1;
     const days = [];
     
-    console.log('Renderar kalender för', year, month + 1);
-    console.log('Uppgifter att visa:', tasks.length);
-    
     for (let i = 0; i < adjustedFirstDay; i++) {
       days.push(
         <div 
