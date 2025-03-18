@@ -6,7 +6,7 @@ import {
   KeyIcon,
   ChartBarIcon,
 } from '@heroicons/react/24/outline';
-import { apartmentService, tenantService, keyService, pendingTaskService } from '../services';
+import { apartmentService, tenantService, keyService, pendingTaskService, interestService } from '../services';
 import { useLocale } from '../contexts/LocaleContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -26,6 +26,7 @@ const Dashboard = () => {
     vacantApartments: 0,
   });
   const [unreviewedCount, setUnreviewedCount] = useState(0);
+  const [unreviewedInterestCount, setUnreviewedInterestCount] = useState(0);
 
   useEffect(() => {
     // Om användaren är USER, omdirigera till kalendersidan
@@ -58,6 +59,10 @@ const Dashboard = () => {
       // Skicka true för att ignorera cache
       const count = await pendingTaskService.getUnreviewedCount(true);
       setUnreviewedCount(count);
+
+      // Hämta antal olästa intresseanmälningar
+      const interestCount = await interestService.getUnreviewedCount(true);
+      setUnreviewedInterestCount(interestCount);
     } catch (err) {
       console.error('Error fetching unreviewed count:', err);
     }
@@ -174,6 +179,10 @@ const Dashboard = () => {
     navigate('/pending-tasks');
   };
 
+  const handleInterestsClick = () => {
+    navigate('/interests');
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <h1 className="text-3xl font-cinzel mb-8 dark:text-white">{t('dashboard.title')}</h1>
@@ -221,13 +230,23 @@ const Dashboard = () => {
 
       <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Senaste aktiviteter */}
-        <div className="bg-white dark:bg-gray-900 shadow dark:shadow-[0_4px_6px_-1px_rgba(0,0,0,0.5),0_2px_4px_-2px_rgba(0,0,0,0.5)] rounded-lg p-6 dark:border dark:border-gray-700">
+        <div 
+          onClick={handleInterestsClick}
+          className="bg-white dark:bg-gray-900 shadow dark:shadow-[0_4px_6px_-1px_rgba(0,0,0,0.5),0_2px_4px_-2px_rgba(0,0,0,0.5)] rounded-lg p-6 dark:border dark:border-gray-700 cursor-pointer hover:shadow-lg dark:hover:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.6),0_4px_6px_-4px_rgba(0,0,0,0.6)] transition-shadow"
+        >
           <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
             {t('dashboard.sections.recentActivity')}
           </h2>
           <div className="space-y-4">
-            {/* Här kan vi lägga till en lista med senaste aktiviteter */}
-            <p className="text-gray-500 dark:text-gray-400">{t('dashboard.sections.noActivity')}</p>
+            {unreviewedInterestCount > 0 ? (
+              <p className="text-blue-600 dark:text-blue-400 font-medium">
+                {unreviewedInterestCount} {unreviewedInterestCount === 1 ? 
+                  t('dashboard.sections.newReportNeedReview') : 
+                  t('dashboard.sections.newReportsNeedReview')}
+              </p>
+            ) : (
+              <p className="text-gray-500 dark:text-gray-400">{t('dashboard.sections.noActivity')}</p>
+            )}
           </div>
         </div>
 

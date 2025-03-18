@@ -28,7 +28,7 @@ public class JavaMailProperties {
     @Value("${spring.mail.properties.mail.smtp.starttls.enable}")
     private boolean starttlsEnable;
     
-    // Separata konfigurationer för inkommande mail (IMAPS)
+    // Separata konfigurationer för inkommande mail (IMAPS) - felanmälan
     @Value("${EMAIL_PORT_LISTENING:993}")
     private int listeningPort;
     
@@ -37,4 +37,14 @@ public class JavaMailProperties {
     
     @Value("${EMAIL_PASSWORD_LISTENING:}")
     private String listeningPassword;
+    
+    // Separata konfigurationer för inkommande mail (IMAPS) - intresse
+    @Value("${EMAIL_PORT_INTRESSE:993}")
+    private int intressePort;
+    
+    @Value("${EMAIL_USER_INTRESSE:intresse@duggalsfastigheter.se}")
+    private String intresseUsername;
+    
+    @Value("${EMAIL_PASSWORD_INTRESSE:}")
+    private String intressePassword;
 } 

@@ -152,6 +152,12 @@ const Navigation = () => {
       roles: ['ADMIN', 'SUPERADMIN'] // Tagit bort MANAGER
     },
     {
+      name: t('navigation.interests'),
+      href: '/interests',
+      icon: ClipboardDocumentCheckIcon,
+      roles: ['ADMIN', 'SUPERADMIN']
+    },
+    {
       name: t('navigation.calendar'),
       href: '/calendar',
       icon: CalendarIcon,

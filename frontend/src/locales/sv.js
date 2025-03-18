@@ -53,6 +53,7 @@ const translations = {
     tasks: 'Uppgifter',
     calendar: 'Kalender',
     pendingTasks: 'Väntande uppgifter',
+    interests: 'Intresseanmälningar',
     logout: 'Logga ut',
     profile: 'Profil',
     settings: 'Inställningar',
@@ -546,6 +547,46 @@ const translations = {
     delete: 'Ta bort',
     unknownUser: 'Okänd användare',
   },
+
+  interests: {
+    title: 'Intresseanmälningar',
+    details: 'Detaljer för intresseanmälan',
+    showReviewed: 'Visa granskade',
+    fields: {
+      name: 'Namn',
+      email: 'E-post',
+      phone: 'Telefon',
+      contact: 'Kontaktinfo',
+      message: 'Meddelande',
+      apartment: 'Lägenhet',
+      pageUrl: 'Sidans URL',
+      received: 'Mottagen',
+      status: 'Status',
+      reviewedBy: 'Granskad av',
+      reviewedAt: 'Granskad den',
+      reviewComments: 'Granskningskommentarer',
+      userAgent: 'Användaragent',
+      remoteIp: 'IP-adress'
+    },
+    actions: {
+      review: 'Granska',
+      reject: 'Avvisa',
+    },
+    status: {
+      NEW: 'Ny',
+      REVIEWED: 'Granskad',
+      REJECTED: 'Avvisad',
+    },
+    messages: {
+      reviewSuccess: 'Intresseanmälan har granskats',
+      reviewError: 'Ett fel uppstod när intresseanmälan skulle granskas',
+      rejectSuccess: 'Intresseanmälan har avvisats',
+      rejectError: 'Ett fel uppstod när intresseanmälan skulle avvisas',
+    },
+    noInterests: 'Inga intresseanmälningar',
+    reviewRequest: 'Granska intresseanmälan',
+    addComments: 'Lägg till kommentarer',
+  }
 };
 
 export default translations; 

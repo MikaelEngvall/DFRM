@@ -50,16 +50,16 @@ export default {
     tenants: 'Tenants',
     keys: 'Keys',
     tasks: 'Tasks',
-    staff: 'Staff',
-    import: 'Import Data',
     calendar: 'Calendar',
     pendingTasks: 'Pending Tasks',
-    emailReports: 'Email Reports',
-    logout: 'Log out',
+    interests: 'Interest Inquiries',
+    logout: 'Log Out',
     profile: 'Profile',
     settings: 'Settings',
-    darkMode: 'Dark mode',
-    lightMode: 'Light mode',
+    darkMode: 'Dark Mode',
+    lightMode: 'Light Mode',
+    staff: 'Staff',
+    import: 'Import Data',
   },
 
   auth: {
@@ -521,4 +521,44 @@ export default {
     recipients: 'recipients',
     showRecipients: 'Show recipient list',
   },
+
+  interests: {
+    title: 'Interest Inquiries',
+    details: 'Interest Inquiry Details',
+    showReviewed: 'Show Reviewed',
+    fields: {
+      name: 'Name',
+      email: 'Email',
+      phone: 'Phone',
+      contact: 'Contact Info',
+      message: 'Message',
+      apartment: 'Apartment',
+      pageUrl: 'Page URL',
+      received: 'Received',
+      status: 'Status',
+      reviewedBy: 'Reviewed By',
+      reviewedAt: 'Reviewed At',
+      reviewComments: 'Review Comments',
+      userAgent: 'User Agent',
+      remoteIp: 'IP Address'
+    },
+    actions: {
+      review: 'Review',
+      reject: 'Reject',
+    },
+    status: {
+      NEW: 'New',
+      REVIEWED: 'Reviewed',
+      REJECTED: 'Rejected',
+    },
+    messages: {
+      reviewSuccess: 'Interest inquiry has been reviewed',
+      reviewError: 'An error occurred while reviewing the interest inquiry',
+      rejectSuccess: 'Interest inquiry has been rejected',
+      rejectError: 'An error occurred while rejecting the interest inquiry',
+    },
+    noInterests: 'No interest inquiries',
+    reviewRequest: 'Review Interest Inquiry',
+    addComments: 'Add Comments',
+  }
 }; 

@@ -15,6 +15,7 @@ import PendingTasks from './pages/PendingTasks';
 import Calendar from './pages/Calendar';
 import Staff from './pages/Staff';
 import Import from './pages/Import';
+import Interests from './pages/Interests';
 
 // Wrapper-komponent för sidor som kräver navigation
 const NavigationWrapper = ({ children }) => {
@@ -105,6 +106,14 @@ const App = () => {
                   <PrivateRoute>
                     <NavigationWrapper>
                       <PendingTasks />
+                    </NavigationWrapper>
+                  </PrivateRoute>
+                } />
+                
+                <Route path="/interests" element={
+                  <PrivateRoute requiredRoles={['ADMIN', 'SUPERADMIN']}>
+                    <NavigationWrapper>
+                      <Interests />
                     </NavigationWrapper>
                   </PrivateRoute>
                 } />

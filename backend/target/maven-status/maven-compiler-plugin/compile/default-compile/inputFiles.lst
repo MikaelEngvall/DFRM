@@ -17,6 +17,7 @@ C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\service\TranslationServi
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\service\KeyService.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\controller\ImportController.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\client\GoogleTranslateClient.java
+C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\model\Interest.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\config\EnvConfig.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\model\Task.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\config\SecurityConfig.java
@@ -35,10 +36,14 @@ C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\config\MailConfiguration
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\repository\UserRepository.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\controller\UserController.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\model\Key.java
+C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\repository\InterestRepository.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\service\TenantService.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\repository\ApartmentRepository.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\service\ApartmentService.java
+C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\controller\InterestController.java
+C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\service\InterestEmailListener.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\filter\JwtAuthenticationFilter.java
+C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\service\InterestService.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\config\AppConfig.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\controller\AuthController.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\controller\SecurityController.java
