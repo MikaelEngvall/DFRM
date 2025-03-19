@@ -3,7 +3,9 @@ import { useLocale } from '../contexts/LocaleContext';
 import { useAuth } from '../contexts/AuthContext';
 import Modal from '../components/Modal';
 import AlertModal from '../components/AlertModal';
+import Title from '../components/Title';
 import { interestService } from '../services';
+import { EnvelopeIcon } from '@heroicons/react/24/outline';
 
 const Interests = () => {
   const { t } = useLocale();
@@ -172,19 +174,17 @@ const Interests = () => {
   }
 
   return (
-    <div>
-      <div className="flex justify-between items-center p-4 bg-slate-800 text-white">
-        <h1 className="text-3xl font-bold uppercase">{t('interests.title')}</h1>
+    <div className="mx-auto p-4 bg-slate-800 min-h-screen">
+      <div className="mb-6">
+        <Title level="h1" className="mb-4">{t('interests.title')}</Title>
+        
+        {/* Felmeddelande */}
+        {error && (
+          <div className="bg-red-600 text-white p-3 mb-4 rounded-md">
+            {error}
+          </div>
+        )}
       </div>
-      
-      {error && (
-        <AlertModal
-          type="error"
-          title={t('common.error')}
-          message={error}
-          onClose={() => setError(null)}
-        />
-      )}
       
       {/* Filtersektion */}
       <div className="bg-slate-800 p-4 dark:bg-gray-800 shadow">

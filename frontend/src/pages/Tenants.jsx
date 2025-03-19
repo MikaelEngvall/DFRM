@@ -3,6 +3,7 @@ import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
 import AlertModal from '../components/AlertModal';
 import FormInput from '../components/FormInput';
+import Title from '../components/Title';
 import { PlusIcon, FunnelIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { tenantService, apartmentService, keyService } from '../services';
 import { formatShortDate, formatDateForInput } from '../utils/formatters';
@@ -589,9 +590,11 @@ const Tenants = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 bg-slate-800 min-h-screen">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-cinzel dark:text-white">{t('tenants.title')}</h1>
+        <Title level="h1">
+          {t('tenants.title')}
+        </Title>
         <div className="flex space-x-2">
           <button
             onClick={() => setShowFilters(!showFilters)}
@@ -624,6 +627,13 @@ const Tenants = () => {
           </button>
         </div>
       </div>
+      
+      {/* Felmeddelande */}
+      {error && (
+        <div className="bg-red-600 text-white p-3 mb-4 rounded-md">
+          {error}
+        </div>
+      )}
 
       {showFilters && (
         <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg mb-6 border border-gray-200 dark:border-gray-700">

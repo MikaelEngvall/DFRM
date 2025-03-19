@@ -4,6 +4,7 @@ import Modal from '../components/Modal';
 import AlertModal from '../components/AlertModal';
 import EmailModal from '../components/EmailModal';
 import FormInput from '../components/FormInput';
+import Title from '../components/Title';
 import { PlusIcon, FunnelIcon, XMarkIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
 import { apartmentService, tenantService, keyService, emailService } from '../services';
 import { useLocation } from 'react-router-dom';
@@ -798,9 +799,9 @@ const Apartments = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-cinzel dark:text-white">
+        <Title level="h1">
           {activeTab === 'vacant' ? t('apartments.vacant') : t('apartments.title')}
-        </h1>
+        </Title>
         <div className="flex space-x-2">
           {filteredTenantEmails.length > 0 && (
             <button

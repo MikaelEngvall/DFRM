@@ -3,6 +3,7 @@ import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
 import AlertModal from '../components/AlertModal';
 import FormInput from '../components/FormInput';
+import Title from '../components/Title';
 import { PlusIcon } from '@heroicons/react/24/outline';
 import { userService } from '../services';
 import { useLocale } from '../contexts/LocaleContext';
@@ -335,17 +336,19 @@ const Staff = () => {
   };
   
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="mx-auto p-4 bg-slate-800 min-h-screen">
+      <Title level="h1" className="mb-4">
+        {isRegularUser() ? t('staff.myProfile') : t('navigation.staff')}
+      </Title>
+      
+      {/* Felmeddelande */}
       {error && (
-        <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-md mb-4">
-          <p className="text-red-600 dark:text-red-400">{error}</p>
+        <div className="bg-red-600 text-white p-3 mb-4 rounded-md">
+          {error}
         </div>
       )}
       
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-cinzel dark:text-white">
-          {isRegularUser() ? t('staff.myProfile') : t('navigation.staff')}
-        </h1>
         {/* Visa bara "Lägg till" knappen om användaren inte är en vanlig användare */}
         {!isRegularUser() && (
           <button

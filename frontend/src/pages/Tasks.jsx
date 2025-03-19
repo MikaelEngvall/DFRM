@@ -4,6 +4,7 @@ import Modal from '../components/Modal';
 import AlertModal from '../components/AlertModal';
 import FormInput from '../components/FormInput';
 import Autocomplete from '../components/Autocomplete';
+import Title from '../components/Title';
 import { PlusIcon, PaperAirplaneIcon } from '@heroicons/react/24/outline';
 import { taskService, apartmentService, tenantService, userService, taskMessageService } from '../services';
 import { useLocale } from '../contexts/LocaleContext';
@@ -364,17 +365,19 @@ const Tasks = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      {error && (
-        <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-md mb-4">
-          <p className="text-red-600 dark:text-red-400">{error}</p>
-        </div>
-      )}
+    <div className="mx-auto p-4 bg-slate-800 min-h-screen">
+      <div className="mb-6">
+        <Title level="h1" className="mb-4">{t('tasks.title')}</Title>
+        
+        {/* Felmeddelande */}
+        {error && (
+          <div className="bg-red-600 text-white p-3 mb-4 rounded-md">
+            {error}
+          </div>
+        )}
+      </div>
       
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-cinzel dark:text-white">
-          {t('tasks.title')}
-        </h1>
         <button
           onClick={() => {
             resetForm();

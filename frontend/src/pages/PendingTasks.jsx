@@ -3,10 +3,11 @@ import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
 import AlertModal from '../components/AlertModal';
 import FormInput from '../components/FormInput';
+import Title from '../components/Title';
 import { pendingTaskService, pendingEmailReportService, taskService, apartmentService, tenantService, userService, taskMessageService } from '../services';
 import { useLocale } from '../contexts/LocaleContext';
 import { useAuth } from '../contexts/AuthContext';
-import { PaperAirplaneIcon } from '@heroicons/react/24/outline';
+import { PaperAirplaneIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
 import TaskMessages from '../components/TaskMessages';
 
 const PendingTasks = () => {
@@ -520,58 +521,53 @@ const PendingTasks = () => {
   const isEmailReport = selectedTask && !selectedTask.task && selectedTask.name;
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center p-4 bg-slate-800 text-white">
-        <h1 className="text-2xl font-bold uppercase">{t('pendingTasks.title')}</h1>
-        <div className="flex items-center">
-          <input
-            type="checkbox"
-            id="showApproved"
-            className="form-checkbox h-4 w-4 text-blue-600 transition duration-150 ease-in-out mr-2"
-            checked={showApproved}
-            onChange={handleShowApprovedChange}
-          />
-          <label htmlFor="showApproved" className="text-white">
-            {t('pendingTasks.showApproved')}
-          </label>
-          
-          <button
-            onClick={async () => {
-              try {
-                setIsLoading(true);
-                await pendingTaskService.checkEmails();
-                fetchData();
-              } catch (err) {
-                console.error('Fel vid läsning av felanmälnings-e-post:', err);
-                setError(t('pendingTasks.messages.emailCheckError'));
-              } finally {
-                setIsLoading(false);
-              }
-            }}
-            title={t('pendingTasks.actions.checkEmails')}
-            className="ml-4 bg-gray-600 hover:bg-gray-700 text-white p-2 rounded-md"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-          </button>
-        </div>
-      </div>
+    <div className="mx-auto p-4 bg-slate-800 min-h-screen">
+      <div className="mb-6">
+        <Title level="h1" className="mb-4">{t('pendingTasks.title')}</Title>
+        
+        {/* Felmeddelande */}
+        {error && (
+          <div className="bg-red-600 text-white p-3 mb-4 rounded-md">
+            {error}
+          </div>
+        )}
 
-      {error && (
-        <div className="bg-red-50 border-l-4 border-red-400 p-4 mb-4">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+        <div className="flex justify-between items-center p-4 bg-slate-800 text-white">
+          <div className="flex items-center">
+            <input
+              type="checkbox"
+              id="showApproved"
+              className="form-checkbox h-4 w-4 text-blue-600 transition duration-150 ease-in-out mr-2"
+              checked={showApproved}
+              onChange={handleShowApprovedChange}
+            />
+            <label htmlFor="showApproved" className="text-white">
+              {t('pendingTasks.showApproved')}
+            </label>
+            
+            <button
+              onClick={async () => {
+                try {
+                  setIsLoading(true);
+                  await pendingTaskService.checkEmails();
+                  fetchData();
+                } catch (err) {
+                  console.error('Fel vid läsning av felanmälnings-e-post:', err);
+                  setError(t('pendingTasks.messages.emailCheckError'));
+                } finally {
+                  setIsLoading(false);
+                }
+              }}
+              title={t('pendingTasks.actions.checkEmails')}
+              className="ml-4 bg-gray-600 hover:bg-gray-700 text-white p-2 rounded-md"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
               </svg>
-            </div>
-            <div className="ml-3">
-              <p className="text-sm text-red-700">{error}</p>
-            </div>
+            </button>
           </div>
         </div>
-      )}
+      </div>
 
       {getDisplayData().length === 0 ? (
         <div className="text-center py-10">
