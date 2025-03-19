@@ -5,8 +5,8 @@ import Modal from '../components/Modal';
 import AlertModal from '../components/AlertModal';
 import Title from '../components/Title';
 import DataTable from '../components/DataTable';
-import { interestService } from '../services';
-import { EnvelopeIcon, FunnelIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { interestService, taskService } from '../services';
+import { EnvelopeIcon, FunnelIcon, XMarkIcon, CalendarIcon, ClockIcon } from '@heroicons/react/24/outline';
 
 const Interests = () => {
   const { t } = useLocale();
@@ -19,10 +19,15 @@ const Interests = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [reviewComments, setReviewComments] = useState('');
+  const [showingDate, setShowingDate] = useState('');
+  const [showingTime, setShowingTime] = useState('');
+  const [responseMail, setResponseMail] = useState('');
+  const [isShowingModalOpen, setIsShowingModalOpen] = useState(false);
   const [filters, setFilters] = useState({
     status: ''
   });
   const [showFilters, setShowFilters] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
 
   // Formatera datum till lokalt format
   const formatDate = (dateString) => {
@@ -173,6 +178,48 @@ const Interests = () => {
     setShowReviewed(false);
     fetchInterests();
     fetchReviewedInterests();
+  };
+
+  // Hantera schemaläggning av visning
+  const handleScheduleShowing = async () => {
+    if (!showingDate || !showingTime || !responseMail) {
+      setError(t('interests.messages.fieldsRequired'));
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      
+      // Skapa en ISO-datumsträngformat för att lagra visningsdatum och tid
+      const showingDateTime = `${showingDate}T${showingTime}:00`;
+      
+      // Skicka e-post till intresseanmälaren och schemalägg visning
+      await interestService.scheduleShowing(selectedInterest.id, {
+        reviewedById: currentUser.id,
+        responseMessage: responseMail,
+        showingDateTime: showingDateTime
+      });
+      
+      // Uppdatera listor efter schemaläggning
+      fetchInterests();
+      fetchReviewedInterests();
+      
+      // Visa framgångsmeddelande och återställ formulär
+      setSuccessMessage(t('interests.messages.showingScheduled'));
+      setTimeout(() => setSuccessMessage(''), 3000);
+      
+      // Stäng modalen och återställ formuläret
+      setIsShowingModalOpen(false);
+      setResponseMail('');
+      setShowingDate('');
+      setShowingTime('');
+      setSelectedInterest(null);
+    } catch (err) {
+      console.error('Error scheduling showing:', err);
+      setError(t('interests.messages.showingError'));
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   if (isLoading) {
@@ -328,30 +375,18 @@ const Interests = () => {
               render: (received) => formatDate(received)
             },
             {
-              key: 'priority',
-              label: t('interests.fields.priority'),
-              render: (_, interest) => (
-                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                  ${interest.status === 'NEW' ? 'bg-yellow-500 text-white' : 
-                    interest.status === 'REVIEWED' ? 'bg-green-500 text-white' : 
-                    'bg-red-500 text-white'}`}>
-                  {interest.status === 'NEW' ? 'Akut' : 
-                   interest.status === 'REVIEWED' ? 'Låg' : 
-                   'Medium'}
-                </span>
-              )
-            },
-            {
               key: 'status',
               label: t('interests.fields.status'),
               render: (_, interest) => (
                 <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
                   ${interest.status === 'NEW' ? 'bg-slate-200 text-slate-800' : 
                     interest.status === 'REVIEWED' ? 'bg-green-200 text-green-800' : 
+                    interest.status === 'SHOWING_SCHEDULED' ? 'bg-purple-500 text-white' :
                     'bg-red-200 text-red-800'}`}>
-                  {interest.status === 'NEW' ? t('tasks.status.PENDING') : 
-                   interest.status === 'REVIEWED' ? t('tasks.status.COMPLETED') : 
-                   t('tasks.status.IN_PROGRESS')}
+                  {interest.status === 'NEW' ? t('interests.status.NEW') : 
+                   interest.status === 'REVIEWED' ? t('interests.status.REVIEWED') : 
+                   interest.status === 'SHOWING_SCHEDULED' ? t('interests.status.SHOWING_SCHEDULED') :
+                   t('interests.status.REJECTED')}
                 </span>
               )
             },
@@ -386,7 +421,7 @@ const Interests = () => {
                   </label>
                   <input 
                     type="text" 
-                    value={selectedInterest.name || '-'}
+                    value={formatText(selectedInterest.name) || '-'}
                     readOnly
                     className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-gray-900 dark:text-white"
                   />
@@ -398,7 +433,7 @@ const Interests = () => {
                   </label>
                   <input 
                     type="text" 
-                    value={selectedInterest.apartment || '-'}
+                    value={formatText(selectedInterest.apartment) || '-'}
                     readOnly
                     className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-gray-900 dark:text-white"
                   />
@@ -425,7 +460,7 @@ const Interests = () => {
                   <div className="flex">
                     <input 
                       type="text" 
-                      value={selectedInterest.email || '-'}
+                      value={formatText(selectedInterest.email) || '-'}
                       readOnly
                       className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-l-md shadow-sm text-gray-900 dark:text-white"
                     />
@@ -447,7 +482,7 @@ const Interests = () => {
                   </label>
                   <input 
                     type="text" 
-                    value={selectedInterest.phone || '-'}
+                    value={formatText(selectedInterest.phone) || '-'}
                     readOnly
                     className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-gray-900 dark:text-white"
                   />
@@ -478,6 +513,7 @@ const Interests = () => {
                   >
                     <option value="NEW">{t('interests.status.NEW')}</option>
                     <option value="REVIEWED">{t('interests.status.REVIEWED')}</option>
+                    <option value="SHOWING_SCHEDULED">{t('interests.status.SHOWING_SCHEDULED')}</option>
                     <option value="REJECTED">{t('interests.status.REJECTED')}</option>
                   </select>
                 </div>
@@ -530,6 +566,17 @@ const Interests = () => {
                   <div className="flex space-x-2 justify-end mt-4">
                     <button
                       type="button"
+                      className="inline-flex justify-center rounded-md border border-transparent bg-purple-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+                      onClick={() => {
+                        setIsReviewModalOpen(false);
+                        setIsShowingModalOpen(true);
+                      }}
+                      disabled={isLoading}
+                    >
+                      {isLoading ? t('common.loading') : t('interests.actions.scheduleShowing')}
+                    </button>
+                    <button
+                      type="button"
                       className="inline-flex justify-center rounded-md border border-transparent bg-green-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
                       onClick={handleReview}
                       disabled={isLoading}
@@ -547,9 +594,145 @@ const Interests = () => {
                   </div>
                 </>
               )}
+              
+              {/* Visa kommande visningstid om den är schemalagd */}
+              {selectedInterest.status === 'SHOWING_SCHEDULED' && selectedInterest.showingDateTime && (
+                <div className="bg-purple-100 dark:bg-purple-900 p-4 rounded-md">
+                  <h3 className="font-medium text-purple-800 dark:text-purple-100 flex items-center">
+                    <CalendarIcon className="h-5 w-5 mr-2" />
+                    {t('interests.showingScheduled')}
+                  </h3>
+                  <p className="text-purple-700 dark:text-purple-200 mt-2">
+                    {new Date(selectedInterest.showingDateTime).toLocaleDateString()} {t('common.at')} {new Date(selectedInterest.showingDateTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </Modal>
+      )}
+
+      {/* Modal för att schemalägga visning */}
+      {selectedInterest && (
+        <Modal
+          isOpen={isShowingModalOpen}
+          onClose={() => {
+            setIsShowingModalOpen(false);
+            setResponseMail('');
+            setShowingDate('');
+            setShowingTime('');
+          }}
+          title={t('interests.scheduleShowing')}
+        >
+          <div className="space-y-4 p-4 rounded">
+            <div className="grid grid-cols-1 gap-4">
+              {/* Visningsinformation */}
+              <div className="bg-blue-50 dark:bg-blue-900 p-3 rounded mb-4">
+                <p className="text-sm text-blue-800 dark:text-blue-100">
+                  {t('interests.showingInfo', { 
+                    name: formatText(selectedInterest.name) || '-', 
+                    apartment: formatText(selectedInterest.apartment) || '-' 
+                  })}
+                </p>
+              </div>
+              
+              {/* Visningstid och datum */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    {t('interests.fields.showingDate')}
+                  </label>
+                  <div className="flex">
+                    <span className="mt-1 inline-flex items-center px-3 py-2 border border-r-0 border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-white rounded-l-md">
+                      <CalendarIcon className="h-5 w-5" />
+                    </span>
+                    <input 
+                      type="date" 
+                      value={showingDate}
+                      onChange={(e) => setShowingDate(e.target.value)}
+                      className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-r-md shadow-sm text-gray-900 dark:text-white"
+                      required
+                    />
+                  </div>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    {t('interests.fields.showingTime')}
+                  </label>
+                  <div className="flex">
+                    <span className="mt-1 inline-flex items-center px-3 py-2 border border-r-0 border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-white rounded-l-md">
+                      <ClockIcon className="h-5 w-5" />
+                    </span>
+                    <input 
+                      type="time" 
+                      value={showingTime}
+                      onChange={(e) => setShowingTime(e.target.value)}
+                      className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-r-md shadow-sm text-gray-900 dark:text-white"
+                      required
+                    />
+                  </div>
+                </div>
+              </div>
+              
+              {/* E-post till intresseanmälaren */}
+              <div className="mb-3">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  {t('interests.fields.responseMessage')}
+                </label>
+                <textarea
+                  rows="6"
+                  className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-gray-900 dark:text-white"
+                  value={responseMail}
+                  onChange={(e) => setResponseMail(e.target.value)}
+                  placeholder={t('interests.responsePlaceholder')}
+                  required
+                ></textarea>
+                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  {t('interests.responseHelp')}
+                </p>
+              </div>
+
+              {/* Knappar */}
+              <div className="flex justify-end space-x-2 mt-4">
+                <button
+                  type="button"
+                  className="inline-flex justify-center rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 py-2 px-4 text-sm font-medium text-gray-700 dark:text-gray-200 shadow-sm hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                  onClick={() => {
+                    setIsShowingModalOpen(false);
+                    setIsReviewModalOpen(true);
+                  }}
+                >
+                  {t('common.cancel')}
+                </button>
+                <button
+                  type="button"
+                  className="inline-flex justify-center rounded-md border border-transparent bg-purple-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
+                  onClick={handleScheduleShowing}
+                  disabled={isLoading || !showingDate || !showingTime || !responseMail}
+                >
+                  {isLoading ? t('common.loading') : t('interests.actions.sendAndSchedule')}
+                </button>
+              </div>
+            </div>
+          </div>
+        </Modal>
+      )}
+      
+      {/* Framgångsmeddelande */}
+      {successMessage && (
+        <div className="fixed bottom-4 right-4 bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded shadow-lg z-50">
+          <div className="flex">
+            <div className="py-1">
+              <svg className="h-6 w-6 text-green-500 mr-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+              </svg>
+            </div>
+            <div>
+              <p className="font-bold">{successMessage}</p>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

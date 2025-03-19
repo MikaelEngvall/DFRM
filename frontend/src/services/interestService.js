@@ -73,5 +73,15 @@ export const interestService = {
       console.error('Error checking interest emails:', error);
       throw error;
     }
+  },
+  
+  scheduleShowing: async (id, data) => {
+    try {
+      const response = await api.post(`/interests/${id}/schedule-showing`, data);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to schedule showing:', error);
+      throw error;
+    }
   }
 }; 

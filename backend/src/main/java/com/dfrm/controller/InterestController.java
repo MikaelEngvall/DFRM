@@ -100,6 +100,25 @@ public class InterestController {
         }
     }
 
+    @PostMapping("/{id}/schedule-showing")
+    public ResponseEntity<Interest> scheduleShowing(
+            @PathVariable String id,
+            @RequestBody Map<String, Object> showingData) {
+        
+        try {
+            log.info("Schemalägger visning för intresse ID: {}, data: {}", id, showingData);
+            
+            Interest interest = interestService.scheduleShowing(id, showingData);
+            return ResponseEntity.ok(interest);
+        } catch (IllegalArgumentException e) {
+            log.error("Fel vid schemaläggning av visning: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
+        } catch (Exception e) {
+            log.error("Oväntat fel vid schemaläggning av visning: {}", e.getMessage(), e);
+            return ResponseEntity.status(500).build();
+        }
+    }
+
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteInterest(@PathVariable String id) {
         return interestService.getInterestById(id)

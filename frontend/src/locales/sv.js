@@ -38,6 +38,7 @@ const translations = {
     send: 'Skicka',
     sendEmail: 'Skicka e-post',
     openLink: 'Öppna länk',
+    at: 'kl.'
   },
 
   languages: {
@@ -560,6 +561,11 @@ const translations = {
     showReviewed: 'Visa granskade',
     filteredResults: 'intresseanmälningar hittades',
     addComments: 'Lägg till kommentarer',
+    scheduleShowing: 'Boka visningstid',
+    showingScheduled: 'Visningstid bokad',
+    showingInfo: 'Boka visning för {name} på lägenhet {apartment}',
+    responseHelp: 'Skriv ett meddelande till den intresserade personen. Datum och tid för visningen kommer att läggas till automatiskt i meddelandet.',
+    responsePlaceholder: 'Hej!\n\nTack för din intresseanmälan. Vi erbjuder en visning av lägenheten på datum och tid enligt nedan.\n\nVänligen bekräfta om tiden passar genom att svara på detta e-postmeddelande.\n\nMed vänliga hälsningar,',
     fields: {
       name: 'Namn',
       email: 'E-post',
@@ -573,24 +579,30 @@ const translations = {
       reviewedBy: 'Granskad av',
       reviewedAt: 'Granskad den',
       reviewComments: 'Granskningskommentarer',
-      userAgent: 'Användaragent',
-      remoteIp: 'IP-adress',
-      priority: 'Prioritet'
+      responseMessage: 'Meddelande till intressent',
+      showingDate: 'Visningsdatum',
+      showingTime: 'Visningstid'
     },
     status: {
       NEW: 'Ny',
       REVIEWED: 'Granskad',
-      REJECTED: 'Avvisad'
+      REJECTED: 'Avvisad',
+      SHOWING_SCHEDULED: 'Visning bokad'
     },
     actions: {
       review: 'Granska',
       reject: 'Avvisa',
-      checkEmails: 'Läs e-post'
+      checkEmails: 'Läs e-post',
+      scheduleShowing: 'Boka visning',
+      sendAndSchedule: 'Skicka och boka'
     },
     messages: {
       reviewError: 'Ett fel uppstod vid granskning av intresseanmälan',
       rejectError: 'Ett fel uppstod vid avvisning av intresseanmälan',
-      emailCheckError: 'Ett fel uppstod vid läsning av e-post'
+      emailCheckError: 'Ett fel uppstod vid läsning av e-post',
+      showingScheduled: 'Visningstid bokad och e-post skickat',
+      showingError: 'Ett fel uppstod vid bokning av visning',
+      fieldsRequired: 'Alla fält måste fyllas i'
     }
   }
 };

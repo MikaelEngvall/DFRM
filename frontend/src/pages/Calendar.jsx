@@ -278,6 +278,21 @@ const Calendar = () => {
     }
   };
 
+  const getPriorityDotColor = (priority) => {
+    switch (priority) {
+      case 'URGENT':
+        return 'bg-red-500 animate-blink';
+      case 'HIGH':
+        return 'bg-orange-500';
+      case 'MEDIUM':
+        return 'bg-yellow-500';
+      case 'LOW':
+        return 'bg-green-500';
+      default:
+        return 'bg-gray-400';
+    }
+  };
+
   const renderTaskItem = (task) => {
     // Statusfärger
     const getStatusColor = (status) => {
@@ -298,55 +313,45 @@ const Calendar = () => {
           return 'shadow-[0_0_8px_3px_rgba(239,68,68,0.4)]';
         case 'HIGH':
           return 'shadow-[0_0_6px_2px_rgba(234,179,8,0.4)]';
-        case 'MEDIUM':
-          return 'shadow-[0_0_5px_2px_rgba(59,130,246,0.3)]';
-        case 'LOW':
-          return 'shadow-[0_0_4px_1px_rgba(34,197,94,0.3)]';
         default:
           return '';
       }
     };
+
+    // Kontrollera om uppgiften är en visningstid
+    const isShowing = task.title && task.title.startsWith('Visning:');
     
-    // Prioritetsfärg för pricken
-    const getPriorityDotColor = (priority) => {
-      switch (priority) {
-        case 'URGENT':
-          return 'bg-red-500 animate-blink';
-        case 'HIGH':
-          return 'bg-orange-500';
-        case 'MEDIUM':
-          return 'bg-yellow-500';
-        case 'LOW':
-          return 'bg-green-500';
-        default:
-          return 'bg-gray-400';
-      }
-    };
-    
-    // Kombinera statusfärg med prioritetsglow
-    const cardClasses = `px-2 py-1 rounded text-xs mb-1 cursor-pointer transition-shadow ${getStatusColor(task.status)} ${getPriorityGlow(task.priority)}`;
-    
-    return (
-      <React.Fragment key={task.id}>
-        <style>{BLINKING_STYLE}</style>
-        <div
-          className={cardClasses}
-          onClick={(e) => {
-            e.stopPropagation();
-            handleTaskClick(task);
-          }}
+    // Specifik styling för visningar
+    if (isShowing) {
+      return (
+        <div 
+          key={task.id} 
+          onClick={() => handleTaskClick(task)}
+          className={`mb-1 p-2 rounded-md cursor-pointer bg-purple-600 text-white border border-purple-800 shadow-sm hover:shadow-md transition-shadow duration-200`}
         >
-          <div className="flex items-center justify-between">
-            <div className="truncate font-medium">{task.title}</div>
-            <div className={`w-3 h-3 rounded-full ml-1 shrink-0 ${getPriorityDotColor(task.priority)}`}></div>
+          <div className="flex justify-between items-start">
+            <div className="font-medium">{task.title}</div>
           </div>
-          {task.assignedToUser && (
-            <div className="truncate text-xs opacity-80">
-              {task.assignedToUser.firstName} {task.assignedToUser.lastName}
-            </div>
-          )}
+          <div className="text-xs mt-1 text-purple-100">{task.description}</div>
         </div>
-      </React.Fragment>
+      );
+    }
+    
+    // Normal rendering för vanliga uppgifter
+    return (
+      <div 
+        key={task.id} 
+        onClick={() => handleTaskClick(task)}
+        className={`mb-1 p-2 rounded-md cursor-pointer border ${getStatusColor(task.status)} ${getPriorityGlow(task.priority)} hover:shadow-md transition-shadow duration-200`}
+      >
+        <div className="flex justify-between items-start">
+          <div className="font-medium">{task.title}</div>
+          <div className={`h-2 w-2 rounded-full ${getPriorityDotColor(task.priority)}`}></div>
+        </div>
+        {task.description && (
+          <div className="text-xs mt-1 text-gray-500">{task.description}</div>
+        )}
+      </div>
     );
   };
 

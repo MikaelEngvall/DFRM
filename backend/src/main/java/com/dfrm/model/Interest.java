@@ -36,7 +36,11 @@ public class Interest {
     private Map<Language, String> messageTranslations;
     
     private LocalDateTime received;
-    private String status; // NEW, REVIEWED, REJECTED
+    private String status; // NEW, REVIEWED, REJECTED, SHOWING_SCHEDULED
+    
+    // Nya fält för visningstider
+    private LocalDateTime showingDateTime;
+    private String responseMessage;
     
     @DBRef
     @JsonIdentityInfo(
@@ -48,4 +52,13 @@ public class Interest {
     
     private LocalDateTime reviewedAt;
     private String reviewComments;
+    
+    // Referens till uppgiften som skapas för visningen
+    @DBRef
+    @JsonIdentityInfo(
+        generator = ObjectIdGenerators.PropertyGenerator.class,
+        property = "id"
+    )
+    @JsonIdentityReference(alwaysAsId = true)
+    private Task relatedTask;
 } 
