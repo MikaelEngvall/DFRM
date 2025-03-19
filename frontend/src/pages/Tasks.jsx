@@ -366,7 +366,7 @@ const Tasks = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 bg-slate-800 min-h-screen">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 min-h-screen">
       <div className="flex justify-between items-center mb-6">
         <Title level="h1">
           {t('tasks.title')}
