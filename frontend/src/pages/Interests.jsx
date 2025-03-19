@@ -4,8 +4,9 @@ import { useAuth } from '../contexts/AuthContext';
 import Modal from '../components/Modal';
 import AlertModal from '../components/AlertModal';
 import Title from '../components/Title';
+import DataTable from '../components/DataTable';
 import { interestService } from '../services';
-import { EnvelopeIcon } from '@heroicons/react/24/outline';
+import { EnvelopeIcon, FunnelIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
 const Interests = () => {
   const { t } = useLocale();
@@ -21,6 +22,7 @@ const Interests = () => {
   const [filters, setFilters] = useState({
     status: ''
   });
+  const [showFilters, setShowFilters] = useState(false);
 
   // Formatera datum till lokalt format
   const formatDate = (dateString) => {
@@ -174,73 +176,18 @@ const Interests = () => {
   }
 
   return (
-    <div className="mx-auto p-4 bg-slate-800 min-h-screen">
-      <div className="mb-6">
-        <Title level="h1" className="mb-4">{t('interests.title')}</Title>
-        
-        {/* Felmeddelande */}
-        {error && (
-          <div className="bg-red-600 text-white p-3 mb-4 rounded-md">
-            {error}
-          </div>
-        )}
-      </div>
-      
-      {/* Filtersektion */}
-      <div className="bg-slate-800 p-4 dark:bg-gray-800 shadow">
-        <h2 className="text-lg font-medium text-white mb-4">
-          {t('common.filters')}
-        </h2>
-        
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-          <div>
-            <label className="block text-sm font-medium text-white mb-1">
-              {t('interests.fields.status')}
-            </label>
-            <select
-              name="status"
-              value={filters.status}
-              onChange={handleFilterChange}
-              className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-            >
-              <option value="">{t('common.all')}</option>
-              <option value="NEW">{t('interests.status.NEW')}</option>
-              <option value="REVIEWED">{t('interests.status.REVIEWED')}</option>
-              <option value="REJECTED">{t('interests.status.REJECTED')}</option>
-            </select>
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-white mb-1">
-              {t('common.showReviewed')}
-            </label>
-            <div className="mt-2">
-              <input
-                type="checkbox"
-                id="showReviewed"
-                className="form-checkbox h-4 w-4 text-blue-600 transition duration-150 ease-in-out mr-2"
-                checked={showReviewed}
-                onChange={() => setShowReviewed(!showReviewed)}
-              />
-              <label htmlFor="showReviewed" className="text-white">
-                {t('interests.showReviewed')}
-              </label>
-            </div>
-          </div>
-        </div>
-        
-        <div className="flex justify-end space-x-2">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 min-h-screen">
+      <div className="flex justify-between items-center mb-6">
+        <Title level="h1">
+          {t('interests.title')}
+        </Title>
+        <div className="flex space-x-2">
           <button
-            onClick={clearFilters}
-            className="bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 py-2 px-4 rounded-md"
+            onClick={() => setShowFilters(!showFilters)}
+            className="flex items-center px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
           >
-            {t('common.clear')}
-          </button>
-          <button
-            onClick={applyFilters}
-            className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md"
-          >
-            {t('common.apply')}
+            <FunnelIcon className="h-5 w-5 mr-2" />
+            {t('common.filters')}
           </button>
           <button
             onClick={async () => {
@@ -257,81 +204,159 @@ const Interests = () => {
               }
             }}
             title={t('interests.actions.checkEmails')}
-            className="bg-gray-600 hover:bg-gray-700 text-white py-2 px-3 rounded-md"
+            className="bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 flex items-center"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
+            <EnvelopeIcon className="h-5 w-5 mr-2" />
+            {t('interests.actions.checkEmails')}
           </button>
         </div>
       </div>
+      
+      {/* Felmeddelande */}
+      {error && (
+        <div className="bg-red-600 text-white p-3 mb-4 rounded-md">
+          {error}
+        </div>
+      )}
+      
+      {showFilters && (
+        <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg mb-6 border border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-medium text-gray-900 dark:text-white">{t('common.filters')}</h2>
+            <button 
+              onClick={clearFilters}
+              className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center"
+            >
+              <XMarkIcon className="h-4 w-4 mr-1" />
+              {t('common.clear')}
+            </button>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                {t('interests.fields.status')}
+              </label>
+              <select
+                name="status"
+                value={filters.status}
+                onChange={handleFilterChange}
+                className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              >
+                <option value="">{t('common.all')}</option>
+                <option value="NEW">{t('interests.status.NEW')}</option>
+                <option value="REVIEWED">{t('interests.status.REVIEWED')}</option>
+                <option value="REJECTED">{t('interests.status.REJECTED')}</option>
+              </select>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                {t('common.showReviewed')}
+              </label>
+              <div className="mt-2">
+                <input
+                  type="checkbox"
+                  id="showReviewed"
+                  className="form-checkbox h-4 w-4 text-blue-600 transition duration-150 ease-in-out mr-2"
+                  checked={showReviewed}
+                  onChange={() => setShowReviewed(!showReviewed)}
+                />
+                <label htmlFor="showReviewed" className="text-gray-700 dark:text-gray-300">
+                  {t('interests.showReviewed')}
+                </label>
+              </div>
+            </div>
+          </div>
+          
+          <div className="mt-4 flex items-center justify-between">
+            <div className="text-sm text-gray-500 dark:text-gray-400">
+              {getDisplayData().length} {t('interests.filteredResults', { count: getDisplayData().length })}
+            </div>
+            <button
+              onClick={applyFilters}
+              className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md"
+            >
+              {t('common.apply')}
+            </button>
+          </div>
+        </div>
+      )}
 
       {isLoading ? (
         <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+        </div>
+      ) : getDisplayData().length === 0 ? (
+        <div className="text-center py-10">
+          <p className="text-gray-500 dark:text-gray-400">{t('interests.noInterests')}</p>
         </div>
       ) : (
-        <div className="bg-slate-800 w-full">
-          {getDisplayData().length === 0 ? (
-            <p className="p-4 text-center text-gray-300">{t('interests.noInterests')}</p>
-          ) : (
-            <table className="min-w-full bg-slate-800 text-white">
-              <thead className="uppercase">
-                <tr>
-                  <th className="p-4 text-left">{t('interests.fields.name')}</th>
-                  <th className="p-4 text-left">{t('interests.fields.contact')}</th>
-                  <th className="p-4 text-left">{t('interests.fields.apartment')}</th>
-                  <th className="p-4 text-left">{t('interests.fields.received').toUpperCase()}</th>
-                  <th className="p-4 text-left">{t('interests.fields.priority').toUpperCase()}</th>
-                  <th className="p-4 text-left">{t('interests.fields.status').toUpperCase()}</th>
-                  <th className="p-4 text-left">{t('interests.fields.reviewedBy').toUpperCase()}</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-700">
-                {getDisplayData().map((interest) => (
-                  <tr 
-                    key={interest.id} 
-                    className="hover:bg-slate-700 cursor-pointer"
-                    onClick={() => handleRowClick(interest)}
-                  >
-                    <td className="p-4">{interest.name || '-'}</td>
-                    <td className="p-4">
-                      <div>{interest.email || '-'}</div>
-                      <div className="text-sm text-gray-400">{interest.phone || '-'}</div>
-                    </td>
-                    <td className="p-4">{interest.apartment || '-'}</td>
-                    <td className="p-4">{formatDate(interest.received)}</td>
-                    <td className="p-4">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                        ${interest.status === 'NEW' ? 'bg-yellow-500' : 
-                          interest.status === 'REVIEWED' ? 'bg-green-500' : 
-                          'bg-red-500'}`}>
-                        {interest.status === 'NEW' ? 'Akut' : 
-                         interest.status === 'REVIEWED' ? 'Låg' : 
-                         'Medium'}
-                      </span>
-                    </td>
-                    <td className="p-4">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                        ${interest.status === 'NEW' ? 'bg-slate-200 text-slate-800' : 
-                          interest.status === 'REVIEWED' ? 'bg-green-200 text-green-800' : 
-                          'bg-red-200 text-red-800'}`}>
-                        {interest.status === 'NEW' ? t('tasks.status.PENDING') : 
-                         interest.status === 'REVIEWED' ? t('tasks.status.COMPLETED') : 
-                         t('tasks.status.IN_PROGRESS')}
-                      </span>
-                    </td>
-                    <td className="p-4">
-                      {interest.reviewedBy ? 
-                        `${interest.reviewedBy.firstName || 'undefined'} ${interest.reviewedBy.lastName || 'undefined'}` :
-                        ''}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
+        <DataTable
+          columns={[
+            {
+              key: 'name',
+              label: t('interests.fields.name'),
+              render: (name) => name || '-'
+            },
+            {
+              key: 'contact',
+              label: t('interests.fields.contact'),
+              render: (_, interest) => (
+                <div>
+                  <div>{interest.email || '-'}</div>
+                  <div className="text-sm text-gray-500 dark:text-gray-400">{interest.phone || '-'}</div>
+                </div>
+              )
+            },
+            {
+              key: 'apartment',
+              label: t('interests.fields.apartment'),
+              render: (apartment) => apartment || '-'
+            },
+            {
+              key: 'received',
+              label: t('interests.fields.received'),
+              render: (received) => formatDate(received)
+            },
+            {
+              key: 'priority',
+              label: t('interests.fields.priority'),
+              render: (_, interest) => (
+                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                  ${interest.status === 'NEW' ? 'bg-yellow-500 text-white' : 
+                    interest.status === 'REVIEWED' ? 'bg-green-500 text-white' : 
+                    'bg-red-500 text-white'}`}>
+                  {interest.status === 'NEW' ? 'Akut' : 
+                   interest.status === 'REVIEWED' ? 'Låg' : 
+                   'Medium'}
+                </span>
+              )
+            },
+            {
+              key: 'status',
+              label: t('interests.fields.status'),
+              render: (_, interest) => (
+                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                  ${interest.status === 'NEW' ? 'bg-slate-200 text-slate-800' : 
+                    interest.status === 'REVIEWED' ? 'bg-green-200 text-green-800' : 
+                    'bg-red-200 text-red-800'}`}>
+                  {interest.status === 'NEW' ? t('tasks.status.PENDING') : 
+                   interest.status === 'REVIEWED' ? t('tasks.status.COMPLETED') : 
+                   t('tasks.status.IN_PROGRESS')}
+                </span>
+              )
+            },
+            {
+              key: 'reviewedBy',
+              label: t('interests.fields.reviewedBy'),
+              render: (_, interest) => interest.reviewedBy ? 
+                `${interest.reviewedBy.firstName || ''} ${interest.reviewedBy.lastName || ''}` : ''
+            }
+          ]}
+          data={getDisplayData()}
+          onRowClick={handleRowClick}
+        />
       )}
 
       {/* Detaljmodal för intresseanmälan */}

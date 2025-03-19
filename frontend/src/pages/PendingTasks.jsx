@@ -521,19 +521,13 @@ const PendingTasks = () => {
   const isEmailReport = selectedTask && !selectedTask.task && selectedTask.name;
 
   return (
-    <div className="mx-auto p-4 bg-slate-800 min-h-screen">
-      <div className="mb-6">
-        <Title level="h1" className="mb-4">{t('pendingTasks.title')}</Title>
-        
-        {/* Felmeddelande */}
-        {error && (
-          <div className="bg-red-600 text-white p-3 mb-4 rounded-md">
-            {error}
-          </div>
-        )}
-
-        <div className="flex justify-between items-center p-4 bg-slate-800 text-white">
-          <div className="flex items-center">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 min-h-screen">
+      <div className="flex justify-between items-center mb-6">
+        <Title level="h1">
+          {t('pendingTasks.title')}
+        </Title>
+        <div className="flex space-x-2">
+          <div className="flex items-center mr-2">
             <input
               type="checkbox"
               id="showApproved"
@@ -541,33 +535,40 @@ const PendingTasks = () => {
               checked={showApproved}
               onChange={handleShowApprovedChange}
             />
-            <label htmlFor="showApproved" className="text-white">
+            <label htmlFor="showApproved" className="text-gray-700 dark:text-gray-300">
               {t('pendingTasks.showApproved')}
             </label>
-            
-            <button
-              onClick={async () => {
-                try {
-                  setIsLoading(true);
-                  await pendingTaskService.checkEmails();
-                  fetchData();
-                } catch (err) {
-                  console.error('Fel vid läsning av felanmälnings-e-post:', err);
-                  setError(t('pendingTasks.messages.emailCheckError'));
-                } finally {
-                  setIsLoading(false);
-                }
-              }}
-              title={t('pendingTasks.actions.checkEmails')}
-              className="ml-4 bg-gray-600 hover:bg-gray-700 text-white p-2 rounded-md"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-            </button>
           </div>
+          <button
+            onClick={async () => {
+              try {
+                setIsLoading(true);
+                await pendingTaskService.checkEmails();
+                fetchData();
+              } catch (err) {
+                console.error('Fel vid läsning av felanmälnings-e-post:', err);
+                setError(t('pendingTasks.messages.emailCheckError'));
+              } finally {
+                setIsLoading(false);
+              }
+            }}
+            title={t('pendingTasks.actions.checkEmails')}
+            className="bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 flex items-center"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            {t('pendingTasks.actions.checkEmails')}
+          </button>
         </div>
       </div>
+      
+      {/* Felmeddelande */}
+      {error && (
+        <div className="bg-red-600 text-white p-3 mb-4 rounded-md">
+          {error}
+        </div>
+      )}
 
       {getDisplayData().length === 0 ? (
         <div className="text-center py-10">

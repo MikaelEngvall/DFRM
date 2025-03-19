@@ -552,9 +552,11 @@ const translations = {
 
   interests: {
     title: 'Intresseanmälningar',
-    details: 'Detaljer för intresseanmälan',
+    emailReport: 'E-postrapport',
+    details: 'Detaljer om intresseanmälan',
+    noInterests: 'Inga intresseanmälningar att visa',
     showReviewed: 'Visa granskade',
-    noInterests: 'Inga intresseanmälningar tillgängliga',
+    filteredResults: 'intresseanmälningar hittades',
     addComments: 'Lägg till kommentarer',
     fields: {
       name: 'Namn',
