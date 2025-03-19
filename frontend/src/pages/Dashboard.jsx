@@ -230,14 +230,34 @@ const Dashboard = () => {
 
       <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
         {/* Senaste aktiviteter */}
-        <div 
-          onClick={handleInterestsClick}
-          className="bg-white dark:bg-gray-900 shadow dark:shadow-[0_4px_6px_-1px_rgba(0,0,0,0.5),0_2px_4px_-2px_rgba(0,0,0,0.5)] rounded-lg p-6 dark:border dark:border-gray-700 cursor-pointer hover:shadow-lg dark:hover:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.6),0_4px_6px_-4px_rgba(0,0,0,0.6)] transition-shadow"
-        >
-          <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-            {t('dashboard.sections.recentActivity')}
-          </h2>
-          <div className="space-y-4">
+        <div className="bg-white dark:bg-gray-900 shadow dark:shadow-[0_4px_6px_-1px_rgba(0,0,0,0.5),0_2px_4px_-2px_rgba(0,0,0,0.5)] rounded-lg p-6 dark:border dark:border-gray-700 hover:shadow-lg dark:hover:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.6),0_4px_6px_-4px_rgba(0,0,0,0.6)] transition-shadow">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-medium text-gray-900 dark:text-white">
+              {t('dashboard.sections.recentActivity')}
+            </h2>
+            <button
+              onClick={async (e) => {
+                e.stopPropagation();
+                try {
+                  setIsLoading(true);
+                  await interestService.checkEmails();
+                  fetchUnreviewedCount();
+                } catch (err) {
+                  console.error('Fel vid läsning av intresse-e-post:', err);
+                  setError(t('interests.messages.emailCheckError'));
+                } finally {
+                  setIsLoading(false);
+                }
+              }}
+              title={t('interests.actions.checkEmails')}
+              className="ml-4 bg-gray-600 hover:bg-gray-700 text-white p-2 rounded-md"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            </button>
+          </div>
+          <div className="space-y-4" onClick={handleInterestsClick} style={{ cursor: 'pointer' }}>
             {unreviewedInterestCount > 0 ? (
               <p className="text-blue-600 dark:text-blue-400 font-medium">
                 {unreviewedInterestCount} {unreviewedInterestCount === 1 ? 
@@ -251,14 +271,34 @@ const Dashboard = () => {
         </div>
 
         {/* Kommande händelser */}
-        <div 
-          onClick={handleEmailReportsClick}
-          className="bg-white dark:bg-gray-900 shadow dark:shadow-[0_4px_6px_-1px_rgba(0,0,0,0.5),0_2px_4px_-2px_rgba(0,0,0,0.5)] rounded-lg p-6 dark:border dark:border-gray-700 cursor-pointer hover:shadow-lg dark:hover:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.6),0_4px_6px_-4px_rgba(0,0,0,0.6)] transition-shadow"
-        >
-          <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-            {t('dashboard.sections.upcomingEvents')}
-          </h2>
-          <div className="space-y-4">
+        <div className="bg-white dark:bg-gray-900 shadow dark:shadow-[0_4px_6px_-1px_rgba(0,0,0,0.5),0_2px_4px_-2px_rgba(0,0,0,0.5)] rounded-lg p-6 dark:border dark:border-gray-700 hover:shadow-lg dark:hover:shadow-[0_10px_15px_-3px_rgba(0,0,0,0.6),0_4px_6px_-4px_rgba(0,0,0,0.6)] transition-shadow">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-medium text-gray-900 dark:text-white">
+              {t('dashboard.sections.upcomingEvents')}
+            </h2>
+            <button
+              onClick={async (e) => {
+                e.stopPropagation();
+                try {
+                  setIsLoading(true);
+                  await pendingTaskService.checkEmails();
+                  fetchUnreviewedCount();
+                } catch (err) {
+                  console.error('Fel vid läsning av felanmälnings-e-post:', err);
+                  setError(t('pendingTasks.messages.emailCheckError'));
+                } finally {
+                  setIsLoading(false);
+                }
+              }}
+              title={t('pendingTasks.actions.checkEmails')}
+              className="ml-4 bg-gray-600 hover:bg-gray-700 text-white p-2 rounded-md"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            </button>
+          </div>
+          <div className="space-y-4" onClick={handleEmailReportsClick} style={{ cursor: 'pointer' }}>
             {unreviewedCount > 0 ? (
               <p className="text-blue-600 dark:text-blue-400 font-medium">
                 {unreviewedCount} {unreviewedCount === 1 ? 

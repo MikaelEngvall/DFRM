@@ -339,7 +339,7 @@ const translations = {
   pendingTasks: {
     title: 'Väntande uppgifter',
     addNew: 'Skapa förfrågan',
-    details: 'Detaljer för väntande uppgift',
+    details: 'Uppgiftsdetaljer',
     showApproved: 'Visa godkända',
     emailReport: 'Väntande uppgift',
     fields: {
@@ -361,16 +361,17 @@ const translations = {
     actions: {
       approve: 'Godkänn',
       reject: 'Avvisa',
-      review: 'Granska',
+      checkEmails: 'Läs e-post'
     },
     messages: {
       approveSuccess: 'Uppgiften har godkänts',
-      approveError: 'Ett fel uppstod när uppgiften skulle godkännas',
+      approveError: 'Ett fel uppstod vid godkännande av uppgiften',
       rejectSuccess: 'Uppgiften har avvisats',
-      rejectError: 'Ett fel uppstod när uppgiften skulle avvisas',
+      rejectError: 'Ett fel uppstod vid avvisning av uppgiften',
       createSuccess: 'Förfrågan har skapats',
       createError: 'Ett fel uppstod när förfrågan skulle skapas',
       approvedTasksError: 'Ett fel uppstod när godkända uppgifter skulle hämtas',
+      emailCheckError: 'Ett fel uppstod vid läsning av e-post'
     },
     noTasks: 'Inga väntande uppgifter',
     noDescription: 'Ingen beskrivning',
@@ -552,6 +553,8 @@ const translations = {
     title: 'Intresseanmälningar',
     details: 'Detaljer för intresseanmälan',
     showReviewed: 'Visa granskade',
+    noInterests: 'Inga intresseanmälningar tillgängliga',
+    addComments: 'Lägg till kommentarer',
     fields: {
       name: 'Namn',
       email: 'E-post',
@@ -566,26 +569,24 @@ const translations = {
       reviewedAt: 'Granskad den',
       reviewComments: 'Granskningskommentarer',
       userAgent: 'Användaragent',
-      remoteIp: 'IP-adress'
-    },
-    actions: {
-      review: 'Granska',
-      reject: 'Avvisa',
+      remoteIp: 'IP-adress',
+      priority: 'Prioritet'
     },
     status: {
       NEW: 'Ny',
       REVIEWED: 'Granskad',
-      REJECTED: 'Avvisad',
+      REJECTED: 'Avvisad'
+    },
+    actions: {
+      review: 'Granska',
+      reject: 'Avvisa',
+      checkEmails: 'Läs e-post'
     },
     messages: {
-      reviewSuccess: 'Intresseanmälan har granskats',
-      reviewError: 'Ett fel uppstod när intresseanmälan skulle granskas',
-      rejectSuccess: 'Intresseanmälan har avvisats',
-      rejectError: 'Ett fel uppstod när intresseanmälan skulle avvisas',
-    },
-    noInterests: 'Inga intresseanmälningar',
-    reviewRequest: 'Granska intresseanmälan',
-    addComments: 'Lägg till kommentarer',
+      reviewError: 'Ett fel uppstod vid granskning av intresseanmälan',
+      rejectError: 'Ett fel uppstod vid avvisning av intresseanmälan',
+      emailCheckError: 'Ett fel uppstod vid läsning av e-post'
+    }
   }
 };
 

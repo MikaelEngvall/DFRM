@@ -19,6 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 public class InterestService {
     
     private final InterestRepository interestRepository;
+    private final InterestEmailListener interestEmailListener;
     
     public List<Interest> getAllInterests() {
         return interestRepository.findAll();
@@ -29,39 +30,41 @@ public class InterestService {
     }
     
     public List<Interest> findInterestsForReview() {
-        return interestRepository.findByReviewedByIsNull();
+        return interestRepository.findByStatusOrderByReceivedDesc("NEW");
     }
     
     public List<Interest> findReviewedInterests() {
-        return interestRepository.findByReviewedByIsNotNullOrderByReviewedAtDesc();
+        return interestRepository.findByStatusNotOrderByReviewedAtDesc("NEW");
     }
     
-    public Interest reviewInterest(String id, User reviewedBy, String reviewComments) {
-        Optional<Interest> interestOpt = interestRepository.findById(id);
-        if (interestOpt.isEmpty()) {
-            throw new IllegalArgumentException("Intresse med ID " + id + " hittades inte");
+    public Interest reviewInterest(String id, User reviewedBy, String comment) {
+        Interest interest = interestRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Interest not found"));
+        
+        if (!"NEW".equals(interest.getStatus())) {
+            throw new IllegalArgumentException("Interest is already reviewed");
         }
         
-        Interest interest = interestOpt.get();
+        interest.setStatus("REVIEWED");
         interest.setReviewedBy(reviewedBy);
         interest.setReviewedAt(LocalDateTime.now());
-        interest.setReviewComments(reviewComments);
-        interest.setStatus("REVIEWED");
+        interest.setReviewComments(comment);
         
         return interestRepository.save(interest);
     }
     
-    public Interest rejectInterest(String id, User reviewedBy, String reviewComments) {
-        Optional<Interest> interestOpt = interestRepository.findById(id);
-        if (interestOpt.isEmpty()) {
-            throw new IllegalArgumentException("Intresse med ID " + id + " hittades inte");
+    public Interest rejectInterest(String id, User reviewedBy, String comment) {
+        Interest interest = interestRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Interest not found"));
+        
+        if (!"NEW".equals(interest.getStatus())) {
+            throw new IllegalArgumentException("Interest is already reviewed");
         }
         
-        Interest interest = interestOpt.get();
+        interest.setStatus("REJECTED");
         interest.setReviewedBy(reviewedBy);
         interest.setReviewedAt(LocalDateTime.now());
-        interest.setReviewComments(reviewComments);
-        interest.setStatus("REJECTED");
+        interest.setReviewComments(comment);
         
         return interestRepository.save(interest);
     }
@@ -74,7 +77,9 @@ public class InterestService {
         return interestRepository.countByStatus(status);
     }
     
-    public List<Interest> findInterestsByStatus(String status) {
-        return interestRepository.findByStatus(status);
+    public void checkEmails() {
+        log.info("Manuell läsning av intresse-e-post initierad");
+        interestEmailListener.checkEmails();
+        log.info("Manuell läsning av intresse-e-post slutförd");
     }
 } 

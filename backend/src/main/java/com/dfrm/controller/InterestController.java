@@ -112,7 +112,18 @@ public class InterestController {
 
     @GetMapping("/unreview-count")
     public ResponseEntity<Long> getUnreviewedCount() {
-        long newCount = interestService.countByStatus("NEW");
-        return ResponseEntity.ok(newCount);
+        long count = interestService.countByStatus("NEW");
+        return ResponseEntity.ok(count);
+    }
+    
+    @PostMapping("/check-emails")
+    public ResponseEntity<String> checkEmails() {
+        try {
+            interestService.checkEmails();
+            return ResponseEntity.ok("E-postläsning av intresseanmälningar har utförts");
+        } catch (Exception e) {
+            log.error("Fel vid manuell läsning av intresse-e-post: {}", e.getMessage());
+            return ResponseEntity.status(500).body("Fel vid läsning av e-post: " + e.getMessage());
+        }
     }
 } 

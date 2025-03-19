@@ -1,6 +1,11 @@
 package com.dfrm.service;
 
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.springframework.core.env.Environment;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -8,6 +13,8 @@ import org.springframework.stereotype.Service;
 
 import com.dfrm.client.GoogleTranslateClient;
 import com.dfrm.config.JavaMailProperties;
+import com.dfrm.model.Language;
+import com.dfrm.model.PendingTask;
 import com.dfrm.repository.ApartmentRepository;
 import com.dfrm.repository.PendingTaskRepository;
 import com.dfrm.repository.TenantRepository;
@@ -105,7 +112,9 @@ public class EmailListener {
             Session session = Session.getInstance(properties);
             session.setDebug(isDev);
             
-            log.info("Connecting to mail server with username: {}", mailProperties.getListeningUsername());
+            log.info("Connecting to mail server with username: {} and password length: {}", 
+                mailProperties.getListeningUsername(), 
+                mailProperties.getListeningPassword() != null ? mailProperties.getListeningPassword().length() : 0);
             
             // Använd try-with-resources för att säkerställa att Store stängs ordentligt
             try (Store store = session.getStore("imaps")) {
@@ -135,16 +144,24 @@ public class EmailListener {
                     try {
                         // Kontrollera reply-to adressen före bearbetning
                         Address[] replyTo = message.getReplyTo();
+                        log.info("Processing email with subject: {}", message.getSubject());
+                        
                         boolean validReplyTo = false;
                         
                         if (replyTo != null && replyTo.length > 0) {
+                            log.info("Email has {} reply-to addresses", replyTo.length);
                             for (Address address : replyTo) {
-                                if (address instanceof InternetAddress 
-                                    && TARGET_REPLY_TO.equals(((InternetAddress) address).getAddress())) {
-                                    validReplyTo = true;
-                                    break;
+                                if (address instanceof InternetAddress) {
+                                    log.info("Reply-To address: {}", ((InternetAddress) address).getAddress());
+                                    if (TARGET_REPLY_TO.equals(((InternetAddress) address).getAddress())) {
+                                        log.info("Found matching reply-to address, will process email");
+                                        validReplyTo = true;
+                                        break;
+                                    }
                                 }
                             }
+                        } else {
+                            log.info("Email has no reply-to addresses");
                         }
                         
                         if (validReplyTo) {
@@ -175,7 +192,281 @@ public class EmailListener {
         // 4. enrichTaskData(PendingTask) -> PendingTask (hitta tenant/apartment)
         // 5. saveAndTranslate(PendingTask) -> void
         
-        // ... mycket kod ...
+        log.info("Bearbetar felanmälan...");
+        
+        String subject = message.getSubject();
+        String contentText = getTextFromMessage(message);
+        
+        log.info("Ämne: {}", subject);
+        log.info("Innehåll (första 100 tecken): {}", 
+            contentText.length() > 100 ? contentText.substring(0, 100) + "..." : contentText);
+        
+        // Skapa PendingTask-objekt
+        PendingTask pendingTask = new PendingTask();
+        pendingTask.setStatus("NEW");
+        pendingTask.setReceived(LocalDateTime.now());
+        
+        // Analysera e-postinnehållet för att extrahera information
+        Map<String, String> extractedInfo = extractDetailsFromEmail(contentText);
+        
+        // Fyll i PendingTask med extraherad information
+        pendingTask.setName(extractedInfo.getOrDefault("name", ""));
+        pendingTask.setEmail(extractedInfo.getOrDefault("email", ""));
+        pendingTask.setPhone(extractedInfo.getOrDefault("phone", ""));
+        pendingTask.setDescription(extractedInfo.getOrDefault("message", ""));
+        pendingTask.setApartment(extractedInfo.getOrDefault("apartment", subject));
+        
+        // Försök matcha tenant och apartment baserat på e-post och telefon
+        enrichTaskData(pendingTask);
+        
+        // Sätt svenskt språk som standard
+        pendingTask.setDescriptionLanguage(Language.SV);
+        
+        // Detektera språk och översätt vid behov
+        detectLanguageAndTranslate(pendingTask);
+        
+        // Spara felanmälan i databasen
+        PendingTask savedTask = pendingTaskRepository.save(pendingTask);
+        log.info("Felanmälan sparad med ID: {}", savedTask.getId());
+        
+        // Markera e-postmeddelandet som läst
+        message.setFlag(jakarta.mail.Flags.Flag.SEEN, true);
+    }
+    
+    private Map<String, String> extractDetailsFromEmail(String content) {
+        log.info("Extraherar detaljer från e-postinnehåll...");
+        Map<String, String> details = new HashMap<>();
+        
+        // Rensa HTML-innehåll om det finns
+        content = cleanHtmlContent(content);
+        
+        // Ersätt <br> med radbrytningar för att hantera olika format
+        content = content.replaceAll("<br>", "\n").replaceAll("<br/>", "\n").replaceAll("<br />", "\n");
+        
+        log.info("Rensat innehåll med radbrytningar: \n{}", content);
+        
+        // Extrahera format 1: Namn: Tuva Andersson, E-post: ...
+        if (content.contains("Namn:") && content.contains("E-post:")) {
+            log.info("Detekterade strukturerat format med 'Namn:', 'E-post:' etc.");
+            
+            // Extrahera namn
+            Pattern namePattern = Pattern.compile("Namn:\\s*([^\\n]+)\\s*", Pattern.CASE_INSENSITIVE);
+            Matcher nameMatcher = namePattern.matcher(content);
+            if (nameMatcher.find()) {
+                details.put("name", nameMatcher.group(1).trim());
+                log.info("Extraherat namn: {}", details.get("name"));
+            }
+            
+            // Extrahera e-post
+            Pattern emailPattern = Pattern.compile("E-post:\\s*([^\\n]+)\\s*", Pattern.CASE_INSENSITIVE);
+            Matcher emailMatcher = emailPattern.matcher(content);
+            if (emailMatcher.find()) {
+                details.put("email", emailMatcher.group(1).trim());
+                log.info("Extraherad e-post: {}", details.get("email"));
+            }
+            
+            // Extrahera telefon
+            Pattern phonePattern = Pattern.compile("Tel(?:efon)?(?:nummer)?:\\s*([^\\n]+)\\s*", Pattern.CASE_INSENSITIVE);
+            Matcher phoneMatcher = phonePattern.matcher(content);
+            if (phoneMatcher.find()) {
+                details.put("phone", phoneMatcher.group(1).trim());
+                log.info("Extraherat telefonnummer: {}", details.get("phone"));
+            }
+            
+            // Extrahera lägenhet
+            Pattern apartmentPattern = Pattern.compile("Lägenhet(?:snummer)?:\\s*([^\\n]+)\\s*", Pattern.CASE_INSENSITIVE);
+            Matcher apartmentMatcher = apartmentPattern.matcher(content);
+            if (apartmentMatcher.find()) {
+                details.put("apartment", apartmentMatcher.group(1).trim());
+                log.info("Extraherad lägenhet: {}", details.get("apartment"));
+            }
+            
+            // Extrahera meddelande
+            Pattern messagePattern = Pattern.compile("Meddelande:\\s*([^-]+)\\s*---", Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
+            Matcher messageMatcher = messagePattern.matcher(content);
+            if (messageMatcher.find()) {
+                details.put("message", messageMatcher.group(1).trim());
+                log.info("Extraherat meddelande (första 50 tecken): {}", 
+                    details.get("message").length() > 50 ? details.get("message").substring(0, 50) + "..." : details.get("message"));
+            }
+        } 
+        // Format 2: Fritext utan tydliga markörer
+        else {
+            log.info("Detekterade ostrukturerat format, försöker extrahera information");
+            
+            // Dela upp texten på rader
+            String[] lines = content.split("\\r?\\n");
+            
+            // Hitta e-post (första raden som innehåller @)
+            for (String line : lines) {
+                if (line.contains("@")) {
+                    Pattern emailPattern = Pattern.compile("\\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}\\b");
+                    Matcher emailMatcher = emailPattern.matcher(line);
+                    if (emailMatcher.find()) {
+                        details.put("email", emailMatcher.group());
+                        log.info("Extraherad e-post: {}", details.get("email"));
+                        break;
+                    }
+                }
+            }
+            
+            // Hitta telefonnummer
+            for (String line : lines) {
+                Pattern phonePattern = Pattern.compile("\\b(?:\\+?\\d{1,3}[- ]?)?\\d{6,12}\\b");
+                Matcher phoneMatcher = phonePattern.matcher(line);
+                if (phoneMatcher.find()) {
+                    details.put("phone", phoneMatcher.group());
+                    log.info("Extraherat telefonnummer: {}", details.get("phone"));
+                    break;
+                }
+            }
+            
+            // Hitta lägenhetsnummer (rader som innehåller "lgh", "lägenhet", etc.)
+            for (String line : lines) {
+                if (line.toLowerCase().contains("lgh") || line.toLowerCase().contains("lägenhet") ||
+                    line.toLowerCase().contains("apartment")) {
+                    Pattern apartmentPattern = Pattern.compile("\\b(?:lgh|lägenhet|apartment)\\s*[nr\\.]*\\s*[:]*\\s*(\\d+\\w*|\\w+\\d+)\\b", 
+                        Pattern.CASE_INSENSITIVE);
+                    Matcher apartmentMatcher = apartmentPattern.matcher(line);
+                    if (apartmentMatcher.find()) {
+                        details.put("apartment", apartmentMatcher.group(1));
+                        log.info("Extraherad lägenhet: {}", details.get("apartment"));
+                        break;
+                    }
+                }
+            }
+            
+            // Extrahera meddelande (resten av innehållet)
+            StringBuilder messageBuilder = new StringBuilder();
+            boolean foundMessage = false;
+            int messageLineCount = 0;
+            
+            for (String line : lines) {
+                // Ignorera linjer som troligen är metadata
+                if (line.contains("---") || line.contains("Datum:") || line.contains("Sidans URL:") || 
+                    line.contains("Användaragent:") || line.contains("Fjärr IP:") || line.contains("Drivs med:")) {
+                    // Om vi redan har börjat samla meddelandet, avbryt när vi når metadata
+                    if (foundMessage) {
+                        break;
+                    } else {
+                        continue;
+                    }
+                }
+                
+                if (line.contains("Problem:") || line.contains("Felanmälan:") || 
+                    line.contains("Fel:") || line.contains("Beskrivning:") ||
+                    line.contains("Meddelande:")) {
+                    foundMessage = true;
+                    messageLineCount++;
+                    // Ta bort markörer från början av meddelandet
+                    line = line.replaceAll("^(Problem|Felanmälan|Fel|Beskrivning|Meddelande):\\s*", "");
+                }
+                
+                if ((foundMessage || messageLineCount == 0) && !line.isEmpty() && 
+                    !line.contains("Med vänlig hälsning") && 
+                    !line.contains("Skickat från")) {
+                    messageBuilder.append(line).append("\n");
+                    if (!foundMessage) {
+                        messageLineCount++;
+                    }
+                }
+            }
+            
+            // Om vi inte hittade någon specifik meddelandedel, använd första delen av innehållet
+            // men maximalt 5 rader för att undvika att få med för mycket
+            if (messageBuilder.length() == 0) {
+                int lineCount = 0;
+                for (String line : lines) {
+                    if (!line.isEmpty() && lineCount < 5 && 
+                        !line.contains("---") && !line.contains("Datum:") && 
+                        !line.contains("URL:") && !line.contains("Agent:") &&
+                        !line.contains("IP:")) {
+                        messageBuilder.append(line).append("\n");
+                        lineCount++;
+                    }
+                }
+                details.put("message", messageBuilder.toString().trim());
+            } else {
+                details.put("message", messageBuilder.toString().trim());
+            }
+            
+            log.info("Extraherat meddelande (första 50 tecken): {}", 
+                details.get("message") != null && details.get("message").length() > 50 ? 
+                details.get("message").substring(0, 50) + "..." : details.get("message"));
+        }
+        
+        return details;
+    }
+    
+    private void enrichTaskData(PendingTask pendingTask) {
+        // Försök hitta tenant baserat på e-post
+        if (pendingTask.getEmail() != null && !pendingTask.getEmail().isEmpty()) {
+            tenantRepository.findByEmail(pendingTask.getEmail())
+                .ifPresent(tenant -> {
+                    pendingTask.setTenantId(tenant.getId());
+                    log.info("Matchade tenant med ID {} baserat på e-post", tenant.getId());
+                    
+                    // Om tenant hittades, försök hitta deras lägenhet om lägenhetsnummer saknas
+                    if (pendingTask.getApartment() == null || pendingTask.getApartment().isEmpty()) {
+                        // Här skulle vi kunna ha en metod som hittar lägenheter för en tenant,
+                        // men eftersom denna inte finns implementerar vi en enkel fallback
+                        log.info("Kunde inte hitta lägenhetsnummer baserat på tenant");
+                    }
+                });
+        }
+        
+        // Om ingen tenant hittades via e-post, kan vi inte göra mer eftersom
+        // det inte finns någon findByPhone-metod i TenantRepository
+        if (pendingTask.getTenantId() == null && pendingTask.getPhone() != null && !pendingTask.getPhone().isEmpty()) {
+            log.info("Kunde inte hitta tenant baserat på telefon: {}", pendingTask.getPhone());
+        }
+        
+        // Om ett lägenhetsnummer angivits, försök hitta lägenhet direkt
+        // Använd nu findAll och hantera flera resultat med stream
+        if (pendingTask.getApartment() != null && !pendingTask.getApartment().isEmpty()) {
+            try {
+                // I en fullständig implementation skulle vi använda ett anpassat repository-query
+                // som findAllByApartmentNumber, men vi använder en workaround här
+                apartmentRepository.findAll().stream()
+                    .filter(apt -> pendingTask.getApartment().equals(apt.getApartmentNumber()))
+                    .findFirst()
+                    .ifPresent(apartment -> {
+                        pendingTask.setApartmentId(apartment.getId());
+                        log.info("Matchade lägenhet med ID {} baserat på lägenhetsnummer", apartment.getId());
+                    });
+            } catch (Exception e) {
+                log.error("Fel vid sökning efter lägenhet: {}", e.getMessage());
+                // Fortsätt ändå, vi behöver inte länka till en specifik lägenhet för att skapa en felanmälan
+            }
+        }
+    }
+    
+    private void detectLanguageAndTranslate(PendingTask pendingTask) {
+        if (pendingTask.getDescription() == null || pendingTask.getDescription().isEmpty()) {
+            return;
+        }
+        
+        try {
+            // Detektera språk om det inte redan är satt
+            if (pendingTask.getDescriptionLanguage() == null) {
+                Language detectedLanguage = translationService.detectLanguage(pendingTask.getDescription());
+                pendingTask.setDescriptionLanguage(detectedLanguage);
+                log.info("Detekterade språk: {}", detectedLanguage);
+            }
+            
+            // Översätt till svenska om det inte redan är på svenska
+            if (pendingTask.getDescriptionLanguage() != Language.SV) {
+                String translatedMessage = translationService.translateText(
+                    pendingTask.getDescription(), 
+                    pendingTask.getDescriptionLanguage(), 
+                    Language.SV
+                );
+                pendingTask.setDescriptionTranslations(Map.of(Language.SV, translatedMessage));
+                log.info("Översatte meddelande från {} till svenska", pendingTask.getDescriptionLanguage());
+            }
+        } catch (Exception e) {
+            log.error("Fel vid språkdetektering/översättning: {}", e.getMessage());
+        }
     }
 
     private String getTextFromMessage(Message message) throws Exception {

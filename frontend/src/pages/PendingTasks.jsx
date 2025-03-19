@@ -521,20 +521,40 @@ const PendingTasks = () => {
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-cinzel dark:text-white">
-          {!showApproved ? t('pendingTasks.title') : t('pendingTasks.title')}
-        </h1>
-        <div className="flex space-x-2 items-center">
-          <label className="inline-flex items-center text-sm">
-            <input
-              type="checkbox"
-              className="form-checkbox h-4 w-4 text-blue-600"
-              checked={showApproved}
-              onChange={handleShowApprovedChange}
-            />
-            <span className="ml-2 text-gray-700 dark:text-gray-300">{t('pendingTasks.showApproved')}</span>
+      <div className="flex justify-between items-center p-4 bg-slate-800 text-white">
+        <h1 className="text-2xl font-bold uppercase">{t('pendingTasks.title')}</h1>
+        <div className="flex items-center">
+          <input
+            type="checkbox"
+            id="showApproved"
+            className="form-checkbox h-4 w-4 text-blue-600 transition duration-150 ease-in-out mr-2"
+            checked={showApproved}
+            onChange={handleShowApprovedChange}
+          />
+          <label htmlFor="showApproved" className="text-white">
+            {t('pendingTasks.showApproved')}
           </label>
+          
+          <button
+            onClick={async () => {
+              try {
+                setIsLoading(true);
+                await pendingTaskService.checkEmails();
+                fetchData();
+              } catch (err) {
+                console.error('Fel vid läsning av felanmälnings-e-post:', err);
+                setError(t('pendingTasks.messages.emailCheckError'));
+              } finally {
+                setIsLoading(false);
+              }
+            }}
+            title={t('pendingTasks.actions.checkEmails')}
+            className="ml-4 bg-gray-600 hover:bg-gray-700 text-white p-2 rounded-md"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+          </button>
         </div>
       </div>
 

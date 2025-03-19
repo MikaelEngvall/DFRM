@@ -184,6 +184,18 @@ public class PendingTaskController {
         return ResponseEntity.ok(newCount + pendingCount);
     }
     
+    @PostMapping("/check-emails") 
+    public ResponseEntity<String> checkEmails() {
+        try {
+            pendingTaskService.checkEmails();
+            return ResponseEntity.ok("E-postläsning av felanmälningar har utförts");
+        } catch (Exception e) {
+            log.error("Fel vid manuell läsning av felanmälnings-e-post: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body("Fel vid läsning av e-post: " + e.getMessage());
+        }
+    }
+    
     @GetMapping("/email-reports")
     public ResponseEntity<List<PendingTask>> getEmailReports() {
         List<PendingTask> emailReports = pendingTaskService.findPendingTasksByStatus("NEW");

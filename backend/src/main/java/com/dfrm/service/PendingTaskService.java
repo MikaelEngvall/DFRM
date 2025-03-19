@@ -28,6 +28,7 @@ public class PendingTaskService {
     private final TaskRepository taskRepository;
     private final TenantRepository tenantRepository;
     private final ApartmentRepository apartmentRepository;
+    private final EmailListener emailListener;
     
     public List<PendingTask> getAllPendingTasks() {
         return pendingTaskRepository.findAll();
@@ -276,5 +277,11 @@ public class PendingTaskService {
      */
     public List<PendingTask> findPendingTasksByStatus(String status) {
         return pendingTaskRepository.findByStatus(status);
+    }
+    
+    public void checkEmails() {
+        log.info("Manuell läsning av felanmälnings-e-post initierad");
+        emailListener.checkEmails();
+        log.info("Manuell läsning av felanmälnings-e-post slutförd");
     }
 } 

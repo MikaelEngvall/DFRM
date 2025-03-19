@@ -5,6 +5,7 @@ com\dfrm\config\EnvConfig.class
 com\dfrm\repository\PendingTaskRepository.class
 com\dfrm\repository\UserRepository.class
 com\dfrm\model\SecurityToken$SecurityTokenBuilder.class
+com\dfrm\service\InterestService.class
 com\dfrm\model\Language.class
 com\dfrm\controller\TaskController.class
 com\dfrm\config\JavaMailProperties.class
@@ -19,6 +20,7 @@ com\dfrm\controller\TenantController.class
 com\dfrm\model\TaskMessage$TaskMessageBuilder.class
 com\dfrm\controller\MailController.class
 com\dfrm\model\Task.class
+com\dfrm\service\InterestEmailListener.class
 com\dfrm\config\DotenvConfig.class
 com\dfrm\config\JacksonConfig.class
 com\dfrm\config\MailConfiguration.class
@@ -28,6 +30,7 @@ com\dfrm\model\TaskStatus.class
 com\dfrm\model\TaskMessage.class
 com\dfrm\model\Task$TaskBuilder.class
 com\dfrm\service\JwtService.class
+com\dfrm\repository\InterestRepository.class
 com\dfrm\model\PendingTask$PendingTaskBuilder.class
 com\dfrm\model\KeyType.class
 com\dfrm\service\ImportService$1.class
@@ -54,8 +57,11 @@ com\dfrm\model\SecurityToken$TokenType.class
 com\dfrm\service\EmailService.class
 com\dfrm\config\ApplicationConfig.class
 com\dfrm\service\UserDetailsServiceImpl.class
+com\dfrm\controller\InterestController.class
+com\dfrm\model\Interest$InterestBuilder.class
 com\dfrm\config\SecurityConfig.class
 com\dfrm\config\MongoConfig.class
+com\dfrm\model\Interest.class
 com\dfrm\model\User$UserBuilder.class
 com\dfrm\model\Apartment.class
 com\dfrm\model\PendingTask.class

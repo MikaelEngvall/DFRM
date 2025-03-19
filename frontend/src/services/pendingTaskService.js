@@ -221,6 +221,46 @@ const pendingTaskService = {
       console.error('Error fetching unreviewed tasks:', error);
       throw error;
     }
+  },
+
+  getForReview: async () => {
+    try {
+      const response = await api.get('/api/pending-tasks/for-review');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching pending tasks for review:', error);
+      throw error;
+    }
+  },
+  
+  getApproved: async () => {
+    try {
+      const response = await api.get('/api/pending-tasks/approved');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching approved pending tasks:', error);
+      throw error;
+    }
+  },
+  
+  getEmailReports: async () => {
+    try {
+      const response = await api.get('/api/pending-tasks/email-reports');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching email reports:', error);
+      throw error;
+    }
+  },
+  
+  checkEmails: async () => {
+    try {
+      const response = await api.post('/api/pending-tasks/check-emails');
+      return response.data;
+    } catch (error) {
+      console.error('Error checking email reports:', error);
+      throw error;
+    }
   }
 };
 

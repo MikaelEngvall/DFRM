@@ -63,5 +63,15 @@ export const interestService = {
       console.error(`Error rejecting interest ${id}:`, error);
       throw error;
     }
+  },
+  
+  checkEmails: async () => {
+    try {
+      const response = await api.post('/api/interests/check-emails');
+      return response.data;
+    } catch (error) {
+      console.error('Error checking interest emails:', error);
+      throw error;
+    }
   }
 }; 
