@@ -36,6 +36,8 @@ const translations = {
     unauthorized: 'Du har inte behörighet att utföra denna åtgärd',
     notSpecified: 'Ej angiven',
     send: 'Skicka',
+    sendEmail: 'Skicka e-post',
+    openLink: 'Öppna länk',
   },
 
   languages: {

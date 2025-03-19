@@ -2,8 +2,6 @@ package com.dfrm.service;
 
 import java.time.LocalDateTime;
 import java.util.Properties;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.springframework.core.env.Environment;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -17,6 +15,7 @@ import com.dfrm.repository.InterestRepository;
 
 import jakarta.mail.Address;
 import jakarta.mail.BodyPart;
+import jakarta.mail.Flags;
 import jakarta.mail.Folder;
 import jakarta.mail.Message;
 import jakarta.mail.Session;
@@ -172,205 +171,119 @@ public class InterestEmailListener {
         log.info("Bearbetar intresse-e-post...");
         
         String subject = message.getSubject();
-        String contentText = getTextFromMessage(message);
+        String content = getTextFromMessage(message);
+        String senderEmail = InternetAddress.toString(message.getReplyTo());
         
-        log.info("Ämne: {}", subject);
-        log.info("Innehåll (första 100 tecken): {}", 
-            contentText.length() > 100 ? contentText.substring(0, 100) + "..." : contentText);
+        log.debug("Processing email with subject: {}", subject);
+        log.debug("Email content: {}", content);
         
-        // Skapa Interest-objekt
-        Interest interest = new Interest();
-        interest.setStatus("NEW");
-        interest.setReceived(LocalDateTime.now());
-        interest.setApartment(subject); // Ämnet är lägenheten
-        
-        // Analysera e-postinnehållet för att extrahera information
-        extractDetailsFromEmail(contentText, interest);
-        
-        // Sätt svenskt språk som standard
-        interest.setMessageLanguage(Language.SV);
-        
-        // I en framtida version kan vi implementera språkdetektering och översättning
-        // Om vi hade en mer komplett TranslationService
-        
-        // Spara intresseanmälan i databasen
-        Interest savedInterest = interestRepository.save(interest);
-        log.info("Intresseanmälan sparad med ID: {}", savedInterest.getId());
-        
-        // Markera e-postmeddelandet som läst
-        message.setFlag(jakarta.mail.Flags.Flag.SEEN, true);
-    }
-    
-    private void extractDetailsFromEmail(String content, Interest interest) {
-        log.info("Extraherar detaljer från e-postinnehåll...");
-        
-        // Rensa HTML-innehåll om det finns
+        // Rensa HTML-innehåll först
         content = cleanHtmlContent(content);
         
-        // Ersätt <br> med radbrytningar för att hantera olika format
-        content = content.replaceAll("<br>", "\n").replaceAll("<br/>", "\n").replaceAll("<br />", "\n");
+        // Extrahera lägenhetsinformation från ämnet
+        String apartment = subject;
+        if (subject.contains(":")) {
+            apartment = subject.substring(subject.indexOf(":") + 1).trim();
+        }
         
-        // Extrahera format 1: Namn: Tuva Andersson, E-post: ...
-        if (content.contains("Namn:") && content.contains("E-post:")) {
-            log.info("Detekterade strukturerat format med 'Namn:', 'E-post:' etc.");
-            
-            // Extrahera namn
-            Pattern namePattern = Pattern.compile("Namn:\\s*(.+?)\\s*(?:\\r?\\n|$|E-post:)", Pattern.CASE_INSENSITIVE);
-            Matcher nameMatcher = namePattern.matcher(content);
-            if (nameMatcher.find()) {
-                interest.setName(nameMatcher.group(1).trim());
-                log.info("Extraherat namn: {}", interest.getName());
-            }
-            
-            // Extrahera e-post
-            Pattern emailPattern = Pattern.compile("E-post:\\s*(.+?)\\s*(?:\\r?\\n|$|Tel:)", Pattern.CASE_INSENSITIVE);
-            Matcher emailMatcher = emailPattern.matcher(content);
-            if (emailMatcher.find()) {
-                interest.setEmail(emailMatcher.group(1).trim());
-                log.info("Extraherad e-post: {}", interest.getEmail());
-            }
-            
-            // Extrahera telefon
-            Pattern phonePattern = Pattern.compile("Tel(?:efon)?(?:nummer)?:\\s*(.+?)\\s*(?:\\r?\\n|$|Meddelande:)", Pattern.CASE_INSENSITIVE);
-            Matcher phoneMatcher = phonePattern.matcher(content);
-            if (phoneMatcher.find()) {
-                interest.setPhone(phoneMatcher.group(1).trim());
-                log.info("Extraherat telefonnummer: {}", interest.getPhone());
-            }
-            
-            // Extrahera meddelande
-            Pattern messagePattern = Pattern.compile("Meddelande:\\s*(.+?)\\s*(?:---|Datum:|Sidans URL:)", Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
-            Matcher messageMatcher = messagePattern.matcher(content);
-            if (messageMatcher.find()) {
-                interest.setMessage(messageMatcher.group(1).trim());
-                log.info("Extraherat meddelande (första 50 tecken): {}", 
-                    interest.getMessage().length() > 50 ? interest.getMessage().substring(0, 50) + "..." : interest.getMessage());
-            }
-        } 
-        // Format 2: Fritext utan tydliga markörer
-        else if (content.contains("@") && !content.contains("Namn:")) {
-            log.info("Detekterade ostrukturerat format, försöker extrahera information");
-            
-            // Dela upp texten på rader
-            String[] lines = content.split("\\r?\\n");
-            
-            // Hitta namn (första raden som inte innehåller @, http, www)
-            for (String line : lines) {
-                line = line.trim();
-                if (!line.isEmpty() && !line.contains("@") && !line.contains("http") && !line.contains("www") && 
-                    !line.matches(".*\\d{4}-\\d{2}-\\d{2}.*")) {
-                    interest.setName(line);
-                    log.info("Extraherat namn: {}", interest.getName());
-                    break;
-                }
-            }
-            
-            // Hitta e-post (första raden som innehåller @)
-            for (String line : lines) {
-                if (line.contains("@")) {
-                    Pattern emailPattern = Pattern.compile("\\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}\\b");
-                    Matcher emailMatcher = emailPattern.matcher(line);
-                    if (emailMatcher.find()) {
-                        interest.setEmail(emailMatcher.group());
-                        log.info("Extraherad e-post: {}", interest.getEmail());
-                        break;
-                    }
-                }
-            }
-            
-            // Hitta telefonnummer (första raden som innehåller telefonnummer)
-            for (String line : lines) {
-                Pattern phonePattern = Pattern.compile("\\b(?:\\+?\\d{1,3}[- ]?)?\\d{6,12}\\b");
-                Matcher phoneMatcher = phonePattern.matcher(line);
-                if (phoneMatcher.find()) {
-                    interest.setPhone(phoneMatcher.group());
-                    log.info("Extraherat telefonnummer: {}", interest.getPhone());
-                    break;
-                }
-            }
-            
-            // Extrahera meddelande (den längsta sammanhängande texten)
-            StringBuilder messageBuilder = new StringBuilder();
-            boolean inMessage = false;
-            
-            for (String line : lines) {
-                if (line.contains("Meddelande:") || line.contains("Hej") || line.contains("Jag är intresserad")) {
-                    inMessage = true;
-                    // Ta bort "Meddelande:" från början av meddelandet
-                    line = line.replaceAll("^Meddelande:\\s*", "");
-                }
-                
-                if (inMessage && !line.contains("Datum:") && !line.contains("Sidans URL:") && !line.contains("---")) {
-                    messageBuilder.append(line).append("\n");
-                }
-                
-                if (inMessage && (line.contains("---") || line.contains("Datum:") || line.contains("Sidans URL:"))) {
-                    break;
-                }
-            }
-            
-            if (messageBuilder.length() > 0) {
-                interest.setMessage(messageBuilder.toString().trim());
-                log.info("Extraherat meddelande (första 50 tecken): {}", 
-                    interest.getMessage().length() > 50 ? interest.getMessage().substring(0, 50) + "..." : interest.getMessage());
-            }
+        // Extrahera information från meddelandeinnehållet
+        String name = extractBeforeDelimiter(content, "Namn:", "<br");
+        String email = extractBeforeDelimiter(content, "E-post:", "<br");
+        String phone = extractBeforeDelimiter(content, "Tel:", "<br");
+        
+        // Extrahera meddelandet mellan "Meddelande: " och "---"
+        String messageText = "";
+        int messageStart = content.indexOf("Meddelande:");
+        int messageEnd = content.indexOf("---", messageStart);
+        
+        if (messageStart != -1 && messageEnd != -1) {
+            messageStart += "Meddelande:".length();
+            // Extrahera och bevara riktiga radbrytningar
+            messageText = content.substring(messageStart, messageEnd)
+                .replace("<br>", "\n")
+                .replace("<br/>", "\n")
+                .replace("<br />", "\n")
+                .trim();
         }
         
         // Extrahera sidans URL
-        Pattern urlPattern = Pattern.compile("Sidans URL:\\s*(.+?)\\s+(?:Användaragent:|$)", Pattern.CASE_INSENSITIVE);
-        Matcher urlMatcher = urlPattern.matcher(content);
-        if (urlMatcher.find()) {
-            interest.setPageUrl(urlMatcher.group(1).trim());
-            log.info("Extraherad URL: {}", interest.getPageUrl());
+        String pageUrl = extractBeforeDelimiter(content, "Sidans URL:", "<br");
+        
+        log.debug("Extracted name: {}", name);
+        log.debug("Extracted email: {}", email);
+        log.debug("Extracted phone: {}", phone);
+        log.debug("Extracted message: {}", messageText);
+        log.debug("Extracted pageUrl: {}", pageUrl);
+        log.debug("Extracted apartment: {}", apartment);
+        
+        // Identifiera meddelandespråk
+        Language detectedLanguage = Language.SV; // Standardvärde
+        
+        // Skapa intresseanmälan
+        Interest interest = Interest.builder()
+                .name(name)
+                .email(email)
+                .phone(phone)
+                .message(messageText)
+                .apartment(apartment)
+                .pageUrl(pageUrl)
+                .messageLanguage(detectedLanguage)
+                .received(LocalDateTime.now())
+                .status("NEW")
+                .build();
+        
+        Interest savedInterest = interestRepository.save(interest);
+        log.info("Saved interest application from email: {}", savedInterest);
+        
+        // Markera e-postmeddelandet som läst
+        message.setFlag(Flags.Flag.SEEN, true);
+    }
+    
+    // Hjälpmetod för att extrahera text före en avgränsare
+    private String extractBeforeDelimiter(String content, String startMarker, String endMarker) {
+        int start = content.indexOf(startMarker);
+        if (start == -1) return "";
+        
+        start += startMarker.length();
+        
+        // Trimma bort inledande mellanslag
+        while (start < content.length() && Character.isWhitespace(content.charAt(start))) {
+            start++;
+        }
+        
+        int end;
+        if (endMarker.equals("\n")) {
+            end = content.indexOf("\n", start);
         } else {
-            // Fallback: Leta efter URL i texten
-            Pattern httpPattern = Pattern.compile("(https?://[^\\s]+)\\s+Användaragent:");
-            Matcher httpMatcher = httpPattern.matcher(content);
-            if (httpMatcher.find()) {
-                interest.setPageUrl(httpMatcher.group(1).trim());
-                log.info("Extraherad URL från fritext: {}", interest.getPageUrl());
-            } else {
-                // Sista försök: Leta efter vilken URL som helst
-                Pattern anyHttpPattern = Pattern.compile("(https?://[^\\s]+)");
-                Matcher anyHttpMatcher = anyHttpPattern.matcher(content);
-                if (anyHttpMatcher.find()) {
-                    interest.setPageUrl(anyHttpMatcher.group(1).trim());
-                    log.info("Extraherad URL från allmänt sökmönster: {}", interest.getPageUrl());
-                }
+            end = content.indexOf(endMarker, start);
+        }
+        
+        if (end == -1) {
+            // Om ingen avgränsare hittades, ta resten av innehållet eller till nästa rad
+            end = content.indexOf("\n", start);
+            if (end == -1) {
+                return content.substring(start).trim();
             }
         }
         
-        // Extrahera datum om det inte redan finns
-        if (interest.getReceived() == null) {
-            Pattern datePattern = Pattern.compile("Datum:\\s*(\\d{4}-\\d{2}-\\d{2})", Pattern.CASE_INSENSITIVE);
-            Matcher dateMatcher = datePattern.matcher(content);
-            if (dateMatcher.find()) {
-                String dateStr = dateMatcher.group(1);
-                interest.setReceived(LocalDateTime.parse(dateStr + "T00:00:00"));
-                log.info("Extraherat datum: {}", dateStr);
-            }
+        return content.substring(start, end).trim();
+    }
+    
+    // Förbättrad metod för att rensa HTML-innehåll
+    private String cleanHtmlContent(String content) {
+        if (content == null) {
+            return "";
         }
         
-        // Extrahera användarinformation
-        Pattern userAgentPattern = Pattern.compile("Användaragent:\\s*(.+?)\\s*(?:\\r?\\n|$)", Pattern.CASE_INSENSITIVE);
-        Matcher userAgentMatcher = userAgentPattern.matcher(content);
-        if (userAgentMatcher.find()) {
-            interest.setUserAgent(userAgentMatcher.group(1).trim());
-        }
+        // Ersätt HTML-entiteter
+        content = content.replaceAll("&nbsp;", " ")
+                         .replaceAll("&amp;", "&")
+                         .replaceAll("&lt;", "<")
+                         .replaceAll("&gt;", ">");
         
-        // Extrahera IP-adress
-        Pattern ipPattern = Pattern.compile("(?:Fjärr IP|IP|IP-adress):\\s*(.+?)\\s*(?:\\r?\\n|$)", Pattern.CASE_INSENSITIVE);
-        Matcher ipMatcher = ipPattern.matcher(content);
-        if (ipMatcher.find()) {
-            interest.setRemoteIp(ipMatcher.group(1).trim());
-        }
+        // Behåll <br>-taggar som de är för att hantera dem senare i parsningen
         
-        // Logga resultaten
-        log.info("Extraherad information: Namn='{}', E-post='{}', Telefon='{}', Meddelande='{}', URL='{}'", 
-                interest.getName(), interest.getEmail(), interest.getPhone(), 
-                interest.getMessage() != null && interest.getMessage().length() > 20 ? 
-                    interest.getMessage().substring(0, 20) + "..." : interest.getMessage(),
-                interest.getPageUrl());
+        return content;
     }
 
     private String getTextFromMessage(Message message) throws Exception {
@@ -418,31 +331,5 @@ public class InterestEmailListener {
         log.info("Extraherat textinnehåll (första 200 tecken): \n{}", 
             text.length() > 200 ? text.substring(0, 200) + "..." : text);
         return text;
-    }
-
-    private String cleanHtmlContent(String content) {
-        if (content == null) {
-            return "";
-        }
-        
-        // Behåll <br>-taggar tillfälligt
-        content = content.replaceAll("<br>", "###BR###").replaceAll("<br/>", "###BR###").replaceAll("<br />", "###BR###");
-        
-        // Ta bort andra HTML-taggar
-        content = content.replaceAll("<[^>]*>", " ");
-        
-        // Återställ <br>-taggar till radbrytningar
-        content = content.replaceAll("###BR###", "\n");
-        
-        // Ta bort överflödiga mellanslag
-        content = content.replaceAll("\\s+", " ");
-        
-        // Konvertera HTML-entiteter
-        content = content.replaceAll("&nbsp;", " ")
-                       .replaceAll("&amp;", "&")
-                       .replaceAll("&lt;", "<")
-                       .replaceAll("&gt;", ">");
-        
-        return content.trim();
     }
 } 

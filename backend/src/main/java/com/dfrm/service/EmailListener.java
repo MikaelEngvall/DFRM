@@ -155,8 +155,8 @@ public class EmailListener {
                                     log.info("Reply-To address: {}", ((InternetAddress) address).getAddress());
                                     if (TARGET_REPLY_TO.equals(((InternetAddress) address).getAddress())) {
                                         log.info("Found matching reply-to address, will process email");
-                                        validReplyTo = true;
-                                        break;
+                                    validReplyTo = true;
+                                    break;
                                     }
                                 }
                             }

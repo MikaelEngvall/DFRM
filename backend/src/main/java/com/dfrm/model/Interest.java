@@ -48,7 +48,4 @@ public class Interest {
     
     private LocalDateTime reviewedAt;
     private String reviewComments;
-    
-    private String userAgent;
-    private String remoteIp;
 } 

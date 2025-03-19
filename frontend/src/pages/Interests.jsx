@@ -40,11 +40,19 @@ const Interests = () => {
   // Formatera text för visning (ta bort HTML, hantera radbrytningar)
   const formatText = (text) => {
     if (!text) return '';
-    // Rensa HTML-taggar, behåll radbrytningar
+    
+    // Om texten redan är formaterad korrekt, returnera den direkt
+    if (!text.includes('<br') && !text.includes('&nbsp;')) {
+      return text;
+    }
+    
+    // Ersätt HTML-radbrytningar med faktiska radbrytningar
     return text
-      .replace(/<br\s*\/?>/gi, '\n')
-      .replace(/<[^>]*>/g, '')
-      .replace(/&nbsp;/g, ' ');
+      .replace(/<br\s*\/?>/gi, '\n')  // <br>, <br/>, <br />
+      .replace(/<[^>]*>/g, '')        // Ta bort andra HTML-taggar
+      .replace(/&nbsp;/g, ' ')        // Ersätt HTML-entiteter
+      .replace(/\s+/g, ' ')           // Ta bort överflödiga mellanslag
+      .trim();
   };
 
   // Hämta intresseanmälningar från API
@@ -297,22 +305,22 @@ const Interests = () => {
             {
               key: 'name',
               label: t('interests.fields.name'),
-              render: (name) => name || '-'
+              render: (name) => formatText(name) || '-'
             },
             {
               key: 'contact',
               label: t('interests.fields.contact'),
               render: (_, interest) => (
                 <div>
-                  <div>{interest.email || '-'}</div>
-                  <div className="text-sm text-gray-500 dark:text-gray-400">{interest.phone || '-'}</div>
+                  <div>{formatText(interest.email) || '-'}</div>
+                  <div className="text-sm text-gray-500 dark:text-gray-400">{formatText(interest.phone) || '-'}</div>
                 </div>
               )
             },
             {
               key: 'apartment',
               label: t('interests.fields.apartment'),
-              render: (apartment) => apartment || '-'
+              render: (apartment) => formatText(apartment) || '-'
             },
             {
               key: 'received',
@@ -369,93 +377,104 @@ const Interests = () => {
           }}
           title={t('interests.details')}
         >
-          <div className="space-y-4 bg-gray-800 text-white p-4 rounded">
+          <div className="space-y-4 p-4 rounded">
             <div className="grid grid-cols-1 gap-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     {t('interests.fields.name')}
                   </label>
                   <input 
                     type="text" 
                     value={selectedInterest.name || '-'}
                     readOnly
-                    className="mt-1 block w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md shadow-sm text-white"
+                    className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-gray-900 dark:text-white"
                   />
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     {t('interests.fields.apartment')}
                   </label>
                   <input 
                     type="text" 
                     value={selectedInterest.apartment || '-'}
                     readOnly
-                    className="mt-1 block w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md shadow-sm text-white"
+                    className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-gray-900 dark:text-white"
                   />
                 </div>
               </div>
               
               <div className="mb-3">
-                <label className="block text-sm font-medium text-gray-300 mb-1">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                   {t('interests.fields.message')}
                 </label>
                 <textarea
                   value={formatText(selectedInterest.message) || '-'}
                   readOnly
-                  rows="3"
-                  className="mt-1 block w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md shadow-sm text-white"
+                  rows="4"
+                  className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-gray-900 dark:text-white"
                 />
               </div>
               
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     {t('interests.fields.email')}
                   </label>
-                  <input 
-                    type="text" 
-                    value={selectedInterest.email || '-'}
-                    readOnly
-                    className="mt-1 block w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md shadow-sm text-white"
-                  />
+                  <div className="flex">
+                    <input 
+                      type="text" 
+                      value={selectedInterest.email || '-'}
+                      readOnly
+                      className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-l-md shadow-sm text-gray-900 dark:text-white"
+                    />
+                    {selectedInterest.email && (
+                      <a 
+                        href={`mailto:${selectedInterest.email}`}
+                        className="mt-1 inline-flex items-center px-3 py-2 border border-l-0 border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-white rounded-r-md"
+                        title={t('common.sendEmail')}
+                      >
+                        <EnvelopeIcon className="h-5 w-5" />
+                      </a>
+                    )}
+                  </div>
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     {t('interests.fields.phone')}
                   </label>
                   <input 
                     type="text" 
                     value={selectedInterest.phone || '-'}
                     readOnly
-                    className="mt-1 block w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md shadow-sm text-white"
+                    className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-gray-900 dark:text-white"
                   />
                 </div>
               </div>
               
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     {t('interests.fields.received')}
                   </label>
                   <input 
                     type="text" 
                     value={formatDate(selectedInterest.received)}
                     readOnly
-                    className="mt-1 block w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md shadow-sm text-white"
+                    className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-gray-900 dark:text-white"
                   />
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     {t('interests.fields.status')}
                   </label>
                   <select
                     value={selectedInterest.status}
                     disabled
-                    className="mt-1 block w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md shadow-sm text-white"
+                    className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-gray-900 dark:text-white"
                   >
                     <option value="NEW">{t('interests.status.NEW')}</option>
                     <option value="REVIEWED">{t('interests.status.REVIEWED')}</option>
@@ -466,17 +485,26 @@ const Interests = () => {
               
               {selectedInterest.pageUrl && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     {t('interests.fields.pageUrl')}
                   </label>
-                  <div className="mt-1 block w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md shadow-sm text-white overflow-x-auto">
+                  <div className="mt-1 flex">
+                    <input
+                      type="text"
+                      value={selectedInterest.pageUrl}
+                      readOnly
+                      className="block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-l-md shadow-sm text-gray-900 dark:text-white overflow-x-auto"
+                    />
                     <a 
                       href={selectedInterest.pageUrl} 
                       target="_blank" 
                       rel="noopener noreferrer"
-                      className="text-blue-400 hover:underline break-all"
+                      className="inline-flex items-center px-3 py-2 border border-l-0 border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-white rounded-r-md"
+                      title={t('common.openLink')}
                     >
-                      {selectedInterest.pageUrl}
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      </svg>
                     </a>
                   </div>
                 </div>
@@ -486,13 +514,13 @@ const Interests = () => {
               {selectedInterest.status === 'NEW' && (
                 <>
                   <div className="mb-3">
-                    <label className="block text-sm font-medium text-gray-300 mb-1">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                       {t('interests.fields.reviewComments')}
                     </label>
                     <textarea
                       id="reviewComments"
                       rows="3"
-                      className="mt-1 block w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md shadow-sm text-white"
+                      className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-gray-900 dark:text-white"
                       value={reviewComments}
                       onChange={(e) => setReviewComments(e.target.value)}
                       placeholder={t('interests.addComments')}
