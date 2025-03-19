@@ -77,10 +77,36 @@ export const interestService = {
   
   scheduleShowing: async (id, data) => {
     try {
-      const response = await api.post(`/interests/${id}/schedule-showing`, data);
+      console.log("API Call: Schemalägger visning", {
+        url: `/api/interests/${id}/schedule-showing`,
+        method: "POST",
+        data: data,
+        headers: "Authorization header should be added via interceptor"
+      });
+      
+      const token = localStorage.getItem('auth_auth_token');
+      console.log("Token finns i localStorage:", !!token);
+      
+      const response = await api.post(`/api/interests/${id}/schedule-showing`, data);
+      console.log("API Svar: Schemaläggning lyckades", {
+        status: response.status,
+        data: response.data
+      });
       return response.data;
     } catch (error) {
-      console.error('Failed to schedule showing:', error);
+      console.error("API Fel: Schemaläggning misslyckades", error);
+      if (error.response) {
+        console.error("API Felsvar:", {
+          status: error.response.status,
+          statusText: error.response.statusText,
+          data: error.response.data,
+          headers: error.response.headers
+        });
+      } else if (error.request) {
+        console.error("API Request fel (ingen respons):", error.request);
+      } else {
+        console.error("API Annat fel:", error.message);
+      }
       throw error;
     }
   }

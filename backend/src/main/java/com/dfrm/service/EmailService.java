@@ -24,6 +24,9 @@ public class EmailService {
     @Value("${spring.mail.username}")
     private String fromEmail;
     
+    @Value("${mail.interest.username:intresse@duggalsfastigheter.se}")
+    private String interestEmail;
+    
     /**
      * Skickar ett e-postmeddelande
      * 
@@ -42,11 +45,96 @@ public class EmailService {
             message.setSubject(subject);
             message.setText(text);
             
-            log.info("Försöker skicka e-post till: {}", to);
+            log.info("Försöker skicka e-post från {} till: {}", fromEmail, to);
             mailSender.send(message);
             log.info("E-post skickad till: {}", to);
         } catch (Exception e) {
-            log.error("Fel vid skickande av e-post till: {}", to, e);
+            log.error("Fel vid skickande av e-post till: {}: {}", to, e.getMessage(), e);
+            // Vi kastar inte vidare exception för att inte störa programmets flöde om e-post misslyckas
+        }
+    }
+    
+    /**
+     * Skickar ett e-postmeddelande från intresse-e-postadressen
+     * 
+     * @param to      mottagarens e-postadress
+     * @param subject ämne
+     * @param text    innehåll
+     */
+    public void sendInterestEmail(String to, String subject, String text) {
+        try {
+            // För intresse-e-post behöver vi skapa en separat sender
+            JavaMailSenderImpl interestMailSender = new JavaMailSenderImpl();
+            
+            // Grundläggande inställningar från JavaMailProperties
+            if (mailSender instanceof JavaMailSenderImpl) {
+                JavaMailSenderImpl mainSender = (JavaMailSenderImpl) mailSender;
+                
+                // Kopiera properties men uppdatera med intresse-specifika värden
+                Properties props = new Properties();
+                props.putAll(mainSender.getJavaMailProperties());
+                
+                // Hämta mail properties från configuration
+                if (mainSender.getJavaMailProperties().getProperty("mail.smtp.auth") != null) {
+                    props.put("mail.smtp.auth", "true");
+                }
+                
+                if (mainSender.getJavaMailProperties().getProperty("mail.smtp.starttls.enable") != null) {
+                    props.put("mail.smtp.starttls.enable", "true");
+                    props.put("mail.smtp.starttls.required", "true");
+                }
+                
+                // Ställ in timeouts
+                props.put("mail.smtp.connectiontimeout", "30000");
+                props.put("mail.smtp.timeout", "30000");
+                props.put("mail.smtp.writetimeout", "30000");
+                
+                // Ställ in debug-läge
+                props.put("mail.debug", "true");
+                
+                // Använd samma host men specifik port för intresse
+                interestMailSender.setHost(mainSender.getHost());
+                interestMailSender.setPort(587); // Port 587 för SMTP
+                interestMailSender.setUsername(interestEmail);
+                interestMailSender.setPassword(mainSender.getPassword());
+                interestMailSender.setJavaMailProperties(props);
+                
+                log.info("Konfigurerade intresse-mailsender på {}:{} med användarnamn {}", 
+                         interestMailSender.getHost(), interestMailSender.getPort(), interestMailSender.getUsername());
+            } else {
+                // Fallback om huvudmailsender inte är av rätt typ
+                log.warn("Huvudmailsender är inte av typen JavaMailSenderImpl, använder defaultvärden för intresse");
+                interestMailSender.setHost("mailcluster.loopia.se");
+                interestMailSender.setPort(587);
+                interestMailSender.setUsername(interestEmail);
+                
+                // Skapa properties för SMTP
+                Properties props = new Properties();
+                props.put("mail.smtp.auth", "true");
+                props.put("mail.smtp.starttls.enable", "true");
+                props.put("mail.smtp.starttls.required", "true");
+                props.put("mail.smtp.ssl.enable", "false");
+                props.put("mail.smtp.connectiontimeout", "30000");
+                props.put("mail.smtp.timeout", "30000");
+                props.put("mail.smtp.writetimeout", "30000");
+                props.put("mail.debug", "true");
+                
+                interestMailSender.setJavaMailProperties(props);
+            }
+            
+            // Skapa meddelandet
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(interestEmail);
+            message.setTo(to);
+            message.setSubject(subject);
+            message.setText(text);
+            
+            // Skicka meddelandet
+            log.info("Försöker skicka intresse-e-post från {} till: {}", interestEmail, to);
+            interestMailSender.send(message);
+            log.info("Intresse-e-post skickad till: {}", to);
+        } catch (Exception e) {
+            log.error("Fel vid skickande av intresse-e-post till: {}: {}", to, e.getMessage(), e);
             // Vi kastar inte vidare exception för att inte störa programmets flöde om e-post misslyckas
         }
     }

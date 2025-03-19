@@ -180,7 +180,17 @@ const Interests = () => {
     fetchReviewedInterests();
   };
 
-  // Hantera schemaläggning av visning
+  // Modifierad kod för att hantera klick på "Boka visning"-knappen
+  const handleShowingButtonClick = () => {
+    setIsReviewModalOpen(false);
+    
+    // Automatiskt förifyll responseMail med standardtexten från översättningsfilen
+    setResponseMail(t('interests.responsePlaceholder'));
+    
+    setIsShowingModalOpen(true);
+  };
+
+  // I handleScheduleShowing-funktionen, ändra för att automatiskt lägga till datum och tid i meddelandet
   const handleScheduleShowing = async () => {
     if (!showingDate || !showingTime || !responseMail) {
       setError(t('interests.messages.fieldsRequired'));
@@ -190,15 +200,36 @@ const Interests = () => {
     try {
       setIsLoading(true);
       
+      // Formatera datumet snyggt för e-postmeddelandet
+      const formattedDate = new Date(`${showingDate}T${showingTime}`).toLocaleDateString('sv-SE');
+      const formattedTime = new Date(`${showingDate}T${showingTime}`).toLocaleTimeString('sv-SE', {hour: '2-digit', minute:'2-digit'});
+      
       // Skapa en ISO-datumsträngformat för att lagra visningsdatum och tid
       const showingDateTime = `${showingDate}T${showingTime}:00`;
       
-      // Skicka e-post till intresseanmälaren och schemalägg visning
-      await interestService.scheduleShowing(selectedInterest.id, {
+      // Kontrollera om meddelandet redan innehåller datum och tid
+      let fullResponseMessage = responseMail;
+      if (!responseMail.includes(formattedDate) && !responseMail.includes(formattedTime)) {
+        // Lägg till datum och tid i meddelandet om det inte redan finns
+        fullResponseMessage = `${responseMail}\n\nVisningstid: ${formattedDate} kl. ${formattedTime}`;
+      }
+      
+      // Logga data som vi ska skicka
+      console.log("Skickar data för bokad visning:", {
+        id: selectedInterest.id,
         reviewedById: currentUser.id,
-        responseMessage: responseMail,
+        responseMessage: fullResponseMessage,
         showingDateTime: showingDateTime
       });
+      
+      // Skicka e-post till intresseanmälaren och schemalägg visning
+      const result = await interestService.scheduleShowing(selectedInterest.id, {
+        reviewedById: currentUser.id,
+        responseMessage: fullResponseMessage,
+        showingDateTime: showingDateTime
+      });
+      
+      console.log("Svar från server vid bokad visning:", result);
       
       // Uppdatera listor efter schemaläggning
       fetchInterests();
@@ -216,7 +247,12 @@ const Interests = () => {
       setSelectedInterest(null);
     } catch (err) {
       console.error('Error scheduling showing:', err);
-      setError(t('interests.messages.showingError'));
+      if (err.response) {
+        console.error('Error response:', err.response.data);
+        setError(`${t('interests.messages.showingError')}: ${err.response.data}`);
+      } else {
+        setError(t('interests.messages.showingError'));
+      }
     } finally {
       setIsLoading(false);
     }
@@ -567,10 +603,7 @@ const Interests = () => {
                     <button
                       type="button"
                       className="inline-flex justify-center rounded-md border border-transparent bg-purple-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
-                      onClick={() => {
-                        setIsReviewModalOpen(false);
-                        setIsShowingModalOpen(true);
-                      }}
+                      onClick={handleShowingButtonClick}
                       disabled={isLoading}
                     >
                       {isLoading ? t('common.loading') : t('interests.actions.scheduleShowing')}

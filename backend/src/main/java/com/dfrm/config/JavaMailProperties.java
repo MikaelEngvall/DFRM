@@ -29,13 +29,13 @@ public class JavaMailProperties {
     private boolean starttlsEnable;
     
     // Separata konfigurationer för inkommande mail (IMAPS) - felanmälan
-    @Value("${EMAIL_PORT_LISTENING:993}")
+    @Value("${EMAIL_PORT:993}")
     private int listeningPort;
     
-    @Value("${EMAIL_USER_LISTENING:felanmalan@duggalsfastigheter.se}")
+    @Value("${EMAIL_USER:felanmalan@duggalsfastigheter.se}")
     private String listeningUsername;
     
-    @Value("${EMAIL_PASSWORD_LISTENING:}")
+    @Value("${EMAIL_PASSWORD:}")
     private String listeningPassword;
     
     // Separata konfigurationer för inkommande mail (IMAPS) - intresse
@@ -47,4 +47,17 @@ public class JavaMailProperties {
     
     @Value("${EMAIL_PASSWORD_INTRESSE:}")
     private String intressePassword;
+    
+    // Separata konfigurationer för utgående mail (SMTP) - intresse
+    @Value("${mail.interest.host:mailcluster.loopia.se}")
+    private String interestHost;
+    
+    @Value("${mail.interest.port:587}")
+    private int interestPort;
+    
+    @Value("${mail.interest.username:intresse@duggalsfastigheter.se}")
+    private String interestUsername;
+    
+    @Value("${mail.interest.password:}")
+    private String interestPassword;
 } 

@@ -46,6 +46,16 @@ mail:
     port: ${EMAIL_PORT:993}
     username: ${EMAIL_USER:felanmalan@duggalsfastigheter.se}
     password: ${EMAIL_PASSWORD:}
+  interest:
+    host: ${EMAIL_HOST_INTEREST:mailcluster.loopia.se}
+    port: ${EMAIL_PORT_INTEREST:587}
+    username: ${EMAIL_USER_INTEREST:intresse@duggalsfastigheter.se}
+    password: ${EMAIL_PASSWORD_INTEREST:}
+  interest-imap:
+    host: ${EMAIL_HOST_INTEREST:mailcluster.loopia.se}
+    port: ${EMAIL_PORT_INTRESSE:993}
+    username: ${EMAIL_USER_INTRESSE:intresse@duggalsfastigheter.se}
+    password: ${EMAIL_PASSWORD_INTRESSE:}
 
 google:
   translate:

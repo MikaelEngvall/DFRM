@@ -109,39 +109,46 @@ public class InterestService {
     private Task createShowingTask(Interest interest, User assignedTo, LocalDateTime showingDateTime) {
         log.info("Creating showing task for interest ID: {}, assigned to: {}", interest.getId(), assignedTo.getId());
         
-        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
-        String formattedDateTime = showingDateTime.format(dateFormatter);
-        
-        Task task = Task.builder()
-                .title("Visning: " + interest.getApartment())
-                .description("Visning för " + interest.getName() + " på " + formattedDateTime)
-                .assignedToUserId(assignedTo.getId())
-                .assignedByUserId(assignedTo.getId())
-                .dueDate(showingDateTime.toLocalDate())
-                .status("PENDING")
-                .priority("MEDIUM")
-                .apartmentId(null) // Kan inte koppla direkt eftersom vi bara har lägenhetsnamnet, inte ID
-                .build();
-        
-        return taskRepository.save(task);
+        try {
+            DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+            String formattedDateTime = showingDateTime.format(dateFormatter);
+            
+            Task task = Task.builder()
+                    .title("Visning: " + interest.getApartment())
+                    .description("Visning för " + interest.getName() + " på " + formattedDateTime)
+                    .assignedToUserId(assignedTo.getId())
+                    .assignedByUserId(assignedTo.getId())
+                    .dueDate(showingDateTime.toLocalDate())
+                    .status("PENDING")
+                    .priority("MEDIUM")
+                    .build();
+            
+            Task savedTask = taskRepository.save(task);
+            log.info("Successfully created showing task with ID: {}", savedTask.getId());
+            return savedTask;
+        } catch (Exception e) {
+            log.error("Failed to create showing task: {}", e.getMessage(), e);
+            throw new RuntimeException("Kunde inte skapa visningsuppgift: " + e.getMessage(), e);
+        }
     }
     
     private void sendShowingConfirmation(Interest interest, LocalDateTime showingDateTime, String responseMessage) {
         log.info("Sending showing confirmation email to: {}", interest.getEmail());
         
-        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
-        String formattedDateTime = showingDateTime.format(dateFormatter);
-        
-        String subject = "Bekräftelse av visningstid för " + interest.getApartment();
-        
-        String emailBody = responseMessage + "\n\n" +
-                "Visningstid: " + formattedDateTime + "\n\n" +
-                "Med vänliga hälsningar,\n" +
-                interest.getReviewedBy().getFirstName() + " " + interest.getReviewedBy().getLastName();
-        
         try {
-            emailService.sendEmail(interest.getEmail(), subject, emailBody);
-            log.info("Showing confirmation email sent successfully");
+            DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+            String formattedDateTime = showingDateTime.format(dateFormatter);
+            
+            String subject = "Bekräftelse av visningstid för " + interest.getApartment();
+            
+            String emailBody = responseMessage + "\n\n" +
+                    "Visningstid: " + formattedDateTime + "\n\n" +
+                    "Med vänliga hälsningar,\n" +
+                    interest.getReviewedBy().getFirstName() + " " + interest.getReviewedBy().getLastName();
+            
+            // Använd intresse-e-post för att skicka bekräftelse
+            emailService.sendInterestEmail(interest.getEmail(), subject, emailBody);
+            log.info("Showing confirmation email sent successfully to: {}", interest.getEmail());
         } catch (Exception e) {
             log.error("Failed to send showing confirmation email: {}", e.getMessage(), e);
             // Vi fortsätter trots e-postfel - uppgiften och bokningen finns fortfarande
@@ -164,19 +171,38 @@ public class InterestService {
     
     // Helper method for mapping from request DTO
     public Interest scheduleShowing(String id, Map<String, Object> requestData) {
-        String reviewedById = (String) requestData.get("reviewedById");
-        String responseMessage = (String) requestData.get("responseMessage");
-        String showingDateTimeStr = (String) requestData.get("showingDateTime");
-        
-        if (reviewedById == null || responseMessage == null || showingDateTimeStr == null) {
-            throw new IllegalArgumentException("Missing required fields for scheduling showing");
+        try {
+            String reviewedById = (String) requestData.get("reviewedById");
+            String responseMessage = (String) requestData.get("responseMessage");
+            String showingDateTimeStr = (String) requestData.get("showingDateTime");
+            
+            log.info("Scheduling showing for interest ID: {}, reviewedById: {}, showingDateTime: {}", 
+                id, reviewedById, showingDateTimeStr);
+            
+            if (reviewedById == null || responseMessage == null || showingDateTimeStr == null) {
+                log.error("Missing required fields for scheduling showing. reviewedById: {}, responseMessage: {}, showingDateTime: {}", 
+                    reviewedById != null ? "present" : "missing", 
+                    responseMessage != null ? "present" : "missing", 
+                    showingDateTimeStr != null ? "present" : "missing");
+                throw new IllegalArgumentException("Saknas obligatoriska fält för bokning av visning");
+            }
+            
+            User reviewedBy = userService.getUserById(reviewedById)
+                    .orElseThrow(() -> new IllegalArgumentException("Ogiltig användar-ID: " + reviewedById));
+            
+            LocalDateTime showingDateTime;
+            try {
+                showingDateTime = LocalDateTime.parse(showingDateTimeStr);
+            } catch (Exception e) {
+                log.error("Invalid date format for showingDateTime: {}", showingDateTimeStr, e);
+                throw new IllegalArgumentException("Ogiltigt datumformat: " + showingDateTimeStr);
+            }
+            
+            log.info("All validation passed, proceeding to schedule showing");
+            return scheduleShowing(id, reviewedBy, responseMessage, showingDateTime);
+        } catch (Exception e) {
+            log.error("Error scheduling showing for interest ID: {}", id, e);
+            throw new RuntimeException("Fel vid bokning av visning: " + e.getMessage(), e);
         }
-        
-        User reviewedBy = userService.getUserById(reviewedById)
-                .orElseThrow(() -> new IllegalArgumentException("Invalid user ID"));
-        
-        LocalDateTime showingDateTime = LocalDateTime.parse(showingDateTimeStr);
-        
-        return scheduleShowing(id, reviewedBy, responseMessage, showingDateTime);
     }
 } 
