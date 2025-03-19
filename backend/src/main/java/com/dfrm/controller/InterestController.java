@@ -2,10 +2,14 @@ package com.dfrm.controller;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -107,6 +111,18 @@ public class InterestController {
         
         try {
             log.info("Schemalägger visning för intresse ID: {}, data: {}", id, showingData);
+            
+            // Hämta aktuell authentication för debugging
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication != null) {
+                log.info("Authenticated user: {}, authorities: {}", 
+                    authentication.getName(),
+                    authentication.getAuthorities().stream()
+                        .map(GrantedAuthority::getAuthority)
+                        .collect(Collectors.joining(", ")));
+            } else {
+                log.warn("No authentication found in security context");
+            }
             
             Interest interest = interestService.scheduleShowing(id, showingData);
             return ResponseEntity.ok(interest);

@@ -187,8 +187,15 @@ public class InterestService {
                 throw new IllegalArgumentException("Saknas obligatoriska fält för bokning av visning");
             }
             
-            User reviewedBy = userService.getUserById(reviewedById)
-                    .orElseThrow(() -> new IllegalArgumentException("Ogiltig användar-ID: " + reviewedById));
+            // Försök hämta användare
+            Optional<User> userOpt = userService.getUserById(reviewedById);
+            if (userOpt.isEmpty()) {
+                log.error("User not found for ID: {}", reviewedById);
+                throw new IllegalArgumentException("Användaren med ID " + reviewedById + " hittades inte");
+            }
+            User reviewedBy = userOpt.get();
+            
+            log.info("Found user: {}, with role: {}", reviewedBy.getEmail(), reviewedBy.getRole());
             
             LocalDateTime showingDateTime;
             try {
@@ -201,8 +208,8 @@ public class InterestService {
             log.info("All validation passed, proceeding to schedule showing");
             return scheduleShowing(id, reviewedBy, responseMessage, showingDateTime);
         } catch (Exception e) {
-            log.error("Error scheduling showing for interest ID: {}", id, e);
-            throw new RuntimeException("Fel vid bokning av visning: " + e.getMessage(), e);
+            log.error("Error scheduling showing: {}", e.getMessage(), e);
+            throw e;
         }
     }
 } 

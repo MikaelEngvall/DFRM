@@ -50,6 +50,7 @@ public class SecurityConfig {
                     "/api/pending-tasks/check-emails",
                     "/api/interests/check-emails"
                 ).permitAll()
+                .requestMatchers("/api/interests/*/schedule-showing").authenticated()
                 .anyRequest().authenticated()
             )
             .sessionManagement(session -> session

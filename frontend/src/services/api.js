@@ -14,7 +14,25 @@ api.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
     console.log('API Request:', config.method.toUpperCase(), config.url);
-    console.log('Token finns i headers');
+    console.log('Token finns i headers:', token.substring(0, 15) + '...');
+    
+    try {
+      // Försök tolka JWT-token (base64-delen)
+      const base64Url = token.split('.')[1];
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+      const payload = JSON.parse(window.atob(base64));
+      console.log('Token payload:', payload);
+      
+      // Logga utgångstid om den finns
+      if (payload.exp) {
+        const expDate = new Date(payload.exp * 1000);
+        const now = new Date();
+        console.log('Token expires:', expDate);
+        console.log('Token valid:', expDate > now ? 'Yes' : 'NO - EXPIRED');
+      }
+    } catch (e) {
+      console.log('Kunde inte avkoda token:', e);
+    }
   } else {
     console.log('API Request:', config.method.toUpperCase(), config.url);
     console.log('Token saknas i headers');
