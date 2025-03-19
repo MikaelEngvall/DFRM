@@ -5,7 +5,7 @@ import AlertModal from '../components/AlertModal';
 import FormInput from '../components/FormInput';
 import Autocomplete from '../components/Autocomplete';
 import Title from '../components/Title';
-import { PlusIcon, PaperAirplaneIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, PaperAirplaneIcon, FunnelIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { taskService, apartmentService, tenantService, userService, taskMessageService } from '../services';
 import { useLocale } from '../contexts/LocaleContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -49,6 +49,7 @@ const Tasks = () => {
     status: queryParams.get('status') || '',
     priority: queryParams.get('priority') || '',
   });
+  const [showFilters, setShowFilters] = useState(false);
 
   const renderAssignedUser = (assignedUserId) => {
     if (!assignedUserId) return '-';
@@ -365,136 +366,141 @@ const Tasks = () => {
   }
 
   return (
-    <div className="mx-auto p-4 bg-slate-800 min-h-screen">
-      <div className="mb-6">
-        <Title level="h1" className="mb-4">{t('tasks.title')}</Title>
-        
-        {/* Felmeddelande */}
-        {error && (
-          <div className="bg-red-600 text-white p-3 mb-4 rounded-md">
-            {error}
-          </div>
-        )}
-      </div>
-      
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 bg-slate-800 min-h-screen">
       <div className="flex justify-between items-center mb-6">
-        <button
-          onClick={() => {
-            resetForm();
-            setSelectedTask(null);
-            setIsModalOpen(true);
-          }}
-          className="bg-primary text-white px-4 py-2 rounded-md hover:bg-secondary transition-colors flex items-center"
-        >
-          <PlusIcon className="h-5 w-5 mr-2" />
-          {t('tasks.add')}
-        </button>
-      </div>
-      
-      {/* Filtersektion */}
-      <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-4 mb-6">
-        <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-          {t('common.filters')}
-        </h2>
-        
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              {t('tasks.filters.apartment')}
-            </label>
-            <select
-              name="apartmentId"
-              value={filters.apartmentId}
-              onChange={handleFilterChange}
-              className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-            >
-              <option value="">{t('common.all')}</option>
-              {apartments.map((apartment) => (
-                <option key={apartment.id} value={apartment.id}>
-                  {apartment.street} {apartment.number}, LGH {apartment.apartmentNumber}
-                </option>
-              ))}
-            </select>
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              {t('tasks.filters.tenant')}
-            </label>
-            <select
-              name="tenantId"
-              value={filters.tenantId}
-              onChange={handleFilterChange}
-              className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-            >
-              <option value="">{t('common.all')}</option>
-              {tenants.map((tenant) => (
-                <option key={tenant.id} value={tenant.id}>
-                  {tenant.firstName} {tenant.lastName}
-                </option>
-              ))}
-            </select>
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              {t('tasks.filters.status')}
-            </label>
-            <select
-              name="status"
-              value={filters.status}
-              onChange={handleFilterChange}
-              className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-            >
-              <option value="">{t('common.all')}</option>
-              <option value="PENDING">{t('tasks.status.PENDING')}</option>
-              <option value="IN_PROGRESS">{t('tasks.status.IN_PROGRESS')}</option>
-              <option value="COMPLETED">{t('tasks.status.COMPLETED')}</option>
-            </select>
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              {t('tasks.filters.priority')}
-            </label>
-            <select
-              name="priority"
-              value={filters.priority}
-              onChange={handleFilterChange}
-              className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-            >
-              <option value="">{t('common.all')}</option>
-              <option value="LOW">{t('tasks.priorities.LOW')}</option>
-              <option value="MEDIUM">{t('tasks.priorities.MEDIUM')}</option>
-              <option value="HIGH">{t('tasks.priorities.HIGH')}</option>
-              <option value="URGENT">{t('tasks.priorities.URGENT')}</option>
-            </select>
-          </div>
-        </div>
-        
-        <div className="flex justify-end space-x-2">
+        <Title level="h1">
+          {t('tasks.title')}
+        </Title>
+        <div className="flex space-x-2">
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            className="flex items-center px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+          >
+            <FunnelIcon className="h-5 w-5 mr-2" />
+            {t('common.filters')}
+          </button>
           <button
             onClick={() => {
-              setFilters({
-                apartmentId: '',
-                tenantId: '',
-                status: '',
-                priority: '',
-              });
-              clearFilters();
+              resetForm();
+              setSelectedTask(null);
+              setIsModalOpen(true);
             }}
-            className="bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 py-2 px-4 rounded-md"
+            className="bg-primary text-white px-4 py-2 rounded-md hover:bg-secondary transition-colors flex items-center"
           >
-            {t('common.clear')}
-          </button>
-          <button
-            onClick={applyFilters}
-            className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md"
-          >
-            {t('common.apply')}
+            <PlusIcon className="h-5 w-5 mr-2" />
+            {t('tasks.add')}
           </button>
         </div>
       </div>
+      
+      {/* Felmeddelande */}
+      {error && (
+        <div className="bg-red-600 text-white p-3 mb-4 rounded-md">
+          {error}
+        </div>
+      )}
+      
+      {showFilters && (
+        <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg mb-6 border border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-medium text-gray-900 dark:text-white">{t('common.filters')}</h2>
+            <button 
+              onClick={clearFilters}
+              className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center"
+            >
+              <XMarkIcon className="h-4 w-4 mr-1" />
+              {t('common.clear')}
+            </button>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                {t('tasks.filters.apartment')}
+              </label>
+              <select
+                name="apartmentId"
+                value={filters.apartmentId}
+                onChange={handleFilterChange}
+                className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              >
+                <option value="">{t('common.all')}</option>
+                {apartments.map((apartment) => (
+                  <option key={apartment.id} value={apartment.id}>
+                    {apartment.street} {apartment.number}, LGH {apartment.apartmentNumber}
+                  </option>
+                ))}
+              </select>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                {t('tasks.filters.tenant')}
+              </label>
+              <select
+                name="tenantId"
+                value={filters.tenantId}
+                onChange={handleFilterChange}
+                className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              >
+                <option value="">{t('common.all')}</option>
+                {tenants.map((tenant) => (
+                  <option key={tenant.id} value={tenant.id}>
+                    {tenant.firstName} {tenant.lastName}
+                  </option>
+                ))}
+              </select>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                {t('tasks.filters.status')}
+              </label>
+              <select
+                name="status"
+                value={filters.status}
+                onChange={handleFilterChange}
+                className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              >
+                <option value="">{t('common.all')}</option>
+                <option value="PENDING">{t('tasks.status.PENDING')}</option>
+                <option value="IN_PROGRESS">{t('tasks.status.IN_PROGRESS')}</option>
+                <option value="COMPLETED">{t('tasks.status.COMPLETED')}</option>
+              </select>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                {t('tasks.filters.priority')}
+              </label>
+              <select
+                name="priority"
+                value={filters.priority}
+                onChange={handleFilterChange}
+                className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              >
+                <option value="">{t('common.all')}</option>
+                <option value="LOW">{t('tasks.priorities.LOW')}</option>
+                <option value="MEDIUM">{t('tasks.priorities.MEDIUM')}</option>
+                <option value="HIGH">{t('tasks.priorities.HIGH')}</option>
+                <option value="URGENT">{t('tasks.priorities.URGENT')}</option>
+              </select>
+            </div>
+          </div>
+          
+          <div className="mt-4 flex items-center justify-between">
+            <div className="text-sm text-gray-500 dark:text-gray-400">
+              {tasks.length} {t('tasks.filteredResults', { count: tasks.length })}
+            </div>
+            <button
+              onClick={applyFilters}
+              className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md"
+            >
+              {t('common.apply')}
+            </button>
+          </div>
+        </div>
+      )}
       
       <DataTable
         columns={columns}

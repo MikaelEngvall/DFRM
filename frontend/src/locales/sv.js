@@ -253,6 +253,7 @@ const translations = {
     relatedTasks: 'Relaterade uppgifter',
     noRelatedTasks: 'Inga relaterade uppgifter',
     recurringPatternHelp: 'Systemet kommer automatiskt att skapa nya uppgifter baserat på detta mönster',
+    filteredResults: 'uppgifter hittades',
     recurringPatterns: {
       DAILY: 'Dagligen',
       WEEKLY: 'Veckovis',
