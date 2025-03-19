@@ -6,6 +6,7 @@ import FormInput from '../components/FormInput';
 import { PlusIcon, FunnelIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { keyService, apartmentService, tenantService } from '../services';
 import { useLocale } from '../contexts/LocaleContext';
+import Title from '../components/Title';
 
 const Keys = () => {
   const { t } = useLocale();
@@ -380,10 +381,12 @@ const Keys = () => {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 bg-slate-800 min-h-screen">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-cinzel dark:text-white">{t('keys.title')}</h1>
-        <div className="flex gap-2">
+        <Title level="h1">
+          {t('keys.title')}
+        </Title>
+        <div className="flex space-x-2">
           <button
             onClick={() => setShowFilters(!showFilters)}
             className="flex items-center px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
