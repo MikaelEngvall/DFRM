@@ -214,6 +214,15 @@ const Interests = () => {
         fullResponseMessage = `${responseMail}\n\nVisningstid: ${formattedDate} kl. ${formattedTime}`;
       }
       
+      // Detaljerad loggning om intresseanmälan
+      console.log("Intresseanmälan som ska uppdateras:", {
+        id: selectedInterest.id,
+        name: selectedInterest.name,
+        email: selectedInterest.email,
+        apartment: selectedInterest.apartment,
+        status: selectedInterest.status
+      });
+      
       // Logga data som vi ska skicka
       console.log("Skickar data för bokad visning:", {
         id: selectedInterest.id,
@@ -222,14 +231,35 @@ const Interests = () => {
         showingDateTime: showingDateTime
       });
       
-      // Skicka e-post till intresseanmälaren och schemalägg visning
-      const result = await interestService.scheduleShowing(selectedInterest.id, {
-        reviewedById: currentUser.id,
-        responseMessage: fullResponseMessage,
-        showingDateTime: showingDateTime
-      });
+      // Logga direkt till DOM för felsökning
+      document.body.insertAdjacentHTML('beforeend', 
+        `<div style="position:fixed; bottom:150px; right:20px; background:black; color:white; padding:10px; z-index:9999; max-width:500px; overflow:auto; max-height:200px;">
+          <p>Försöker boka visning med URL: /api/interests/${selectedInterest.id}/schedule-showing</p>
+          <p>Intresse-ID: ${selectedInterest.id}</p>
+          <p>Status: ${selectedInterest.status}</p>
+        </div>`
+      );
       
-      console.log("Svar från server vid bokad visning:", result);
+      try {
+        // Testa båda funktionerna för att se vilken som fungerar
+        console.log("Försöker med första metoden (scheduleShowingV2)...");
+        const result = await interestService.scheduleShowingV2(selectedInterest.id, {
+          reviewedById: currentUser.id,
+          responseMessage: fullResponseMessage,
+          showingDateTime: showingDateTime
+        });
+        console.log("Första metoden lyckades:", result);
+      } catch (firstError) {
+        console.error("Första metoden misslyckades:", firstError);
+        
+        console.log("Försöker med andra metoden (scheduleShowing)...");
+        const result = await interestService.scheduleShowing(selectedInterest.id, {
+          reviewedById: currentUser.id,
+          responseMessage: fullResponseMessage,
+          showingDateTime: showingDateTime
+        });
+        console.log("Andra metoden lyckades:", result);
+      }
       
       // Uppdatera listor efter schemaläggning
       fetchInterests();
