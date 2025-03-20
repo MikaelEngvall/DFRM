@@ -49,7 +49,9 @@ public class SecurityConfig {
                     "/api/security/reset-password",
                     "/api/security/validate-reset-token",
                     "/api/pending-tasks/check-emails",
-                    "/api/interests/check-emails"
+                    "/api/interests/check-emails",
+                    "/api/mail/test",
+                    "/api/mail/test-bulk"
                 ).permitAll()
                 .requestMatchers("/api/interests/*/schedule-showing").hasAnyAuthority(
                     "ROLE_SUPERADMIN", "ROLE_ADMIN", "SUPERADMIN", "ADMIN")

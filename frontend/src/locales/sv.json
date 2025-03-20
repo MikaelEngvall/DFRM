@@ -12,7 +12,9 @@
       "subjectRequired": "Ämne krävs",
       "contentRequired": "Innehåll krävs",
       "noRecipients": "Inga mottagare valda",
-      "serverTimeout": "E-postuppsändningen tar längre tid än väntat. Servern bearbetar fortfarande din förfrågan i bakgrunden. Du kan stänga detta fönster och kontrollera med mottagarna om några minuter."
+      "serverTimeout": "E-postuppsändningen tar längre tid än väntat. Servern bearbetar fortfarande din förfrågan i bakgrunden. Du kan stänga detta fönster och kontrollera med mottagarna om några minuter.",
+      "networkError": "Kunde inte ansluta till servern. Kontrollera din internetanslutning.",
+      "serverError": "Ett fel uppstod på servern. Försök igen senare."
     },
     "bcc": "Dold kopia",
     "to": "Till",
@@ -21,6 +23,10 @@
     "recipientCount": "{{count}} mottagare",
     "selectAll": "Välj alla",
     "deselectAll": "Avmarkera alla",
-    "selectedCount": "{{count}} valda"
+    "selectedCount": "{{count}} valda",
+    "title": "Skicka e-postmeddelande",
+    "partialSuccess": "{{sent}} av {{total}} e-postmeddelanden skickades. Vissa mottagare fick inte meddelandet.",
+    "showRecipients": "Visa alla mottagare",
+    "testSend": "Skicka testmeddelande"
   }
 } 

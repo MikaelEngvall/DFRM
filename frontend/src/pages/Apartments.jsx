@@ -114,14 +114,36 @@ const Apartments = () => {
   // Hantera e-postutskick
   const handleSendEmail = async (subject, content, recipients) => {
     try {
-      await emailService.sendBulkEmail(subject, content, recipients);
+      console.log(`Apartments.jsx handleSendEmail: initierar utskick till ${recipients.length} mottagare`);
+      
+      // Visa de första mottagarna för felsökning (max 3)
+      if (recipients.length > 0) {
+        console.log("Exempel på mottagare:", 
+          recipients.slice(0, Math.min(3, recipients.length)).join(", ") + 
+          (recipients.length > 3 ? ` och ${recipients.length - 3} fler...` : ""));
+      }
+      
+      const result = await emailService.sendBulkEmail(subject, content, recipients);
+      console.log("E-post resultat:", result);
+      
       setEmailSendSuccess(true);
       // Visa bekräftelsemeddelande i 3 sekunder
       setTimeout(() => setEmailSendSuccess(false), 3000);
+      
+      // Om det var delvis framgång, visa ett meddelande
+      if (result && result.partialSuccess) {
+        alert(t('email.partialSuccess', { 
+          sent: result.recipientCount || 0, 
+          total: recipients.length 
+        }));
+      }
+      
       return true;
     } catch (error) {
       console.error('Error sending email:', error);
-      throw new Error(t('email.errors.sendFailed'));
+      const errorMessage = error.message || t('email.errors.sendFailed');
+      alert(errorMessage);
+      throw new Error(errorMessage);
     }
   };
 

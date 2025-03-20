@@ -23,11 +23,25 @@ spring:
     protocol: smtp
     properties:
       mail:
+        debug: true
         smtp:
           auth: true
           starttls:
             enable: true
             required: true
+          socketFactory:
+            fallback: true
+          connectiontimeout: 60000
+          timeout: 60000
+          writetimeout: 60000
+          quitwait: false
+          ssl:
+            enable: false
+            trust: "*"
+          socketFactory.class: javax.net.ssl.SSLSocketFactory
+        transport:
+          protocol: smtp
+      debug: true
 
   web:
     cors:
@@ -68,6 +82,10 @@ logging:
     org.springframework:
       data.mongodb: DEBUG
       security: DEBUG
+    com.sun.mail: TRACE
+    javax.mail: TRACE
+    jakarta.mail: TRACE
+    org.springframework.mail: TRACE
 
 springdoc:
   api-docs:
