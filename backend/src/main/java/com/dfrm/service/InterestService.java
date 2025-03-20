@@ -27,6 +27,7 @@ public class InterestService {
     private final TaskRepository taskRepository;
     private final EmailService emailService;
     private final UserService userService;
+    private final ShowingService showingService;
     
     public List<Interest> getAllInterests() {
         return interestRepository.findAll();
@@ -97,11 +98,20 @@ public class InterestService {
         Task showingTask = createShowingTask(interest, reviewedBy, showingDateTime);
         interest.setRelatedTask(showingTask);
         
-        // Spara uppdaterad intresseanmälan
+        // Spara uppdaterad intresseanmälan innan den används för att skapa Showing
         Interest savedInterest = interestRepository.save(interest);
         
+        // Skapa en Showing i den nya kollektionen
+        try {
+            showingService.createShowingFromInterest(savedInterest, reviewedBy, showingDateTime);
+            log.info("Successfully created showing entry for interest ID: {}", savedInterest.getId());
+        } catch (Exception e) {
+            log.error("Failed to create showing entry: {}", e.getMessage(), e);
+            // Fortsätt trots fel, uppgiften skapades fortfarande
+        }
+        
         // Skicka e-post till intresseanmälaren
-        sendShowingConfirmation(interest, showingDateTime, responseMessage);
+        sendShowingConfirmation(savedInterest, showingDateTime, responseMessage);
         
         return savedInterest;
     }

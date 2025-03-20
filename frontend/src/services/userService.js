@@ -98,7 +98,10 @@ const userService = {
   createUser,
   updateUser,
   deleteUser,
-  updatePassword
+  updatePassword,
+  
+  // Alias för bakåtkompatibilitet
+  getAll: getAllUsers
 };
 
 export default userService; 

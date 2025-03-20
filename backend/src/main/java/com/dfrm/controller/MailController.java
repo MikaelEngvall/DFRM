@@ -156,16 +156,6 @@ public class MailController {
                 Arrays.asList("info@duggalsfastigheter.se")
             );
             
-            // Skicka ett test-bulkmail
-            emailService.sendBulkEmail(
-                "DFRM Bulk Testmail " + timestamp, 
-                "<p>Detta är ett automatiskt <b>bulk-testmail</b> från DFRM systemet.</p>" +
-                "<p>Tidsstämpel: " + timestamp + "</p>" +
-                "<p>Detta meddelande används för att verifiera att systemet kan skicka e-post " +
-                "till flera mottagare samtidigt.</p>",
-                recipients
-            );
-            
             return ResponseEntity.ok(Map.of(
                 "success", true,
                 "message", "Bulk testmail skickat till " + recipients.size() + " mottagare",

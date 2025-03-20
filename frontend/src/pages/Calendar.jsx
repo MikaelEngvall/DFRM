@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { taskService, userService, apartmentService, tenantService, taskMessageService } from '../services';
+import showingService from '../services/showingService';
 import { useLocale } from '../contexts/LocaleContext';
 import { useAuth } from '../contexts/AuthContext';
 import Modal from '../components/Modal';
@@ -25,8 +26,11 @@ const Calendar = () => {
   const { user: currentUser, hasRole } = useAuth();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [tasks, setTasks] = useState([]);
+  const [showings, setShowings] = useState([]);  // Ny state för visningar
   const [selectedTask, setSelectedTask] = useState(null);
+  const [selectedShowing, setSelectedShowing] = useState(null);  // Ny state för vald visning
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
+  const [isShowingModalOpen, setIsShowingModalOpen] = useState(false);  // Ny state för visningsmodalen
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [users, setUsers] = useState([]);
@@ -47,6 +51,7 @@ const Calendar = () => {
     recurringPattern: '',
     descriptionLanguage: '',
   });
+  const [successMessage, setSuccessMessage] = useState('');
 
   // Funktion för att kontrollera om användaren är admin eller superadmin
   const isAdminOrSuperAdmin = () => {
@@ -54,48 +59,43 @@ const Calendar = () => {
   };
 
   useEffect(() => {
-    fetchTasks();
-    fetchReferenceData();
+    fetchCalendarData();
   }, [currentDate]);
 
-  const fetchReferenceData = async () => {
+  const fetchCalendarData = async () => {
+    setIsLoading(true);
+    setError(null);
+    
     try {
-      const [usersData, apartmentsData, tenantsData] = await Promise.all([
+      // Beräkna månadens start- och slutdatum
+      const year = currentDate.getFullYear();
+      const month = currentDate.getMonth();
+      const startOfMonth = new Date(year, month, 1);
+      const endOfMonth = new Date(year, month + 1, 0);
+      
+      // Formatera datum för API-anrop
+      const startDateStr = startOfMonth.toISOString().split('T')[0];
+      const endDateStr = endOfMonth.toISOString().split('T')[0];
+      
+      // Hämta både uppgifter och visningar parallellt
+      const [tasksData, usersData, apartmentsData, tenantsData, showingsData] = await Promise.all([
+        taskService.getTasksByDateRange(startDateStr, endDateStr),
         userService.getAllUsers(),
         apartmentService.getAllApartments(),
         tenantService.getAllTenants(),
+        showingService.getForCalendar(startDateStr, endDateStr) // Hämta visningar för kalendern
       ]);
       
+      setTasks(tasksData);
       setUsers(usersData);
       setApartments(apartmentsData);
       setTenants(tenantsData);
+      setShowings(showingsData); // Spara visningar i state
+      
+      setIsLoading(false);
     } catch (err) {
-      console.error('Error fetching reference data:', err);
-    }
-  };
-
-  const fetchTasks = async () => {
-    try {
-      setIsLoading(true);
-      
-      const startDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-      const endDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
-      
-      const startDateString = startDate.toISOString().split('T')[0];
-      const endDateString = endDate.toISOString().split('T')[0];
-      
-      console.log(`Hämtar uppgifter från ${startDateString} till ${endDateString}`);
-      
-      const data = await taskService.getTasksByDateRange(startDateString, endDateString);
-      
-      console.log('Hämtade uppgifter:', data.length, data);
-      
-      setTasks(data);
-      setError(null);
-    } catch (err) {
+      console.error("Error fetching calendar data:", err);
       setError(t('common.error'));
-      console.error('Error fetching tasks:', err);
-    } finally {
       setIsLoading(false);
     }
   };
@@ -253,7 +253,7 @@ const Calendar = () => {
         }
       }
       
-      await fetchTasks();
+      await fetchCalendarData();
       setIsTaskModalOpen(false);
       setSelectedTask(null);
       resetForm();
@@ -355,44 +355,96 @@ const Calendar = () => {
     );
   };
 
+  const handleShowingClick = (showing) => {
+    setSelectedShowing(showing);
+    setIsShowingModalOpen(true);
+  };
+
+  // Lägg till funktion för att uppdatera visningsstatus
+  const handleUpdateShowingStatus = async (showingId, newStatus) => {
+    try {
+      await showingService.updateStatus(showingId, newStatus);
+      setIsShowingModalOpen(false);
+      setSelectedShowing(null);
+      
+      // Uppdatera kalendern
+      fetchCalendarData();
+      
+      // Visa bekräftelsemeddelande
+      setSuccessMessage(t(`showings.messages.${newStatus.toLowerCase()}`));
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (err) {
+      console.error(`Error updating showing status: ${err}`);
+      setError(t('common.error'));
+    }
+  };
+
+  // Funktion för att rendera visningsobjekt i kalendern
+  const renderShowingItem = (showing) => {
+    return (
+      <div 
+        key={showing.id} 
+        onClick={() => handleShowingClick(showing)}
+        className="mb-1 p-2 rounded-md cursor-pointer bg-purple-600 text-white border border-purple-800 shadow-sm hover:shadow-md transition-shadow duration-200"
+      >
+        <div className="flex justify-between items-start">
+          <div className="font-medium">{showing.assignedTo.firstName} - {showing.apartmentAddress}</div>
+        </div>
+      </div>
+    );
+  };
+
+  // Uppdatera renderCalendar-funktionen för att inkludera visningar
   const renderCalendar = () => {
+    const days = [];
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
-    const daysInMonth = getDaysInMonth(year, month);
-    const firstDayOfMonth = getFirstDayOfMonth(year, month);
-    const adjustedFirstDay = firstDayOfMonth === 0 ? 6 : firstDayOfMonth - 1;
-    const days = [];
     
-    for (let i = 0; i < adjustedFirstDay; i++) {
+    // Hämta antal dagar i månaden
+    const daysInMonth = getDaysInMonth(year, month);
+    
+    // Hämta första dagen i månaden (0 = söndag, 1 = måndag, ...)
+    let firstDay = getFirstDayOfMonth(year, month);
+    
+    // Justera så att veckan börjar på måndag (ISO-8601)
+    firstDay = firstDay === 0 ? 6 : firstDay - 1;
+    
+    // För att stämma överens med måndag som första dag i veckan
+    const weekdays = [1, 2, 3, 4, 5, 6, 0]; // Mån, tis, ons, tors, fre, lör, sön
+    
+    // Lägg till tomma celler för dagar från föregående månad
+    for (let i = 0; i < firstDay; i++) {
       days.push(
         <div 
           key={`empty-${i}`} 
-          className="bg-gray-50 dark:bg-gray-800 border-b border-r border-gray-200 dark:border-gray-700"
+          className="bg-gray-100 dark:bg-gray-800 border-b border-r border-gray-200 dark:border-gray-700"
         />
       );
     }
     
+    // Lägg till celler för alla dagar i månaden
     for (let day = 1; day <= daysInMonth; day++) {
       const date = new Date(year, month, day);
-      const dateString = date.toISOString().split('T')[0];
+      const isToday = isDateToday(date);
+      const isAdminOrSuperAdmin = hasRole(['ADMIN', 'SUPERADMIN']);
+      const isClickable = isAdminOrSuperAdmin;
       
-      // Förenkla filtreringen för att se om något matchas
+      // Filtrera uppgifter för denna dag
       const dayTasks = tasks.filter(task => {
-        if (!task.dueDate) return false;
-        
-        const taskDate = new Date(task.dueDate + 'T00:00:00');
-        const taskDateString = taskDate.toISOString().split('T')[0];
-        
-        // Bara jämför datumen som strängar (YYYY-MM-DD)
-        return taskDateString === dateString;
+        const taskDate = new Date(task.dueDate);
+        return taskDate.getDate() === day && 
+               taskDate.getMonth() === month && 
+               taskDate.getFullYear() === year;
       });
       
-      if (dayTasks.length > 0) {
-        console.log(`Dag ${day} har ${dayTasks.length} uppgifter:`, dayTasks);
-      }
-      
-      const isToday = isDateToday(date);
-      const isClickable = isAdminOrSuperAdmin();
+      // Filtrera visningar för denna dag
+      const dayShowings = showings.filter(showing => {
+        if (!showing.dateTime) return false;
+        const showingDate = new Date(showing.dateTime);
+        return showingDate.getDate() === day && 
+               showingDate.getMonth() === month && 
+               showingDate.getFullYear() === year;
+      });
       
       days.push(
         <div 
@@ -410,9 +462,14 @@ const Calendar = () => {
             </span>
           </div>
           <div className="px-1">
-            {dayTasks.length > 0 ? (
-              dayTasks.map(task => renderTaskItem(task))
-            ) : (
+            {/* Visa visningar först */}
+            {dayShowings.length > 0 && dayShowings.map(showing => renderShowingItem(showing))}
+            
+            {/* Sedan visa uppgifter */}
+            {dayTasks.length > 0 && dayTasks.map(task => renderTaskItem(task))}
+            
+            {/* Visa meddelande om inga händelser */}
+            {dayTasks.length === 0 && dayShowings.length === 0 && (
               <div className="text-xs text-gray-400 dark:text-gray-600 p-1">
                 {t('calendar.noEvents')}
               </div>
@@ -475,6 +532,21 @@ const Calendar = () => {
             </div>
             <div className="ml-3">
               <p className="text-sm text-red-700">{error}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {successMessage && (
+        <div className="bg-green-50 border-l-4 border-green-400 p-4">
+          <div className="flex">
+            <div className="flex-shrink-0">
+              <svg className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <div className="ml-3">
+              <p className="text-sm text-green-700">{successMessage}</p>
             </div>
           </div>
         </div>
@@ -732,6 +804,118 @@ const Calendar = () => {
               />
             </div>
           )}
+        </Modal>
+      )}
+
+      {selectedShowing && (
+        <Modal
+          isOpen={isShowingModalOpen}
+          onClose={() => {
+            setIsShowingModalOpen(false);
+            setSelectedShowing(null);
+          }}
+          title={t('showings.details')}
+        >
+          <div className="p-4 space-y-4">
+            <div className="bg-purple-50 dark:bg-purple-900 p-4 rounded-md">
+              <h3 className="text-lg font-semibold text-purple-800 dark:text-purple-100">
+                {selectedShowing.title || t('showings.defaultTitle')}
+              </h3>
+              <p className="text-purple-700 dark:text-purple-200">
+                {selectedShowing.description}
+              </p>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">{t('showings.dateTime')}</h4>
+                <p className="text-base font-medium">
+                  {new Date(selectedShowing.dateTime).toLocaleDateString()} {t('common.at')} {new Date(selectedShowing.dateTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                </p>
+              </div>
+              
+              <div>
+                <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">{t('showings.status')}</h4>
+                <p className="text-base font-medium">
+                  {t(`showings.statusTypes.${selectedShowing.status}`)}
+                </p>
+              </div>
+            </div>
+            
+            <div className="border-t pt-4 border-gray-200 dark:border-gray-700">
+              <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">{t('showings.apartment')}</h4>
+              <p className="text-base font-medium">
+                {selectedShowing.apartmentAddress}
+              </p>
+              
+              {selectedShowing.apartmentDetails && (
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  {selectedShowing.apartmentDetails}
+                </p>
+              )}
+            </div>
+            
+            <div className="border-t pt-4 border-gray-200 dark:border-gray-700">
+              <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">{t('showings.assignedTo')}</h4>
+              <p className="text-base font-medium">
+                {selectedShowing.assignedTo.firstName} {selectedShowing.assignedTo.lastName}
+              </p>
+              
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                {selectedShowing.assignedTo.email}
+              </p>
+            </div>
+            
+            {selectedShowing.contactName && (
+              <div className="border-t pt-4 border-gray-200 dark:border-gray-700">
+                <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">{t('showings.contact')}</h4>
+                <p className="text-base font-medium">
+                  {selectedShowing.contactName}
+                </p>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-1">
+                  {selectedShowing.contactEmail && (
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      {selectedShowing.contactEmail}
+                    </p>
+                  )}
+                  
+                  {selectedShowing.contactPhone && (
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      {selectedShowing.contactPhone}
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+            
+            {selectedShowing.notes && (
+              <div className="border-t pt-4 border-gray-200 dark:border-gray-700">
+                <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">{t('showings.notes')}</h4>
+                <p className="text-sm whitespace-pre-line">
+                  {selectedShowing.notes}
+                </p>
+              </div>
+            )}
+            
+            {hasRole(['ADMIN', 'SUPERADMIN']) && (
+              <div className="border-t pt-4 border-gray-200 dark:border-gray-700 flex justify-end space-x-2">
+                <button
+                  onClick={() => handleUpdateShowingStatus(selectedShowing.id, 'COMPLETED')}
+                  className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+                >
+                  {t('showings.actions.complete')}
+                </button>
+                
+                <button
+                  onClick={() => handleUpdateShowingStatus(selectedShowing.id, 'CANCELLED')}
+                  className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+                >
+                  {t('showings.actions.cancel')}
+                </button>
+              </div>
+            )}
+          </div>
         </Modal>
       )}
     </div>

@@ -1,6 +1,7 @@
 com\dfrm\model\Tenant.class
 com\dfrm\service\ImportService.class
 com\dfrm\repository\TaskRepository.class
+com\dfrm\controller\MailController$2.class
 com\dfrm\config\EnvConfig.class
 com\dfrm\repository\PendingTaskRepository.class
 com\dfrm\repository\UserRepository.class
@@ -16,7 +17,9 @@ com\dfrm\DfrmApplication.class
 com\dfrm\service\SecurityTokenService.class
 com\dfrm\model\Key.class
 com\dfrm\config\KeyTypeDeserializer.class
+com\dfrm\service\EmailService$3.class
 com\dfrm\controller\TenantController.class
+com\dfrm\service\EmailService$1.class
 com\dfrm\model\TaskMessage$TaskMessageBuilder.class
 com\dfrm\controller\MailController.class
 com\dfrm\model\Task.class
@@ -63,6 +66,7 @@ com\dfrm\model\Interest$InterestBuilder.class
 com\dfrm\config\SecurityConfig.class
 com\dfrm\config\MongoConfig.class
 com\dfrm\model\Interest.class
+com\dfrm\controller\MailController$1.class
 com\dfrm\model\User$UserBuilder.class
 com\dfrm\model\Apartment.class
 com\dfrm\model\PendingTask.class
@@ -70,4 +74,5 @@ com\dfrm\config\AppConfig.class
 com\dfrm\controller\TaskMessageController.class
 com\dfrm\controller\ApartmentController.class
 com\dfrm\service\TenantService.class
+com\dfrm\service\EmailService$2.class
 com\dfrm\repository\TaskMessageRepository.class

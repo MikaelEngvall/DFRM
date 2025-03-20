@@ -9,6 +9,7 @@ import pendingEmailReportService from './pendingEmailReportService';
 import emailService from './emailService';
 import taskMessageService from './taskMessageService';
 import { interestService } from './interestService';
+import showingService from './showingService';
 
 export {
   apartmentService,
@@ -21,5 +22,6 @@ export {
   pendingEmailReportService,
   emailService,
   taskMessageService,
-  interestService
+  interestService,
+  showingService
 }; 

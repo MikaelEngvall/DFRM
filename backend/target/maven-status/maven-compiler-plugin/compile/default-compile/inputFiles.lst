@@ -5,7 +5,9 @@ C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\service\EmailListener.ja
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\controller\KeyController.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\repository\TaskRepository.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\controller\TenantController.java
+C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\repository\ShowingRepository.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\model\KeyType.java
+C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\model\Showing.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\repository\SecurityTokenRepository.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\controller\TaskMessageController.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\controller\ApartmentController.java
@@ -45,6 +47,7 @@ C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\service\InterestEmailLis
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\filter\JwtAuthenticationFilter.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\service\InterestService.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\config\AppConfig.java
+C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\service\ShowingService.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\controller\AuthController.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\controller\SecurityController.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\config\ApplicationConfig.java
@@ -58,6 +61,7 @@ C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\model\TaskMessage.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\service\TokenDecryptionService.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\model\Language.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\service\EmailService.java
+C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\controller\ShowingController.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\model\Tenant.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\controller\MailController.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\repository\TaskMessageRepository.java

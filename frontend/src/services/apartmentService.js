@@ -231,6 +231,11 @@ const apartmentService = {
       throw error;
     }
   },
+  
+  // Alias för bakåtkompatibilitet
+  getAll: async (bypassCache = false) => {
+    return apartmentService.getAllApartments(bypassCache);
+  }
 };
 
 export default apartmentService; 

@@ -13,10 +13,17 @@ import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
 import jakarta.annotation.PostConstruct;
+import jakarta.mail.Authenticator;
+import jakarta.mail.Message;
+import jakarta.mail.MessagingException;
+import jakarta.mail.Multipart;
+import jakarta.mail.PasswordAuthentication;
 import jakarta.mail.Session;
 import jakarta.mail.Transport;
 import jakarta.mail.internet.InternetAddress;
+import jakarta.mail.internet.MimeBodyPart;
 import jakarta.mail.internet.MimeMessage;
+import jakarta.mail.internet.MimeMultipart;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -129,23 +136,6 @@ public class EmailService {
                     }
                     
                     log.info("Uppdaterade mailSender-konfiguration för att använda port {}", port);
-                }
-                
-                // Skicka ett testmeddelande till systemadministratören
-                try {
-                    SimpleMailMessage testMessage = new SimpleMailMessage();
-                    testMessage.setFrom(fromEmail);
-                    testMessage.setTo("mikael.engvall.me@gmail.com"); // Använd en verklig e-postadress för systemadministratören
-                    testMessage.setSubject("DFRM E-posttest: Port " + port);
-                    testMessage.setText("Det här är ett automatiskt testmeddelande för att verifiera att SMTP-konfigurationen fungerar på port " + port + ".\n\nDetta test kördes: " + java.time.LocalDateTime.now());
-                    
-                    if (mailSender instanceof JavaMailSenderImpl) {
-                        JavaMailSenderImpl mailSenderImpl = (JavaMailSenderImpl) mailSender;
-                        mailSenderImpl.send(testMessage);
-                        log.info("Skickade testmeddelande från port {}", port);
-                    }
-                } catch (Exception e) {
-                    log.warn("Kunde skapa anslutning till port {} men misslyckades med att skicka testmeddelande: {}", port, e.getMessage());
                 }
                 
                 // Om vi hittar en fungerande port, avsluta sökningen
@@ -384,193 +374,173 @@ public class EmailService {
     }
     
     /**
-     * Skickar e-post till flera mottagare som dold kopia (BCC)
-     * 
-     * @param subject     ämne
-     * @param content     innehåll (HTML-format stöds)
-     * @param recipients  lista med e-postadresser som ska ta emot meddelandet som dold kopia
+     * Skickar ett e-postmeddelande till flera mottagare med HTML-innehåll.
+     * Alla mottagare utom huvudmottagaren läggs till som BCC.
      */
-    public void sendBulkEmail(String subject, String content, List<String> recipients) {
-        if (recipients == null || recipients.isEmpty()) {
-            log.warn("Försökte skicka bulkmail utan mottagare");
-            return;
-        }
-        
-        // Logga information om bulkmailet
-        log.info("Skickar bulkmail med ämne '{}' till {} mottagare", subject, recipients.size());
-        
-        // Begränsa antal mottagare per batch för att undvika belastning
-        int batchSize = 5;
-        int totalBatches = (int) Math.ceil((double) recipients.size() / batchSize);
-        
-        log.info("Delar upp mottagare i {} batchar med max {} mottagare per batch", totalBatches, batchSize);
-        
-        int successCount = 0;
-        
-        for (int i = 0; i < recipients.size(); i += batchSize) {
-            int endIndex = Math.min(i + batchSize, recipients.size());
-            List<String> batch = recipients.subList(i, endIndex);
+    public boolean sendBulkEmail(String subject, String htmlContent, List<String> toEmails) {
+        try {
+            log.info("Skickar e-post till {} mottagare från {}", toEmails.size(), fromEmail);
             
-            log.info("Bearbetar batch {}/{} med {} mottagare", (i/batchSize)+1, totalBatches, batch.size());
+            // Skapa meddelandet
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
             
-            try {
-                // Konfigurerar timeout-värden före varje sändning
-                configureTimeouts();
-                
-                // Vi testar att skicka med MimeMessage direkt för att få mer kontroll
-                if (mailSender instanceof JavaMailSenderImpl) {
-                    JavaMailSenderImpl mailSenderImpl = (JavaMailSenderImpl) mailSender;
-                    
-                    // Skapa ett MIME-meddelande för korrekt formatering och kodning
-                    MimeMessage message = mailSenderImpl.createMimeMessage();
-                    MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-                    
-                    // Ange avsändare och ämne
-                    helper.setFrom(fromEmail);
-                    helper.setSubject(subject);
-                    
-                    // Lägger till mottagare som dold kopia
-                    for (String recipient : batch) {
-                        try {
-                            helper.addBcc(recipient);
-                        } catch (Exception e) {
-                            log.warn("Ogiltig e-postadress i batch (hoppas över): {}", recipient);
-                        }
-                    }
-                    
-                    // Ange HTML-innehåll
-                    helper.setText(content, true);
-                    
-                    // Skicka meddelandet
-                    try {
-                        log.info("Skickar e-post till batch med {} mottagare...", batch.size());
-                        mailSender.send(message);
-                        log.info("E-post skickad framgångsrikt till batch {}/{}", (i/batchSize)+1, totalBatches);
-                        successCount += batch.size();
-                    } catch (Exception e) {
-                        log.error("Primär mailsändning misslyckades, försöker med direktmetod: {}", e.getMessage());
-                        
-                        // Försök med den direkta metoden som fallback
-                        boolean fallbackSucceeded = sendBatchWithDirectMethod(subject, content, batch);
-                        if (fallbackSucceeded) {
-                            log.info("Fallback-metod lyckades skicka e-post till batch {}/{}", (i/batchSize)+1, totalBatches);
-                            successCount += batch.size();
-                        } else {
-                            log.error("Både primär och fallback-metod misslyckades för batch {}/{}", (i/batchSize)+1, totalBatches);
-                        }
-                    }
-                } else {
-                    log.error("Kunde inte skicka e-post: mailSender är inte av typen JavaMailSenderImpl");
-                }
-                
-                // Lägg in en paus mellan batchar för att undvika att överbelasta SMTP-servern
-                if (i + batchSize < recipients.size()) {
-                    try {
-                        log.info("Väntar 5 sekunder mellan batchar...");
-                        Thread.sleep(5000);
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                    }
-                }
-            } catch (Exception e) {
-                log.error("Fel vid skickande av bulkmail (batch {}/{}): {}", (i/batchSize)+1, totalBatches, e.getMessage(), e);
+            // Ange avsändare
+            helper.setFrom(fromEmail);
+            
+            // Sätt huvudmottagaren (från-adressen får också meddelandet)
+            log.info("Lägger till huvudmottagare: {}", fromEmail);
+            helper.setTo(fromEmail);
+            
+            // Lista alla BCC-mottagare (för att dölja mottagarlistan)
+            InternetAddress[] bccAddresses = new InternetAddress[toEmails.size()];
+            for (int i = 0; i < toEmails.size(); i++) {
+                bccAddresses[i] = new InternetAddress(toEmails.get(i));
             }
-        }
-        
-        // Sammanfatta resultatet
-        if (successCount == recipients.size()) {
-            log.info("Bulkmail skickat framgångsrikt till alla {} mottagare", recipients.size());
-        } else if (successCount > 0) {
-            log.warn("Bulkmail skickat delvis: {} av {} lyckades", successCount, recipients.size());
-        } else {
-            log.error("Bulkmail misslyckades helt. Inga e-postmeddelanden skickades av {}.", recipients.size());
+            helper.setBcc(bccAddresses);
+            
+            // Sätt ämne och innehåll
+            helper.setSubject(subject);
+            helper.setText(htmlContent, true);
+            
+            // Skicka meddelandet i batches om det är många mottagare
+            if (toEmails.size() > 50) {
+                return sendInBatches(fromEmail, toEmails, subject, htmlContent);
+            } else {
+                // Skicka meddelandet
+                log.info("Skickar e-post med {} BCC-mottagare", toEmails.size());
+                mailSender.send(message);
+                log.info("E-post skickad framgångsrikt");
+                return true;
+            }
+        } catch (Exception e) {
+            log.error("Fel vid skickande av e-post: {}", e.getMessage(), e);
+            
+            // Försök med direkt SMTP-anslutning som sista utväg
+            try {
+                log.info("Försöker skicka direkt via SMTP som reservmetod...");
+                return sendBatchWithDirectMethod(fromEmail, toEmails, subject, htmlContent);
+            } catch (Exception directEx) {
+                log.error("Slutgiltigt fel vid skickande av e-post: {}", directEx.getMessage(), directEx);
+                return false;
+            }
         }
     }
     
     /**
-     * Skickar ett batch med e-post med hjälp av direkt SMTP-transport som fallback
+     * Skickar e-post i grupper för att undvika problem med stora utskick.
      */
-    private boolean sendBatchWithDirectMethod(String subject, String content, List<String> recipients) {
-        try {
-            log.info("Försöker skicka batch med direkt SMTP-metod till {} mottagare", recipients.size());
+    private boolean sendInBatches(String fromEmail, List<String> toEmails, String subject, String htmlContent) {
+        log.info("Delar upp utskick i grupper, totalt {} mottagare", toEmails.size());
+        int batchSize = 50;
+        int totalRecipients = toEmails.size();
+        int successCount = 0;
+        
+        for (int i = 0; i < totalRecipients; i += batchSize) {
+            int endIndex = Math.min(i + batchSize, totalRecipients);
+            List<String> batch = toEmails.subList(i, endIndex);
             
-            if (!(mailSender instanceof JavaMailSenderImpl)) {
-                log.warn("Kan inte använda direktmetod: mailSender är inte av typen JavaMailSenderImpl");
-                return false;
-            }
-            
-            JavaMailSenderImpl mailSenderImpl = (JavaMailSenderImpl) mailSender;
-            
-            // Skapa en session med förbättrade inställningar
-            Properties props = new Properties();
-            props.putAll(mailSenderImpl.getJavaMailProperties());
-            
-            // Sätt explicita properties för direkt anslutning
-            props.put("mail.smtp.connectiontimeout", "60000");
-            props.put("mail.smtp.timeout", "60000");
-            props.put("mail.smtp.writetimeout", "60000");
-            
-            // Välj rätt säkerhetsinställningar baserat på port
-            int port = mailSenderImpl.getPort();
-            if (port == 465) {
-                props.put("mail.smtp.ssl.enable", "true");
-                props.put("mail.smtp.starttls.enable", "false");
-            } else {
-                props.put("mail.smtp.ssl.enable", "false");
-                props.put("mail.smtp.starttls.enable", "true");
-                props.put("mail.smtp.starttls.required", "true");
-            }
-            
-            Session session = Session.getInstance(props,
-                    new jakarta.mail.Authenticator() {
-                        protected jakarta.mail.PasswordAuthentication getPasswordAuthentication() {
-                            return new jakarta.mail.PasswordAuthentication(
-                                    mailSenderImpl.getUsername(), 
-                                    mailSenderImpl.getPassword());
-                        }
-                    });
-            
-            // Skapa och konfigurera meddelandet
-            MimeMessage message = new MimeMessage(session);
-            message.setFrom(new InternetAddress(fromEmail));
-            message.setSubject(subject, "UTF-8");
-            
-            // Lägg till BCC för varje mottagare
-            for (String recipient : recipients) {
-                try {
-                    message.addRecipient(MimeMessage.RecipientType.BCC, new InternetAddress(recipient));
-                } catch (Exception e) {
-                    log.warn("Ogiltig e-postadress (hoppas över): {}", recipient);
-                }
-            }
-            
-            // Ange HTML-innehåll
-            message.setContent(content, "text/html; charset=utf-8");
-            
-            // Logga anslutningsdetaljer
-            log.info("Direkt SMTP-anslutning: host={}, port={}, auth={}",
-                    mailSenderImpl.getHost(), mailSenderImpl.getPort(), props.getProperty("mail.smtp.auth"));
-            
-            // Skicka meddelandet med direkt Transport
-            Transport transport = session.getTransport("smtp");
             try {
-                transport.connect(
-                        mailSenderImpl.getHost(), 
-                        mailSenderImpl.getPort(), 
-                        mailSenderImpl.getUsername(), 
-                        mailSenderImpl.getPassword());
+                log.info("Skickar grupp {}/{} med {} mottagare", 
+                       (i/batchSize)+1, (int)Math.ceil((double)totalRecipients/batchSize), batch.size());
                 
-                message.saveChanges(); // Viktigt för att uppdatera headers före sändning
+                MimeMessage message = mailSender.createMimeMessage();
+                MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
                 
-                transport.sendMessage(message, message.getAllRecipients());
-                log.info("Batch framgångsrikt skickat via direkt SMTP");
-                return true;
-            } finally {
-                transport.close();
+                helper.setFrom(fromEmail);
+                
+                // Sätt huvudmottagaren (från-adressen får också meddelandet)
+                log.info("Lägger till huvudmottagare i batch: {}", fromEmail);
+                helper.setTo(fromEmail);
+                
+                // Sätt BCC-mottagare för denna grupp
+                InternetAddress[] bccAddresses = new InternetAddress[batch.size()];
+                for (int j = 0; j < batch.size(); j++) {
+                    bccAddresses[j] = new InternetAddress(batch.get(j));
+                }
+                helper.setBcc(bccAddresses);
+                
+                helper.setSubject(subject);
+                helper.setText(htmlContent, true);
+                
+                mailSender.send(message);
+                
+                successCount += batch.size();
+                log.info("Grupp {}/{} skickad framgångsrikt", (i/batchSize)+1, (int)Math.ceil((double)totalRecipients/batchSize));
+                
+                // Paus mellan grupputskick för att undvika överbelastning av servern
+                if (endIndex < totalRecipients) {
+                    log.info("Pausar i 2 sekunder före nästa grupputskick");
+                    Thread.sleep(2000);
+                }
+                
+            } catch (Exception e) {
+                log.error("Fel vid skickande av grupp {}: {}", (i/batchSize)+1, e.getMessage(), e);
             }
-        } catch (Exception e) {
-            log.error("Fel vid direkt SMTP-sändning av batch: {}", e.getMessage(), e);
-            return false;
         }
+        
+        log.info("Gruppvis utskick klart. {} av {} mottagare lyckades.", successCount, totalRecipients);
+        return successCount > 0;
+    }
+    
+    /**
+     * Skickar e-post med direkt SMTP-koppling som reservmetod.
+     */
+    public boolean sendBatchWithDirectMethod(String fromEmail, List<String> recipients, String subject, String htmlContent) throws MessagingException {
+        log.info("Försöker skicka direkt via SMTP till {} mottagare", recipients.size());
+        
+        // Hämta SMTP-inställningar från JavaMailSender
+        JavaMailSenderImpl mailSenderImpl = (JavaMailSenderImpl) mailSender;
+        String host = mailSenderImpl.getHost();
+        int port = mailSenderImpl.getPort();
+        String username = mailSenderImpl.getUsername();
+        String password = mailSenderImpl.getPassword();
+        
+        Properties props = new Properties();
+        props.put("mail.smtp.auth", "true");
+        props.put("mail.smtp.starttls.enable", "true");
+        props.put("mail.smtp.host", host);
+        props.put("mail.smtp.port", port);
+        props.put("mail.smtp.connectiontimeout", "60000");
+        props.put("mail.smtp.timeout", "60000");
+        props.put("mail.smtp.writetimeout", "60000");
+        
+        // Skapa session med autentisering
+        Session session = Session.getInstance(props, new Authenticator() {
+            @Override
+            protected PasswordAuthentication getPasswordAuthentication() {
+                return new PasswordAuthentication(username, password);
+            }
+        });
+        
+        // Skapa meddelande
+        MimeMessage message = new MimeMessage(session);
+        message.setFrom(new InternetAddress(fromEmail));
+        
+        // Sätt huvudmottagaren (från-adressen får också meddelandet)
+        log.info("Lägger till huvudmottagare i direktmetoden: {}", fromEmail);
+        message.addRecipient(Message.RecipientType.TO, new InternetAddress(fromEmail));
+        
+        // Lägg till alla mottagare som BCC
+        for (String recipient : recipients) {
+            message.addRecipient(Message.RecipientType.BCC, new InternetAddress(recipient));
+        }
+        
+        message.setSubject(subject);
+        
+        // Skapa HTML-innehåll
+        MimeBodyPart messageBodyPart = new MimeBodyPart();
+        messageBodyPart.setContent(htmlContent, "text/html; charset=UTF-8");
+        
+        Multipart multipart = new MimeMultipart();
+        multipart.addBodyPart(messageBodyPart);
+        message.setContent(multipart);
+        
+        // Skicka meddelandet
+        log.info("Skickar direkt via SMTP på port {}", port);
+        Transport.send(message);
+        log.info("E-post skickad framgångsrikt med direktmetoden");
+        
+        return true;
     }
 } 

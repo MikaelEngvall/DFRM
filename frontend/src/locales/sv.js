@@ -530,27 +530,34 @@ const translations = {
   },
 
   email: {
-    title: 'Skicka e-post',
-    button: 'Skicka e-post',
-    from: 'Från',
-    to: 'Till',
-    bcc: 'BCC',
+    send: 'Skicka e-post',
+    sendToAll: 'Skicka e-post till alla',
+    recipients: 'Mottagare',
     subject: 'Ämne',
     content: 'Innehåll',
-    send: 'Skicka',
     sending: 'Skickar...',
-    recipients: 'mottagare',
-    showRecipients: 'Visa mottagarlista',
+    success: 'E-post skickad!',
     errors: {
-      subjectRequired: 'Ämne är obligatoriskt',
-      contentRequired: 'Innehåll är obligatoriskt',
+      sendFailed: 'Kunde inte skicka e-post',
+      subjectRequired: 'Ämne krävs',
+      contentRequired: 'Innehåll krävs',
       noRecipients: 'Inga mottagare valda',
-      sendFailed: 'Kunde inte skicka e-post. Försök igen senare.'
+      serverTimeout: 'E-postuppsändningen tar längre tid än väntat. Servern bearbetar fortfarande din förfrågan i bakgrunden. Du kan stänga detta fönster och kontrollera med mottagarna om några minuter.',
+      networkError: 'Kunde inte ansluta till servern. Kontrollera din internetanslutning.',
+      serverError: 'Ett fel uppstod på servern. Försök igen senare.'
     },
-    inputPlaceholder: 'Skriv ett meddelande...',
-    translatedFrom: 'Översatt från {language}',
-    delete: 'Ta bort',
-    unknownUser: 'Okänd användare',
+    bcc: 'Dold kopia',
+    to: 'Till',
+    from: 'Från',
+    addRecipients: 'Lägg till mottagare',
+    recipientCount: '{{count}} mottagare',
+    selectAll: 'Välj alla',
+    deselectAll: 'Avmarkera alla',
+    selectedCount: '{{count}} valda',
+    title: 'Skicka e-postmeddelande',
+    partialSuccess: '{{sent}} av {{total}} e-postmeddelanden skickades. Vissa mottagare fick inte meddelandet.',
+    showRecipients: 'Visa alla mottagare',
+    testSend: 'Skicka testmeddelande'
   },
 
   interests: {
@@ -603,6 +610,31 @@ const translations = {
       showingScheduled: 'Visningstid bokad och e-post skickat',
       showingError: 'Ett fel uppstod vid bokning av visning',
       fieldsRequired: 'Alla fält måste fyllas i'
+    }
+  },
+
+  showings: {
+    title: 'Visningar',
+    details: 'Visningsdetaljer',
+    defaultTitle: 'Lägenhetvisning',
+    dateTime: 'Datum och tid',
+    status: 'Status',
+    apartment: 'Lägenhet',
+    assignedTo: 'Ansvarig mäklare',
+    contact: 'Kontaktuppgifter',
+    notes: 'Anteckningar',
+    statusTypes: {
+      SCHEDULED: 'Planerad',
+      COMPLETED: 'Genomförd',
+      CANCELLED: 'Inställd'
+    },
+    actions: {
+      complete: 'Markera som genomförd',
+      cancel: 'Ställ in visning'
+    },
+    messages: {
+      completed: 'Visningen har markerats som genomförd',
+      cancelled: 'Visningen har ställts in'
     }
   }
 };

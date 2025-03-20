@@ -294,6 +294,11 @@ const tenantService = {
       throw error;
     }
   },
+
+  // Alias för bakåtkompatibilitet
+  getAll: async (bypassCache = false) => {
+    return tenantService.getAllTenants(bypassCache);
+  }
 };
 
 export default tenantService; 
