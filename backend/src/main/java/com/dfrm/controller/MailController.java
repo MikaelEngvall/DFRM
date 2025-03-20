@@ -3,6 +3,8 @@ package com.dfrm.controller;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import org.springframework.http.ResponseEntity;
@@ -23,6 +25,7 @@ import lombok.extern.slf4j.Slf4j;
 public class MailController {
 
     private final EmailService emailService;
+    private final ScheduledExecutorService executorService = Executors.newScheduledThreadPool(5);
     
     @PostMapping("/bulk")
     public ResponseEntity<?> sendBulkEmail(@RequestBody Map<String, Object> mailRequest) {
@@ -44,46 +47,67 @@ public class MailController {
                 ));
             }
             
-            log.info("Sending bulk email to {} recipients with subject: '{}'", recipients.size(), subject);
+            log.info("Schemaläggning av bulk e-post till {} mottagare med ämne: '{}'", recipients.size(), subject);
             
             // Logga alla e-postadresser i BCC-listan
-            log.info("BCC recipients list:");
-            for (String recipient : recipients) {
-                log.info(" - {}", recipient);
+            log.info("BCC mottagarlista (max 5 visade):");
+            for (int i = 0; i < Math.min(5, recipients.size()); i++) {
+                log.info(" - {}", recipients.get(i));
+            }
+            if (recipients.size() > 5) {
+                log.info(" - ... och {} fler", recipients.size() - 5);
             }
             
-            // Använd CompletableFuture med timeout för att undvika att API:et hänger
-            try {
-                CompletableFuture<Void> emailFuture = CompletableFuture.runAsync(() -> {
-                    log.info("Starting asynchronous email sending...");
-                    emailService.sendBulkEmail(subject, content, recipients);
-                    log.info("Asynchronous email sending completed successfully");
-                });
-                
-                // Vänta på att e-posterna skickas med en timeout på 30 sekunder (utökad från 10 sekunder)
-                log.info("Waiting for email sending to complete (timeout: 30 seconds)...");
-                emailFuture.get(30, TimeUnit.SECONDS);
-                
-                long endTime = System.currentTimeMillis();
-                log.info("E-post skickad framgångsrikt på {} ms", (endTime - startTime));
-                
-                return ResponseEntity.ok(Map.of(
-                    "success", true,
-                    "message", "Email sent successfully",
-                    "recipientCount", recipients.size(),
-                    "recipients", recipients, // Lägg till mottagarlistan i svaret
-                    "processingTimeMs", (endTime - startTime)
-                ));
-            } catch (java.util.concurrent.TimeoutException e) {
-                log.error("E-postuppsändningen tog för lång tid (> 30 sekunder)", e);
-                return ResponseEntity.status(504).body(Map.of(
-                    "success", false,
-                    "message", "Email request timed out after 30 seconds"
-                ));
-            }
+            // Starta en asynkron process för att skicka e-post utan att blockera HTTP-svaret
+            CompletableFuture.runAsync(() -> {
+                try {
+                    log.info("Påbörjar asynkron e-postuppsändning...");
+                    
+                    // Dela upp mottagarlistan i mindre batchar för effektivare sändning
+                    // om antalet mottagare är stort
+                    if (recipients.size() > 25) {
+                        log.info("Delar upp {} mottagare i mindre batchar", recipients.size());
+                        int batchSize = 25;
+                        for (int i = 0; i < recipients.size(); i += batchSize) {
+                            final int startIndex = i;
+                            final int endIndex = Math.min(i + batchSize, recipients.size());
+                            final List<String> batch = recipients.subList(startIndex, endIndex);
+                            
+                            log.info("Skickar batch {} till {} (totalt {} mottagare)", startIndex, endIndex - 1, batch.size());
+                            
+                            // Schemalägg varje batch med en liten fördröjning mellan dem
+                            final int batchNumber = i / batchSize;
+                            executorService.schedule(() -> {
+                                try {
+                                    emailService.sendBulkEmail(subject, content, batch);
+                                    log.info("Batch {} slutförd", batchNumber);
+                                } catch (Exception e) {
+                                    log.error("Fel vid skickande av batch {}: {}", batchNumber, e.getMessage());
+                                }
+                            }, batchNumber * 2, TimeUnit.SECONDS); // 2 sekunders fördröjning mellan batcher
+                        }
+                    } else {
+                        // Skicka direkt om det är få mottagare
+                        emailService.sendBulkEmail(subject, content, recipients);
+                    }
+                    
+                    log.info("Asynkron e-postuppsändning schemalagd");
+                } catch (Exception e) {
+                    log.error("Fel vid asynkron e-postuppsändning: {}", e.getMessage(), e);
+                }
+            });
+            
+            // Returnera ett omedelbart svar till klienten
+            long responseTime = System.currentTimeMillis() - startTime;
+            return ResponseEntity.accepted().body(Map.of(
+                "success", true,
+                "message", "Email sending has been scheduled",
+                "recipientCount", recipients.size(),
+                "processingTimeMs", responseTime
+            ));
             
         } catch (Exception e) {
-            log.error("Error sending bulk email", e);
+            log.error("Error scheduling bulk email: {}", e.getMessage(), e);
             
             // Mer detaljerad felrapportering
             String errorDetails = e.getMessage();
@@ -93,7 +117,7 @@ public class MailController {
             
             return ResponseEntity.internalServerError().body(Map.of(
                 "success", false,
-                "message", "Failed to send email: " + errorDetails,
+                "message", "Failed to schedule email: " + errorDetails,
                 "errorType", e.getClass().getName()
             ));
         }

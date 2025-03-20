@@ -115,7 +115,7 @@ public class InterestService {
             
             Task task = Task.builder()
                     .title("Visning: " + interest.getApartment())
-                    .description("Visning för " + interest.getName() + " på " + formattedDateTime)
+                    .description(assignedTo.getFirstName() + " - " + interest.getApartment())
                     .assignedToUserId(assignedTo.getId())
                     .assignedByUserId(assignedTo.getId())
                     .dueDate(showingDateTime.toLocalDate())

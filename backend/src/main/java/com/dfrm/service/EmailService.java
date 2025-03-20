@@ -140,6 +140,41 @@ public class EmailService {
     }
     
     /**
+     * Konfigurerar timeout-inställningar för mailSender
+     */
+    private void configureTimeouts() {
+        try {
+            // Vi behöver kasta JavaMailSender till JavaMailSenderImpl för att få tillgång till properties
+            if (mailSender instanceof JavaMailSenderImpl) {
+                JavaMailSenderImpl mailSenderImpl = (JavaMailSenderImpl) mailSender;
+                Properties props = mailSenderImpl.getJavaMailProperties();
+                
+                // Sätt lämpliga timeout-värden för att undvika att anslutningen hänger
+                // Öka tidigare timeouts från 30000 till 60000 (60 sekunder)
+                props.put("mail.smtp.connectiontimeout", "60000"); // Timeout för anslutning
+                props.put("mail.smtp.timeout", "60000");           // Timeout för kommandon
+                props.put("mail.smtp.writetimeout", "60000");      // Timeout för skrivoperationer
+                
+                // Optimera SMTP-konfigurationen
+                props.put("mail.smtp.auth", "true");
+                props.put("mail.smtp.starttls.enable", "true");
+                props.put("mail.smtp.starttls.required", "true");
+                props.put("mail.smtp.ssl.enable", "false");
+                props.put("mail.smtp.socketFactory.fallback", "true");
+                props.put("mail.debug", "true");
+                
+                // Sätt pool-inställningar om många e-postmeddelanden ska skickas
+                props.put("mail.smtp.quitwait", "false");    // Vänta inte på QUIT-svar
+                props.put("mail.transport.protocol", "smtp");
+                
+                log.info("Konfigurerat SMTP timeoutvärden till 60 sekunder");
+            }
+        } catch (Exception e) {
+            log.warn("Kunde inte konfigurera timeout-värden: {}", e.getMessage());
+        }
+    }
+    
+    /**
      * Skickar e-post till flera mottagare som dold kopia (BCC)
      * 
      * @param subject     ämne
@@ -151,31 +186,23 @@ public class EmailService {
             // Konfigurera timeout-värden för att undvika att SMTP-anslutningen hänger
             configureTimeouts();
             
-            log.info("Förbereder bulk-e-post med subject: {}", subject);
+            log.info("Förbereder bulk-e-post med subject: {} till {} mottagare", subject, recipients.size());
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
             
             // Avsändare
             helper.setFrom(fromEmail);
-            log.info("Avsändare: {}", fromEmail);
             
             // Vi skickar meddelandet till avsändaren själv
             helper.setTo(fromEmail);
-            log.info("Primär mottagare: {}", fromEmail);
             
             // Lägg till alla mottagare som dold kopia (BCC)
             if (recipients != null && !recipients.isEmpty()) {
-                // Logga detaljerad information om BCC-mottagarna
-                log.info("Lägger till följande e-postadresser som BCC-mottagare:");
-                for (int i = 0; i < recipients.size(); i++) {
-                    log.info("  [{}] {}", i+1, recipients.get(i));
-                }
+                // Vi loggar endast antalet mottagare för att minska loggstorlek
+                log.info("Lägger till {} e-postadresser som BCC-mottagare", recipients.size());
                 
                 String[] bccArray = recipients.toArray(new String[0]);
                 helper.setBcc(bccArray);
-                
-                // Logga det faktiska BCC-arrayen som används
-                log.info("BCC-array längd: {}", bccArray.length);
             } else {
                 log.warn("Inga BCC-mottagare att skicka till!");
             }
@@ -190,12 +217,11 @@ public class EmailService {
                 htmlContent = content.replaceAll("\\r\\n|\\n|\\r", "<br>");
                 // Omslut innehållet i HTML-struktur
                 htmlContent = "<html><body>" + htmlContent + "</body></html>";
-                log.info("Konverterade text med radbrytningar till HTML-format");
             }
             
             helper.setText(htmlContent, true);
             
-            log.info("Försöker skicka bulk-e-post...");
+            log.info("Skickar bulk-e-post...");
             mailSender.send(message);
             log.info("Bulk-e-post skickad till {} mottagare", recipients.size());
         } catch (Exception e) {
@@ -207,52 +233,6 @@ public class EmailService {
             
             // Vi vill kasta vidare exceptionen för att frontend ska få ett felmeddelande
             throw new RuntimeException("Failed to send email: " + e.getMessage(), e);
-        }
-    }
-    
-    /**
-     * Konfigurerar timeout-inställningar för mailSender
-     */
-    private void configureTimeouts() {
-        try {
-            // Vi behöver kasta JavaMailSender till JavaMailSenderImpl för att få tillgång till properties
-            if (mailSender instanceof JavaMailSenderImpl) {
-                JavaMailSenderImpl mailSenderImpl = (JavaMailSenderImpl) mailSender;
-                Properties props = mailSenderImpl.getJavaMailProperties();
-                
-                // Sätt längre timeout-värden (30 sekunder)
-                props.put("mail.smtp.connectiontimeout", "30000");
-                props.put("mail.smtp.timeout", "30000");
-                props.put("mail.smtp.writetimeout", "30000");
-                
-                // Sätt också för IMAPS
-                props.put("mail.imaps.connectiontimeout", "30000");
-                props.put("mail.imaps.timeout", "30000");
-                
-                // Säkerställ att STARTTLS är korrekt konfigurerat för SMTP (port 587)
-                props.put("mail.smtp.starttls.enable", "true");
-                props.put("mail.smtp.starttls.required", "true");
-                props.put("mail.smtp.ssl.enable", "false");
-                
-                // Debug-läge för att få mer information
-                props.put("mail.debug", "true");
-                
-                // Logga alla konfigurerade egenskaper
-                log.info("Mail configuration för host {}:{}, protocol: {}", 
-                    mailSenderImpl.getHost(), mailSenderImpl.getPort(), 
-                    props.getProperty("mail.transport.protocol", "smtp"));
-                log.info("SMTP STARTTLS enabled: {}, required: {}, Auth: {}", 
-                    props.getProperty("mail.smtp.starttls.enable", "false"),
-                    props.getProperty("mail.smtp.starttls.required", "false"),
-                    props.getProperty("mail.smtp.auth", "false"));
-                
-                log.info("Konfigurerade timeouts för mailSender: {} ({}ms)", 
-                    mailSenderImpl.getHost(), props.getProperty("mail.smtp.timeout", "5000"));
-            } else {
-                log.warn("Kunde inte konfigurera timeouts: mailSender är inte av typen JavaMailSenderImpl");
-            }
-        } catch (Exception e) {
-            log.warn("Kunde inte konfigurera timeouts för mailSender: {}", e.getMessage());
         }
     }
 } 

@@ -1,0 +1,26 @@
+{
+  "email": {
+    "send": "Skicka e-post",
+    "sendToAll": "Skicka e-post till alla",
+    "recipients": "Mottagare",
+    "subject": "Ämne",
+    "content": "Innehåll",
+    "sending": "Skickar...",
+    "success": "E-post skickad!",
+    "errors": {
+      "sendFailed": "Kunde inte skicka e-post",
+      "subjectRequired": "Ämne krävs",
+      "contentRequired": "Innehåll krävs",
+      "noRecipients": "Inga mottagare valda",
+      "serverTimeout": "E-postuppsändningen tar längre tid än väntat. Servern bearbetar fortfarande din förfrågan i bakgrunden. Du kan stänga detta fönster och kontrollera med mottagarna om några minuter."
+    },
+    "bcc": "Dold kopia",
+    "to": "Till",
+    "from": "Från",
+    "addRecipients": "Lägg till mottagare",
+    "recipientCount": "{{count}} mottagare",
+    "selectAll": "Välj alla",
+    "deselectAll": "Avmarkera alla",
+    "selectedCount": "{{count}} valda"
+  }
+} 

@@ -61,47 +61,51 @@ const EmailModal = ({ isOpen, onClose, onSend, recipients = [], sender = "info@d
       const timer = setTimeout(() => {
         if (sending) {
           setSending(false);
-          setError('E-postuppsändningen tog för lång tid. Servern kanske har problem.');
+          setError(t('email.errors.serverTimeout'));
           console.error('E-post timeout i UI-lagret');
         }
-      }, 30000); // 30 sekunder
+      }, 60000); // 60 sekunder
       
       setTimeoutTimer(timer);
       
-      await onSend(subject, content, recipients);
+      const result = await onSend(subject, content, recipients);
       
       // Rensa timern eftersom sändningen lyckades
       clearTimeout(timer);
       setTimeoutTimer(null);
       
-      console.log('E-post skickad framgångsrikt');
+      console.log('E-post schemalagd framgångsrikt', result);
       
-      // Rensa formuläret efter framgångsrik sändning
-      setSubject('');
-      setContent('');
-      setSending(false);
-      onClose();
-    } catch (err) {
-      // Rensa timern om ett fel uppstod
+      // Visa meddelande om delvis framgång
+      if (result && result.partialSuccess) {
+        onClose();
+        // Visa informativt meddelande om delvis framgång
+        alert(`${result.message}`);
+      } else {
+        // Rensa formuläret efter framgångsrik sändning
+        setSubject('');
+        setContent('');
+        setSending(false);
+        onClose();
+      }
+    } catch (error) {
+      // Rensa timern vid fel
       if (timeoutTimer) {
         clearTimeout(timeoutTimer);
         setTimeoutTimer(null);
       }
       
-      console.error('E-post kunde inte skickas:', err);
-      
-      // Visa ett mer informativt felmeddelande
-      let errorMessage = err.message || t('email.errors.sendFailed');
-      
-      // Lägg till tips baserat på feltypen
-      if (errorMessage.includes('Timeout') || errorMessage.includes('tog för lång tid')) {
-        errorMessage += ' Kontrollera att e-postservern är korrekt konfigurerad.';
-      } else if (errorMessage.includes('Ingen respons')) {
-        errorMessage += ' Kontrollera nätverksanslutningen eller serverstatusen.';
-      }
-      
-      setError(errorMessage);
       setSending(false);
+      console.error('Error i handleSubmit:', error);
+      
+      // Sätt lämpligt felmeddelande
+      if (error.message && error.message.includes('bakgrunden')) {
+        // Specifikt meddelande för timeout som antyder att processen fortsätter i bakgrunden
+        setError(`${error.message}`);
+      } else {
+        // Generellt felmeddelande för andra fel
+        setError(t('email.errors.sendFailed') + ': ' + error.message);
+      }
     }
   };
 
