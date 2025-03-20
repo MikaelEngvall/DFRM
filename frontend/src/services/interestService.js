@@ -99,7 +99,6 @@ export const interestService = {
       const url = skipCache 
         ? `/api/interests/unreview-count?t=${new Date().getTime()}` 
         : '/api/interests/unreview-count';
-      console.log('Fetching unreviewed interest count from:', url);
       const response = await api.get(url);
       return response.data;
     } catch (error) {

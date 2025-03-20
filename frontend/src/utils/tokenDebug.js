@@ -10,7 +10,6 @@ export function decodeJwtToken() {
       return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
     }).join(''));
     
-    console.log('Token info:', JSON.parse(jsonPayload));
     return JSON.parse(jsonPayload);
   } catch (e) {
     console.error('Fel vid avkodning av token:', e);
