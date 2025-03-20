@@ -78,25 +78,33 @@ export const interestService = {
   
   scheduleShowing: async (id, data) => {
     try {
-      // Säkerställ att vi använder rätt URL-format
-      const apiUrl = `/api/interests/${id}/schedule-showing`;
+      // Skapa en explicit URL som garanterat inkluderar /api/ prefixet
+      const fullUrl = `http://localhost:8080/api/interests/${id}/schedule-showing`;
       
-      console.log("API Call: Schemalägger visning", {
-        url: apiUrl,
-        method: "POST",
-        data: data
+      console.log("API Call: Schemalägger visning med direkt URL", {
+        url: fullUrl,
+        method: "POST"
       });
       
       const token = localStorage.getItem('auth_auth_token');
       console.log("Token finns i localStorage:", !!token);
       
-      // Använd explicit full URL med host och path
-      const response = await api.post(apiUrl, data);
+      // Använd direkt axios-anrop istället för api.post
+      const response = await axios({
+        method: 'post',
+        url: fullUrl,
+        data: data,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
       
       console.log("API Svar: Schemaläggning lyckades", {
         status: response.status,
         data: response.data
       });
+      
       return response.data;
     } catch (error) {
       console.error("API Fel: Schemaläggning misslyckades", error);
@@ -119,33 +127,106 @@ export const interestService = {
   
   scheduleShowingV2: async (id, data) => {
     try {
-      console.log("API Call V2: Schemalägger visning med explicit URL");
-      
-      // Bygg URL manuellt för att säkerställa korrekt format
+      // Debugging-information: Visa exakt URL och data
       const fullUrl = `http://localhost:8080/api/interests/${id}/schedule-showing`;
       
-      console.log(`Anropar: ${fullUrl}`);
+      console.log("=== DEBUGGING INFORMATION ===");
+      console.log(`Anropar URL: ${fullUrl}`);
+      console.log("Data som skickas:", JSON.stringify(data, null, 2));
       
-      // Skapa request manuellt med axios
+      // Hämta token från local storage
+      const token = localStorage.getItem('auth_auth_token');
+      console.log("Token existerar:", token ? "JA" : "NEJ");
+      if (token) {
+        console.log("Token längd:", token.length);
+        console.log("Token början:", token.substring(0, 20) + "...");
+      }
+      
+      // Skapa request-konfiguration
       const axiosConfig = {
         method: 'post',
         url: fullUrl,
         data: data,
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('auth_auth_token')}`
+          'Authorization': token ? `Bearer ${token}` : ''
         }
       };
       
+      console.log("Headers som skickas:", axiosConfig.headers);
+      
+      // Gör request
       const response = await axios(axiosConfig);
       
-      console.log("API Svar V2: Schemaläggning lyckades", {
-        status: response.status,
-        data: response.data
-      });
+      console.log("=== SVAR FRÅN SERVER ===");
+      console.log("Status:", response.status);
+      console.log("Data:", response.data);
+      
       return response.data;
     } catch (error) {
-      console.error("API Fel V2: Schemaläggning misslyckades", error);
+      console.error("=== FEL VID API-ANROP ===");
+      
+      if (error.response) {
+        // Server svarade med felkod
+        console.error("Status:", error.response.status);
+        console.error("Statustext:", error.response.statusText);
+        console.error("URL som användes:", error.config.url);
+        console.error("Svarsdata:", error.response.data);
+        console.error("Headers:", error.response.headers);
+      } else if (error.request) {
+        // Ingen respons mottogs
+        console.error("Ingen respons från servern:", error.request);
+      } else {
+        // Något annat fel inträffade
+        console.error("Fel:", error.message);
+      }
+      
+      throw error;
+    }
+  },
+  
+  scheduleShowingV3: async (id, data) => {
+    try {
+      console.log("=== FETCH API ANROP ===");
+      
+      // Bygg URL manuellt
+      const fullUrl = `http://localhost:8080/api/interests/${id}/schedule-showing`;
+      console.log(`Anropar URL: ${fullUrl}`);
+      console.log("Data som skickas:", JSON.stringify(data, null, 2));
+      
+      // Hämta token från local storage
+      const token = localStorage.getItem('auth_auth_token');
+      console.log("Token finns:", token ? "JA" : "NEJ");
+      
+      // Skapa fetch options
+      const options = {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token ? `Bearer ${token}` : ''
+        },
+        body: JSON.stringify(data)
+      };
+      
+      // Gör anropet med fetch
+      const response = await fetch(fullUrl, options);
+      console.log("Status:", response.status);
+      console.log("StatusText:", response.statusText);
+      
+      // Om responsen inte är OK, kasta ett fel
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error("Svarsdata vid fel:", errorData);
+        throw new Error(`Server svarade med status ${response.status}: ${errorData.message || response.statusText}`);
+      }
+      
+      // Om allt gick bra, returnera svarsdata
+      const responseData = await response.json();
+      console.log("Svarsdata:", responseData);
+      return responseData;
+    } catch (error) {
+      console.error("=== FETCH API FEL ===");
+      console.error(error.message || "Okänt fel");
       throw error;
     }
   }

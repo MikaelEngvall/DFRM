@@ -42,6 +42,7 @@ com\dfrm\model\User.class
 com\dfrm\service\EmailListener.class
 com\dfrm\service\ApartmentService.class
 com\dfrm\repository\SecurityTokenRepository.class
+com\dfrm\service\TokenDecryptionService.class
 com\dfrm\controller\ImportController.class
 com\dfrm\service\PendingTaskService.class
 com\dfrm\service\TaskMessageService.class

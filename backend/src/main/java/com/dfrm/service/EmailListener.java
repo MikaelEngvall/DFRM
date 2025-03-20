@@ -185,29 +185,45 @@ public class EmailListener {
     }
 
     private void processEmail(Message message) throws Exception {
-        // Denna metod är för lång (över 200 rader) och bör brytas ned i:
-        // 1. extractEmailContent(Message) -> String
-        // 2. parseEmailFields(String) -> Map<String, String>
-        // 3. createPendingTask(Map<String, String>) -> PendingTask
-        // 4. enrichTaskData(PendingTask) -> PendingTask (hitta tenant/apartment)
-        // 5. saveAndTranslate(PendingTask) -> void
-        
         log.info("Bearbetar felanmälan...");
         
         String subject = message.getSubject();
+        String contentText = extractEmailContent(message);
+        
+        Map<String, String> extractedInfo = parseEmailFields(contentText);
+        
+        PendingTask pendingTask = createPendingTask(extractedInfo, subject);
+        
+        pendingTask = enrichTaskData(pendingTask);
+        
+        saveAndTranslate(pendingTask);
+        
+        // Markera e-postmeddelandet som läst
+        message.setFlag(jakarta.mail.Flags.Flag.SEEN, true);
+    }
+    
+    private String extractEmailContent(Message message) throws Exception {
+        log.info("Extraherar e-postinnehåll...");
+        
         String contentText = getTextFromMessage(message);
         
-        log.info("Ämne: {}", subject);
         log.info("Innehåll (första 100 tecken): {}", 
             contentText.length() > 100 ? contentText.substring(0, 100) + "..." : contentText);
+            
+        return contentText;
+    }
+    
+    private Map<String, String> parseEmailFields(String content) {
+        log.info("Analyserar e-postinnehåll för att extrahera fält...");
+        return extractDetailsFromEmail(content);
+    }
+    
+    private PendingTask createPendingTask(Map<String, String> extractedInfo, String subject) {
+        log.info("Skapar PendingTask från extraherad information...");
         
-        // Skapa PendingTask-objekt
         PendingTask pendingTask = new PendingTask();
         pendingTask.setStatus("NEW");
         pendingTask.setReceived(LocalDateTime.now());
-        
-        // Analysera e-postinnehållet för att extrahera information
-        Map<String, String> extractedInfo = extractDetailsFromEmail(contentText);
         
         // Fyll i PendingTask med extraherad information
         pendingTask.setName(extractedInfo.getOrDefault("name", ""));
@@ -216,11 +232,62 @@ public class EmailListener {
         pendingTask.setDescription(extractedInfo.getOrDefault("message", ""));
         pendingTask.setApartment(extractedInfo.getOrDefault("apartment", subject));
         
-        // Försök matcha tenant och apartment baserat på e-post och telefon
-        enrichTaskData(pendingTask);
-        
         // Sätt svenskt språk som standard
         pendingTask.setDescriptionLanguage(Language.SV);
+        
+        return pendingTask;
+    }
+    
+    private PendingTask enrichTaskData(PendingTask pendingTask) {
+        // Denna metod finns redan i klassen, behåller den befintliga implementationen
+        // men ser till att den returnerar den berikade PendingTask-objekt
+        
+        // Försök hitta tenant baserat på e-post
+        if (pendingTask.getEmail() != null && !pendingTask.getEmail().isEmpty()) {
+            tenantRepository.findByEmail(pendingTask.getEmail())
+                .ifPresent(tenant -> {
+                    pendingTask.setTenantId(tenant.getId());
+                    log.info("Matchade tenant med ID {} baserat på e-post", tenant.getId());
+                    
+                    // Om tenant hittades, försök hitta deras lägenhet om lägenhetsnummer saknas
+                    if (pendingTask.getApartment() == null || pendingTask.getApartment().isEmpty()) {
+                        // Här skulle vi kunna ha en metod som hittar lägenheter för en tenant,
+                        // men eftersom denna inte finns implementerar vi en enkel fallback
+                        log.info("Kunde inte hitta lägenhetsnummer baserat på tenant");
+                    }
+                });
+        }
+        
+        // Om ingen tenant hittades via e-post, kan vi inte göra mer eftersom
+        // det inte finns någon findByPhone-metod i TenantRepository
+        if (pendingTask.getTenantId() == null && pendingTask.getPhone() != null && !pendingTask.getPhone().isEmpty()) {
+            log.info("Kunde inte hitta tenant baserat på telefon: {}", pendingTask.getPhone());
+        }
+        
+        // Om ett lägenhetsnummer angivits, försök hitta lägenhet direkt
+        // Använd nu findAll och hantera flera resultat med stream
+        if (pendingTask.getApartment() != null && !pendingTask.getApartment().isEmpty()) {
+            try {
+                // I en fullständig implementation skulle vi använda ett anpassat repository-query
+                // som findAllByApartmentNumber, men vi använder en workaround här
+                apartmentRepository.findAll().stream()
+                    .filter(apt -> pendingTask.getApartment().equals(apt.getApartmentNumber()))
+                    .findFirst()
+                    .ifPresent(apartment -> {
+                        pendingTask.setApartmentId(apartment.getId());
+                        log.info("Matchade lägenhet med ID {} baserat på lägenhetsnummer", apartment.getId());
+                    });
+            } catch (Exception e) {
+                log.error("Fel vid sökning efter lägenhet: {}", e.getMessage());
+                // Fortsätt ändå, vi behöver inte länka till en specifik lägenhet för att skapa en felanmälan
+            }
+        }
+        
+        return pendingTask;
+    }
+    
+    private void saveAndTranslate(PendingTask pendingTask) {
+        log.info("Sparar och översätter PendingTask...");
         
         // Detektera språk och översätt vid behov
         detectLanguageAndTranslate(pendingTask);
@@ -228,9 +295,6 @@ public class EmailListener {
         // Spara felanmälan i databasen
         PendingTask savedTask = pendingTaskRepository.save(pendingTask);
         log.info("Felanmälan sparad med ID: {}", savedTask.getId());
-        
-        // Markera e-postmeddelandet som läst
-        message.setFlag(jakarta.mail.Flags.Flag.SEEN, true);
     }
     
     private Map<String, String> extractDetailsFromEmail(String content) {
@@ -396,49 +460,6 @@ public class EmailListener {
         }
         
         return details;
-    }
-    
-    private void enrichTaskData(PendingTask pendingTask) {
-        // Försök hitta tenant baserat på e-post
-        if (pendingTask.getEmail() != null && !pendingTask.getEmail().isEmpty()) {
-            tenantRepository.findByEmail(pendingTask.getEmail())
-                .ifPresent(tenant -> {
-                    pendingTask.setTenantId(tenant.getId());
-                    log.info("Matchade tenant med ID {} baserat på e-post", tenant.getId());
-                    
-                    // Om tenant hittades, försök hitta deras lägenhet om lägenhetsnummer saknas
-                    if (pendingTask.getApartment() == null || pendingTask.getApartment().isEmpty()) {
-                        // Här skulle vi kunna ha en metod som hittar lägenheter för en tenant,
-                        // men eftersom denna inte finns implementerar vi en enkel fallback
-                        log.info("Kunde inte hitta lägenhetsnummer baserat på tenant");
-                    }
-                });
-        }
-        
-        // Om ingen tenant hittades via e-post, kan vi inte göra mer eftersom
-        // det inte finns någon findByPhone-metod i TenantRepository
-        if (pendingTask.getTenantId() == null && pendingTask.getPhone() != null && !pendingTask.getPhone().isEmpty()) {
-            log.info("Kunde inte hitta tenant baserat på telefon: {}", pendingTask.getPhone());
-        }
-        
-        // Om ett lägenhetsnummer angivits, försök hitta lägenhet direkt
-        // Använd nu findAll och hantera flera resultat med stream
-        if (pendingTask.getApartment() != null && !pendingTask.getApartment().isEmpty()) {
-            try {
-                // I en fullständig implementation skulle vi använda ett anpassat repository-query
-                // som findAllByApartmentNumber, men vi använder en workaround här
-                apartmentRepository.findAll().stream()
-                    .filter(apt -> pendingTask.getApartment().equals(apt.getApartmentNumber()))
-                    .findFirst()
-                    .ifPresent(apartment -> {
-                        pendingTask.setApartmentId(apartment.getId());
-                        log.info("Matchade lägenhet med ID {} baserat på lägenhetsnummer", apartment.getId());
-                    });
-            } catch (Exception e) {
-                log.error("Fel vid sökning efter lägenhet: {}", e.getMessage());
-                // Fortsätt ändå, vi behöver inte länka till en specifik lägenhet för att skapa en felanmälan
-            }
-        }
     }
     
     private void detectLanguageAndTranslate(PendingTask pendingTask) {

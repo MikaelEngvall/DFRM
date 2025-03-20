@@ -179,6 +179,19 @@ public class InterestService {
             log.info("Scheduling showing for interest ID: {}, reviewedById: {}, showingDateTime: {}", 
                 id, reviewedById, showingDateTimeStr);
             
+            // Logga aktuella behörigheter
+            org.springframework.security.core.Authentication auth = 
+                org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+            if (auth != null) {
+                log.info("Aktuell användare: {}, behörigheter: {}", 
+                    auth.getName(), 
+                    auth.getAuthorities().stream()
+                        .map(a -> a.getAuthority())
+                        .collect(java.util.stream.Collectors.joining(", ")));
+            } else {
+                log.warn("Ingen autentisering hittad i SecurityContext");
+            }
+            
             if (reviewedById == null || responseMessage == null || showingDateTimeStr == null) {
                 log.error("Missing required fields for scheduling showing. reviewedById: {}, responseMessage: {}, showingDateTime: {}", 
                     reviewedById != null ? "present" : "missing", 

@@ -214,52 +214,65 @@ const Interests = () => {
         fullResponseMessage = `${responseMail}\n\nVisningstid: ${formattedDate} kl. ${formattedTime}`;
       }
       
-      // Detaljerad loggning om intresseanmälan
-      console.log("Intresseanmälan som ska uppdateras:", {
-        id: selectedInterest.id,
-        name: selectedInterest.name,
-        email: selectedInterest.email,
-        apartment: selectedInterest.apartment,
-        status: selectedInterest.status
-      });
+      // Debugging: Visa intressedetaljer
+      console.log("=== INTRESSE SOM UPPDATERAS ===");
+      console.log("ID:", selectedInterest.id);
+      console.log("Namn:", selectedInterest.name);
+      console.log("Email:", selectedInterest.email);
+      console.log("Lägenhet:", selectedInterest.apartment?.address || 'Ingen lägenhet angiven');
+      console.log("Status:", selectedInterest.status);
       
       // Logga data som vi ska skicka
-      console.log("Skickar data för bokad visning:", {
-        id: selectedInterest.id,
-        reviewedById: currentUser.id,
-        responseMessage: fullResponseMessage,
-        showingDateTime: showingDateTime
-      });
+      console.log("=== DATA SOM SKICKAS ===");
+      console.log("Interest ID:", selectedInterest.id);
+      console.log("Reviewed By ID:", currentUser.id);
+      console.log("Response Message:", fullResponseMessage);
+      console.log("Showing DateTime:", showingDateTime);
       
-      // Logga direkt till DOM för felsökning
+      // Visa manuellt meddelande i DOM:en för debugging
       document.body.insertAdjacentHTML('beforeend', 
-        `<div style="position:fixed; bottom:150px; right:20px; background:black; color:white; padding:10px; z-index:9999; max-width:500px; overflow:auto; max-height:200px;">
-          <p>Försöker boka visning med URL: /api/interests/${selectedInterest.id}/schedule-showing</p>
-          <p>Intresse-ID: ${selectedInterest.id}</p>
+        `<div style="position:fixed;top:20px;right:20px;background:yellow;padding:10px;z-index:9999;max-width:500px;overflow:auto;">
+          <h3>Debugging Info</h3>
+          <p>URL: http://localhost:8080/api/interests/${selectedInterest.id}/schedule-showing</p>
+          <p>ID: ${selectedInterest.id}</p>
           <p>Status: ${selectedInterest.status}</p>
         </div>`
       );
       
+      // Förbered data för API-anrop
+      const apiData = {
+        reviewedById: currentUser.id,
+        responseMessage: fullResponseMessage,
+        showingDateTime: showingDateTime
+      };
+      
+      // Prova alla tre metoder i sekvens tills en lyckas
+      let result;
+      
       try {
-        // Testa båda funktionerna för att se vilken som fungerar
-        console.log("Försöker med första metoden (scheduleShowingV2)...");
-        const result = await interestService.scheduleShowingV2(selectedInterest.id, {
-          reviewedById: currentUser.id,
-          responseMessage: fullResponseMessage,
-          showingDateTime: showingDateTime
-        });
-        console.log("Första metoden lyckades:", result);
-      } catch (firstError) {
-        console.error("Första metoden misslyckades:", firstError);
+        // Metod 1: Prova fetch först
+        console.log("=== METOD 1: FETCH API ===");
+        result = await interestService.scheduleShowingV3(selectedInterest.id, apiData);
+        console.log("FETCH lyckades!");
+      } catch (err1) {
+        console.error("FETCH misslyckades:", err1);
         
-        console.log("Försöker med andra metoden (scheduleShowing)...");
-        const result = await interestService.scheduleShowing(selectedInterest.id, {
-          reviewedById: currentUser.id,
-          responseMessage: fullResponseMessage,
-          showingDateTime: showingDateTime
-        });
-        console.log("Andra metoden lyckades:", result);
+        try {
+          // Metod 2: Prova Axios V2
+          console.log("=== METOD 2: AXIOS V2 ===");
+          result = await interestService.scheduleShowingV2(selectedInterest.id, apiData);
+          console.log("AXIOS V2 lyckades!");
+        } catch (err2) {
+          console.error("AXIOS V2 misslyckades:", err2);
+          
+          // Metod 3: Prova Original
+          console.log("=== METOD 3: ORIGINAL ===");
+          result = await interestService.scheduleShowing(selectedInterest.id, apiData);
+          console.log("ORIGINAL lyckades!");
+        }
       }
+      
+      console.log("=== SLUTRESULTAT ===", result);
       
       // Uppdatera listor efter schemaläggning
       fetchInterests();
@@ -269,6 +282,10 @@ const Interests = () => {
       setSuccessMessage(t('interests.messages.showingScheduled'));
       setTimeout(() => setSuccessMessage(''), 3000);
       
+      // Ta bort debug-elementet
+      const debugElement = document.querySelector('div[style*="position:fixed"]');
+      if (debugElement) debugElement.remove();
+      
       // Stäng modalen och återställ formuläret
       setIsShowingModalOpen(false);
       setResponseMail('');
@@ -276,14 +293,21 @@ const Interests = () => {
       setShowingTime('');
       setSelectedInterest(null);
     } catch (err) {
-      console.error('Error scheduling showing:', err);
+      console.error('=== ALLA METODER MISSLYCKADES ===');
+      console.error(err);
+      
       if (err.response) {
-        console.error('Error response:', err.response.data);
-        setError(`${t('interests.messages.showingError')}: ${err.response.data}`);
+        console.error("Status:", err.response.status);
+        console.error("StatusText:", err.response.statusText);
+        console.error("URL:", err.config?.url || "URL saknas");
+        console.error("Data:", err.response.data);
+      } else if (err.request) {
+        console.error("Ingen respons:", err.request);
       } else {
-        setError(t('interests.messages.showingError'));
+        console.error("Fel:", err.message);
       }
-    } finally {
+      
+      setError(err.response?.data?.message || err.message || t('interests.messages.showingScheduleError'));
       setIsLoading(false);
     }
   };

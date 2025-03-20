@@ -48,9 +48,11 @@ public class SecurityConfig {
                     "/api/security/request-password-reset",
                     "/api/security/reset-password",
                     "/api/pending-tasks/check-emails",
-                    "/api/interests/check-emails"
+                    "/api/interests/check-emails",
+                    "/api/interests/debug/auth",
+                    "/api/interests/debug/token"
                 ).permitAll()
-                .requestMatchers("/api/interests/*/schedule-showing").authenticated()
+                .requestMatchers("/api/interests/*/schedule-showing").hasAnyAuthority("ROLE_SUPERADMIN", "ROLE_ADMIN", "SUPERADMIN", "ADMIN")
                 .anyRequest().authenticated()
             )
             .sessionManagement(session -> session
