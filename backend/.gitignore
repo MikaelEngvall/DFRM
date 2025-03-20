@@ -2,9 +2,16 @@
 .env
 .env.cmd
 run-dev.ps1
-/src/main/resources/application*.properties
 
-# Byggfiler
+# Känsliga konfigurationsfiler - Absoluta sökvägar
+/src/main/resources/application.properties
+/src/main/resources/application-dev.properties
+/src/main/resources/application.yml
+/src/main/resources/application-dev.yml
+/src/main/resources/application-prod.yml
+/src/main/resources/application-prod.properties
+
+# Målmappar
 /target/
 /build/
 *.class
@@ -22,3 +29,8 @@ run-dev.ps1
 .settings/
 
 /node_modules
+
+# Men inkludera mallar
+!/src/main/resources/application-template.yml
+!/src/main/resources/application-template.properties
+!/src/main/resources/templates/

@@ -109,6 +109,20 @@ public class InterestEmailListener {
                 log.info("Bearbetar e-post: Ämne={}, Från={}", message.getSubject(), getFromAddress(message));
                 
                 try {
+                    // Kontrollera reply-to-adressen i utvecklingsläge
+                    if (isDev) {
+                        String replyTo = getReplyToAddress(message);
+                        if (!TARGET_REPLY_TO.equals(replyTo)) {
+                            log.warn("UTVECKLINGSLÄGE: Hoppar över e-post med reply-to={} (inte {})", 
+                                     replyTo, TARGET_REPLY_TO);
+                            // Markerar som läst men bearbetar inte innehållet
+                            message.setFlag(Flags.Flag.SEEN, true);
+                            continue;
+                        } else {
+                            log.info("Godkänd reply-to-adress: {}", replyTo);
+                        }
+                    }
+                    
                     // Bearbeta e-postmeddelandet
                     processEmail(message);
                     
@@ -143,9 +157,28 @@ public class InterestEmailListener {
         }
         return "okänd";
     }
+    
+    // Hjälpmetod för att få reply-to-adressen från ett meddelande
+    private String getReplyToAddress(Message message) {
+        try {
+            Address[] replyToAddresses = message.getReplyTo();
+            if (replyToAddresses != null && replyToAddresses.length > 0) {
+                if (replyToAddresses[0] instanceof InternetAddress) {
+                    return ((InternetAddress) replyToAddresses[0]).getAddress();
+                }
+                return replyToAddresses[0].toString();
+            }
+        } catch (Exception e) {
+            log.error("Kunde inte läsa reply-to-adress: {}", e.getMessage());
+        }
+        return "okänd";
+    }
 
     public void processEmail(Message message) {
         try {
+            // Kontrollera om vi är i utvecklingsläge
+            boolean isDev = isDevEnvironment();
+            
             String from = null;
             Address[] fromAddresses = message.getFrom();
             if (fromAddresses != null && fromAddresses.length > 0) {

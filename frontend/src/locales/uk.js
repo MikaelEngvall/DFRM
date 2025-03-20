@@ -100,6 +100,7 @@ const translations = {
       newReportsNeedReview: 'нових потребують перегляду',
       newReportNeedReview: 'новий потребує перегляду',
     },
+    interests: 'Запити зацікавлених',
   },
 
   apartments: {

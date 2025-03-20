@@ -100,6 +100,7 @@ export default {
       newReportsNeedReview: 'nowe wymagają przeglądu',
       newReportNeedReview: 'nowe wymaga przeglądu',
     },
+    interests: 'Zgłoszenia zainteresowania',
   },
 
   apartments: {

@@ -106,6 +106,7 @@ const translations = {
       newReportsNeedReview: 'nya behöver granskas',
       newReportNeedReview: 'ny behöver granskas',
     },
+    interests: 'Intresseanmälningar',
   },
 
   apartments: {
@@ -610,7 +611,8 @@ const translations = {
       emailCheckError: 'Ett fel uppstod vid läsning av e-post',
       showingScheduled: 'Visningstid bokad och e-post skickat',
       showingError: 'Ett fel uppstod vid bokning av visning',
-      fieldsRequired: 'Alla fält måste fyllas i'
+      fieldsRequired: 'Alla fält måste fyllas i',
+      emailCheckSuccess: 'E-post har lästs in utan problem'
     }
   },
 

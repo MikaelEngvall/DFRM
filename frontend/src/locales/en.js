@@ -101,6 +101,7 @@ export default {
       newReportsNeedReview: 'new reports need review',
       newReportNeedReview: 'new report needs review',
     },
+    interests: 'Interest inquiries',
   },
 
   apartments: {
