@@ -2,8 +2,7 @@
 .env
 .env.cmd
 run-dev.ps1
-application.properties
-application-dev.properties
+/src/main/resources/application.properties
+/src/main/resources/application-dev.properties
 
 /node_modules
- 
