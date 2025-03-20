@@ -59,7 +59,11 @@ public class InterestEmailListener {
             mailProperties.getHost() == null || 
             mailProperties.getIntresseUsername() == null || 
             mailProperties.getIntressePassword() == null) {
-            log.error("E-postkonfiguration är inte korrekt konfigurerad");
+            log.error("E-postkonfiguration är inte korrekt konfigurerad. mailProperties={}, host={}, username={}, password={}",
+                    mailProperties != null ? "not null" : "null",
+                    mailProperties != null ? mailProperties.getHost() : "null",
+                    mailProperties != null ? mailProperties.getIntresseUsername() : "null",
+                    mailProperties != null && mailProperties.getIntressePassword() != null ? "has value" : "null");
             return;
         }
         
@@ -70,6 +74,13 @@ public class InterestEmailListener {
             log.info("E-postkonfiguration: host={}, port={}, username={}", 
                 mailProperties.getHost(), mailProperties.getIntressePort(), mailProperties.getIntresseUsername());
         }
+        
+        // Logga e-postvariabler från environment för felsökning
+        log.info("Miljövariabler för intresse-e-post:");
+        log.info("EMAIL_PORT_INTRESSE={}, EMAIL_USER_INTRESSE={}, EMAIL_PASSWORD_INTRESSE={}",
+                environment.getProperty("EMAIL_PORT_INTRESSE"),
+                environment.getProperty("EMAIL_USER_INTRESSE"),
+                environment.getProperty("EMAIL_PASSWORD_INTRESSE") != null ? "******" : "null");
         
         // Använd port för IMAPS (inkommande e-post)
         Properties properties = System.getProperties();
@@ -131,27 +142,70 @@ public class InterestEmailListener {
                 
                 log.info("Hittade {} olästa meddelanden", messages.length);
                 
+                if (messages.length == 0) {
+                    log.info("Inga olästa meddelanden hittades i inkorgen");
+                    return;
+                }
+                
                 for (Message message : messages) {
                     try {
-                        // Kontrollera reply-to adressen före bearbetning
-                        Address[] replyTo = message.getReplyTo();
-                        boolean validReplyTo = false;
+                        log.info("Bearbetar meddelande med ämne: {}", message.getSubject());
                         
-                        if (replyTo != null && replyTo.length > 0) {
-                            for (Address address : replyTo) {
-                                if (address instanceof InternetAddress 
-                                    && TARGET_REPLY_TO.equals(((InternetAddress) address).getAddress())) {
-                                    validReplyTo = true;
-                                    break;
+                        // I utvecklingsmiljö, processera alla e-postmeddelanden för testning
+                        if (isDev) {
+                            log.info("Kör i utvecklingsmiljö - processerar meddelandet");
+                            processEmail(message);
+                            continue;
+                        }
+                        
+                        // Kontrollera avsändaradress
+                        Address[] fromAddresses = message.getFrom();
+                        if (fromAddresses != null && fromAddresses.length > 0) {
+                            for (Address address : fromAddresses) {
+                                if (address instanceof InternetAddress) {
+                                    String fromAddress = ((InternetAddress) address).getAddress();
+                                    log.info("E-post från: {}", fromAddress);
                                 }
                             }
                         }
                         
-                        if (validReplyTo) {
-                            processEmail(message);
-                        } else {
-                            log.info("E-post ignorerad - ogiltig reply-to adress");
+                        // Kontrollera mottagaradress
+                        Address[] toAddresses = message.getRecipients(Message.RecipientType.TO);
+                        if (toAddresses != null) {
+                            for (Address address : toAddresses) {
+                                if (address instanceof InternetAddress) {
+                                    String toAddress = ((InternetAddress) address).getAddress();
+                                    log.info("E-post till: {}", toAddress);
+                                    
+                                    // Kolla om e-posten är till TARGET_RECIPIENT
+                                    if (TARGET_RECIPIENT.equalsIgnoreCase(toAddress)) {
+                                        log.info("E-post är till korrekt mottagare: {}", TARGET_RECIPIENT);
+                                        processEmail(message);
+                                        break;
+                                    }
+                                }
+                            }
                         }
+                        
+                        // Kontrollera reply-to adressen
+                        Address[] replyTo = message.getReplyTo();
+                        if (replyTo != null && replyTo.length > 0) {
+                            for (Address address : replyTo) {
+                                if (address instanceof InternetAddress) {
+                                    String replyToAddress = ((InternetAddress) address).getAddress();
+                                    log.info("Hittade reply-to adress: {}", replyToAddress);
+                                    
+                                    if (TARGET_REPLY_TO.equals(replyToAddress)) {
+                                        log.info("Hittade matching reply-to adress: {}", replyToAddress);
+                                        processEmail(message);
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        
+                        // Markera meddelandet som läst i alla fall
+                        message.setFlag(Flags.Flag.SEEN, true);
                     } catch (Exception e) {
                         log.error("Fel vid bearbetning av e-post: {}", e.getMessage(), e);
                     }
@@ -209,12 +263,14 @@ public class InterestEmailListener {
         // Extrahera sidans URL
         String pageUrl = extractBeforeDelimiter(content, "Sidans URL:", "<br");
         
-        log.debug("Extracted name: {}", name);
-        log.debug("Extracted email: {}", email);
-        log.debug("Extracted phone: {}", phone);
-        log.debug("Extracted message: {}", messageText);
-        log.debug("Extracted pageUrl: {}", pageUrl);
-        log.debug("Extracted apartment: {}", apartment);
+        log.info("Extraherad information från e-post:");
+        log.info("* Ämne: {}", subject);
+        log.info("* Namn: {}", name);
+        log.info("* E-post: {}", email);
+        log.info("* Telefon: {}", phone);
+        log.info("* Meddelande: {}", messageText.length() > 100 ? messageText.substring(0, 100) + "..." : messageText);
+        log.info("* Sidans URL: {}", pageUrl);
+        log.info("* Lägenhet: {}", apartment);
         
         // Identifiera meddelandespråk
         Language detectedLanguage = Language.SV; // Standardvärde
@@ -233,7 +289,7 @@ public class InterestEmailListener {
                 .build();
         
         Interest savedInterest = interestRepository.save(interest);
-        log.info("Saved interest application from email: {}", savedInterest);
+        log.info("Sparade intresseanmälan från e-post med ID: {}", savedInterest.getId());
         
         // Markera e-postmeddelandet som läst
         message.setFlag(Flags.Flag.SEEN, true);

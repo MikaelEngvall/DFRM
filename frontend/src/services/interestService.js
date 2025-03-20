@@ -3,32 +3,93 @@ import { getFromCache, saveToCache, CACHE_KEYS } from '../utils/cacheManager';
 import axios from 'axios';
 
 export const interestService = {
-  getAll: async () => {
+  getAll: async (bypassCache = false) => {
     try {
+      // Använd cache om det finns
+      if (!bypassCache) {
+        const cachedData = getFromCache(CACHE_KEYS.INTERESTS);
+        if (cachedData) {
+          console.log('Returning cached interests data');
+          return cachedData;
+        }
+      }
+      
+      console.log('Fetching all interests from API');
       const response = await api.get('/api/interests');
+      
+      // Spara datan i cache
+      saveToCache(CACHE_KEYS.INTERESTS, response.data);
       return response.data;
     } catch (error) {
       console.error('Error fetching interests:', error);
+      // Om API-anrop misslyckas, försök använda cache även om bypassCache är true
+      const cachedData = getFromCache(CACHE_KEYS.INTERESTS);
+      if (cachedData) {
+        console.log('API call failed, using cached interests data');
+        return cachedData;
+      }
       throw error;
     }
   },
   
-  getForReview: async () => {
+  getForReview: async (bypassCache = false) => {
     try {
+      // Använd cache om det finns och bypassCache är false
+      if (!bypassCache) {
+        const cachedData = getFromCache(CACHE_KEYS.INTERESTS_FOR_REVIEW);
+        if (cachedData) {
+          console.log('Returning cached interests for review data');
+          return cachedData;
+        }
+      }
+      
+      console.log('Fetching interests for review from API');
       const response = await api.get('/api/interests/for-review');
+      
+      // Spara datan i cache
+      saveToCache(CACHE_KEYS.INTERESTS_FOR_REVIEW, response.data);
       return response.data;
     } catch (error) {
       console.error('Error fetching interests for review:', error);
+      
+      // Om API-anrop misslyckas, försök använda cache även om bypassCache är true
+      const cachedData = getFromCache(CACHE_KEYS.INTERESTS_FOR_REVIEW);
+      if (cachedData) {
+        console.log('API call failed, using cached interests for review data');
+        return cachedData;
+      }
+      
       throw error;
     }
   },
   
-  getReviewed: async () => {
+  getReviewed: async (bypassCache = false) => {
     try {
+      // Använd cache om det finns
+      if (!bypassCache) {
+        const cachedData = getFromCache(CACHE_KEYS.REVIEWED_INTERESTS);
+        if (cachedData) {
+          console.log('Returning cached reviewed interests data');
+          return cachedData;
+        }
+      }
+      
+      console.log('Fetching reviewed interests from API');
       const response = await api.get('/api/interests/reviewed');
+      
+      // Spara datan i cache
+      saveToCache(CACHE_KEYS.REVIEWED_INTERESTS, response.data);
       return response.data;
     } catch (error) {
       console.error('Error fetching reviewed interests:', error);
+      
+      // Om API-anrop misslyckas, försök använda cache även om bypassCache är true
+      const cachedData = getFromCache(CACHE_KEYS.REVIEWED_INTERESTS);
+      if (cachedData) {
+        console.log('API call failed, using cached reviewed interests data');
+        return cachedData;
+      }
+      
       throw error;
     }
   },
@@ -38,6 +99,7 @@ export const interestService = {
       const url = skipCache 
         ? `/api/interests/unreview-count?t=${new Date().getTime()}` 
         : '/api/interests/unreview-count';
+      console.log('Fetching unreviewed interest count from:', url);
       const response = await api.get(url);
       return response.data;
     } catch (error) {
@@ -48,7 +110,12 @@ export const interestService = {
   
   reviewInterest: async (id, reviewData) => {
     try {
+      console.log(`Reviewing interest ${id} with data:`, reviewData);
       const response = await api.post(`/api/interests/${id}/review`, reviewData);
+      
+      // Rensa cache efter ändring
+      clearInterestCache();
+      
       return response.data;
     } catch (error) {
       console.error(`Error reviewing interest ${id}:`, error);
@@ -58,7 +125,12 @@ export const interestService = {
   
   rejectInterest: async (id, rejectData) => {
     try {
+      console.log(`Rejecting interest ${id} with data:`, rejectData);
       const response = await api.post(`/api/interests/${id}/reject`, rejectData);
+      
+      // Rensa cache efter ändring
+      clearInterestCache();
+      
       return response.data;
     } catch (error) {
       console.error(`Error rejecting interest ${id}:`, error);
@@ -68,7 +140,12 @@ export const interestService = {
   
   checkEmails: async () => {
     try {
+      console.log('Manually checking interest emails');
       const response = await api.post('/api/interests/check-emails');
+      
+      // Rensa cache efter ändring
+      clearInterestCache();
+      
       return response.data;
     } catch (error) {
       console.error('Error checking interest emails:', error);
@@ -104,6 +181,9 @@ export const interestService = {
         status: response.status,
         data: response.data
       });
+      
+      // Rensa cache efter ändring
+      clearInterestCache();
       
       return response.data;
     } catch (error) {
@@ -230,4 +310,12 @@ export const interestService = {
       throw error;
     }
   }
-}; 
+};
+
+// Hjälpfunktion för att rensa intresse-cache
+function clearInterestCache() {
+  localStorage.removeItem(CACHE_KEYS.INTERESTS);
+  localStorage.removeItem(CACHE_KEYS.INTERESTS_FOR_REVIEW);
+  localStorage.removeItem(CACHE_KEYS.REVIEWED_INTERESTS);
+  console.log('Interest cache cleared');
+} 

@@ -61,10 +61,10 @@ const Interests = () => {
   };
 
   // Hämta intresseanmälningar från API
-  const fetchInterests = async () => {
+  const fetchInterests = async (bypassCache = false) => {
     try {
       setIsLoading(true);
-      const data = await interestService.getForReview();
+      const data = await interestService.getForReview(bypassCache);
       setInterests(data);
     } catch (err) {
       console.error('Error fetching interests:', err);
@@ -75,10 +75,10 @@ const Interests = () => {
   };
 
   // Hämta granskade intresseanmälningar från API
-  const fetchReviewedInterests = async () => {
+  const fetchReviewedInterests = async (bypassCache = false) => {
     try {
       setIsLoading(true);
-      const data = await interestService.getReviewed();
+      const data = await interestService.getReviewed(bypassCache);
       setReviewedInterests(data);
     } catch (err) {
       console.error('Error fetching reviewed interests:', err);
@@ -339,8 +339,8 @@ const Interests = () => {
               try {
                 setIsLoading(true);
                 await interestService.checkEmails();
-                fetchInterests();
-                fetchReviewedInterests();
+                fetchInterests(true);
+                fetchReviewedInterests(true);
               } catch (err) {
                 console.error('Fel vid läsning av e-post:', err);
                 setError(t('interests.messages.emailCheckError'));

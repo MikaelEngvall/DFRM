@@ -17,7 +17,11 @@ export const CACHE_KEYS = {
   TASKS: 'cached_tasks',
   PENDING_TASKS: 'cached_pending_tasks',
   UNREVIEWED_COUNT: 'cached_unreviewed_count',
-  EMAIL_REPORTS: 'cached_email_reports'
+  EMAIL_REPORTS: 'cached_email_reports',
+  // Nycklar för intresseanmälningar
+  INTERESTS: 'cached_interests',
+  INTERESTS_FOR_REVIEW: 'cached_interests_for_review',
+  REVIEWED_INTERESTS: 'cached_reviewed_interests'
 };
 
 // Standardtid innan cache anses vara för gammal (i millisekunder)

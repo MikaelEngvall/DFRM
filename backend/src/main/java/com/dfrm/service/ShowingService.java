@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import com.dfrm.model.Interest;
 import com.dfrm.model.Showing;
 import com.dfrm.model.User;
+import com.dfrm.repository.InterestRepository;
 import com.dfrm.repository.ShowingRepository;
 
 import lombok.extern.slf4j.Slf4j;
@@ -20,9 +21,11 @@ import lombok.extern.slf4j.Slf4j;
 public class ShowingService {
     
     private final ShowingRepository showingRepository;
+    private final InterestRepository interestRepository;
     
-    public ShowingService(ShowingRepository showingRepository) {
+    public ShowingService(ShowingRepository showingRepository, InterestRepository interestRepository) {
         this.showingRepository = showingRepository;
+        this.interestRepository = interestRepository;
     }
     
     public List<Showing> getAllShowings() {
@@ -82,6 +85,13 @@ public class ShowingService {
             interest.getId(), assignedTo.getFirstName(), dateTime);
         
         return showingRepository.save(showing);
+    }
+    
+    public Showing createShowingFromInterest(String interestId, User assignedTo, LocalDateTime dateTime) {
+        Interest interest = interestRepository.findById(interestId)
+            .orElseThrow(() -> new IllegalArgumentException("Intresse hittades inte med ID: " + interestId));
+        
+        return createShowingFromInterest(interest, assignedTo, dateTime);
     }
     
     public Showing updateShowing(String id, Showing updatedShowing) {

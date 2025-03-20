@@ -36,8 +36,10 @@ com\dfrm\service\JwtService.class
 com\dfrm\repository\InterestRepository.class
 com\dfrm\model\PendingTask$PendingTaskBuilder.class
 com\dfrm\model\KeyType.class
+com\dfrm\model\Showing.class
 com\dfrm\service\ImportService$1.class
 com\dfrm\model\TaskPriority.class
+com\dfrm\service\ShowingService.class
 com\dfrm\controller\KeyController.class
 com\dfrm\controller\PendingTaskController.class
 com\dfrm\model\SecurityToken.class
@@ -49,6 +51,7 @@ com\dfrm\service\TokenDecryptionService.class
 com\dfrm\controller\ImportController.class
 com\dfrm\service\PendingTaskService.class
 com\dfrm\service\TaskMessageService.class
+com\dfrm\repository\ShowingRepository.class
 com\dfrm\repository\ApartmentRepository.class
 com\dfrm\client\GoogleTranslateClient.class
 com\dfrm\service\KeyService.class
@@ -71,8 +74,10 @@ com\dfrm\model\User$UserBuilder.class
 com\dfrm\model\Apartment.class
 com\dfrm\model\PendingTask.class
 com\dfrm\config\AppConfig.class
+com\dfrm\controller\ShowingController.class
 com\dfrm\controller\TaskMessageController.class
 com\dfrm\controller\ApartmentController.class
 com\dfrm\service\TenantService.class
+com\dfrm\model\Showing$ShowingBuilder.class
 com\dfrm\service\EmailService$2.class
 com\dfrm\repository\TaskMessageRepository.class
