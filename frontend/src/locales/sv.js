@@ -559,7 +559,8 @@ const translations = {
     title: 'Skicka e-postmeddelande',
     partialSuccess: '{{sent}} av {{total}} e-postmeddelanden skickades. Vissa mottagare fick inte meddelandet.',
     showRecipients: 'Visa alla mottagare',
-    testSend: 'Skicka testmeddelande'
+    testSend: 'Skicka testmeddelande',
+    button: 'E-post'
   },
 
   interests: {
