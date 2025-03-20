@@ -28,6 +28,26 @@ backend/src/main/resources/application-prod.yml
 backend/src/main/resources/application.properties
 backend/src/main/resources/application-*.properties
 
-# Men inkludera mallen
+# Men inkludera mallar
 !backend/src/main/resources/application-template.yml
+!backend/src/main/resources/templates/*
+!*.example
 !.env.example
+
+# IDE-specifika filer
+.idea/
+*.iml
+.vscode/
+*.sublime-*
+*.swp
+.project
+.classpath
+.settings/
+
+# Byggfiler
+backend/target/
+backend/build/
+frontend/build/
+*.class
+*.jar
+*.war

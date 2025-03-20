@@ -2,7 +2,23 @@
 .env
 .env.cmd
 run-dev.ps1
-/src/main/resources/application.properties
-/src/main/resources/application-dev.properties
+/src/main/resources/application*.properties
+
+# Byggfiler
+/target/
+/build/
+*.class
+*.jar
+*.war
+
+# IDE-specifika filer
+.idea/
+*.iml
+.vscode/
+*.sublime-*
+*.swp
+.project
+.classpath
+.settings/
 
 /node_modules
