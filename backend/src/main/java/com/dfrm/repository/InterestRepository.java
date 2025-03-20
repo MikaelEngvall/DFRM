@@ -17,4 +17,7 @@ public interface InterestRepository extends MongoRepository<Interest, String> {
     // Nya metoder för sortering
     List<Interest> findByStatusOrderByReceivedDesc(String status);
     List<Interest> findByStatusNotOrderByReviewedAtDesc(String status);
+    
+    // Metod för att hitta intresseanmälningar baserat på e-postadress
+    List<Interest> findByEmail(String email);
 } 

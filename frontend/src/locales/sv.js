@@ -38,7 +38,8 @@ const translations = {
     send: 'Skicka',
     sendEmail: 'Skicka e-post',
     openLink: 'Öppna länk',
-    at: 'kl.'
+    at: 'kl.',
+    forceUpdate: 'Tvinga uppdatering',
   },
 
   languages: {

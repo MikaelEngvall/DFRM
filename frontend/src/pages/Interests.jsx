@@ -64,8 +64,18 @@ const Interests = () => {
   const fetchInterests = async (bypassCache = false) => {
     try {
       setIsLoading(true);
+      console.log('Hämtar intresseanmälningar för granskning, bypassCache:', bypassCache);
       const data = await interestService.getForReview(bypassCache);
-      setInterests(data);
+      console.log('Hämtade intresseanmälningar:', data);
+      if (data && Array.isArray(data)) {
+        setInterests(data);
+        if (data.length === 0) {
+          console.log('Inga intresseanmälningar hittades för granskning');
+        }
+      } else {
+        console.warn('Oväntat svar från API:et:', data);
+        setInterests([]);
+      }
     } catch (err) {
       console.error('Error fetching interests:', err);
       setError(t('common.error'));
@@ -78,8 +88,18 @@ const Interests = () => {
   const fetchReviewedInterests = async (bypassCache = false) => {
     try {
       setIsLoading(true);
+      console.log('Hämtar granskade intresseanmälningar, bypassCache:', bypassCache);
       const data = await interestService.getReviewed(bypassCache);
-      setReviewedInterests(data);
+      console.log('Hämtade granskade intresseanmälningar:', data);
+      if (data && Array.isArray(data)) {
+        setReviewedInterests(data);
+        if (data.length === 0) {
+          console.log('Inga granskade intresseanmälningar hittades');
+        }
+      } else {
+        console.warn('Oväntat svar från API:et:', data);
+        setReviewedInterests([]);
+      }
     } catch (err) {
       console.error('Error fetching reviewed interests:', err);
       setError(t('common.error'));
@@ -329,11 +349,13 @@ const Interests = () => {
         <div className="flex space-x-2">
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className="flex items-center px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+            title={t('common.filter')}
+            className="bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 flex items-center"
           >
-            <FunnelIcon className="h-5 w-5 mr-2" />
-            {t('common.filters')}
+            {showFilters ? <XMarkIcon className="h-5 w-5 mr-2" /> : <FunnelIcon className="h-5 w-5 mr-2" />}
+            {t('common.filter')}
           </button>
+          
           <button
             onClick={async () => {
               try {
@@ -353,6 +375,20 @@ const Interests = () => {
           >
             <EnvelopeIcon className="h-5 w-5 mr-2" />
             {t('interests.actions.checkEmails')}
+          </button>
+          
+          <button
+            onClick={() => {
+              fetchInterests(true);
+              fetchReviewedInterests(true);
+            }}
+            title={t('common.forceUpdate')}
+            className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 flex items-center"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+            {t('common.forceUpdate')}
           </button>
         </div>
       </div>
