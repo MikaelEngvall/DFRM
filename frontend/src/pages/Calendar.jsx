@@ -321,6 +321,24 @@ const Calendar = () => {
     // Kontrollera om uppgiften är en visningstid
     const isShowing = task.title && task.title.startsWith('Visning:');
     
+    // Hämta användarens förnamn om det finns en tilldelad användare
+    const assignedUser = users.find(u => u.id === task.assignedToUserId);
+    const firstName = assignedUser ? assignedUser.firstName : '';
+    
+    // Hämta adress från lägenhet eller från titeln för visningar
+    let address = '';
+    if (isShowing) {
+      // För visningar, extrahera adressen från titeln (formatet är "Visning: [adress]")
+      address = task.title.replace('Visning:', '').trim();
+    } else if (task.apartmentId) {
+      // För vanliga uppgifter, hitta lägenheten och visa dess adress
+      const apartment = apartments.find(a => a.id === (typeof task.apartmentId === 'object' ? task.apartmentId.id : task.apartmentId));
+      address = apartment ? apartment.address : '';
+    }
+    
+    // Förenkla visningsinnehållet
+    const displayText = `${firstName}, ${address}`;
+    
     // Specifik styling för visningar
     if (isShowing) {
       return (
@@ -330,9 +348,8 @@ const Calendar = () => {
           className={`mb-1 p-2 rounded-md cursor-pointer bg-purple-600 text-white border border-purple-800 shadow-sm hover:shadow-md transition-shadow duration-200`}
         >
           <div className="flex justify-between items-start">
-            <div className="font-medium">{task.title}</div>
+            <div className="font-medium">{displayText}</div>
           </div>
-          <div className="text-xs mt-1 text-purple-100">{task.description}</div>
         </div>
       );
     }
@@ -345,12 +362,9 @@ const Calendar = () => {
         className={`mb-1 p-2 rounded-md cursor-pointer border ${getStatusColor(task.status)} ${getPriorityGlow(task.priority)} hover:shadow-md transition-shadow duration-200`}
       >
         <div className="flex justify-between items-start">
-          <div className="font-medium">{task.title}</div>
+          <div className="font-medium">{displayText}</div>
           <div className={`h-2 w-2 rounded-full ${getPriorityDotColor(task.priority)}`}></div>
         </div>
-        {task.description && (
-          <div className="text-xs mt-1 text-gray-500">{task.description}</div>
-        )}
       </div>
     );
   };
@@ -381,6 +395,9 @@ const Calendar = () => {
 
   // Funktion för att rendera visningsobjekt i kalendern
   const renderShowingItem = (showing) => {
+    const firstName = showing.assignedTo ? showing.assignedTo.firstName : '';
+    const address = showing.apartmentAddress || '';
+    
     return (
       <div 
         key={showing.id} 
@@ -388,7 +405,7 @@ const Calendar = () => {
         className="mb-1 p-2 rounded-md cursor-pointer bg-purple-600 text-white border border-purple-800 shadow-sm hover:shadow-md transition-shadow duration-200"
       >
         <div className="flex justify-between items-start">
-          <div className="font-medium">{showing.assignedTo.firstName} - {showing.apartmentAddress}</div>
+          <div className="font-medium">{firstName}, {address}</div>
         </div>
       </div>
     );
