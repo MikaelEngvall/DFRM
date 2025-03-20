@@ -65,16 +65,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         final String token = authHeader.substring(7);
-        log.info("Bearbetar token: {}", token.substring(0, Math.min(token.length(), 20)) + "...");
         
         // Kontrollera om token är krypterad
         if (tokenDecryptionService.isEncryptedToken(token)) {
-            log.info("Identifierade krypterad token - försöker dekryptera");
-            
             String decryptedToken = tokenDecryptionService.decryptToken(token);
             
             if (decryptedToken != null) {
-                log.info("Dekryptering lyckades - använder dekrypterad token");
                 processJwtToken(request, decryptedToken);
             } else {
                 log.warn("Dekryptering misslyckades - försöker med alternativ metod");
@@ -110,9 +106,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         .collect(Collectors.toList());
                 }
                 
-                log.info("Användarroller för {}: {}", userEmail, 
-                    authorities.stream().map(Object::toString).collect(Collectors.joining(", ")));
-                
                 UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                     userDetails,
                     null,
@@ -140,8 +133,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 return;
             }
             
-            log.info("Hittade användarens email: {}", userEmail);
-            
             // Hämta användaren direkt från repository för att få roll
             Optional<User> userOpt = userRepository.findByEmail(userEmail);
             
@@ -151,7 +142,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
             
             User user = userOpt.get();
-            log.info("Hittade användare: {}, roll: {}", user.getEmail(), user.getRole());
             
             // Använd UserDetailsService för att få UserDetails
             UserDetails userDetails = userDetailsService.loadUserByUsername(userEmail);
@@ -162,10 +152,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 new SimpleGrantedAuthority(user.getRole().startsWith("ROLE_") ? 
                     user.getRole() : "ROLE_" + user.getRole())
             );
-            
-            log.info("Sätter manuellt behörigheter för {}: {}", 
-                user.getEmail(), 
-                authorities.stream().map(Object::toString).collect(Collectors.joining(", ")));
             
             // Skapa authentication token
             UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
@@ -238,7 +224,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             
             if (roleObj != null) {
                 String role = roleObj.toString();
-                log.info("Extraherade roll från token: {}", role);
                 
                 Collection<SimpleGrantedAuthority> authorities = new java.util.ArrayList<>();
                 
@@ -260,15 +245,5 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
         
         return Collections.emptyList();
-    }
-    
-    private boolean isDevEnvironment() {
-        String[] activeProfiles = environment.getActiveProfiles();
-        for (String profile : activeProfiles) {
-            if ("dev".equals(profile)) {
-                return true;
-            }
-        }
-        return false;
     }
 } 

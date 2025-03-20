@@ -31,8 +31,6 @@ public class TokenDecryptionService {
         }
         
         try {
-            log.info("Försöker dekryptera token med längd: {}", encryptedToken.length());
-            
             // CryptoJS.AES dekryptering
             // Detta matchar krypteringen som används i frontend i secureStorage.js
             
@@ -41,10 +39,6 @@ public class TokenDecryptionService {
             // Hämta salt (första 8 bytes efter "Salted__")
             byte[] salt = new byte[8];
             System.arraycopy(cipherData, 8, salt, 0, 8);
-            
-            // Använd PBKDF2 eller motsvarande för att härleda nycklar från salt och lösenord
-            // Eftersom detta är en förenklad implementation, använder vi en hårdkodad 
-            // nyckel och IV för demonstration
             
             // Generera nyckel och IV
             byte[] keyAndIv = getKeyAndIV(secretKey.getBytes(StandardCharsets.UTF_8), salt);
@@ -72,9 +66,6 @@ public class TokenDecryptionService {
             if (decryptedString.startsWith("\"") && decryptedString.endsWith("\"")) {
                 decryptedString = decryptedString.substring(1, decryptedString.length() - 1);
             }
-            
-            log.info("Dekryptering lyckades, token första 20 tecken: {}...", 
-                decryptedString.substring(0, Math.min(20, decryptedString.length())));
             
             return decryptedString;
             

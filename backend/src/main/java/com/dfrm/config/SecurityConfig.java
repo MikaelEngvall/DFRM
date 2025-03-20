@@ -43,16 +43,16 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(
-                    "/api/auth/login",
-                    "/api/auth/register",
-                    "/api/security/request-password-reset",
+                    "/api/auth/login", 
+                    "/api/auth/register", 
+                    "/api/security/forgot-password",
                     "/api/security/reset-password",
+                    "/api/security/validate-reset-token",
                     "/api/pending-tasks/check-emails",
-                    "/api/interests/check-emails",
-                    "/api/interests/debug/auth",
-                    "/api/interests/debug/token"
+                    "/api/interests/check-emails"
                 ).permitAll()
-                .requestMatchers("/api/interests/*/schedule-showing").hasAnyAuthority("ROLE_SUPERADMIN", "ROLE_ADMIN", "SUPERADMIN", "ADMIN")
+                .requestMatchers("/api/interests/*/schedule-showing").hasAnyAuthority(
+                    "ROLE_SUPERADMIN", "ROLE_ADMIN", "SUPERADMIN", "ADMIN")
                 .anyRequest().authenticated()
             )
             .sessionManagement(session -> session
@@ -60,7 +60,7 @@ public class SecurityConfig {
             )
             .authenticationProvider(authenticationProvider())
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
-
+        
         return http.build();
     }
 
@@ -73,6 +73,11 @@ public class SecurityConfig {
     }
 
     @Bean
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
+    }
+
+    @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
     }
@@ -80,18 +85,12 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:3000", "http://localhost:5173"));
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
-        configuration.setAllowedHeaders(List.of("*"));
-        configuration.setAllowCredentials(true);
-        
+        configuration.setAllowedOrigins(Arrays.asList("*"));
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(Arrays.asList("authorization", "content-type", "x-auth-token"));
+        configuration.setExposedHeaders(List.of("x-auth-token"));
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
-    }
-
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
     }
 } 
