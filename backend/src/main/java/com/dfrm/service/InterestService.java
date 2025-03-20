@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.dfrm.model.Interest;
@@ -14,11 +15,9 @@ import com.dfrm.model.User;
 import com.dfrm.repository.InterestRepository;
 import com.dfrm.repository.TaskRepository;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class InterestService {
     
@@ -27,7 +26,23 @@ public class InterestService {
     private final TaskRepository taskRepository;
     private final EmailService emailService;
     private final UserService userService;
-    private final ShowingService showingService;
+    
+    @Autowired
+    private ShowingService showingService;
+    
+    @Autowired
+    public InterestService(
+            InterestRepository interestRepository,
+            InterestEmailListener interestEmailListener,
+            TaskRepository taskRepository,
+            EmailService emailService,
+            UserService userService) {
+        this.interestRepository = interestRepository;
+        this.interestEmailListener = interestEmailListener;
+        this.taskRepository = taskRepository;
+        this.emailService = emailService;
+        this.userService = userService;
+    }
     
     public List<Interest> getAllInterests() {
         return interestRepository.findAll();
