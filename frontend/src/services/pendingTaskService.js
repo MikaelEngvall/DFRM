@@ -215,7 +215,7 @@ const pendingTaskService = {
         return cachedTasks.filter(task => !task.reviewedBy);
       }
       
-      const response = await api.get('/api/pending-tasks/unreviewed');
+      const response = await api.get('/api/pending-tasks/for-review');
       return response.data;
     } catch (error) {
       console.error('Error fetching unreviewed tasks:', error);

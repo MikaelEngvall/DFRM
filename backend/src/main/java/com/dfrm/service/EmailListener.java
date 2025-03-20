@@ -309,157 +309,299 @@ public class EmailListener {
         
         log.info("Rensat innehåll med radbrytningar: \n{}", content);
         
-        // Extrahera format 1: Namn: Tuva Andersson, E-post: ...
-        if (content.contains("Namn:") && content.contains("E-post:")) {
-            log.info("Detekterade strukturerat format med 'Namn:', 'E-post:' etc.");
-            
-            // Extrahera namn
-            Pattern namePattern = Pattern.compile("Namn:\\s*([^\\n]+)\\s*", Pattern.CASE_INSENSITIVE);
-            Matcher nameMatcher = namePattern.matcher(content);
-            if (nameMatcher.find()) {
-                details.put("name", nameMatcher.group(1).trim());
-                log.info("Extraherat namn: {}", details.get("name"));
+        // Dela upp texten på rader för analys
+        String[] lines = content.split("\\r?\\n");
+        
+        // Extrahera namn
+        extractName(lines, details);
+        
+        // Extrahera e-post
+        extractEmail(lines, details);
+        
+        // Extrahera telefonnummer
+        extractPhone(lines, details);
+        
+        // Extrahera lägenhetsnummer
+        extractApartment(lines, details);
+        
+        // Extrahera meddelande/beskrivning av problemet
+        extractMessage(lines, details);
+        
+        // Logga resultat
+        logExtractedDetails(details);
+        
+        return details;
+    }
+    
+    private void extractName(String[] lines, Map<String, String> details) {
+        // Försök först med standardformat (Namn: xxx)
+        for (String line : lines) {
+            if (line.toLowerCase().startsWith("namn:") || line.toLowerCase().startsWith("name:")) {
+                String[] parts = line.split(":", 2);
+                if (parts.length > 1 && !parts[1].trim().isEmpty()) {
+                    details.put("name", parts[1].trim());
+                    log.info("Extraherat namn (standardformat): {}", details.get("name"));
+                    return;
+                }
             }
-            
-            // Extrahera e-post
-            Pattern emailPattern = Pattern.compile("E-post:\\s*([^\\n]+)\\s*", Pattern.CASE_INSENSITIVE);
-            Matcher emailMatcher = emailPattern.matcher(content);
-            if (emailMatcher.find()) {
-                details.put("email", emailMatcher.group(1).trim());
-                log.info("Extraherad e-post: {}", details.get("email"));
+        }
+        
+        // Försök med andra vanliga format (Från: xxx)
+        for (String line : lines) {
+            if (line.toLowerCase().startsWith("från:") || line.toLowerCase().startsWith("from:") ||
+                line.toLowerCase().startsWith("avsändare:") || line.toLowerCase().startsWith("sender:")) {
+                String[] parts = line.split(":", 2);
+                if (parts.length > 1 && !parts[1].trim().isEmpty()) {
+                    details.put("name", parts[1].trim());
+                    log.info("Extraherat namn (avsändarformat): {}", details.get("name"));
+                    return;
+                }
             }
-            
-            // Extrahera telefon
-            Pattern phonePattern = Pattern.compile("Tel(?:efon)?(?:nummer)?:\\s*([^\\n]+)\\s*", Pattern.CASE_INSENSITIVE);
-            Matcher phoneMatcher = phonePattern.matcher(content);
-            if (phoneMatcher.find()) {
-                details.put("phone", phoneMatcher.group(1).trim());
-                log.info("Extraherat telefonnummer: {}", details.get("phone"));
+        }
+        
+        // Sista utvägen: Använd första icke-tomma raden som inte innehåller @
+        for (String line : lines) {
+            if (!line.trim().isEmpty() && !line.contains("@") && !line.matches(".*\\d{6,}.*")) {
+                details.put("name", line.trim());
+                log.info("Extraherat namn (första raden): {}", details.get("name"));
+                return;
             }
-            
-            // Extrahera lägenhet
-            Pattern apartmentPattern = Pattern.compile("Lägenhet(?:snummer)?:\\s*([^\\n]+)\\s*", Pattern.CASE_INSENSITIVE);
-            Matcher apartmentMatcher = apartmentPattern.matcher(content);
-            if (apartmentMatcher.find()) {
-                details.put("apartment", apartmentMatcher.group(1).trim());
-                log.info("Extraherad lägenhet: {}", details.get("apartment"));
-            }
-            
-            // Extrahera meddelande
-            Pattern messagePattern = Pattern.compile("Meddelande:\\s*([^-]+)\\s*---", Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
-            Matcher messageMatcher = messagePattern.matcher(content);
-            if (messageMatcher.find()) {
-                details.put("message", messageMatcher.group(1).trim());
-                log.info("Extraherat meddelande (första 50 tecken): {}", 
-                    details.get("message").length() > 50 ? details.get("message").substring(0, 50) + "..." : details.get("message"));
-            }
-        } 
-        // Format 2: Fritext utan tydliga markörer
-        else {
-            log.info("Detekterade ostrukturerat format, försöker extrahera information");
-            
-            // Dela upp texten på rader
-            String[] lines = content.split("\\r?\\n");
-            
-            // Hitta e-post (första raden som innehåller @)
-            for (String line : lines) {
-                if (line.contains("@")) {
-                    Pattern emailPattern = Pattern.compile("\\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}\\b");
-                    Matcher emailMatcher = emailPattern.matcher(line);
-                    if (emailMatcher.find()) {
-                        details.put("email", emailMatcher.group());
-                        log.info("Extraherad e-post: {}", details.get("email"));
-                        break;
+        }
+    }
+    
+    private void extractEmail(String[] lines, Map<String, String> details) {
+        // Försök med standardformat (E-post: xxx)
+        for (String line : lines) {
+            if (line.toLowerCase().contains("e-post:") || line.toLowerCase().contains("email:") ||
+                line.toLowerCase().contains("mail:") || line.toLowerCase().contains("e-mail:")) {
+                String[] parts = line.split(":", 2);
+                if (parts.length > 1 && !parts[1].trim().isEmpty()) {
+                    String emailCandidate = parts[1].trim();
+                    if (emailCandidate.contains("@")) {
+                        details.put("email", emailCandidate);
+                        log.info("Extraherad e-post (standardformat): {}", details.get("email"));
+                        return;
                     }
                 }
             }
+        }
+        
+        // Sök efter första förekomsten av en e-postadress
+        Pattern emailPattern = Pattern.compile("\\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}\\b");
+        for (String line : lines) {
+            Matcher emailMatcher = emailPattern.matcher(line);
+            if (emailMatcher.find()) {
+                details.put("email", emailMatcher.group());
+                log.info("Extraherad e-post (mönstermatchning): {}", details.get("email"));
+                return;
+            }
+        }
+    }
+    
+    private void extractPhone(String[] lines, Map<String, String> details) {
+        // Försök med standardformat (Telefon: xxx)
+        for (String line : lines) {
+            if (line.toLowerCase().contains("telefon:") || line.toLowerCase().contains("tel:") ||
+                line.toLowerCase().contains("phone:") || line.toLowerCase().contains("mobil:") ||
+                line.toLowerCase().contains("mobile:")) {
+                String[] parts = line.split(":", 2);
+                if (parts.length > 1 && !parts[1].trim().isEmpty()) {
+                    details.put("phone", parts[1].trim());
+                    log.info("Extraherat telefonnummer (standardformat): {}", details.get("phone"));
+                    return;
+                }
+            }
+        }
+        
+        // Sök efter telefonnummermönster
+        Pattern phonePattern = Pattern.compile("\\b(?:\\+?\\d{1,3}[- ]?)?\\d{3,4}[- ]?\\d{2,3}[- ]?\\d{2,4}\\b");
+        for (String line : lines) {
+            Matcher phoneMatcher = phonePattern.matcher(line);
+            if (phoneMatcher.find()) {
+                details.put("phone", phoneMatcher.group());
+                log.info("Extraherat telefonnummer (mönstermatchning): {}", details.get("phone"));
+                return;
+            }
+        }
+    }
+    
+    private void extractApartment(String[] lines, Map<String, String> details) {
+        // Försök med standardformat (Lägenhet: xxx)
+        for (String line : lines) {
+            if (line.toLowerCase().contains("lägenhet:") || line.toLowerCase().contains("apartment:") ||
+                line.toLowerCase().contains("lgh:") || line.toLowerCase().contains("apt:") ||
+                line.toLowerCase().contains("lgh nr:") || line.toLowerCase().contains("lägenhetsnummer:")) {
+                String[] parts = line.split(":", 2);
+                if (parts.length > 1 && !parts[1].trim().isEmpty()) {
+                    details.put("apartment", parts[1].trim());
+                    log.info("Extraherat lägenhet (standardformat): {}", details.get("apartment"));
+                    return;
+                }
+            }
+        }
+        
+        // Hitta lägenhetsnummer i adressfält
+        for (String line : lines) {
+            if (line.toLowerCase().contains("adress:") || line.toLowerCase().contains("address:")) {
+                String[] parts = line.split(":", 2);
+                if (parts.length > 1 && !parts[1].trim().isEmpty()) {
+                    String address = parts[1].trim();
+                    Pattern lghPattern = Pattern.compile("\\b(?:lgh|lägenhet|lä?g\\.?|apt\\.?|#)\\s*(?:nr\\.?)?\\s*[:]*\\s*(\\d+\\w*|\\w+\\d+)\\b", 
+                        Pattern.CASE_INSENSITIVE);
+                    Matcher lghMatcher = lghPattern.matcher(address);
+                    if (lghMatcher.find()) {
+                        details.put("apartment", lghMatcher.group(1));
+                        details.put("address", address);
+                        log.info("Extraherat lägenhet från adress: {}", details.get("apartment"));
+                        return;
+                    } else {
+                        // Spara adressen även om vi inte hittade lägenhetsnummer
+                        details.put("address", address);
+                    }
+                }
+            }
+        }
+        
+        // Sök efter lägenhetsnummermönster i alla rader
+        for (String line : lines) {
+            if (line.toLowerCase().contains("lgh") || line.toLowerCase().contains("lägenhet") ||
+                line.toLowerCase().contains("apartment") || line.toLowerCase().contains("nr") ||
+                line.toLowerCase().contains("lä?g.") || line.matches(".*\\d+[A-Za-z]\\b.*")) {
+                Pattern lghPattern = Pattern.compile("\\b(?:lgh|lägenhet|apartment|lä?g\\.?|apt\\.?|#|nr)\\s*(?:nr\\.?)?\\s*[:]*\\s*(\\d+\\w*|\\w+\\d+)\\b", 
+                    Pattern.CASE_INSENSITIVE);
+                Matcher lghMatcher = lghPattern.matcher(line);
+                if (lghMatcher.find()) {
+                    details.put("apartment", lghMatcher.group(1));
+                    log.info("Extraherat lägenhet (mönstermatchning): {}", details.get("apartment"));
+                    return;
+                }
+            }
+        }
+        
+        // Sista försöket: Leta efter ensamma siffror som kan vara lägenhetsnummer
+        for (String line : lines) {
+            if (line.trim().matches("^\\d{2,4}\\w?$")) {
+                details.put("apartment", line.trim());
+                log.info("Extraherat lägenhet (ensamt nummer): {}", details.get("apartment"));
+                return;
+            }
+        }
+    }
+    
+    private void extractMessage(String[] lines, Map<String, String> details) {
+        StringBuilder messageBuilder = new StringBuilder();
+        boolean foundMessage = false;
+        boolean inMessage = false;
+        
+        // Försök hitta specifika markörer för meddelandet
+        for (int i = 0; i < lines.length; i++) {
+            String line = lines[i];
             
-            // Hitta telefonnummer
-            for (String line : lines) {
-                Pattern phonePattern = Pattern.compile("\\b(?:\\+?\\d{1,3}[- ]?)?\\d{6,12}\\b");
-                Matcher phoneMatcher = phonePattern.matcher(line);
-                if (phoneMatcher.find()) {
-                    details.put("phone", phoneMatcher.group());
-                    log.info("Extraherat telefonnummer: {}", details.get("phone"));
+            // Ignorera metadata-rader
+            if (line.contains("---") || line.matches(".*Datum:.*\\d{2}:\\d{2}.*") || 
+                line.contains("Sidans URL:") || line.contains("Användaragent:") || 
+                line.contains("Fjärr IP:") || line.contains("Drivs med:")) {
+                if (inMessage) {
+                    // Sluta samla in när vi når metadata
                     break;
                 }
+                continue;
             }
             
-            // Hitta lägenhetsnummer (rader som innehåller "lgh", "lägenhet", etc.)
-            for (String line : lines) {
-                if (line.toLowerCase().contains("lgh") || line.toLowerCase().contains("lägenhet") ||
-                    line.toLowerCase().contains("apartment")) {
-                    Pattern apartmentPattern = Pattern.compile("\\b(?:lgh|lägenhet|apartment)\\s*[nr\\.]*\\s*[:]*\\s*(\\d+\\w*|\\w+\\d+)\\b", 
-                        Pattern.CASE_INSENSITIVE);
-                    Matcher apartmentMatcher = apartmentPattern.matcher(line);
-                    if (apartmentMatcher.find()) {
-                        details.put("apartment", apartmentMatcher.group(1));
-                        log.info("Extraherad lägenhet: {}", details.get("apartment"));
-                        break;
-                    }
-                }
-            }
-            
-            // Extrahera meddelande (resten av innehållet)
-            StringBuilder messageBuilder = new StringBuilder();
-            boolean foundMessage = false;
-            int messageLineCount = 0;
-            
-            for (String line : lines) {
-                // Ignorera linjer som troligen är metadata
-                if (line.contains("---") || line.contains("Datum:") || line.contains("Sidans URL:") || 
-                    line.contains("Användaragent:") || line.contains("Fjärr IP:") || line.contains("Drivs med:")) {
-                    // Om vi redan har börjat samla meddelandet, avbryt när vi når metadata
-                    if (foundMessage) {
-                        break;
-                    } else {
-                        continue;
-                    }
-                }
+            // Hitta markörer som indikerar meddelandets början
+            if (!foundMessage && (
+                line.toLowerCase().contains("problem:") || line.toLowerCase().contains("felanmälan:") || 
+                line.toLowerCase().contains("fel:") || line.toLowerCase().contains("beskrivning:") ||
+                line.toLowerCase().contains("meddelande:") || line.toLowerCase().contains("ärende:") ||
+                line.toLowerCase().contains("issue:") || line.toLowerCase().contains("description:") ||
+                line.toLowerCase().contains("message:"))) {
+                foundMessage = true;
+                inMessage = true;
                 
-                if (line.contains("Problem:") || line.contains("Felanmälan:") || 
-                    line.contains("Fel:") || line.contains("Beskrivning:") ||
-                    line.contains("Meddelande:")) {
-                    foundMessage = true;
-                    messageLineCount++;
-                    // Ta bort markörer från början av meddelandet
-                    line = line.replaceAll("^(Problem|Felanmälan|Fel|Beskrivning|Meddelande):\\s*", "");
-                }
+                // Ta bort markörerna från början av meddelandet
+                line = line.replaceAll("^(?:Problem|Felanmälan|Fel|Beskrivning|Meddelande|Ärende|Issue|Description|Message):\\s*", "");
                 
-                if ((foundMessage || messageLineCount == 0) && !line.isEmpty() && 
-                    !line.contains("Med vänlig hälsning") && 
-                    !line.contains("Skickat från")) {
+                if (!line.trim().isEmpty()) {
                     messageBuilder.append(line).append("\n");
-                    if (!foundMessage) {
-                        messageLineCount++;
+                }
+                continue;
+            }
+            
+            // Om vi är inne i meddelandet, samla in innehållet
+            if (inMessage) {
+                // Avsluta om vi når en signatur eller liknande
+                if (line.contains("Med vänlig hälsning") || line.contains("Skickat från") ||
+                    line.contains("Regards") || line.contains("Best wishes") ||
+                    line.contains("Thank you") || line.contains("Tack på förhand")) {
+                    break;
+                }
+                
+                messageBuilder.append(line).append("\n");
+            }
+        }
+        
+        // Om inget specifikt meddelande hittades, använd en del av innehållet
+        if (messageBuilder.length() == 0) {
+            // Leta efter den längsta sammanhängande textblocket
+            int startBlock = -1;
+            int blockLength = 0;
+            int currentStart = -1;
+            int currentLength = 0;
+            
+            for (int i = 0; i < lines.length; i++) {
+                if (!lines[i].trim().isEmpty() && !lines[i].contains("@") && 
+                    !lines[i].contains(":") && !lines[i].matches(".*\\d{5,}.*")) {
+                    if (currentStart == -1) {
+                        currentStart = i;
                     }
+                    currentLength++;
+                } else if (currentStart != -1) {
+                    if (currentLength > blockLength) {
+                        blockLength = currentLength;
+                        startBlock = currentStart;
+                    }
+                    currentStart = -1;
+                    currentLength = 0;
                 }
             }
             
-            // Om vi inte hittade någon specifik meddelandedel, använd första delen av innehållet
-            // men maximalt 5 rader för att undvika att få med för mycket
-            if (messageBuilder.length() == 0) {
+            // Hantera fallet där det längsta blocket är i slutet
+            if (currentStart != -1 && currentLength > blockLength) {
+                blockLength = currentLength;
+                startBlock = currentStart;
+            }
+            
+            // Använd det längsta blocket eller de första 5 raderna om inget block hittades
+            if (startBlock != -1 && blockLength > 0) {
+                for (int i = startBlock; i < startBlock + blockLength; i++) {
+                    messageBuilder.append(lines[i]).append("\n");
+                }
+            } else {
                 int lineCount = 0;
                 for (String line : lines) {
                     if (!line.isEmpty() && lineCount < 5 && 
-                        !line.contains("---") && !line.contains("Datum:") && 
+                        !line.contains("@") && !line.contains("Datum:") && 
                         !line.contains("URL:") && !line.contains("Agent:") &&
                         !line.contains("IP:")) {
                         messageBuilder.append(line).append("\n");
                         lineCount++;
                     }
                 }
-                details.put("message", messageBuilder.toString().trim());
-            } else {
-                details.put("message", messageBuilder.toString().trim());
             }
-            
-            log.info("Extraherat meddelande (första 50 tecken): {}", 
-                details.get("message") != null && details.get("message").length() > 50 ? 
-                details.get("message").substring(0, 50) + "..." : details.get("message"));
         }
         
-        return details;
+        details.put("message", messageBuilder.toString().trim());
+    }
+    
+    private void logExtractedDetails(Map<String, String> details) {
+        for (Map.Entry<String, String> entry : details.entrySet()) {
+            String value = entry.getValue();
+            if (entry.getKey().equals("message") && value != null && value.length() > 50) {
+                log.info("Extraherat {}: {}", entry.getKey(), value.substring(0, 50) + "...");
+            } else {
+                log.info("Extraherat {}: {}", entry.getKey(), value);
+            }
+        }
     }
     
     private void detectLanguageAndTranslate(PendingTask pendingTask) {

@@ -476,9 +476,9 @@ const PendingTasks = () => {
   };
 
   const getDisplayData = () => {
-    // Visa endast e-postrapporter om vi är på fliken "Väntande uppgifter"
+    // Visa både e-postrapporter och vanliga väntande uppgifter i standardvyn
     if (!showApproved) {
-      return emailReports;
+      return [...emailReports, ...pendingTasks];
     }
     
     // Lägg till approved-flaggan för styling
