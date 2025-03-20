@@ -321,23 +321,17 @@ const Calendar = () => {
     // Kontrollera om uppgiften är en visningstid
     const isShowing = task.title && task.title.startsWith('Visning:');
     
-    // Hämta användarens förnamn om det finns en tilldelad användare
+    // Hämta användarens förnamn
     const assignedUser = users.find(u => u.id === task.assignedToUserId);
     const firstName = assignedUser ? assignedUser.firstName : '';
     
-    // Hämta adress från lägenhet eller från titeln för visningar
+    // Visa bara förnamn och adressen från uppgiftens titel
     let address = '';
     if (isShowing) {
-      // För visningar, extrahera adressen från titeln (formatet är "Visning: [adress]")
-      address = task.title.replace('Visning:', '').trim();
-    } else if (task.apartmentId) {
-      // För vanliga uppgifter, hitta lägenheten och visa dess adress
-      const apartment = apartments.find(a => a.id === (typeof task.apartmentId === 'object' ? task.apartmentId.id : task.apartmentId));
-      address = apartment ? apartment.address : '';
+      address = task.title.substring(task.title.indexOf(':') + 1).trim();
+    } else {
+      address = task.title || '';
     }
-    
-    // Förenkla visningsinnehållet
-    const displayText = `${firstName}, ${address}`;
     
     // Specifik styling för visningar
     if (isShowing) {
@@ -347,8 +341,9 @@ const Calendar = () => {
           onClick={() => handleTaskClick(task)}
           className={`mb-1 p-2 rounded-md cursor-pointer bg-purple-600 text-white border border-purple-800 shadow-sm hover:shadow-md transition-shadow duration-200`}
         >
-          <div className="flex justify-between items-start">
-            <div className="font-medium">{displayText}</div>
+          <div className="flex flex-col">
+            <div className="font-medium">{firstName}</div>
+            <div className="text-xs text-purple-100">{address}</div>
           </div>
         </div>
       );
@@ -361,8 +356,11 @@ const Calendar = () => {
         onClick={() => handleTaskClick(task)}
         className={`mb-1 p-2 rounded-md cursor-pointer border ${getStatusColor(task.status)} ${getPriorityGlow(task.priority)} hover:shadow-md transition-shadow duration-200`}
       >
-        <div className="flex justify-between items-start">
-          <div className="font-medium">{displayText}</div>
+        <div className="flex justify-between">
+          <div className="flex flex-col">
+            <div className="font-medium">{firstName}</div>
+            <div className="text-xs text-gray-500">{address}</div>
+          </div>
           <div className={`h-2 w-2 rounded-full ${getPriorityDotColor(task.priority)}`}></div>
         </div>
       </div>
@@ -404,8 +402,9 @@ const Calendar = () => {
         onClick={() => handleShowingClick(showing)}
         className="mb-1 p-2 rounded-md cursor-pointer bg-purple-600 text-white border border-purple-800 shadow-sm hover:shadow-md transition-shadow duration-200"
       >
-        <div className="flex justify-between items-start">
-          <div className="font-medium">{firstName}, {address}</div>
+        <div className="flex flex-col">
+          <div className="font-medium">{firstName}</div>
+          <div className="text-xs text-purple-100">{address}</div>
         </div>
       </div>
     );
