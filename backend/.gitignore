@@ -2,6 +2,8 @@
 .env
 .env.cmd
 run-dev.ps1
+application.properties
+application-dev.properties
 
 /node_modules
  
