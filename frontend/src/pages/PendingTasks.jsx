@@ -233,55 +233,92 @@ const PendingTasks = () => {
   };
 
   const handleRowClick = (item) => {
-    setSelectedTask(item);
+    // Ta bort prefix innan vi använder ID:t för att hämta originalobjektet
+    let originalId;
+    let originalItem;
+    
+    if (item.id.startsWith('email-')) {
+      originalId = item.id.replace('email-', '');
+      originalItem = emailReports.find(report => report.id === originalId);
+    } else if (item.id.startsWith('approved-')) {
+      originalId = item.id.replace('approved-', '');
+      originalItem = approvedTasks.find(task => task.id === originalId);
+    } else if (item.id.startsWith('task-')) {
+      originalId = item.id.replace('task-', '');
+      originalItem = pendingTasks.find(task => task.id === originalId);
+    } else {
+      originalItem = item;
+    }
+    
+    setSelectedTask(originalItem);
     
     // Kontrollera om det är en e-postrapport (om det har name, email, etc. men ingen task)
-    const isEmailReport = !item.task && item.name;
+    const isEmailReport = !originalItem.task && originalItem.name;
     
     if (isEmailReport) {      
       // Hitta lägenhetsobjekt baserat på apartmentId om det finns
       let apartmentObj = '';
-      if (item.apartmentId) {
-        const foundApartment = apartments.find(apt => apt.id === item.apartmentId);
+      if (originalItem.apartmentId) {
+        const foundApartment = apartments.find(apt => apt.id === originalItem.apartmentId);
         if (foundApartment) {
           apartmentObj = foundApartment.id;
         }
       }
       
-      // Hitta hyresgästobjekt baserat på tenantId om det finns
+      // Hitta hyresgästobjekt baserat på e-postadressen
       let tenantObj = '';
-      if (item.tenantId) {
-        const foundTenant = tenants.find(t => t.id === item.tenantId);
+      if (originalItem.tenantId) {
+        const foundTenant = tenants.find(t => t.id === originalItem.tenantId);
         if (foundTenant) {
           tenantObj = foundTenant.id;
         }
+      } else if (originalItem.email) {
+        // Försök matcha hyresgäst baserat på e-post
+        const foundTenant = tenants.find(t => t.email === originalItem.email);
+        if (foundTenant) {
+          tenantObj = foundTenant.id;
+          
+          // Om hyresgästen har en lägenhet och vi inte har lägenhetsobjekt, använd den
+          if (!apartmentObj && foundTenant.apartment) {
+            apartmentObj = foundTenant.apartment;
+          }
+        }
       }
       
-      // Förifyll formulär med data från e-postrapporten
+      // Bygg titeln i formatet "Adress Lgh Lägenhetsnummer"
+      let title = '';
+      if (originalItem.address) {
+        title = originalItem.address;
+        if (originalItem.apartment) {
+          title += ` Lgh ${originalItem.apartment}`;
+        }
+      } else {
+        // Fallback om adress saknas
+        title = originalItem.name ? `Felanmälan från ${originalItem.name}` : 'Felanmälan';
+      }
+      
       setFormData({
-        title: `${item.address || ''} ${item.apartment || ''}`.trim(),
-        description: item.description || '',
+        title: title,
+        description: originalItem.description || '',
         dueDate: '',
         priority: 'MEDIUM',
         status: 'NEW',
         assignedToUserId: '',
         assignedByUserId: currentUser.id,
-        // Använd apartmentId om det finns, annars försök hitta lägenheten baserat på adress och apartment
         apartmentId: apartmentObj,
-        // Använd tenantId om det finns
         tenantId: tenantObj,
         comments: '',
         isRecurring: false,
         recurringPattern: '',
       });
-    } else if (item.task) {
+    } else if (originalItem.task) {
       // Fixa tidszonsproblemet för befintliga uppgifter
       let dueDateString = '';
       
-      if (item.task.dueDate) {
+      if (originalItem.task.dueDate) {
         // Konvertera ISO-datumsträngen till ett lokalt datum
         // Vi behöver skapa ett datum utan tidskomponent i lokal tidszon
-        const dueDate = new Date(item.task.dueDate);
+        const dueDate = new Date(originalItem.task.dueDate);
         
         // Använd lokal tidszon för att säkerställa att datumet visas korrekt
         const year = dueDate.getFullYear();
@@ -293,18 +330,18 @@ const PendingTasks = () => {
       
       // Förifyll formulär med task-information för vanliga väntande uppgifter
       setFormData({
-        title: item.task.title || '',
-        description: item.task.description || '',
+        title: originalItem.task.title || '',
+        description: originalItem.task.description || '',
         dueDate: dueDateString,
-        priority: item.task.priority || '',
-        status: item.task.status || '',
-        assignedToUserId: item.task.assignedToUserId || '',
-        assignedByUserId: item.task.assignedByUserId || '',
-        apartmentId: item.task.apartmentId || '',
-        tenantId: item.task.tenantId || '',
-        comments: item.task.comments || '',
-        isRecurring: item.task.isRecurring || false,
-        recurringPattern: item.task.recurringPattern || '',
+        priority: originalItem.task.priority || '',
+        status: originalItem.task.status || '',
+        assignedToUserId: originalItem.task.assignedToUserId || '',
+        assignedByUserId: originalItem.task.assignedByUserId || '',
+        apartmentId: originalItem.task.apartmentId || '',
+        tenantId: originalItem.task.tenantId || '',
+        comments: originalItem.task.comments || '',
+        isRecurring: originalItem.task.isRecurring || false,
+        recurringPattern: originalItem.task.recurringPattern || '',
       });
     }
     
@@ -478,17 +515,34 @@ const PendingTasks = () => {
   const getDisplayData = () => {
     // Visa både e-postrapporter och vanliga väntande uppgifter i standardvyn
     if (!showApproved) {
-      return [...emailReports, ...pendingTasks];
+      // Lägg till ett prefix för att särskilja e-postrapporter från vanliga uppgifter
+      const emailReportsWithPrefix = emailReports.map(report => ({
+        ...report,
+        id: `email-${report.id}`
+      }));
+      
+      const pendingTasksWithPrefix = pendingTasks.map(task => ({
+        ...task,
+        id: `task-${task.id}`
+      }));
+      
+      return [...emailReportsWithPrefix, ...pendingTasksWithPrefix];
     }
     
     // Lägg till approved-flaggan för styling
     // Alla uppgifter som har task.status === "APPROVED" är godkända och ska visas
     const approved = approvedTasks.map(task => ({
       ...task,
-      approved: true
+      approved: true,
+      id: `approved-${task.id}`
     }));
     
-    return [...pendingTasks, ...approved];
+    const pendingTasksWithPrefix = pendingTasks.map(task => ({
+      ...task,
+      id: `task-${task.id}`
+    }));
+    
+    return [...pendingTasksWithPrefix, ...approved];
   };
 
   const getColumns = () => {
@@ -597,43 +651,28 @@ const PendingTasks = () => {
           showFooter={false}
         >
           <div className="grid grid-cols-1 gap-4">
-            {/* Visa kontaktinformation endast för e-postrapporter */}
+            {/* Visa endast beskrivningen från e-postrapporten */}
             {isEmailReport && (
-              <>
-                <div>
-                  <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('pendingTasks.fields.sender')}</h3>
-                  <p className="mt-1">{selectedTask.name || t('common.notSpecified')}</p>
+              <div>
+                <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('pendingTasks.fields.description')}</h3>
+                <div className="mt-1 border rounded p-3 bg-gray-50 dark:bg-gray-700 whitespace-pre-wrap">
+                  {selectedTask.description || t('pendingTasks.noDescription')}
                 </div>
-                <div>
-                  <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('pendingTasks.fields.contactInfo')}</h3>
-                  <p className="mt-1">{t('pendingTasks.fields.email')}: {selectedTask.email || t('common.notSpecified')}</p>
-                  <p className="mt-1">{t('pendingTasks.fields.phone')}: {selectedTask.phone || t('common.notSpecified')}</p>
-                </div>
-                <div>
-                  <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('pendingTasks.fields.address')}</h3>
-                  <p className="mt-1">
-                    {selectedTask.address || t('common.notSpecified')}
-                    {selectedTask.apartment ? `, ${t('pendingTasks.fields.apt')} ${selectedTask.apartment}` : ''}
-                  </p>
-                </div>
-                <div>
-                  <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">{t('pendingTasks.fields.description')}</h3>
-                  <div className="mt-1 border rounded p-3 bg-gray-50 dark:bg-gray-700 whitespace-pre-wrap">
-                    {selectedTask.description || t('pendingTasks.noDescription')}
-                  </div>
-                </div>
-              </>
+              </div>
             )}
             
-            <FormInput
-              label={t('tasks.fields.title')}
-              name="title"
-              type="text"
-              value={formData.title}
-              onChange={handleInputChange}
-              required
-              error={formData.title.trim() === '' && 'Titel är obligatorisk'}
-            />
+            {/* Visa titelraden endast för vanliga uppgifter (inte e-postrapporter) */}
+            {!isEmailReport && (
+              <FormInput
+                label={t('tasks.fields.title')}
+                name="title"
+                type="text"
+                value={formData.title}
+                onChange={handleInputChange}
+                required
+                error={formData.title.trim() === '' && 'Titel är obligatorisk'}
+              />
+            )}
             
             <div className="mb-3">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -757,59 +796,6 @@ const PendingTasks = () => {
                 </select>
               </div>
             </div>
-            
-            <div className="mb-3">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                {t('tasks.fields.comments')}
-              </label>
-              <textarea
-                name="comments"
-                value={formData.comments}
-                onChange={handleInputChange}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                rows="2"
-              />
-            </div>
-            
-            <div className="flex items-center">
-              <input
-                id="isRecurring"
-                name="isRecurring"
-                type="checkbox"
-                checked={formData.isRecurring}
-                onChange={handleInputChange}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-              />
-              <label htmlFor="isRecurring" className="ml-2 block text-sm text-gray-900 dark:text-gray-300">
-                {t('tasks.fields.isRecurring')}
-              </label>
-            </div>
-            
-            {formData.isRecurring && (
-              <div className="mt-3">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  {t('tasks.fields.recurringPattern')}
-                </label>
-                <select
-                  name="recurringPattern"
-                  value={formData.recurringPattern}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  required={formData.isRecurring}
-                >
-                  <option value="">{t('common.select')}</option>
-                  <option value="DAILY">{t('tasks.recurringPatterns.DAILY')}</option>
-                  <option value="WEEKLY">{t('tasks.recurringPatterns.WEEKLY')}</option>
-                  <option value="BIWEEKLY">{t('tasks.recurringPatterns.BIWEEKLY')}</option>
-                  <option value="MONTHLY">{t('tasks.recurringPatterns.MONTHLY')}</option>
-                  <option value="QUARTERLY">{t('tasks.recurringPatterns.QUARTERLY')}</option>
-                  <option value="YEARLY">{t('tasks.recurringPatterns.YEARLY')}</option>
-                </select>
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  {t('tasks.recurringPatternHelp')}
-                </p>
-              </div>
-            )}
           </div>
             
           {/* Granskningssektion */}

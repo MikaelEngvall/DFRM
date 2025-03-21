@@ -121,6 +121,11 @@ public class PendingTaskService {
         PendingTask emailReport = pendingTaskRepository.findById(emailReportId)
             .orElseThrow(() -> new IllegalArgumentException("Kan inte hitta e-postrapport med ID: " + emailReportId));
         
+        // Logga all information som finns i e-postrapporten för felsökning
+        log.info("E-postrapport data: name={}, email={}, phone={}, address={}, apartment={}", 
+            emailReport.getName(), emailReport.getEmail(), emailReport.getPhone(), 
+            emailReport.getAddress(), emailReport.getApartment());
+        
         // Säkerställ att uppgiftens data är korrekt
         newTask.setAssignedByUserId(reviewedBy.getId());
         
@@ -152,21 +157,50 @@ public class PendingTaskService {
         // Om description är tom, använd beskrivningen från emailReport
         if (newTask.getDescription() == null || newTask.getDescription().isEmpty()) {
             newTask.setDescription(emailReport.getDescription());
-            log.info("Använde beskrivning från e-postrapporten");
+            log.info("Använde beskrivning från e-postrapporten, längd: {}", 
+                emailReport.getDescription() != null ? emailReport.getDescription().length() : 0);
         }
         
-        // Sätt standardvärden för den nya uppgiften om de inte är angivna
+        // Sätt titel baserat på adress och lägenhetsnummer enligt specificerat format
+        // Titel ska vara i formatet "Address Lgh ApartmentNumber"
         if (newTask.getTitle() == null || newTask.getTitle().isEmpty()) {
-            if (emailReport.getAddress() != null && emailReport.getApartment() != null) {
-                newTask.setTitle(emailReport.getAddress() + " lgh " + emailReport.getApartment());
-            } else if (emailReport.getAddress() != null) {
-                newTask.setTitle(emailReport.getAddress());
-            } else {
+            StringBuilder titleBuilder = new StringBuilder();
+            
+            if (emailReport.getAddress() != null && !emailReport.getAddress().isEmpty()) {
+                // Använd adressen direkt
+                titleBuilder.append(emailReport.getAddress().trim());
+                
+                // Lägg till lägenhetsnumret om det finns i korrekt format
+                if (emailReport.getApartment() != null && !emailReport.getApartment().isEmpty()) {
+                    // Se till att det finns mellanrum mellan adress och "Lgh"
+                    if (!titleBuilder.toString().endsWith(" ")) {
+                        titleBuilder.append(" ");
+                    }
+                    
+                    // Lägg till "Lgh " + lägenhetsnumret
+                    titleBuilder.append("Lgh ").append(emailReport.getApartment().trim());
+                }
+                
+                newTask.setTitle(titleBuilder.toString());
+                log.info("Skapade titel från adress och lägenhetsnummer: '{}'", newTask.getTitle());
+            } else if (emailReport.getName() != null && !emailReport.getName().isEmpty()) {
+                // Fallback om adress saknas
                 newTask.setTitle("Felanmälan från " + emailReport.getName());
+                log.info("Skapade titel från namn: '{}'", newTask.getTitle());
+            } else if (emailReport.getEmail() != null && !emailReport.getEmail().isEmpty()) {
+                // Fallback om varken adress eller namn finns
+                newTask.setTitle("Felanmälan från " + emailReport.getEmail());
+                log.info("Skapade titel från e-post: '{}'", newTask.getTitle());
+            } else {
+                // Sista fallback om ingen information finns
+                newTask.setTitle("Felanmälan utan kontaktuppgifter");
+                log.info("Skapade generisk titel: '{}'", newTask.getTitle());
             }
+        } else {
+            log.info("Använde redan satt titel: '{}'", newTask.getTitle());
         }
         
-        // Överför kontaktinformation
+        // Överför kontaktinformation till beskrivningen
         StringBuilder contactInfo = new StringBuilder();
         if (emailReport.getName() != null && !emailReport.getName().isEmpty()) {
             contactInfo.append("Kontaktperson: ").append(emailReport.getName()).append("\n");
@@ -180,11 +214,12 @@ public class PendingTaskService {
         
         // Lägg till kontaktinformation om det finns någon
         if (contactInfo.length() > 0) {
-            newTask.setDescription(
-                contactInfo.toString() + 
+            String finalDescription = contactInfo.toString() + 
                 "\n---\n" + 
-                (newTask.getDescription() != null ? newTask.getDescription() : "")
-            );
+                (newTask.getDescription() != null ? newTask.getDescription() : "");
+            
+            newTask.setDescription(finalDescription);
+            log.info("Lade till kontaktinformation till beskrivningen, total längd: {}", finalDescription.length());
         }
         
         // Sätt vem som tilldelade uppgiften (den som godkände e-postrapporten)
