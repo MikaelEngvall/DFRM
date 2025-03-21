@@ -114,8 +114,6 @@ public class InterestEmailListener {
                     if (!TARGET_REPLY_TO.equals(replyTo)) {
                         log.warn("Hoppar över e-post med reply-to={} (inte {})", 
                                  replyTo, TARGET_REPLY_TO);
-                        // Markerar som läst men bearbetar inte innehållet
-                        message.setFlag(Flags.Flag.SEEN, true);
                         continue;
                     } else {
                         log.info("Godkänd reply-to-adress: {}", replyTo);
