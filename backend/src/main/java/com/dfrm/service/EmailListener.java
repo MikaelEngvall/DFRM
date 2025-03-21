@@ -331,8 +331,8 @@ public class EmailListener {
         
         // Dela upp texten på rader för analys
         String[] lines = content.split("\\r?\\n");
-        
-        // Extrahera namn
+            
+            // Extrahera namn
         extractName(lines, details);
         
         // Extrahera e-post
@@ -480,14 +480,14 @@ public class EmailListener {
         Pattern emailPattern = Pattern.compile("\\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}\\b");
         
         // Först, försök hitta e-post i en rad som innehåller "E-post:" eller liknande
-        for (String line : lines) {
+            for (String line : lines) {
             if (line.toLowerCase().contains("e-post:") || 
                 line.toLowerCase().contains("email:") ||
                 line.toLowerCase().contains("mail:") || 
                 line.toLowerCase().contains("e-mail:")) {
                 // Om raden innehåller e-post: text, extrahera e-postadressen specifikt
-                Matcher emailMatcher = emailPattern.matcher(line);
-                if (emailMatcher.find()) {
+                    Matcher emailMatcher = emailPattern.matcher(line);
+                    if (emailMatcher.find()) {
                     String email = emailMatcher.group();
                     details.put("email", email);
                     log.info("Extraherad e-post från rad med e-post-nyckelord: {}", email);
@@ -527,7 +527,7 @@ public class EmailListener {
         Pattern phonePattern = Pattern.compile("\\b(?:\\+?\\d{1,3}[- ]?)?\\d{3,4}[- ]?\\d{2,3}[- ]?\\d{2,4}\\b");
         
         // Först, försök hitta telefonnummer i rader som uttryckligen anger telefon
-        for (String line : lines) {
+            for (String line : lines) {
             if (line.toLowerCase().contains("telefon") || 
                 line.toLowerCase().contains("tel:") ||
                 line.toLowerCase().contains("phone:") || 
@@ -560,7 +560,7 @@ public class EmailListener {
         }
         
         // Om inget telefonnummer hittats explicit, sök hela texten efter telefonnummermönster
-        for (String line : lines) {
+            for (String line : lines) {
             Matcher phoneMatcher = phonePattern.matcher(line);
             if (phoneMatcher.find()) {
                 String phone = phoneMatcher.group();
@@ -618,7 +618,7 @@ public class EmailListener {
         }
         
         // Sök efter alternativa format (t.ex. "Lägenhet: 123")
-        for (String line : lines) {
+                for (String line : lines) {
             if (line.toLowerCase().contains("lägenhet:") || 
                 line.toLowerCase().contains("lägenhets nr:") || 
                 line.toLowerCase().contains("lgh:") || 
@@ -654,14 +654,12 @@ public class EmailListener {
     
     private void extractMessage(String[] lines, Map<String, String> details) {
         StringBuilder message = new StringBuilder();
-        boolean isMessageSection = false;
         boolean foundMessageStart = false;
         
-        // Leta efter "Meddelande:" och ta med allt till "---"
+        // Leta ENDAST efter "Meddelande:" och ta med allt fram till "---"
         for (String line : lines) {
             // Om vi hittar början av meddelandet
-            if (!isMessageSection && line.toLowerCase().contains("meddelande:")) {
-                isMessageSection = true;
+            if (!foundMessageStart && line.toLowerCase().contains("meddelande:")) {
                 foundMessageStart = true;
                 
                 // Extrahera bara den del av raden som kommer efter "Meddelande:"
@@ -672,59 +670,14 @@ public class EmailListener {
                 continue;
             }
             
-            // Om vi hittar slutet av meddelandet
-            if (isMessageSection && line.contains("---")) {
-                isMessageSection = false;
+            // Om vi hittar slutet av meddelandet, avbryt loopen
+            if (foundMessageStart && line.contains("---")) {
                 break;
             }
             
-            // Samla in meddelandet om vi är i meddelande-sektionen
-            if (isMessageSection) {
+            // Samla in meddelandet bara om vi är mellan "Meddelande:" och "---"
+            if (foundMessageStart) {
                 message.append(line).append("\n");
-            }
-        }
-        
-        // Om vi inte hittade "Meddelande:" men behöver innehållet ändå
-        if (!foundMessageStart) {
-            // Sök igenom mer generellt för att hitta meddelande i andra format
-            boolean inContent = false;
-            boolean skipHeader = true;
-            
-            for (String line : lines) {
-                // Hoppa över standard e-postrubrikrader
-                if (skipHeader && (
-                        line.toLowerCase().startsWith("från:") ||
-                        line.toLowerCase().startsWith("till:") ||
-                        line.toLowerCase().startsWith("kopia:") ||
-                        line.toLowerCase().startsWith("ämne:") ||
-                        line.toLowerCase().startsWith("skickat:") ||
-                        line.isEmpty())) {
-                    continue;
-                }
-                
-                // Börja samla innehåll när vi kommit förbi rubriker
-                skipHeader = false;
-                
-                // Avsluta om vi stöter på "---"
-                if (line.contains("---")) {
-                    break;
-                }
-                
-                // Avsluta om vi stöter på en signatur
-                if (line.toLowerCase().contains("hälsningar") ||
-                    line.toLowerCase().contains("mvh") ||
-                    line.toLowerCase().contains("vänligen")) {
-                    break;
-                }
-                
-                // Lägg till aktuell rad till meddelandet (bara om vi är förbi rubrikerna)
-                if (!inContent) {
-                    inContent = true;
-                }
-                
-                if (inContent) {
-                    message.append(line).append("\n");
-                }
             }
         }
         
@@ -733,7 +686,7 @@ public class EmailListener {
             details.put("description", finalMessage);
             log.info("Extraherat meddelande med längd: {}", finalMessage.length());
         } else {
-            log.info("Inget meddelande hittades");
+            log.info("Inget meddelande hittades mellan 'Meddelande:' och '---'");
         }
     }
     

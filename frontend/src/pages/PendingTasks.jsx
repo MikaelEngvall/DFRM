@@ -265,7 +265,7 @@ const PendingTasks = () => {
             }
           }
           
-          // Hitta hyresgästobjekt baserat på e-postadressen
+          // Hitta hyresgästobjekt baserat på tenantId eller e-postadressen
           let tenantObj = '';
           if (selectedReport.tenantId) {
             const foundTenant = tenants.find(t => t.id === selectedReport.tenantId);
@@ -279,16 +279,16 @@ const PendingTasks = () => {
               tenantObj = foundTenant.id;
               
               // Om hyresgästen har en lägenhet och vi inte har lägenhetsobjekt, använd den
-              if (!apartmentObj && foundTenant.apartment) {
-                apartmentObj = foundTenant.apartment;
+              if (!apartmentObj && foundTenant.apartmentId) {
+                apartmentObj = foundTenant.apartmentId;
               }
             }
           }
           
-          // Bygg titeln i formatet "Adress Lgh Lägenhetsnummer"
+          // Bygg titeln i formatet "Adress: [address] Lgh [apartment]"
           let title = '';
           if (selectedReport.address) {
-            title = selectedReport.address;
+            title = `${selectedReport.address}`;
             if (selectedReport.apartment) {
               title += ` Lgh ${selectedReport.apartment}`;
             }
@@ -296,6 +296,10 @@ const PendingTasks = () => {
             // Fallback om adress saknas
             title = selectedReport.name ? `Felanmälan från ${selectedReport.name}` : 'Felanmälan';
           }
+          
+          console.log("Sätter titel:", title);
+          console.log("Sätter lägenhet:", apartmentObj);
+          console.log("Sätter hyresgäst:", tenantObj);
           
           // Förifyll formuläret med data från e-postrapporten
           setFormData({
@@ -539,97 +543,61 @@ const PendingTasks = () => {
 
   const getDisplayData = () => {
     if (!pendingTasks || !emailReports) {
-      return [];
+        return [];
     }
 
     // Skapa en Map för att hålla de slutliga unika objekten med ID som nyckel
-    // Använd original-ID:n utan prefix för att säkerställa unika objekt
     const uniqueDataMap = new Map();
     
     // För att debugga
     console.log("Email reports innan filtrering:", emailReports.length);
     console.log("Pending tasks innan filtrering:", pendingTasks.length);
     
-    // Först, kontrollera emailReports för duplikat inom sig själv
-    const uniqueEmailReportIds = new Set();
-    const uniqueEmailReports = emailReports.filter(report => {
-      if (!report.id || uniqueEmailReportIds.has(report.id)) {
-        console.warn("Ignorerar duplicerad e-postrapport:", report.id);
-        return false;
-      }
-      uniqueEmailReportIds.add(report.id);
-      return true;
-    });
-    
-    // Sedan, lägg till e-postrapporter först eftersom de ska ha prioritet
-    uniqueEmailReports.forEach(report => {
-      // Original-ID som nyckel i Map
-      uniqueDataMap.set(report.id, {
-        ...report,
-        id: `email-${report.id}`, // Prefix för UI-hantering
-        type: 'email'
-      });
-    });
-    
-    // Kontrollera pendingTasks för duplikat inom sig själv
-    const uniquePendingTaskIds = new Set();
-    const uniquePendingTasks = pendingTasks.filter(task => {
-      if (!task.id || uniquePendingTaskIds.has(task.id)) {
-        console.warn("Ignorerar duplicerad pending task:", task.id);
-        return false;
-      }
-      uniquePendingTaskIds.add(task.id);
-      return true;
-    });
-    
-    // Lägg till vanliga uppgifter
-    uniquePendingTasks.forEach(task => {
-      // Original-ID som nyckel i Map
-      if (!uniqueDataMap.has(task.id)) {
-        uniqueDataMap.set(task.id, {
-          ...task,
-          id: `task-${task.id}`, // Prefix för UI-hantering
-          type: 'task'
+    // Prioritera email-rapporter (lägg till dem först)
+    if (emailReports && emailReports.length > 0) {
+        emailReports.forEach(report => {
+            if (report && report.id) {
+                uniqueDataMap.set(report.id, {
+                    ...report,
+                    id: `email-${report.id}`,
+                    type: 'email'
+                });
+            }
         });
-      } else {
-        console.warn(`Uppgift med ID ${task.id} ignoreras då den redan finns från e-postrapporter`);
-      }
-    });
+    }
+    
+    // Lägg till vanliga uppgifter (om de inte redan finns i mappen)
+    if (pendingTasks && pendingTasks.length > 0) {
+        pendingTasks.forEach(task => {
+            if (task && task.id && !uniqueDataMap.has(task.id)) {
+                uniqueDataMap.set(task.id, {
+                    ...task,
+                    id: `task-${task.id}`,
+                    type: 'task'
+                });
+            }
+        });
+    }
     
     // Lägg till godkända uppgifter om filterknappen är aktiverad
     if (showApproved && approvedTasks && approvedTasks.length > 0) {
-      // Kontrollera approvedTasks för duplikat inom sig själv
-      const uniqueApprovedTaskIds = new Set();
-      const uniqueApprovedTasks = approvedTasks.filter(task => {
-        if (!task.id || uniqueApprovedTaskIds.has(task.id)) {
-          console.warn("Ignorerar duplicerad godkänd uppgift:", task.id);
-          return false;
-        }
-        uniqueApprovedTaskIds.add(task.id);
-        return true;
-      });
-      
-      // Lägg till godkända uppgifter
-      uniqueApprovedTasks.forEach(task => {
-        // Original-ID som nyckel i Map
-        if (!uniqueDataMap.has(task.id)) {
-          uniqueDataMap.set(task.id, {
-            ...task,
-            id: `approved-${task.id}`, // Prefix för UI-hantering
-            type: 'approved',
-            approved: true
-          });
-        } else {
-          console.warn(`Godkänd uppgift med ID ${task.id} ignoreras då den redan finns i annan kategori`);
-        }
-      });
+        approvedTasks.forEach(task => {
+            if (task && task.id && !uniqueDataMap.has(task.id)) {
+                uniqueDataMap.set(task.id, {
+                    ...task,
+                    id: `approved-${task.id}`,
+                    type: 'approved',
+                    approved: true
+                });
+            }
+        });
     }
     
     // Konvertera Map till array för rendering
     const finalData = Array.from(uniqueDataMap.values());
     
     // Logga för felsökning
-    console.log(`Visar ${finalData.length} unika objekt (${uniqueEmailReports.length} email + ${uniquePendingTasks.length} pending + ${showApproved && approvedTasks ? approvedTasks.length : 0} approved)`);
+    console.log(`Visar ${finalData.length} unika objekt`);
     
     return finalData;
   };

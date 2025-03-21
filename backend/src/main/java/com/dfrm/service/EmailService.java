@@ -409,7 +409,7 @@ public class EmailService {
             } else {
                 // Skicka meddelandet
                 log.info("Skickar e-post med {} BCC-mottagare", toEmails.size());
-                mailSender.send(message);
+            mailSender.send(message);
                 log.info("E-post skickad framgångsrikt");
                 return true;
             }

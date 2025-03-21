@@ -251,7 +251,7 @@ public class MailController {
                     } else {
                         // Skicka direkt om det är få mottagare
                         log.info("Skickar direkt utan batching (få mottagare)");
-                        emailService.sendBulkEmail(subject, content, recipients);
+                    emailService.sendBulkEmail(subject, content, recipients);
                     }
                     
                     log.info("Asynkron e-postuppsändning schemalagd");
@@ -263,9 +263,9 @@ public class MailController {
             // Returnera ett omedelbart svar till klienten
             long responseTime = System.currentTimeMillis() - startTime;
             return ResponseEntity.accepted().body(Map.of(
-                "success", true,
+                    "success", true,
                 "message", "Email sending has been scheduled",
-                "recipientCount", recipients.size(),
+                    "recipientCount", recipients.size(),
                 "processingTimeMs", responseTime,
                 "timestamp", LocalDateTime.now().toString()
             ));

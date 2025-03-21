@@ -87,25 +87,25 @@ public class InterestEmailListener {
             
             Session session = Session.getDefaultInstance(props);
             Store store = session.getStore("imaps");
-            store.connect(
-                mailProperties.getHost(),
-                mailProperties.getIntressePort(),
-                mailProperties.getIntresseUsername(),
-                mailProperties.getIntressePassword()
-            );
-            
+                store.connect(
+                    mailProperties.getHost(),
+                    mailProperties.getIntressePort(),
+                    mailProperties.getIntresseUsername(),
+                    mailProperties.getIntressePassword()
+                );
+                
             log.info("Ansluten till e-postkonto: {}", mailProperties.getIntresseUsername());
-            
-            Folder inbox = store.getFolder("INBOX");
-            inbox.open(Folder.READ_WRITE);
-            
+
+                Folder inbox = store.getFolder("INBOX");
+                inbox.open(Folder.READ_WRITE);
+                
             // Sök efter olästa meddelanden
             SearchTerm searchTerm = new FlagTerm(new Flags(Flags.Flag.SEEN), false);
             Message[] messages = inbox.search(searchTerm);
-            
-            log.info("Hittade {} olästa meddelanden", messages.length);
-            
-            for (Message message : messages) {
+                
+                log.info("Hittade {} olästa meddelanden", messages.length);
+                
+                for (Message message : messages) {
                 log.info("Bearbetar e-post: Ämne={}, Från={}", message.getSubject(), getFromAddress(message));
                 
                 try {
@@ -238,7 +238,7 @@ public class InterestEmailListener {
             String phone = extractPhone(content);
             
             // Skapa och spara ny intresseanmälan
-            Interest interest = Interest.builder()
+        Interest interest = Interest.builder()
                 .name(name)
                 .email(from)
                 .phone(phone)
@@ -247,9 +247,9 @@ public class InterestEmailListener {
                 .status("NEW")
                 .apartment(apartment)
                 .build();
-            
+        
             log.info("Sparar ny intresseanmälan från: {} för lägenhet: {}", interest.getEmail(), interest.getApartment());
-            Interest savedInterest = interestRepository.save(interest);
+        Interest savedInterest = interestRepository.save(interest);
             log.info("Sparad intresseanmälan med ID: {}", savedInterest.getId());
         } catch (Exception e) {
             log.error("Fel vid bearbetning av intresseanmälan: {}", e.getMessage(), e);

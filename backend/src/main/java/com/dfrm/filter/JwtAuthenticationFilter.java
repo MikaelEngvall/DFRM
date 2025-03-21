@@ -241,7 +241,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 log.warn("Ingen roll hittades i JWT-token");
             }
         } catch (Exception e) {
-            log.warn("Kunde inte extrahera roller från token", e);
+                log.warn("Kunde inte extrahera roller från token", e);
         }
         
         return Collections.emptyList();
