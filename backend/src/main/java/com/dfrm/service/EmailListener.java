@@ -229,7 +229,9 @@ public class EmailListener {
         pendingTask.setName(extractedInfo.getOrDefault("name", ""));
         pendingTask.setEmail(extractedInfo.getOrDefault("email", ""));
         pendingTask.setPhone(extractedInfo.getOrDefault("phone", ""));
-        pendingTask.setDescription(extractedInfo.getOrDefault("message", ""));
+        
+        // Använd description-nyckeln för beskrivningen (tidigare 'message')
+        pendingTask.setDescription(extractedInfo.getOrDefault("description", ""));
         
         // Sätt lägenhetsuppgifter
         String address = extractedInfo.getOrDefault("address", "");
@@ -240,6 +242,16 @@ public class EmailListener {
         
         // Sätt svenskt språk som standard
         pendingTask.setDescriptionLanguage(Language.SV);
+        
+        // Logga alla extraherade uppgifter för felsökning
+        log.info("Extraherad information för ny task:");
+        log.info(" - Namn: {}", pendingTask.getName());
+        log.info(" - E-post: {}", pendingTask.getEmail());
+        log.info(" - Telefon: {}", pendingTask.getPhone());
+        log.info(" - Adress: {}", pendingTask.getAddress());
+        log.info(" - Lägenhet: {}", pendingTask.getApartment());
+        log.info(" - Beskrivning längd: {}", 
+            pendingTask.getDescription() != null ? pendingTask.getDescription().length() : 0);
         
         return pendingTask;
     }
@@ -342,26 +354,73 @@ public class EmailListener {
     }
     
     private void extractName(String[] lines, Map<String, String> details) {
-        // Försök hitta namn i formatet "Namn: XXX"
+        // Först, leta direkt efter "namn:" eller "name:" i början av raden
         for (String line : lines) {
-            // Exakt parsning för standardformat om raderna börjar med "Namn:"
-            if (line.toLowerCase().startsWith("namn:")) {
+            if (line.toLowerCase().startsWith("namn:") || line.toLowerCase().startsWith("name:")) {
                 String[] parts = line.split(":", 2);
                 if (parts.length > 1 && !parts[1].trim().isEmpty()) {
                     String name = parts[1].trim();
-                    // Ta bort e-post och telefonnummer om de av misstag ingår i namnet
+                    // Ta bort eventuell annan information som adress, e-post eller telefon från namn-delen
+                    name = name.replaceAll("(?i)adress\\s*:\\s*.*", "").trim();
                     name = name.replaceAll("(?i)e-?post\\s*:\\s*[^\\s]+@[^\\s]+", "").trim();
                     name = name.replaceAll("(?i)telefon(?:nummer)?\\s*:\\s*\\d+", "").trim();
+                    name = name.replaceAll("(?i)lägenhet(?:snummer)?\\s*:\\s*\\d+", "").trim();
                     details.put("name", name);
-                    log.info("Extraherat namn (standardformat): {}", details.get("name"));
+                    log.info("Extraherat namn (standardformat): {}", name);
                     return;
                 }
             }
         }
         
-        // Om namnet finns i en komplex rad (t.ex. "Testa Testsson E-post: example@test.com")
+        // Hantera format som: "Testa Testsson Adress: Testagatan 1 Lägenhetsnummer: 1001 Meddelande"
         for (String line : lines) {
-            // Letar efter mönster som "Namn: John Doe E-post: john@example.com"
+            // Hitta rader som innehåller "Adress:" för att isolera namndelarna
+            if (line.toLowerCase().contains("adress:")) {
+                // Dela upp vid "Adress:" för att få namn-delen
+                String[] parts = line.split("(?i)adress:", 2);
+                if (parts.length > 0 && !parts[0].trim().isEmpty()) {
+                    String name = parts[0].trim();
+                    
+                    // Rensa från andra taggar som kan finnas i namnet
+                    name = name.replaceAll("(?i)namn\\s*:", "").trim();
+                    name = name.replaceAll("(?i)e-?post\\s*:\\s*[^\\s]+@[^\\s]+", "").trim();
+                    name = name.replaceAll("(?i)telefon(?:nummer)?\\s*:\\s*\\d+", "").trim();
+                    
+                    details.put("name", name);
+                    log.info("Extraherat namn från rad med adress: {}", name);
+                    
+                    // Extrahera adress och lägenhetsnummer samtidigt
+                    String addressPart = parts[1];
+                    
+                    // Om adressen innehåller lägenhetsnummer, extrahera båda
+                    if (addressPart.toLowerCase().contains("lägenhet")) {
+                        String[] addressApartmentParts = addressPart.split("(?i)lägenhet(?:snummer)?\\s*:", 2);
+                        
+                        if (addressApartmentParts.length > 0 && !addressApartmentParts[0].trim().isEmpty()) {
+                            details.put("address", addressApartmentParts[0].trim());
+                            log.info("Extraherad adress från samma rad: {}", details.get("address"));
+                        }
+                        
+                        if (addressApartmentParts.length > 1 && !addressApartmentParts[1].trim().isEmpty()) {
+                            // Ta allt fram till ett eventuellt "Meddelande:" eller slutet av raden
+                            String apartmentPart = addressApartmentParts[1].split("(?i)meddelande:", 2)[0].trim();
+                            details.put("apartment", apartmentPart);
+                            log.info("Extraherat lägenhetsnummer från samma rad: {}", details.get("apartment"));
+                        }
+                    } else {
+                        // Om det inte finns lägenhetsnummer, spara bara adressen
+                        details.put("address", addressPart.trim());
+                        log.info("Extraherad adress från samma rad: {}", details.get("address"));
+                    }
+                    
+                    return;
+                }
+            }
+        }
+        
+        // Fortsätt med befintliga metoder om inget hittas ovan
+        // Leta efter komplext format med regex
+        for (String line : lines) {
             Pattern namePattern = Pattern.compile("(?i)(?:namn|name)\\s*:\\s*([^:]+?)(?:\\s+e-?post:|\\s+telefon(?:nummer)?:|\\s+adress:|$)");
             Matcher nameMatcher = namePattern.matcher(line);
             if (nameMatcher.find()) {
@@ -372,14 +431,14 @@ public class EmailListener {
             }
         }
         
-        // Försök med hela rader som innehåller namn om inget annat hittades
+        // Fallback till att hitta namn i vilken rad som helst som innehåller "namn:"
         for (String line : lines) {
             if (line.toLowerCase().contains("namn:") || line.toLowerCase().contains("name:")) {
                 String[] parts = line.split(":", 2);
                 if (parts.length > 1 && !parts[1].trim().isEmpty()) {
-                    // Försök ta bara namnet genom att rensa bort eventuell e-post och telefonnummer
                     String name = parts[1].trim();
-                    // Ta bort e-post och telefonnummer om de av misstag ingår i namnet
+                    // Rensa ytterligare
+                    name = name.replaceAll("(?i)adress\\s*:\\s*.*", "").trim();
                     name = name.replaceAll("(?i)e-?post\\s*:\\s*[^\\s]+@[^\\s]+", "").trim();
                     name = name.replaceAll("(?i)telefon(?:nummer)?\\s*:\\s*\\d+", "").trim();
                     details.put("name", name);
@@ -389,15 +448,15 @@ public class EmailListener {
             }
         }
         
-        // Försök med andra vanliga format om inget hittades
-        // Behåll befintlig kod för detta fall
+        // Fallback till avsändarfält
         for (String line : lines) {
             if (line.toLowerCase().startsWith("från:") || line.toLowerCase().startsWith("from:") ||
                 line.toLowerCase().startsWith("avsändare:") || line.toLowerCase().startsWith("sender:")) {
                 String[] parts = line.split(":", 2);
                 if (parts.length > 1 && !parts[1].trim().isEmpty()) {
                     String name = parts[1].trim();
-                    // Ta bort e-post och telefonnummer om de av misstag ingår i namnet
+                    // Rensa
+                    name = name.replaceAll("(?i)adress\\s*:\\s*.*", "").trim();
                     name = name.replaceAll("(?i)e-?post\\s*:\\s*[^\\s]+@[^\\s]+", "").trim();
                     name = name.replaceAll("(?i)telefon(?:nummer)?\\s*:\\s*\\d+", "").trim();
                     details.put("name", name);
@@ -405,6 +464,14 @@ public class EmailListener {
                     return;
                 }
             }
+        }
+        
+        // Om inget namn hittades och vi har e-post, använd del av e-post som namn
+        if (!details.containsKey("name") && details.containsKey("email")) {
+            String email = details.get("email");
+            String name = email.split("@")[0].replace(".", " ");
+            details.put("name", name);
+            log.info("Konstruerat namn från e-post: {}", name);
         }
     }
     
@@ -588,128 +655,83 @@ public class EmailListener {
     private void extractMessage(String[] lines, Map<String, String> details) {
         StringBuilder message = new StringBuilder();
         boolean isMessageSection = false;
-        boolean foundMessage = false;
+        boolean foundMessageStart = false;
         
-        // Leta efter sektionen som börjar med "Meddelande:" eller liknande och slutar med "---"
+        // Leta efter "Meddelande:" och ta med allt till "---"
         for (String line : lines) {
-            // Starta meningssamling när vi hittar "Meddelande:" eller liknande nyckelord
-            if (!isMessageSection && (
-                    line.toLowerCase().startsWith("meddelande:") ||
-                    line.toLowerCase().startsWith("message:") ||
-                    line.toLowerCase().contains("meddelande:") ||
-                    line.toLowerCase().contains("message:") ||
-                    line.toLowerCase().contains("beskrivning:") ||
-                    line.toLowerCase().contains("description:") ||
-                    line.toLowerCase().contains("ärende:") ||
-                    line.toLowerCase().contains("felanmälan:"))
-                ) {
+            // Om vi hittar början av meddelandet
+            if (!isMessageSection && line.toLowerCase().contains("meddelande:")) {
                 isMessageSection = true;
-                foundMessage = true;
+                foundMessageStart = true;
                 
-                // Extrahera meddelandedelen om den finns på samma rad (efter kolon)
-                if (line.contains(":")) {
-                    String[] parts = line.split(":", 2);
-                    if (parts.length > 1 && !parts[1].trim().isEmpty()) {
-                        message.append(parts[1].trim()).append("\n");
-                    }
+                // Extrahera bara den del av raden som kommer efter "Meddelande:"
+                String[] parts = line.split("(?i)meddelande:", 2);
+                if (parts.length > 1 && !parts[1].trim().isEmpty()) {
+                    message.append(parts[1].trim()).append("\n");
                 }
                 continue;
             }
             
-            // Avsluta när vi hittar en avskiljare
-            if (isMessageSection && (
-                    line.startsWith("---") ||
-                    line.startsWith("===") ||
-                    line.contains("-------------") ||
-                    line.contains("=============") ||
-                    line.contains("***************") ||
-                    line.toLowerCase().contains("hälsningar,") ||
-                    line.toLowerCase().contains("mvh,") ||
-                    line.toLowerCase().contains("vänliga hälsningar") ||
-                    line.toLowerCase().contains("med vänlig hälsning") ||
-                    line.toLowerCase().startsWith("från:") ||
-                    line.toLowerCase().startsWith("from:"))
-                ) {
+            // Om vi hittar slutet av meddelandet
+            if (isMessageSection && line.contains("---")) {
                 isMessageSection = false;
                 break;
             }
             
-            // Samla text som är del av meddelandesektionen
+            // Samla in meddelandet om vi är i meddelande-sektionen
             if (isMessageSection) {
                 message.append(line).append("\n");
             }
         }
         
-        // Om vi inte hittat ett meddelande med explicit markör, försök med fallback - ta hela innehållet
-        if (!foundMessage) {
+        // Om vi inte hittade "Meddelande:" men behöver innehållet ändå
+        if (!foundMessageStart) {
+            // Sök igenom mer generellt för att hitta meddelande i andra format
             boolean inContent = false;
             boolean skipHeader = true;
-            int emptyLineCounter = 0;
             
             for (String line : lines) {
-                // Hoppa över e-postrubrikrader (From, To, Subject, etc.)
+                // Hoppa över standard e-postrubrikrader
                 if (skipHeader && (
                         line.toLowerCase().startsWith("från:") ||
-                        line.toLowerCase().startsWith("from:") ||
                         line.toLowerCase().startsWith("till:") ||
-                        line.toLowerCase().startsWith("to:") ||
-                        line.toLowerCase().startsWith("skickat:") ||
-                        line.toLowerCase().startsWith("sent:") ||
+                        line.toLowerCase().startsWith("kopia:") ||
                         line.toLowerCase().startsWith("ämne:") ||
-                        line.toLowerCase().startsWith("subject:") ||
-                        line.isEmpty())
-                    ) {
+                        line.toLowerCase().startsWith("skickat:") ||
+                        line.isEmpty())) {
                     continue;
                 }
                 
-                // När vi passerat rubrikerna, börja samla innehåll
+                // Börja samla innehåll när vi kommit förbi rubriker
                 skipHeader = false;
-                inContent = true;
                 
-                // Räkna tomma rader för att detektera slutet av innehållet
-                if (line.trim().isEmpty()) {
-                    emptyLineCounter++;
-                    // Efter 2 tomma rader i rad, anta att vi nått slutet av innehållet
-                    if (emptyLineCounter > 2) {
-                        break;
-                    }
-                } else {
-                    emptyLineCounter = 0;
-                }
-                
-                // Avsluta meddelandesektion vid vanliga signaturer/avgränsare
-                if (line.startsWith("---") ||
-                    line.startsWith("===") ||
-                    line.contains("-------------") ||
-                    line.contains("=============") ||
-                    line.toLowerCase().contains("hälsningar,") ||
-                    line.toLowerCase().contains("mvh,") ||
-                    line.toLowerCase().contains("vänliga hälsningar") ||
-                    line.toLowerCase().contains("med vänlig hälsning")) {
+                // Avsluta om vi stöter på "---"
+                if (line.contains("---")) {
                     break;
                 }
                 
-                // Lägg till innehållet till meddelandet
+                // Avsluta om vi stöter på en signatur
+                if (line.toLowerCase().contains("hälsningar") ||
+                    line.toLowerCase().contains("mvh") ||
+                    line.toLowerCase().contains("vänligen")) {
+                    break;
+                }
+                
+                // Lägg till aktuell rad till meddelandet (bara om vi är förbi rubrikerna)
+                if (!inContent) {
+                    inContent = true;
+                }
+                
                 if (inContent) {
                     message.append(line).append("\n");
                 }
             }
         }
         
-        // Slutför meddelandet med trimning för att ta bort onödiga blankrader i början och slutet
         String finalMessage = message.toString().trim();
-        
-        // Undvik att sätta ett tomt meddelande
         if (!finalMessage.isEmpty()) {
             details.put("description", finalMessage);
             log.info("Extraherat meddelande med längd: {}", finalMessage.length());
-            
-            // Logga de första 100 tecknen av meddelandet för debugging
-            if (finalMessage.length() > 100) {
-                log.info("Meddelande (början): {}", finalMessage.substring(0, 100) + "...");
-            } else {
-                log.info("Meddelande: {}", finalMessage);
-            }
         } else {
             log.info("Inget meddelande hittades");
         }

@@ -216,6 +216,31 @@ const pendingTaskService = {
       }
       
       const response = await api.get('/api/pending-tasks/for-review');
+      
+      // Säkerställ att vi inte har duplicerade uppgifter baserat på ID
+      if (response.data && Array.isArray(response.data)) {
+        const uniqueIds = new Set();
+        const uniqueTasks = response.data.filter(task => {
+          if (!task.id || uniqueIds.has(task.id)) {
+            console.warn("Filtrerar bort duplicerad/ogiltig uppgift:", task);
+            return false;
+          }
+          uniqueIds.add(task.id);
+          return true;
+        });
+        
+        // Logga om vi filtrerade bort något
+        if (uniqueTasks.length !== response.data.length) {
+          console.warn(`Filtrerade bort ${response.data.length - uniqueTasks.length} duplicerade uppgifter`);
+        }
+        
+        // Spara unika uppgifter i cachen
+        saveToCache(CACHE_KEYS.PENDING_TASKS, uniqueTasks);
+        
+        return uniqueTasks;
+      }
+      
+      saveToCache(CACHE_KEYS.PENDING_TASKS, response.data);
       return response.data;
     } catch (error) {
       console.error('Error fetching unreviewed tasks:', error);

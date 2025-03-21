@@ -18,8 +18,8 @@ const PendingTasks = () => {
   const [approvedTasks, setApprovedTasks] = useState([]);
   const [showApproved, setShowApproved] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);
-  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [openModal, setOpenModal] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [reviewComments, setReviewComments] = useState('');
   const [apartments, setApartments] = useState([]);
@@ -175,7 +175,7 @@ const PendingTasks = () => {
 
   const fetchData = async () => {
     try {
-      setIsLoading(true);
+      setLoading(true);
       // Hämta både vanliga väntande uppgifter och e-postrapporter
       const [pendingData, emailReportsData] = await Promise.all([
         pendingTaskService.getUnreviewedTasks(),
@@ -194,7 +194,7 @@ const PendingTasks = () => {
       setError(t('common.error'));
       console.error('Error fetching pending tasks:', err);
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
@@ -233,120 +233,145 @@ const PendingTasks = () => {
   };
 
   const handleRowClick = (item) => {
-    // Ta bort prefix innan vi använder ID:t för att hämta originalobjektet
-    let originalId;
-    let originalItem;
-    
-    if (item.id.startsWith('email-')) {
-      originalId = item.id.replace('email-', '');
-      originalItem = emailReports.find(report => report.id === originalId);
-    } else if (item.id.startsWith('approved-')) {
-      originalId = item.id.replace('approved-', '');
-      originalItem = approvedTasks.find(task => task.id === originalId);
-    } else if (item.id.startsWith('task-')) {
-      originalId = item.id.replace('task-', '');
-      originalItem = pendingTasks.find(task => task.id === originalId);
-    } else {
-      originalItem = item;
-    }
-    
-    setSelectedTask(originalItem);
-    
-    // Kontrollera om det är en e-postrapport (om det har name, email, etc. men ingen task)
-    const isEmailReport = !originalItem.task && originalItem.name;
-    
-    if (isEmailReport) {      
-      // Hitta lägenhetsobjekt baserat på apartmentId om det finns
-      let apartmentObj = '';
-      if (originalItem.apartmentId) {
-        const foundApartment = apartments.find(apt => apt.id === originalItem.apartmentId);
-        if (foundApartment) {
-          apartmentObj = foundApartment.id;
-        }
+    try {
+      setLoading(true);
+      
+      // Hantera olika typer av ID:n (email-xxx, task-xxx, approved-xxx)
+      let itemId = item.id;
+      let itemType = item.type || 'task'; // Default till 'task' om ingen typ är angiven
+      
+      // Om ID innehåller prefix, extrahera det verkliga ID:t
+      if (typeof itemId === 'string' && itemId.includes('-')) {
+        const parts = itemId.split('-');
+        itemType = parts[0];
+        itemId = parts.slice(1).join('-'); // Hantera ID:n som kan innehålla streck
       }
       
-      // Hitta hyresgästobjekt baserat på e-postadressen
-      let tenantObj = '';
-      if (originalItem.tenantId) {
-        const foundTenant = tenants.find(t => t.id === originalItem.tenantId);
-        if (foundTenant) {
-          tenantObj = foundTenant.id;
-        }
-      } else if (originalItem.email) {
-        // Försök matcha hyresgäst baserat på e-post
-        const foundTenant = tenants.find(t => t.email === originalItem.email);
-        if (foundTenant) {
-          tenantObj = foundTenant.id;
+      console.log(`Klickade på rad: ${itemType} med ID ${itemId}`);
+
+      // Uppgift från e-postrapport
+      if (itemType === 'email') {
+        const selectedReport = emailReports.find(report => report.id === itemId);
+        if (selectedReport) {
+          console.log("Vald e-postrapport:", selectedReport);
+          setSelectedTask(selectedReport);
           
-          // Om hyresgästen har en lägenhet och vi inte har lägenhetsobjekt, använd den
-          if (!apartmentObj && foundTenant.apartment) {
-            apartmentObj = foundTenant.apartment;
+          // Hitta lägenhetsobjekt baserat på apartmentId om det finns
+          let apartmentObj = '';
+          if (selectedReport.apartmentId) {
+            const foundApartment = apartments.find(apt => apt.id === selectedReport.apartmentId);
+            if (foundApartment) {
+              apartmentObj = foundApartment.id;
+            }
           }
+          
+          // Hitta hyresgästobjekt baserat på e-postadressen
+          let tenantObj = '';
+          if (selectedReport.tenantId) {
+            const foundTenant = tenants.find(t => t.id === selectedReport.tenantId);
+            if (foundTenant) {
+              tenantObj = foundTenant.id;
+            }
+          } else if (selectedReport.email) {
+            // Försök matcha hyresgäst baserat på e-post
+            const foundTenant = tenants.find(t => t.email === selectedReport.email);
+            if (foundTenant) {
+              tenantObj = foundTenant.id;
+              
+              // Om hyresgästen har en lägenhet och vi inte har lägenhetsobjekt, använd den
+              if (!apartmentObj && foundTenant.apartment) {
+                apartmentObj = foundTenant.apartment;
+              }
+            }
+          }
+          
+          // Bygg titeln i formatet "Adress Lgh Lägenhetsnummer"
+          let title = '';
+          if (selectedReport.address) {
+            title = selectedReport.address;
+            if (selectedReport.apartment) {
+              title += ` Lgh ${selectedReport.apartment}`;
+            }
+          } else {
+            // Fallback om adress saknas
+            title = selectedReport.name ? `Felanmälan från ${selectedReport.name}` : 'Felanmälan';
+          }
+          
+          // Förifyll formuläret med data från e-postrapporten
+          setFormData({
+            title: title,
+            description: selectedReport.description || '',
+            dueDate: '',
+            priority: 'MEDIUM',
+            status: 'NEW',
+            assignedToUserId: '',
+            assignedByUserId: currentUser.id,
+            apartmentId: apartmentObj,
+            tenantId: tenantObj,
+            comments: '',
+            isRecurring: false,
+            recurringPattern: '',
+          });
+          
+          setOpenModal(true);
+        } else {
+          console.error("Kunde inte hitta e-postrapport med ID:", itemId);
+        }
+      } 
+      // Vanlig uppgift eller godkänd uppgift
+      else {
+        // Sök i både pendingTasks och approvedTasks
+        const selectedTask = 
+          pendingTasks.find(task => task.id === itemId) || 
+          (approvedTasks ? approvedTasks.find(task => task.id === itemId) : null);
+        
+        if (selectedTask) {
+          console.log("Vald uppgift:", selectedTask);
+          setSelectedTask(selectedTask);
+          
+          // Förifyll formulär med task-information för vanliga väntande uppgifter
+          if (selectedTask.task) {
+            // Fixa tidszonsproblemet för befintliga uppgifter
+            let dueDateString = '';
+            
+            if (selectedTask.task.dueDate) {
+              // Konvertera ISO-datumsträngen till ett lokalt datum
+              const dueDate = new Date(selectedTask.task.dueDate);
+              
+              // Använd lokal tidszon för att säkerställa att datumet visas korrekt
+              const year = dueDate.getFullYear();
+              const month = String(dueDate.getMonth() + 1).padStart(2, '0'); // +1 eftersom JS-månader är 0-indexerade
+              const day = String(dueDate.getDate()).padStart(2, '0');
+              
+              dueDateString = `${year}-${month}-${day}`;
+            }
+            
+            setFormData({
+              title: selectedTask.task.title || '',
+              description: selectedTask.task.description || '',
+              dueDate: dueDateString,
+              priority: selectedTask.task.priority || '',
+              status: selectedTask.task.status || '',
+              assignedToUserId: selectedTask.task.assignedToUserId || '',
+              assignedByUserId: selectedTask.task.assignedByUserId || '',
+              apartmentId: selectedTask.task.apartmentId || '',
+              tenantId: selectedTask.task.tenantId || '',
+              comments: selectedTask.task.comments || '',
+              isRecurring: selectedTask.task.isRecurring || false,
+              recurringPattern: selectedTask.task.recurringPattern || '',
+            });
+          }
+          
+          setOpenModal(true);
+        } else {
+          console.error("Kunde inte hitta uppgift med ID:", itemId);
         }
       }
-      
-      // Bygg titeln i formatet "Adress Lgh Lägenhetsnummer"
-      let title = '';
-      if (originalItem.address) {
-        title = originalItem.address;
-        if (originalItem.apartment) {
-          title += ` Lgh ${originalItem.apartment}`;
-        }
-      } else {
-        // Fallback om adress saknas
-        title = originalItem.name ? `Felanmälan från ${originalItem.name}` : 'Felanmälan';
-      }
-      
-      setFormData({
-        title: title,
-        description: originalItem.description || '',
-        dueDate: '',
-        priority: 'MEDIUM',
-        status: 'NEW',
-        assignedToUserId: '',
-        assignedByUserId: currentUser.id,
-        apartmentId: apartmentObj,
-        tenantId: tenantObj,
-        comments: '',
-        isRecurring: false,
-        recurringPattern: '',
-      });
-    } else if (originalItem.task) {
-      // Fixa tidszonsproblemet för befintliga uppgifter
-      let dueDateString = '';
-      
-      if (originalItem.task.dueDate) {
-        // Konvertera ISO-datumsträngen till ett lokalt datum
-        // Vi behöver skapa ett datum utan tidskomponent i lokal tidszon
-        const dueDate = new Date(originalItem.task.dueDate);
-        
-        // Använd lokal tidszon för att säkerställa att datumet visas korrekt
-        const year = dueDate.getFullYear();
-        const month = String(dueDate.getMonth() + 1).padStart(2, '0'); // +1 eftersom JS-månader är 0-indexerade
-        const day = String(dueDate.getDate()).padStart(2, '0');
-        
-        dueDateString = `${year}-${month}-${day}`;
-      }
-      
-      // Förifyll formulär med task-information för vanliga väntande uppgifter
-      setFormData({
-        title: originalItem.task.title || '',
-        description: originalItem.task.description || '',
-        dueDate: dueDateString,
-        priority: originalItem.task.priority || '',
-        status: originalItem.task.status || '',
-        assignedToUserId: originalItem.task.assignedToUserId || '',
-        assignedByUserId: originalItem.task.assignedByUserId || '',
-        apartmentId: originalItem.task.apartmentId || '',
-        tenantId: originalItem.task.tenantId || '',
-        comments: originalItem.task.comments || '',
-        isRecurring: originalItem.task.isRecurring || false,
-        recurringPattern: originalItem.task.recurringPattern || '',
-      });
+    } catch (error) {
+      console.error("Fel vid hantering av radklick:", error);
+    } finally {
+      setLoading(false);
     }
-    
-    setReviewComments('');
-    setIsReviewModalOpen(true);
   };
 
   const handleReviewClick = (pendingTask) => {
@@ -418,7 +443,7 @@ const PendingTasks = () => {
       await pendingTaskService.getUnreviewedCount(true);
       
       await fetchData();
-      setIsReviewModalOpen(false);
+      setOpenModal(false);
       setSelectedTask(null);
       setReviewComments('');
       resetForm();
@@ -485,7 +510,7 @@ const PendingTasks = () => {
       await pendingTaskService.getUnreviewedCount(true);
       
       await fetchData();
-      setIsReviewModalOpen(false);
+      setOpenModal(false);
       setSelectedTask(null);
       setReviewComments('');
       resetForm();
@@ -513,36 +538,100 @@ const PendingTasks = () => {
   };
 
   const getDisplayData = () => {
-    // Visa både e-postrapporter och vanliga väntande uppgifter i standardvyn
-    if (!showApproved) {
-      // Lägg till ett prefix för att särskilja e-postrapporter från vanliga uppgifter
-      const emailReportsWithPrefix = emailReports.map(report => ({
+    if (!pendingTasks || !emailReports) {
+      return [];
+    }
+
+    // Skapa en Map för att hålla de slutliga unika objekten med ID som nyckel
+    // Använd original-ID:n utan prefix för att säkerställa unika objekt
+    const uniqueDataMap = new Map();
+    
+    // För att debugga
+    console.log("Email reports innan filtrering:", emailReports.length);
+    console.log("Pending tasks innan filtrering:", pendingTasks.length);
+    
+    // Först, kontrollera emailReports för duplikat inom sig själv
+    const uniqueEmailReportIds = new Set();
+    const uniqueEmailReports = emailReports.filter(report => {
+      if (!report.id || uniqueEmailReportIds.has(report.id)) {
+        console.warn("Ignorerar duplicerad e-postrapport:", report.id);
+        return false;
+      }
+      uniqueEmailReportIds.add(report.id);
+      return true;
+    });
+    
+    // Sedan, lägg till e-postrapporter först eftersom de ska ha prioritet
+    uniqueEmailReports.forEach(report => {
+      // Original-ID som nyckel i Map
+      uniqueDataMap.set(report.id, {
         ...report,
-        id: `email-${report.id}`
-      }));
+        id: `email-${report.id}`, // Prefix för UI-hantering
+        type: 'email'
+      });
+    });
+    
+    // Kontrollera pendingTasks för duplikat inom sig själv
+    const uniquePendingTaskIds = new Set();
+    const uniquePendingTasks = pendingTasks.filter(task => {
+      if (!task.id || uniquePendingTaskIds.has(task.id)) {
+        console.warn("Ignorerar duplicerad pending task:", task.id);
+        return false;
+      }
+      uniquePendingTaskIds.add(task.id);
+      return true;
+    });
+    
+    // Lägg till vanliga uppgifter
+    uniquePendingTasks.forEach(task => {
+      // Original-ID som nyckel i Map
+      if (!uniqueDataMap.has(task.id)) {
+        uniqueDataMap.set(task.id, {
+          ...task,
+          id: `task-${task.id}`, // Prefix för UI-hantering
+          type: 'task'
+        });
+      } else {
+        console.warn(`Uppgift med ID ${task.id} ignoreras då den redan finns från e-postrapporter`);
+      }
+    });
+    
+    // Lägg till godkända uppgifter om filterknappen är aktiverad
+    if (showApproved && approvedTasks && approvedTasks.length > 0) {
+      // Kontrollera approvedTasks för duplikat inom sig själv
+      const uniqueApprovedTaskIds = new Set();
+      const uniqueApprovedTasks = approvedTasks.filter(task => {
+        if (!task.id || uniqueApprovedTaskIds.has(task.id)) {
+          console.warn("Ignorerar duplicerad godkänd uppgift:", task.id);
+          return false;
+        }
+        uniqueApprovedTaskIds.add(task.id);
+        return true;
+      });
       
-      const pendingTasksWithPrefix = pendingTasks.map(task => ({
-        ...task,
-        id: `task-${task.id}`
-      }));
-      
-      return [...emailReportsWithPrefix, ...pendingTasksWithPrefix];
+      // Lägg till godkända uppgifter
+      uniqueApprovedTasks.forEach(task => {
+        // Original-ID som nyckel i Map
+        if (!uniqueDataMap.has(task.id)) {
+          uniqueDataMap.set(task.id, {
+            ...task,
+            id: `approved-${task.id}`, // Prefix för UI-hantering
+            type: 'approved',
+            approved: true
+          });
+        } else {
+          console.warn(`Godkänd uppgift med ID ${task.id} ignoreras då den redan finns i annan kategori`);
+        }
+      });
     }
     
-    // Lägg till approved-flaggan för styling
-    // Alla uppgifter som har task.status === "APPROVED" är godkända och ska visas
-    const approved = approvedTasks.map(task => ({
-      ...task,
-      approved: true,
-      id: `approved-${task.id}`
-    }));
+    // Konvertera Map till array för rendering
+    const finalData = Array.from(uniqueDataMap.values());
     
-    const pendingTasksWithPrefix = pendingTasks.map(task => ({
-      ...task,
-      id: `task-${task.id}`
-    }));
+    // Logga för felsökning
+    console.log(`Visar ${finalData.length} unika objekt (${uniqueEmailReports.length} email + ${uniquePendingTasks.length} pending + ${showApproved && approvedTasks ? approvedTasks.length : 0} approved)`);
     
-    return [...pendingTasksWithPrefix, ...approved];
+    return finalData;
   };
 
   const getColumns = () => {
@@ -563,7 +652,7 @@ const PendingTasks = () => {
     return classes.join(" ");
   };
 
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="flex justify-center items-center h-full">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
@@ -596,14 +685,14 @@ const PendingTasks = () => {
           <button
             onClick={async () => {
               try {
-                setIsLoading(true);
+                setLoading(true);
                 await pendingTaskService.checkEmails();
                 fetchData();
               } catch (err) {
                 console.error('Fel vid läsning av felanmälnings-e-post:', err);
                 setError(t('pendingTasks.messages.emailCheckError'));
               } finally {
-                setIsLoading(false);
+                setLoading(false);
               }
             }}
             title={t('pendingTasks.actions.checkEmails')}
@@ -641,9 +730,9 @@ const PendingTasks = () => {
 
       {selectedTask && (
         <Modal
-          isOpen={isReviewModalOpen}
+          isOpen={openModal}
           onClose={() => {
-            setIsReviewModalOpen(false);
+            setOpenModal(false);
             setSelectedTask(null);
             resetForm();
           }}
@@ -661,31 +750,32 @@ const PendingTasks = () => {
               </div>
             )}
             
-            {/* Visa titelraden endast för vanliga uppgifter (inte e-postrapporter) */}
-            {!isEmailReport && (
-              <FormInput
-                label={t('tasks.fields.title')}
-                name="title"
-                type="text"
-                value={formData.title}
-                onChange={handleInputChange}
-                required
-                error={formData.title.trim() === '' && 'Titel är obligatorisk'}
-              />
-            )}
+            {/* Visa titelraden för alla uppgifter (även e-postrapporter) */}
+            <FormInput
+              label={t('tasks.fields.title')}
+              name="title"
+              type="text"
+              value={formData.title}
+              onChange={handleInputChange}
+              required
+              error={formData.title.trim() === '' && 'Titel är obligatorisk'}
+            />
             
-            <div className="mb-3">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                {t('tasks.fields.description')}
-              </label>
-              <textarea
-                name="description"
-                value={formData.description}
-                onChange={handleInputChange}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                rows="3"
-              />
-            </div>
+            {/* För vanliga uppgifter (inte e-postrapporter) visa beskrivningsfältet */}
+            {!isEmailReport && (
+              <div className="mb-3">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {t('tasks.fields.description')}
+                </label>
+                <textarea
+                  name="description"
+                  value={formData.description}
+                  onChange={handleInputChange}
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  rows="3"
+                />
+              </div>
+            )}
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormInput
@@ -881,7 +971,7 @@ const PendingTasks = () => {
             </button>
             <div className="flex-grow"></div>
             <button
-              onClick={() => setIsReviewModalOpen(false)}
+              onClick={() => setOpenModal(false)}
               className="w-full sm:w-auto px-6 py-2 border border-gray-300 dark:border-gray-600 rounded text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
             >
               {t('common.cancel')}
