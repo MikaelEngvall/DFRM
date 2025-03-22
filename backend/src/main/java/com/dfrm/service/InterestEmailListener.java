@@ -7,7 +7,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.springframework.core.env.Environment;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import com.dfrm.client.GoogleTranslateClient;
@@ -54,7 +53,7 @@ public class InterestEmailListener {
         return false;
     }
 
-    @Scheduled(fixedDelay = 60000) // Var 60:e sekund
+    // Borttagen automatisk schemaläggning för att endast köra manuellt
     public void checkEmails() {
         log.info("Kontrollerar e-post för intresseanmälningar...");
         
