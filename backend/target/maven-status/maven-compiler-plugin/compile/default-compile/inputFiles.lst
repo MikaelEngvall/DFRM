@@ -25,6 +25,7 @@ C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\model\Task.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\config\SecurityConfig.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\model\TaskStatus.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\controller\TaskController.java
+C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\config\EnvConfigUnified.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\service\ImportService.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\service\JwtService.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\config\KeyTypeDeserializer.java
@@ -46,7 +47,6 @@ C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\controller\InterestContr
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\service\InterestEmailListener.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\filter\JwtAuthenticationFilter.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\service\InterestService.java
-C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\config\AppConfig.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\service\ShowingService.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\controller\AuthController.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\controller\SecurityController.java

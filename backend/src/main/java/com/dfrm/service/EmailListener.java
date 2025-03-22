@@ -682,12 +682,23 @@ public class EmailListener {
         }
         
         String finalMessage = message.toString().trim();
+        
+        // Ytterligare kontroll för att säkerställa att allt efter "---" tas bort
+        if (finalMessage.contains("---")) {
+            finalMessage = finalMessage.split("---")[0].trim();
+        }
+        
         if (!finalMessage.isEmpty()) {
             details.put("description", finalMessage);
             log.info("Extraherat meddelande med längd: {}", finalMessage.length());
+            // Logga enbart description-värdet med grön färg
+            log.info("\u001B[32mENBART DESCRIPTION: {}\u001B[0m", finalMessage);
         } else {
             log.info("Inget meddelande hittades mellan 'Meddelande:' och '---'");
         }
+        
+        // Logga hela details-objektet med röd färg och återställ sedan till vit
+        log.info("\u001B[31mHELA EXTRAHERADE DETAILS-OBJEKTET: {}\u001B[0m", details);
     }
     
     private void logExtractedDetails(Map<String, String> details) {

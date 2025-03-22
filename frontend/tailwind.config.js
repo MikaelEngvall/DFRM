@@ -17,6 +17,15 @@ module.exports = {
         'secondary-dark': '#3e4c61',
         'accent-dark': '#596a82',
       },
+      animation: {
+        blink: 'blink 0.5s step-end infinite',
+      },
+      keyframes: {
+        blink: {
+          '0%, 45%': { opacity: '1' },
+          '50%, 95%': { opacity: '0' },
+        },
+      },
     },
   },
   plugins: [],

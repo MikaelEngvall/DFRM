@@ -10,20 +10,6 @@ import Autocomplete from '../components/Autocomplete';
 import { PaperAirplaneIcon } from '@heroicons/react/24/outline';
 import TaskMessages from '../components/TaskMessages';
 
-// Definiera blinkingStyle som en konstant utanför komponenten för att förhindra onödig återskapning
-const BLINKING_STYLE = `
-  @keyframes blink {
-    0% { opacity: 1; }
-    49% { opacity: 1; }
-    50% { opacity: 0; }
-    99% { opacity: 0; }
-    100% { opacity: 1; }
-  }
-  .animate-blink {
-    animation: blink 01.5s step-end infinite;
-  }
-`;
-
 const Calendar = () => {
   const { t, currentLocale } = useLocale();
   const { user: currentUser, hasRole } = useAuth();
@@ -55,22 +41,6 @@ const Calendar = () => {
     descriptionLanguage: '',
   });
   const [successMessage, setSuccessMessage] = useState('');
-
-  // Inject blinking style
-  useEffect(() => {
-    const styleElement = document.createElement('style');
-    styleElement.innerHTML = BLINKING_STYLE;
-    document.head.appendChild(styleElement);
-    
-    return () => {
-      document.head.removeChild(styleElement);
-    };
-  }, []);
-
-  // Funktion för att kontrollera om användaren är admin eller superadmin
-  const isAdminOrSuperAdmin = () => {
-    return hasRole(['ADMIN', 'SUPERADMIN']);
-  };
 
   useEffect(() => {
     fetchCalendarData();
@@ -496,6 +466,11 @@ const Calendar = () => {
     }
     
     return days;
+  };
+
+  // Funktion för att kontrollera om användaren är admin eller superadmin
+  const isAdminOrSuperAdmin = () => {
+    return hasRole(['ADMIN', 'SUPERADMIN']);
   };
 
   if (isLoading && tasks.length === 0) {

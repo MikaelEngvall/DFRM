@@ -8,6 +8,7 @@ com\dfrm\repository\UserRepository.class
 com\dfrm\model\SecurityToken$SecurityTokenBuilder.class
 com\dfrm\service\InterestService.class
 com\dfrm\model\Language.class
+com\dfrm\config\EnvConfigUnified.class
 com\dfrm\controller\TaskController.class
 com\dfrm\config\JavaMailProperties.class
 com\dfrm\repository\KeyRepository.class
@@ -73,7 +74,6 @@ com\dfrm\controller\MailController$1.class
 com\dfrm\model\User$UserBuilder.class
 com\dfrm\model\Apartment.class
 com\dfrm\model\PendingTask.class
-com\dfrm\config\AppConfig.class
 com\dfrm\controller\ShowingController.class
 com\dfrm\controller\TaskMessageController.class
 com\dfrm\controller\ApartmentController.class
