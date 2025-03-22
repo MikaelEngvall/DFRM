@@ -53,12 +53,7 @@ public class Interest {
     private LocalDateTime reviewedAt;
     private String reviewComments;
     
-    // Referens till uppgiften som skapas för visningen
+    // Referens till uppgiften som skapas för visningen (nu optional)
     @DBRef
-    @JsonIdentityInfo(
-        generator = ObjectIdGenerators.PropertyGenerator.class,
-        property = "id"
-    )
-    @JsonIdentityReference(alwaysAsId = true)
     private Task relatedTask;
 } 

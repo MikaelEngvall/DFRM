@@ -10,7 +10,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.dfrm.model.Interest;
-import com.dfrm.model.Task;
 import com.dfrm.model.User;
 import com.dfrm.repository.InterestRepository;
 import com.dfrm.repository.TaskRepository;
@@ -93,10 +92,8 @@ public class InterestService {
     }
     
     public Interest scheduleShowing(String id, User reviewedBy, String responseMessage, LocalDateTime showingDateTime) {
-        log.info("Scheduling showing for interest ID: {}, by user: {}, at: {}", id, reviewedBy.getId(), showingDateTime);
-        
         Interest interest = interestRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Interest not found"));
+                .orElseThrow(() -> new IllegalArgumentException("Interest not found with ID: " + id));
         
         if (!"NEW".equals(interest.getStatus())) {
             throw new IllegalArgumentException("Interest is already processed");
@@ -109,10 +106,6 @@ public class InterestService {
         interest.setShowingDateTime(showingDateTime);
         interest.setResponseMessage(responseMessage);
         
-        // Skapa en uppgift för visningen
-        Task showingTask = createShowingTask(interest, reviewedBy, showingDateTime);
-        interest.setRelatedTask(showingTask);
-        
         // Spara uppdaterad intresseanmälan innan den används för att skapa Showing
         Interest savedInterest = interestRepository.save(interest);
         
@@ -122,39 +115,13 @@ public class InterestService {
             log.info("Successfully created showing entry for interest ID: {}", savedInterest.getId());
         } catch (Exception e) {
             log.error("Failed to create showing entry: {}", e.getMessage(), e);
-            // Fortsätt trots fel, uppgiften skapades fortfarande
+            // Fortsätt trots fel
         }
         
         // Skicka e-post till intresseanmälaren
         sendShowingConfirmation(savedInterest, showingDateTime, responseMessage);
         
         return savedInterest;
-    }
-    
-    private Task createShowingTask(Interest interest, User assignedTo, LocalDateTime showingDateTime) {
-        log.info("Creating showing task for interest ID: {}, assigned to: {}", interest.getId(), assignedTo.getId());
-        
-        try {
-            DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
-            String formattedDateTime = showingDateTime.format(dateFormatter);
-            
-            Task task = Task.builder()
-                    .title("Visning: " + interest.getApartment())
-                    .description(assignedTo.getFirstName() + " - " + interest.getApartment())
-                    .assignedToUserId(assignedTo.getId())
-                    .assignedByUserId(assignedTo.getId())
-                    .dueDate(showingDateTime.toLocalDate())
-                    .status("PENDING")
-                    .priority("MEDIUM")
-                    .build();
-            
-            Task savedTask = taskRepository.save(task);
-            log.info("Successfully created showing task with ID: {}", savedTask.getId());
-            return savedTask;
-        } catch (Exception e) {
-            log.error("Failed to create showing task: {}", e.getMessage(), e);
-            throw new RuntimeException("Kunde inte skapa visningsuppgift: " + e.getMessage(), e);
-        }
     }
     
     private void sendShowingConfirmation(Interest interest, LocalDateTime showingDateTime, String responseMessage) {
