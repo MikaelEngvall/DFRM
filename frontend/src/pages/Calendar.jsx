@@ -13,11 +13,14 @@ import TaskMessages from '../components/TaskMessages';
 // Definiera blinkingStyle som en konstant utanför komponenten för att förhindra onödig återskapning
 const BLINKING_STYLE = `
   @keyframes blink {
-    0%, 100% { opacity: 1; }
+    0% { opacity: 1; }
+    49% { opacity: 1; }
     50% { opacity: 0; }
+    99% { opacity: 0; }
+    100% { opacity: 1; }
   }
   .animate-blink {
-    animation: blink 1s infinite;
+    animation: blink 01.5s step-end infinite;
   }
 `;
 
@@ -52,6 +55,17 @@ const Calendar = () => {
     descriptionLanguage: '',
   });
   const [successMessage, setSuccessMessage] = useState('');
+
+  // Inject blinking style
+  useEffect(() => {
+    const styleElement = document.createElement('style');
+    styleElement.innerHTML = BLINKING_STYLE;
+    document.head.appendChild(styleElement);
+    
+    return () => {
+      document.head.removeChild(styleElement);
+    };
+  }, []);
 
   // Funktion för att kontrollera om användaren är admin eller superadmin
   const isAdminOrSuperAdmin = () => {
@@ -263,33 +277,19 @@ const Calendar = () => {
     }
   };
 
-  const getPriorityColor = (priority) => {
-    switch (priority) {
-      case 'LOW':
-        return 'bg-green-100 text-green-800 border-green-300';
-      case 'MEDIUM':
-        return 'bg-yellow-100 text-yellow-800 border-yellow-300';
-      case 'HIGH':
-        return 'bg-orange-100 text-orange-800 border-orange-300';
-      case 'URGENT':
-        return 'bg-red-100 text-red-800 border-red-300';
-      default:
-        return 'bg-gray-100 text-gray-800 border-gray-300';
-    }
-  };
 
   const getPriorityDotColor = (priority) => {
     switch (priority) {
       case 'URGENT':
-        return 'bg-red-500 animate-blink';
+        return 'bg-red-500 animate-blink scale-[2.0]';
       case 'HIGH':
-        return 'bg-orange-500';
+        return 'bg-orange-500 scale-[2.0]';
       case 'MEDIUM':
-        return 'bg-yellow-500';
+        return 'bg-yellow-500 scale-[2.0]';
       case 'LOW':
-        return 'bg-green-500';
+        return 'bg-green-500 scale-[2.0]';
       default:
-        return 'bg-gray-400';
+        return 'bg-gray-400 scale-[2.0]';
     }
   };
 
