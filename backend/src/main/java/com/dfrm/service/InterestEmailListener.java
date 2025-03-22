@@ -3,6 +3,8 @@ package com.dfrm.service;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Properties;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.springframework.core.env.Environment;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -115,7 +117,7 @@ public class InterestEmailListener {
                         log.warn("Hoppar över e-post med reply-to={} (inte {})", 
                                  replyTo, TARGET_REPLY_TO);
                         continue;
-                    } else {
+                        } else {
                         log.info("Godkänd reply-to-adress: {}", replyTo);
                     }
                     
@@ -175,16 +177,17 @@ public class InterestEmailListener {
             // Kontrollera om vi är i utvecklingsläge
             boolean isDev = isDevEnvironment();
             
-            String from = null;
+            // Hämta avsändaradress från From-fältet
+            String fromAddress = null;
             Address[] fromAddresses = message.getFrom();
             if (fromAddresses != null && fromAddresses.length > 0) {
                 if (fromAddresses[0] instanceof InternetAddress) {
-                    from = ((InternetAddress) fromAddresses[0]).getAddress();
+                    fromAddress = ((InternetAddress) fromAddresses[0]).getAddress();
                 }
             }
             
             // Om ingen avsändaradress, hoppa över
-            if (from == null || from.trim().isEmpty()) {
+            if (fromAddress == null || fromAddress.trim().isEmpty()) {
                 log.warn("Ingen avsändaradress hittad - hoppar över bearbetning");
                 return;
             }
@@ -192,6 +195,7 @@ public class InterestEmailListener {
             // Extrahera innehåll
             String subject = message.getSubject();
             String content = extractContent(message);
+            log.info("\u001B[32mExtraherat innehåll: {} tecken\u001B[0m", content.length());
             
             // Om inget innehåll, hoppa över
             if (content == null || content.trim().isEmpty()) {
@@ -199,10 +203,14 @@ public class InterestEmailListener {
                 return;
             }
             
-            log.info("Kontrollerar om intresseanmälan redan finns för avsändare: {}", from);
+            // Extrahera e-postadress först från innehållet, annars använd avsändaradressen
+            String emailFromContent = extractEmail(content);
+            String email = !emailFromContent.isEmpty() ? emailFromContent : fromAddress;
+            
+            log.info("Kontrollerar om intresseanmälan redan finns för e-post: {}", email);
             
             // Kontrollera befintliga intresseanmälningar med samma e-post
-            List<Interest> existingInterests = interestRepository.findByEmail(from);
+            List<Interest> existingInterests = interestRepository.findByEmail(email);
             
             if (!existingInterests.isEmpty()) {
                 for (Interest existing : existingInterests) {
@@ -212,7 +220,7 @@ public class InterestEmailListener {
                     
                     // Om de är identiska, hoppa över
                     if (cleanExistingMessage.equals(cleanNewMessage)) {
-                        log.warn("Hittade en identisk intresseanmälan - hoppar över dubblett från: {}", from);
+                        log.warn("Hittade en identisk intresseanmälan - hoppar över dubblett från: {}", email);
                         return;
                     }
                     
@@ -221,7 +229,7 @@ public class InterestEmailListener {
                         // Om meddelandena är långa, kolla om de är till 80% lika
                         if (cleanExistingMessage.contains(cleanNewMessage.substring(0, (int)(cleanNewMessage.length() * 0.8))) || 
                             cleanNewMessage.contains(cleanExistingMessage.substring(0, (int)(cleanExistingMessage.length() * 0.8)))) {
-                            log.warn("Hittade en liknande intresseanmälan - hoppar över möjlig dubblett från: {}", from);
+                            log.warn("Hittade en liknande intresseanmälan - hoppar över möjlig dubblett från: {}", email);
                             return;
                         }
                     }
@@ -229,24 +237,40 @@ public class InterestEmailListener {
             }
             
             // Extrahera namn, lägenhet och telefon från innehållet
-            String name = extractName(content, from);
+            String name = extractName(content, email);
             String apartment = extractApartment(content, subject);
             String phone = extractPhone(content);
+            String extractedMessage = extractMessage(content);
             
-            // Skapa och spara ny intresseanmälan
-        Interest interest = Interest.builder()
-                .name(name)
-                .email(from)
-                .phone(phone)
-                .message(content)
-                .received(LocalDateTime.now())
-                .status("NEW")
-                .apartment(apartment)
-                .build();
+            // Logga extraherade fält i grönt för tydlig visualisering
+            log.info("\u001B[32mExtraherade fält från intresseanmälan:\u001B[0m");
+            log.info("\u001B[32m - Namn: {}\u001B[0m", name);
+            log.info("\u001B[32m - E-post: {}\u001B[0m", email);
+            log.info("\u001B[32m - Telefon: {}\u001B[0m", phone);
+            log.info("\u001B[32m - Lägenhet: {}\u001B[0m", apartment);
+            log.info("\u001B[32m - Ämne: {}\u001B[0m", subject);
+            log.info("\u001B[32m - Meddelande: {}\u001B[0m", extractedMessage.length() > 100 ? 
+                     extractedMessage.substring(0, 100) + "..." : extractedMessage);
+            
+            // Om inget meddelande extraherades, logga varning men fortsätt att spara
+            if (extractedMessage.isEmpty()) {
+                log.warn("\u001B[32mInget meddelande hittades mellan 'Meddelande:' och '---'. Intresseanmälan sparas ändå.\u001B[0m");
+            }
+            
+            // Skapa och spara ny intresseanmälan med endast det extraherade meddelandet
+            Interest interest = Interest.builder()
+                    .name(name)
+                    .email(email)
+                    .phone(phone)
+                    .message(extractedMessage) // Använd endast det extraherade meddelandet, inte hela innehållet
+                    .received(LocalDateTime.now())
+                    .status("NEW")
+                    .apartment(apartment)
+                    .build();
         
             log.info("Sparar ny intresseanmälan från: {} för lägenhet: {}", interest.getEmail(), interest.getApartment());
-        Interest savedInterest = interestRepository.save(interest);
-            log.info("Sparad intresseanmälan med ID: {}", savedInterest.getId());
+            Interest savedInterest = interestRepository.save(interest);
+            log.info("\u001B[32mSparad intresseanmälan med ID: {}\u001B[0m", savedInterest.getId());
         } catch (Exception e) {
             log.error("Fel vid bearbetning av intresseanmälan: {}", e.getMessage(), e);
         }
@@ -256,28 +280,96 @@ public class InterestEmailListener {
     private String extractContent(Message message) {
         try {
             Object content = message.getContent();
+            log.info("\u001B[32mFörsöker extrahera innehåll från e-post av typ: {}\u001B[0m", message.getContentType());
             
+            String result = "";
             if (content instanceof String) {
-                return (String) content;
+                result = (String) content;
+                log.info("\u001B[32mExtraherat textinnehåll med längd: {}\u001B[0m", result.length());
             } else if (content instanceof MimeMultipart) {
                 MimeMultipart multipart = (MimeMultipart) content;
-                StringBuilder result = new StringBuilder();
+                StringBuilder sb = new StringBuilder();
+                
+                log.info("\u001B[32mExtraherar innehåll från multipart-meddelande med {} delar\u001B[0m", multipart.getCount());
                 
                 for (int i = 0; i < multipart.getCount(); i++) {
                     BodyPart bodyPart = multipart.getBodyPart(i);
+                    log.info("\u001B[32mBearbetar del {} med innehållstyp: {}\u001B[0m", i, bodyPart.getContentType());
+                    
                     if (bodyPart.getContentType().toLowerCase().startsWith("text/plain")) {
-                        result.append(bodyPart.getContent().toString());
+                        String partContent = bodyPart.getContent().toString();
+                        sb.append(partContent);
+                        log.info("\u001B[32mLade till text/plain-innehåll med längd: {}\u001B[0m", partContent.length());
+                    } else if (bodyPart.getContentType().toLowerCase().startsWith("text/html")) {
+                        // För HTML-innehåll, försök extrahera texten
+                        String htmlContent = bodyPart.getContent().toString();
+                        log.info("\u001B[32mHittade HTML-innehåll med längd: {}\u001B[0m", htmlContent.length());
+                        // Lägg till HTML-innehållet som det är, kommer att rensas senare
+                        sb.append(htmlContent);
+                    } else {
+                        log.info("\u001B[32mHoppar över innehåll av typ: {}\u001B[0m", bodyPart.getContentType());
                     }
                 }
                 
-                return result.toString();
+                result = sb.toString();
+                log.info("\u001B[32mExtraktion klar. Totalt extraherat innehåll: {} tecken\u001B[0m", result.length());
+            } else {
+                log.warn("\u001B[32mOkänd innehållstyp: {}. Returnerar tom sträng.\u001B[0m", 
+                    content != null ? content.getClass().getName() : "null");
+                return "";
             }
             
-            return ""; // Tom sträng om inget innehåll kunde extraheras
+            // Rensa HTML-innehåll och normalisera radbrytningar
+            String cleanedContent = cleanHtmlContent(result);
+            log.info("\u001B[32mRensat HTML-innehåll. Ny längd: {} tecken\u001B[0m", cleanedContent.length());
+            return cleanedContent;
+            
         } catch (Exception e) {
             log.error("Fel vid extrahering av e-postinnehåll: {}", e.getMessage(), e);
             return "";
         }
+    }
+
+    // Hjälpmetod för att rensa HTML-innehåll
+    private String cleanHtmlContent(String content) {
+        if (content == null) {
+            return "";
+        }
+        
+        // Logga original-innehållet (begränsat för läsbarhet)
+        String contentPreview = content.length() > 300 ? content.substring(0, 300) + "..." : content;
+        log.info("\u001B[32m=== ORIGINAL HTML-INNEHÅLL (begränsat till 300 tecken) ===\u001B[0m");
+        log.info("\u001B[32m{}\u001B[0m", contentPreview);
+        
+        // Ersätt <br> med radbrytningar först för att bevara radstrukturen
+        String result = content.replaceAll("<br\\s*/?\\s*>", "\n");
+        
+        // Ta bort alla andra HTML-taggar
+        result = result.replaceAll("<[^>]*>", " ");
+        
+        // Ta bort överflödiga mellanslag och radbrytningar
+        result = result.replaceAll("\\s*\\n\\s*", "\n");
+        result = result.replaceAll("\\s+", " ");
+        result = result.trim();
+        
+        // Konvertera HTML-entiteter
+        result = result.replaceAll("&nbsp;", " ");
+        result = result.replaceAll("&amp;", "&");
+        result = result.replaceAll("&lt;", "<");
+        result = result.replaceAll("&gt;", ">");
+        result = result.replaceAll("&#\\d+;", "");
+        
+        // Ytterligare rensning av tomma rader
+        result = result.replaceAll("\\s*\\n\\s*", "\n");
+        
+        // Logga det rensade innehållet (fullständigt)
+        log.info("\u001B[32m=== RENSAT INNEHÅLL ===\u001B[0m");
+        log.info("\u001B[32m{}\u001B[0m", result);
+        
+        log.info("\u001B[32mHtml-rensning: Ursprunglig längd: {}, Ny längd: {}\u001B[0m", 
+                content.length(), result.length());
+        
+        return result;
     }
 
     // Hjälpmetod för att extrahera namn från e-postinnehåll eller avsändaradress
@@ -288,7 +380,34 @@ public class InterestEmailListener {
             if (line.toLowerCase().contains("namn:") || line.toLowerCase().contains("name:")) {
                 String[] parts = line.split(":", 2);
                 if (parts.length > 1 && !parts[1].trim().isEmpty()) {
-                    return parts[1].trim();
+                    // Ta bara med texten från namnet direkt efter "Namn:"
+                    String name = parts[1].trim();
+                    
+                    // Begränsa till första delen (innan e-post eller annan info)
+                    // Stoppa vid "E-post:" eller liknande
+                    if (name.toLowerCase().contains("e-post:") || 
+                        name.toLowerCase().contains("email:") ||
+                        name.toLowerCase().contains("mail:")) {
+                        name = name.split("(?i)e-post:|(?i)email:|(?i)mail:", 2)[0].trim();
+                    }
+                    
+                    // Identifiera och ta bort eventuella e-postadresser som är del av namnet
+                    Matcher emailMatcher = Pattern.compile("[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,6}").matcher(name);
+                    if (emailMatcher.find()) {
+                        name = name.substring(0, emailMatcher.start()).trim();
+                    }
+                    
+                    // Identifiera och ta bort eventuella telefonnummer som är del av namnet
+                    Matcher phoneMatcher = Pattern.compile("\\d{6,}").matcher(name);
+                    if (phoneMatcher.find()) {
+                        name = name.substring(0, phoneMatcher.start()).trim();
+                    }
+
+                    // Rensa HTML-taggar
+                    name = name.replaceAll("<[^>]*>", "").trim();
+                    
+                    log.info("\u001B[32mExtraherat namn (rensat från annan info): '{}'\u001B[0m", name);
+                    return name;
                 }
             }
         }
@@ -312,7 +431,20 @@ public class InterestEmailListener {
                 line.toLowerCase().contains("address:")) {
                 String[] parts = line.split(":", 2);
                 if (parts.length > 1 && !parts[1].trim().isEmpty()) {
-                    return parts[1].trim();
+                    // Ta bara med texten från lägenhetsnumret direkt efter "Lägenhet:"
+                    String apartment = parts[1].trim();
+                    
+                    // Stoppa vid nästa markör om den finns (t.ex. Meddelande:)
+                    if (apartment.toLowerCase().contains("meddelande:") || 
+                        apartment.toLowerCase().contains("message:")) {
+                        apartment = apartment.split("(?i)meddelande:|(?i)message:", 2)[0].trim();
+                    }
+                    
+                    // Rensa bort eventuella HTML-taggar
+                    apartment = apartment.replaceAll("<[^>]*>", "").trim();
+                    
+                    log.info("\u001B[32mExtraherat lägenhetsnummer (rensat): '{}'\u001B[0m", apartment);
+                    return apartment;
                 }
             }
         }
@@ -337,11 +469,158 @@ public class InterestEmailListener {
                 line.toLowerCase().contains("tel:")) {
                 String[] parts = line.split(":", 2);
                 if (parts.length > 1 && !parts[1].trim().isEmpty()) {
-                    return parts[1].trim();
+                    // Ta bara med texten från telefonnumret direkt efter "Tel:"
+                    String phone = parts[1].trim();
+                    
+                    // Stoppa vid nästa markör om den finns
+                    if (phone.toLowerCase().contains("meddelande:") || 
+                        phone.toLowerCase().contains("message:") ||
+                        phone.toLowerCase().contains("lägenhet:") ||
+                        phone.toLowerCase().contains("apartment:")) {
+                        phone = phone.split("(?i)meddelande:|(?i)message:|(?i)lägenhet:|(?i)apartment:", 2)[0].trim();
+                    }
+                    
+                    // Extrahera bara själva telefonnumret (siffror, plus, bindestreck)
+                    Matcher phoneMatcher = Pattern.compile("[0-9+\\-\\s]{6,}").matcher(phone);
+                    if (phoneMatcher.find()) {
+                        phone = phoneMatcher.group().trim();
+                    }
+                    
+                    // Rensa HTML-taggar
+                    phone = phone.replaceAll("<[^>]*>", "").trim();
+                    
+                    log.info("\u001B[32mExtraherat telefonnummer (rensat): '{}'\u001B[0m", phone);
+                    return phone;
                 }
             }
         }
         
+        return "";
+    }
+
+    // Lägg till en ny hjälpmetod för att extrahera meddelande från e-postinnehåll
+    private String extractMessage(String content) {
+        log.info("\u001B[32mFörsöker extrahera meddelande från e-postinnehåll\u001B[0m");
+        
+        StringBuilder message = new StringBuilder();
+        boolean foundMessageStart = false;
+        boolean foundMessageEnd = false;
+        
+        // Dela på rader och sök igenom
+        String[] lines = content.split("\\r?\\n");
+        for (String line : lines) {
+            // Om vi hittar början av meddelandet
+            if (!foundMessageStart && 
+                (line.toLowerCase().contains("meddelande:") || 
+                 line.toLowerCase().contains("message:"))) {
+                
+                foundMessageStart = true;
+                
+                // Extrahera bara den del av raden som kommer efter "Meddelande:"
+                String[] parts = line.toLowerCase().contains("meddelande:") ? 
+                    line.split("(?i)meddelande:", 2) : 
+                    line.split("(?i)message:", 2);
+                
+                if (parts.length > 1) {
+                    String firstLine = parts[1].trim();
+                    if (!firstLine.isEmpty()) {
+                        // Kontrollera om det finns "---" på samma rad som meddelandet
+                        int dashIndex = firstLine.indexOf("---");
+                        if (dashIndex != -1) {
+                            firstLine = firstLine.substring(0, dashIndex).trim();
+                            foundMessageEnd = true;
+                        }
+                        message.append(firstLine).append("\n");
+                    }
+                }
+                
+                continue;
+            }
+            
+            // Om vi hittar slutet av meddelandet ("---"), avbryt
+            if (foundMessageStart && !foundMessageEnd && 
+                (line.trim().startsWith("---") || line.trim().contains("---"))) {
+                foundMessageEnd = true;
+                log.info("\u001B[32mHittade slut på meddelande (---)\u001B[0m");
+                break;
+            }
+            
+            // Samla in meddelandet mellan "Meddelande:" och "---"
+            if (foundMessageStart && !foundMessageEnd) {
+                message.append(line).append("\n");
+            }
+        }
+        
+        String extractedMessage = message.toString().trim();
+        
+        // Ta bort eventuell trailing text efter "---" om den missades
+        int dashIndex = extractedMessage.indexOf("---");
+        if (dashIndex != -1) {
+            extractedMessage = extractedMessage.substring(0, dashIndex).trim();
+            log.info("\u001B[32mRensade bort '---' och efterföljande text från meddelandet\u001B[0m");
+        }
+        
+        // Logga resultat
+        if (foundMessageStart) {
+            log.info("\u001B[32mExtraherat meddelande (rensat): '{}'\u001B[0m", 
+                extractedMessage.isEmpty() ? "(tomt)" : extractedMessage);
+        } else {
+            log.info("\u001B[32mIngen 'Meddelande:'-markör hittades\u001B[0m");
+        }
+        
+        return extractedMessage;
+    }
+
+    // Hjälpmetod för att extrahera e-postadress från innehållet
+    private String extractEmail(String content) {
+        log.info("\u001B[32mFörsöker extrahera e-postadress från innehållet\u001B[0m");
+        
+        // Försök hitta en e-postadress i innehållet
+        String[] lines = content.split("\\r?\\n");
+        for (String line : lines) {
+            if (line.toLowerCase().contains("e-post:") || 
+                line.toLowerCase().contains("email:") || 
+                line.toLowerCase().contains("mail:")) {
+                
+                String[] parts = line.split(":", 2);
+                if (parts.length > 1 && !parts[1].trim().isEmpty()) {
+                    // Rensa text och extrahera e-postadressen
+                    String emailPart = parts[1].trim();
+                    
+                    // Använd regex för att extrahera e-postadressen
+                    Matcher emailMatcher = Pattern.compile("[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,6}").matcher(emailPart);
+                    if (emailMatcher.find()) {
+                        String email = emailMatcher.group().trim();
+                        log.info("\u001B[32mExtraherad e-postadress från innehållet: '{}'\u001B[0m", email);
+                        return email;
+                    } else {
+                        // Om ingen e-postadress hittades, ta första delen av texten
+                        // Stoppa vid eventuella andra fält
+                        if (emailPart.toLowerCase().contains("telefon:") || 
+                            emailPart.toLowerCase().contains("phone:") || 
+                            emailPart.toLowerCase().contains("tel:")) {
+                            emailPart = emailPart.split("(?i)telefon:|(?i)phone:|(?i)tel:", 2)[0].trim();
+                        }
+                        
+                        // Rensa HTML-taggar
+                        emailPart = emailPart.replaceAll("<[^>]*>", "").trim();
+                        
+                        log.info("\u001B[32mExtraherad e-postadress (utan regex-matchning): '{}'\u001B[0m", emailPart);
+                        return emailPart;
+                    }
+                }
+            }
+        }
+        
+        // Använd regex för att hitta första e-postadressen i hela innehållet om inget annat fungerar
+        Matcher matcher = Pattern.compile("[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,6}").matcher(content);
+        if (matcher.find()) {
+            String email = matcher.group().trim();
+            log.info("\u001B[32mHittade e-postadress i allmänt innehåll: '{}'\u001B[0m", email);
+            return email;
+        }
+        
+        log.info("\u001B[32mIngen e-postadress hittades i innehållet\u001B[0m");
         return "";
     }
 } 
