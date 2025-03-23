@@ -20,6 +20,7 @@ const Calendar = () => {
   const [selectedShowing, setSelectedShowing] = useState(null);  // Ny state för vald visning
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [isShowingModalOpen, setIsShowingModalOpen] = useState(false);  // Ny state för visningsmodalen
+  const [isShowingEditModalOpen, setIsShowingEditModalOpen] = useState(false);  // Ny state för redigeringsmodalen
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [users, setUsers] = useState([]);
@@ -41,6 +42,18 @@ const Calendar = () => {
     descriptionLanguage: '',
   });
   const [successMessage, setSuccessMessage] = useState('');
+  const [showingFormData, setShowingFormData] = useState({
+    title: '',
+    description: '',
+    dateTime: '',
+    status: '',
+    assignedToUserId: '',
+    apartmentId: '',
+    contactName: '',
+    contactEmail: '',
+    contactPhone: '',
+    notes: ''
+  });
 
   useEffect(() => {
     fetchCalendarData();
@@ -311,26 +324,59 @@ const Calendar = () => {
     }
   };
 
-  // Lägg till funktion för att uppdatera visningsstatus
-  const handleUpdateShowingStatus = async (showingId, newStatus) => {
+  const handleEditShowing = (showing) => {
+    setShowingFormData({
+      title: showing.title || '',
+      description: showing.description || '',
+      dateTime: showing.dateTime ? new Date(showing.dateTime).toISOString().slice(0, 16) : '',
+      status: showing.status || '',
+      assignedToUserId: showing.assignedTo?.id || '',
+      apartmentId: showing.apartmentId || '',
+      contactName: showing.contactName || '',
+      contactEmail: showing.contactEmail || '',
+      contactPhone: showing.contactPhone || '',
+      notes: showing.notes || ''
+    });
+    setIsShowingEditModalOpen(true);
+    setIsShowingModalOpen(false);
+  };
+
+  const handleShowingInputChange = (e) => {
+    const { name, value } = e.target;
+    setShowingFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleShowingSubmit = async (e) => {
+    e.preventDefault();
     try {
-      await showingService.updateStatus(showingId, newStatus);
-      setIsShowingModalOpen(false);
+      const updatedData = {
+        ...showingFormData,
+        // Konvertera datetime till ISO-format om det behövs
+        dateTime: showingFormData.dateTime ? new Date(showingFormData.dateTime).toISOString() : null,
+        // Säkerställ att ID:n är i rätt format
+        assignedToUserId: showingFormData.assignedToUserId || null,
+        apartmentId: showingFormData.apartmentId || null
+      };
+
+      await showingService.update(selectedShowing.id, updatedData);
+      
+      // Uppdatera kalendern för att visa de nya ändringarna
+      await fetchCalendarData();
+      
+      setIsShowingEditModalOpen(false);
       setSelectedShowing(null);
-      
-      // Uppdatera kalendern
-      fetchCalendarData();
-      
-      // Visa bekräftelsemeddelande
-      setSuccessMessage(t(`showings.messages.${newStatus.toLowerCase()}`));
+      setSuccessMessage(t('showings.messages.updateSuccess'));
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err) {
-      console.error(`Error updating showing status: ${err}`);
-      setError(t('common.error'));
+      console.error('Error updating showing:', err);
+      setError(t('showings.messages.updateError'));
     }
   };
 
-  // Funktion för att rendera visningsobjekt i kalendern
+  // Lägg till funktion för att rendera visningsobjekt i kalendern
   const renderShowingItem = (showing) => {
     // Funktion för att formatera tid
     const formatTime = (dateString) => {
@@ -338,6 +384,9 @@ const Calendar = () => {
       const date = new Date(dateString);
       return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     };
+
+    // Hitta ansvarig mäklare
+    const assignedUser = users.find(user => user.id === showing.assignedToUserId);
     
     return (
       <div 
@@ -351,9 +400,7 @@ const Calendar = () => {
         <div className="flex flex-col overflow-hidden">
           <div className="font-medium truncate">{showing.title || showing.address}</div>
           <div className="text-xs text-purple-100 truncate">
-            {showing.startTime ? formatTime(showing.startTime) : ''} 
-            {showing.startTime && showing.endTime ? ' - ' : ''} 
-            {showing.endTime ? formatTime(showing.endTime) : ''}
+            {formatTime(showing.dateTime)} - {assignedUser ? assignedUser.firstName : t('showings.unassigned')}
           </div>
         </div>
       </div>
@@ -451,6 +498,25 @@ const Calendar = () => {
   // Funktion för att kontrollera om användaren är admin eller superadmin
   const isAdminOrSuperAdmin = () => {
     return hasRole(['ADMIN', 'SUPERADMIN']);
+  };
+
+  // Lägg till funktion för att uppdatera visningsstatus
+  const handleUpdateShowingStatus = async (showingId, newStatus) => {
+    try {
+      await showingService.updateStatus(showingId, newStatus);
+      setIsShowingModalOpen(false);
+      setSelectedShowing(null);
+      
+      // Uppdatera kalendern
+      fetchCalendarData();
+      
+      // Visa bekräftelsemeddelande
+      setSuccessMessage(t(`showings.messages.${newStatus.toLowerCase()}`));
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (err) {
+      console.error(`Error updating showing status: ${err}`);
+      setError(t('common.error'));
+    }
   };
 
   if (isLoading && tasks.length === 0) {
@@ -799,60 +865,60 @@ const Calendar = () => {
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">{t('showings.dateTime')}</h4>
-                <p className="text-base font-medium">
+                <h4 className="text-sm font-medium text-gray-500 dark:text-gray-300">{t('showings.dateTime')}</h4>
+                <p className="text-base font-medium text-gray-900 dark:text-white">
                   {new Date(selectedShowing.dateTime).toLocaleDateString()} {t('common.at')} {new Date(selectedShowing.dateTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                 </p>
               </div>
               
               <div>
-                <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">{t('showings.status')}</h4>
-                <p className="text-base font-medium">
+                <h4 className="text-sm font-medium text-gray-500 dark:text-gray-300">{t('showings.status')}</h4>
+                <p className="text-base font-medium text-gray-900 dark:text-white">
                   {t(`showings.statusTypes.${selectedShowing.status}`)}
                 </p>
               </div>
             </div>
             
             <div className="border-t pt-4 border-gray-200 dark:border-gray-700">
-              <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">{t('showings.apartment')}</h4>
-              <p className="text-base font-medium">
+              <h4 className="text-sm font-medium text-gray-500 dark:text-gray-300">{t('showings.apartment')}</h4>
+              <p className="text-base font-medium text-gray-900 dark:text-white">
                 {selectedShowing.apartmentAddress}
               </p>
               
               {selectedShowing.apartmentDetails && (
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                <p className="text-sm text-gray-500 dark:text-gray-300 mt-1">
                   {selectedShowing.apartmentDetails}
                 </p>
               )}
             </div>
             
             <div className="border-t pt-4 border-gray-200 dark:border-gray-700">
-              <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">{t('showings.assignedTo')}</h4>
-              <p className="text-base font-medium">
-                {selectedShowing.assignedTo.firstName} {selectedShowing.assignedTo.lastName}
+              <h4 className="text-sm font-medium text-gray-500 dark:text-gray-300">{t('showings.assignedTo')}</h4>
+              <p className="text-base font-medium text-gray-900 dark:text-white">
+                {selectedShowing.assignedTo?.firstName} {selectedShowing.assignedTo?.lastName}
               </p>
               
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                {selectedShowing.assignedTo.email}
+              <p className="text-sm text-gray-500 dark:text-gray-300">
+                {selectedShowing.assignedTo?.email}
               </p>
             </div>
             
             {selectedShowing.contactName && (
               <div className="border-t pt-4 border-gray-200 dark:border-gray-700">
-                <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">{t('showings.contact')}</h4>
-                <p className="text-base font-medium">
+                <h4 className="text-sm font-medium text-gray-500 dark:text-gray-300">{t('showings.contact')}</h4>
+                <p className="text-base font-medium text-gray-900 dark:text-white">
                   {selectedShowing.contactName}
                 </p>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-1">
                   {selectedShowing.contactEmail && (
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                    <p className="text-sm text-gray-500 dark:text-gray-300">
                       {selectedShowing.contactEmail}
                     </p>
                   )}
                   
                   {selectedShowing.contactPhone && (
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                    <p className="text-sm text-gray-500 dark:text-gray-300">
                       {selectedShowing.contactPhone}
                     </p>
                   )}
@@ -862,8 +928,8 @@ const Calendar = () => {
             
             {selectedShowing.notes && (
               <div className="border-t pt-4 border-gray-200 dark:border-gray-700">
-                <h4 className="text-sm font-medium text-gray-500 dark:text-gray-400">{t('showings.notes')}</h4>
-                <p className="text-sm whitespace-pre-line">
+                <h4 className="text-sm font-medium text-gray-500 dark:text-gray-300">{t('showings.notes')}</h4>
+                <p className="text-sm text-gray-900 dark:text-white whitespace-pre-line">
                   {selectedShowing.notes}
                 </p>
               </div>
@@ -871,6 +937,12 @@ const Calendar = () => {
             
             {hasRole(['ADMIN', 'SUPERADMIN']) && (
               <div className="border-t pt-4 border-gray-200 dark:border-gray-700 flex justify-end space-x-2">
+                <button
+                  onClick={() => handleEditShowing(selectedShowing)}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                >
+                  {t('common.edit')}
+                </button>
                 <button
                   onClick={() => handleUpdateShowingStatus(selectedShowing.id, 'COMPLETED')}
                   className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
@@ -886,6 +958,126 @@ const Calendar = () => {
                 </button>
               </div>
             )}
+          </div>
+        </Modal>
+      )}
+
+      {isShowingEditModalOpen && (
+        <Modal
+          isOpen={isShowingEditModalOpen}
+          onClose={() => {
+            setIsShowingEditModalOpen(false);
+            setSelectedShowing(null);
+          }}
+          title={t('showings.edit')}
+          onSubmit={handleShowingSubmit}
+        >
+          <div className="grid grid-cols-1 gap-4">
+            <FormInput
+              label={t('showings.fields.title')}
+              name="title"
+              type="text"
+              value={showingFormData.title}
+              onChange={handleShowingInputChange}
+            />
+            
+            <div className="mb-3">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-100">
+                {t('showings.fields.description')}
+              </label>
+              <textarea
+                name="description"
+                value={showingFormData.description}
+                onChange={handleShowingInputChange}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                rows="3"
+              />
+            </div>
+
+            <FormInput
+              label={t('showings.fields.dateTime')}
+              name="dateTime"
+              type="datetime-local"
+              value={showingFormData.dateTime}
+              onChange={handleShowingInputChange}
+              required
+            />
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-100">
+                {t('showings.fields.assignedTo')}
+              </label>
+              <select
+                name="assignedToUserId"
+                value={showingFormData.assignedToUserId}
+                onChange={handleShowingInputChange}
+                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                required
+              >
+                <option value="">{t('common.select')}</option>
+                {users.map((user) => (
+                  <option key={user.id} value={user.id}>
+                    {user.firstName} {user.lastName}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-100">
+                {t('showings.fields.status')}
+              </label>
+              <select
+                name="status"
+                value={showingFormData.status}
+                onChange={handleShowingInputChange}
+                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                required
+              >
+                <option value="">{t('common.select')}</option>
+                <option value="PENDING">{t('showings.statusTypes.PENDING')}</option>
+                <option value="CONFIRMED">{t('showings.statusTypes.CONFIRMED')}</option>
+                <option value="COMPLETED">{t('showings.statusTypes.COMPLETED')}</option>
+                <option value="CANCELLED">{t('showings.statusTypes.CANCELLED')}</option>
+              </select>
+            </div>
+
+            <FormInput
+              label={t('showings.fields.contactName')}
+              name="contactName"
+              type="text"
+              value={showingFormData.contactName}
+              onChange={handleShowingInputChange}
+            />
+
+            <FormInput
+              label={t('showings.fields.contactEmail')}
+              name="contactEmail"
+              type="email"
+              value={showingFormData.contactEmail}
+              onChange={handleShowingInputChange}
+            />
+
+            <FormInput
+              label={t('showings.fields.contactPhone')}
+              name="contactPhone"
+              type="tel"
+              value={showingFormData.contactPhone}
+              onChange={handleShowingInputChange}
+            />
+
+            <div className="mb-3">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-100">
+                {t('showings.fields.notes')}
+              </label>
+              <textarea
+                name="notes"
+                value={showingFormData.notes}
+                onChange={handleShowingInputChange}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                rows="3"
+              />
+            </div>
           </div>
         </Modal>
       )}

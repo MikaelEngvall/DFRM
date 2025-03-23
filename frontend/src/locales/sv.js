@@ -620,26 +620,43 @@ const translations = {
 
   showings: {
     title: 'Visningar',
+    addNew: 'Lägg till visning',
+    edit: 'Redigera visning',
     details: 'Visningsdetaljer',
-    defaultTitle: 'Lägenhetvisning',
+    defaultTitle: 'Visning av lägenhet',
     dateTime: 'Datum och tid',
     status: 'Status',
     apartment: 'Lägenhet',
-    assignedTo: 'Ansvarig mäklare',
-    contact: 'Kontaktuppgifter',
+    assignedTo: 'Ansvarig',
+    contact: 'Kontakt',
     notes: 'Anteckningar',
+    fields: {
+      title: 'Titel',
+      description: 'Beskrivning',
+      dateTime: 'Datum och tid',
+      status: 'Status',
+      assignedTo: 'Ansvarig',
+      contactName: 'Kontaktnamn',
+      contactEmail: 'Kontakte-post',
+      contactPhone: 'Kontakttelefon',
+      notes: 'Anteckningar'
+    },
     statusTypes: {
-      SCHEDULED: 'Planerad',
-      COMPLETED: 'Genomförd',
-      CANCELLED: 'Inställd'
+      PENDING: 'Väntande',
+      CONFIRMED: 'Bekräftad',
+      COMPLETED: 'Avklarad',
+      CANCELLED: 'Avbruten',
+      SCHEDULED: 'Planerad'
     },
     actions: {
-      complete: 'Markera som genomförd',
-      cancel: 'Ställ in visning'
+      complete: 'Markera som avklarad',
+      cancel: 'Avbryt visning'
     },
     messages: {
-      completed: 'Visningen har markerats som genomförd',
-      cancelled: 'Visningen har ställts in'
+      updateSuccess: 'Visningen har uppdaterats',
+      updateError: 'Ett fel uppstod när visningen skulle uppdateras',
+      completed: 'Visningen har markerats som avklarad',
+      cancelled: 'Visningen har avbrutits'
     }
   }
 };
