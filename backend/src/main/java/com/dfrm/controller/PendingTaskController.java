@@ -295,6 +295,22 @@ public class PendingTaskController {
             log.info("Konverterar e-postrapport till uppgift: ID={}, Tenant ID={}, Apartment ID={}", 
                 pendingTask.getId(), pendingTask.getTenantId(), pendingTask.getApartmentId());
             
+            // Validera och sätt alla nödvändiga fält
+            if (taskData.getTitle() == null || taskData.getTitle().trim().isEmpty()) {
+                // Skapa titel från adress och lägenhetsnummer
+                StringBuilder titleBuilder = new StringBuilder();
+                if (pendingTask.getAddress() != null && !pendingTask.getAddress().isEmpty()) {
+                    titleBuilder.append(pendingTask.getAddress().trim());
+                    if (pendingTask.getApartment() != null && !pendingTask.getApartment().isEmpty()) {
+                        titleBuilder.append(" Lgh ").append(pendingTask.getApartment().trim());
+                    }
+                } else if (pendingTask.getName() != null && !pendingTask.getName().isEmpty()) {
+                    titleBuilder.append("Felanmälan från ").append(pendingTask.getName());
+                }
+                taskData.setTitle(titleBuilder.toString());
+                log.info("Satte titel till: {}", taskData.getTitle());
+            }
+            
             // Sätt hyresgäst och lägenhet från PendingTask om de inte redan är angivna i taskData
             if ((taskData.getTenantId() == null || taskData.getTenantId().isEmpty()) && pendingTask.getTenantId() != null) {
                 taskData.setTenantId(pendingTask.getTenantId());
@@ -312,6 +328,19 @@ public class PendingTaskController {
                 log.info("Använde beskrivning från e-postrapport: {}", 
                          pendingTask.getDescription() != null ? 
                              pendingTask.getDescription().substring(0, Math.min(50, pendingTask.getDescription().length())) + "..." : null);
+            }
+            
+            // Sätt standardvärden om de saknas
+            if (taskData.getStatus() == null || taskData.getStatus().trim().isEmpty()) {
+                taskData.setStatus("NEW");
+            }
+            
+            if (taskData.getPriority() == null || taskData.getPriority().trim().isEmpty()) {
+                taskData.setPriority("MEDIUM");
+            }
+            
+            if (taskData.getDueDate() == null) {
+                taskData.setDueDate(LocalDate.now().plusDays(7));
             }
             
             User reviewedBy = null;

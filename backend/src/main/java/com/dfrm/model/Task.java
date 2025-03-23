@@ -1,6 +1,7 @@
 package com.dfrm.model;
 
 import java.time.LocalDate;
+import java.util.Map;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.DBRef;
@@ -67,4 +68,6 @@ public class Task {
     )
     @JsonIdentityReference(alwaysAsId = true)
     private Tenant tenant;
+
+    private Map<String, String> translations; // Nytt fält för översättningar
 } 

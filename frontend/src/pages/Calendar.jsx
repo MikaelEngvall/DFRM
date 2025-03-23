@@ -134,40 +134,34 @@ const Calendar = () => {
 
   const handleTaskClick = async (task) => {
     try {
-      // Hämta fullständig uppgiftsinformation från API för att garantera att alla detaljer finns
-      const fullTaskData = await taskService.getTaskById(task.id);
-      setSelectedTask(fullTaskData);
+      // Hämta den fullständiga uppgiften med alla detaljer
+      const fullTask = await taskService.getTaskById(task.id);
       
-      // Extrahera ID från objekt om det behövs (samma logik som i Tasks.jsx)
-      const assignedToUserId = fullTaskData.assignedToUserId || '';
+      // Använd översättningen om den finns, annars använd originalbeskrivningen
+      const description = fullTask.translations && fullTask.translations[currentLocale] 
+        ? fullTask.translations[currentLocale] 
+        : fullTask.description;
       
-      const apartmentId = fullTaskData.apartmentId ? 
-        (typeof fullTaskData.apartmentId === 'object' ? fullTaskData.apartmentId.id : fullTaskData.apartmentId) : '';
-      
-      const tenantId = fullTaskData.tenantId ? 
-        (typeof fullTaskData.tenantId === 'object' ? fullTaskData.tenantId.id : fullTaskData.tenantId) : '';
-      
-      // Sätt formData exakt som i Tasks.jsx
+      setSelectedTask(fullTask);
       setFormData({
-        title: fullTaskData.title || '',
-        description: fullTaskData.description || '',
-        dueDate: fullTaskData.dueDate ? new Date(fullTaskData.dueDate).toISOString().split('T')[0] : '',
-        priority: fullTaskData.priority || '',
-        status: fullTaskData.status || '',
-        assignedToUserId,
-        assignedByUserId: fullTaskData.assignedByUserId || '',
-        apartmentId,
-        tenantId,
-        comments: fullTaskData.comments || '',
-        isRecurring: fullTaskData.isRecurring || false,
-        recurringPattern: fullTaskData.recurringPattern || '',
-        descriptionLanguage: fullTaskData.descriptionLanguage || currentLocale
+        ...formData,
+        title: fullTask.title || '',
+        description: description || '',
+        dueDate: fullTask.dueDate ? fullTask.dueDate.split('T')[0] : '',
+        priority: fullTask.priority || '',
+        status: fullTask.status || '',
+        assignedToUserId: fullTask.assignedToUserId || '',
+        assignedByUserId: fullTask.assignedByUserId || currentUser.id,
+        apartmentId: fullTask.apartmentId || '',
+        tenantId: fullTask.tenantId || '',
+        comments: fullTask.comments || '',
+        isRecurring: fullTask.isRecurring || false,
+        recurringPattern: fullTask.recurringPattern || '',
       });
-      
       setIsTaskModalOpen(true);
-    } catch (err) {
-      console.error('Error fetching full task details:', err);
-      setError(t('common.error'));
+    } catch (error) {
+      console.error('Error fetching task details:', error);
+      setError(t('tasks.messages.fetchError'));
     }
   };
 
@@ -280,37 +274,44 @@ const Calendar = () => {
   };
 
   const renderTaskItem = (task) => {
-    // Inre funktion för att hämta statusfärg
     const getStatusColor = (status) => {
       switch (status) {
-        case 'COMPLETED': return 'bg-green-600 text-white border-green-700';
-        case 'IN_PROGRESS': return 'bg-blue-600 text-white border-blue-700';
-        case 'PENDING': return 'bg-gray-100 text-gray-800 border-gray-200';
-        case 'CANCELLED': return 'bg-red-100 text-red-800 border-red-200';
-        default: return 'bg-gray-100 text-gray-800 border-gray-200';
+        case 'COMPLETED':
+          return 'bg-green-100 dark:bg-green-800';
+        case 'IN_PROGRESS':
+          return 'bg-yellow-100 dark:bg-yellow-800';
+        case 'PENDING':
+          return 'bg-orange-100 dark:bg-orange-800';
+        default:
+          return 'bg-gray-100 dark:bg-gray-800';
       }
     };
 
-    const assignedUser = users.find(user => user.id === task.assignedToUserId);
-    
+    // Använd översättningen om den finns, annars använd originalbeskrivningen
+    const description = task.translations && task.translations[currentLocale] 
+      ? task.translations[currentLocale] 
+      : task.description;
+
     return (
-      <div 
-        key={task.id} 
+      <div
+        key={task.id}
         onClick={(e) => {
-          e.stopPropagation(); // Stoppa bubbling
+          e.stopPropagation();
           handleTaskClick(task);
         }}
-        className={`mb-1 p-2 rounded-md cursor-pointer flex items-start justify-between border ${getStatusColor(task.status)}`}
+        className={`p-1 mb-1 rounded cursor-pointer text-sm ${getStatusColor(task.status)} hover:opacity-75 transition-opacity`}
       >
-        <div className="flex flex-col overflow-hidden">
-          <div className="font-medium truncate">{task.title}</div>
-          <div className={`text-xs ${task.status === 'COMPLETED' || task.status === 'IN_PROGRESS' ? 'opacity-75' : 'opacity-65'} truncate`}>
-            {assignedUser ? assignedUser.firstName : t('tasks.unassigned')}
+        <div className="flex items-center">
+          <div className={`w-2 h-2 rounded-full mr-2 ${getPriorityDotColor(task.priority, task.status)}`}></div>
+          <div className="truncate">
+            <span className="font-medium">{task.title}</span>
+            {description && (
+              <p className="text-xs text-gray-600 dark:text-gray-300 truncate">
+                {description}
+              </p>
+            )}
           </div>
         </div>
-        <div 
-          className={`w-3 h-3 rounded-full mt-1 flex-shrink-0 ${getPriorityDotColor(task.priority, task.status)}`}
-        />
       </div>
     );
   };
@@ -603,6 +604,7 @@ const Calendar = () => {
           }}
           title={selectedTask ? t('tasks.edit') : t('tasks.add')}
           onSubmit={handleSubmit}
+          submitButtonText={t('common.save')}
         >
           <div className="grid grid-cols-1 gap-4">
             <FormInput
@@ -626,6 +628,29 @@ const Calendar = () => {
                 rows="3"
               />
             </div>
+
+            {/* Översättningar */}
+            {selectedTask?.translations && Object.keys(selectedTask.translations).length > 0 && (
+              <div className="mt-4">
+                <h4 className="text-md font-medium text-gray-900 dark:text-white mb-2">
+                  {t('tasks.translations')}
+                </h4>
+                <div className="space-y-4">
+                  {Object.entries(selectedTask.translations).map(([lang, translation]) => (
+                    <div key={lang} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                      <div className="flex items-center mb-2">
+                        <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                          {t(`languages.${lang}`)}:
+                        </span>
+                      </div>
+                      <p className="text-gray-900 dark:text-white whitespace-pre-wrap">
+                        {translation}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormInput

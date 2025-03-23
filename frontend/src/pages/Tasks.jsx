@@ -535,13 +535,11 @@ const Tasks = () => {
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               {t('tasks.fields.description')}
             </label>
-            <textarea
-              name="description"
-              value={formData.description}
-              onChange={handleInputChange}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-              rows="3"
-            />
+            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+              <p className="text-gray-900 dark:text-white whitespace-pre-wrap">
+                {selectedTask?.translations?.[currentLocale] || formData.description}
+              </p>
+            </div>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

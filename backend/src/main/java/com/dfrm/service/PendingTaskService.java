@@ -2,11 +2,14 @@ package com.dfrm.service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 
+import com.dfrm.client.GoogleTranslateClient;
 import com.dfrm.model.PendingTask;
 import com.dfrm.model.Task;
 import com.dfrm.model.TaskStatus;
@@ -29,6 +32,7 @@ public class PendingTaskService {
     private final TenantRepository tenantRepository;
     private final ApartmentRepository apartmentRepository;
     private final EmailListener emailListener;
+    private final GoogleTranslateClient translateClient;
     
     public List<PendingTask> getAllPendingTasks() {
         return pendingTaskRepository.findAll();
@@ -64,26 +68,84 @@ public class PendingTaskService {
     }
     
     public Task approveTask(String id, User reviewedBy, String reviewComments) {
+        log.info("\u001B[32mStartar godkännande av uppgift med ID: {}\u001B[0m", id);
+        
         Optional<PendingTask> pendingTaskOpt = pendingTaskRepository.findById(id);
         if (pendingTaskOpt.isEmpty()) {
             throw new IllegalArgumentException("Pending task not found");
         }
         
         PendingTask pendingTask = pendingTaskOpt.get();
-        
-        // Uppdatera granskningsinformation
         pendingTask.setReviewedBy(reviewedBy);
         pendingTask.setReviewedAt(LocalDateTime.now());
         pendingTask.setReviewComments(reviewComments);
         pendingTask.setStatus("REVIEWED");
         
-        // Uppdatera uppgiftens status
         Task task = pendingTask.getTask();
         task.setStatus(TaskStatus.APPROVED.name());
+        
+        // Översätt beskrivningen till alla språk
+        log.info("\u001B[32mPåbörjar översättning av beskrivning: {}\u001B[0m", task.getDescription());
+        String sourceLanguage = translateClient.detectLanguage(task.getDescription());
+        log.info("\u001B[32mDetekterat källspråk: {}\u001B[0m", sourceLanguage);
+        
+        Map<String, String> translations = new HashMap<>();
+        
+        try {
+            // Översätt till svenska
+            if (!sourceLanguage.equals("sv")) {
+                String svTranslation = translateClient.translate(task.getDescription(), sourceLanguage, "sv");
+                log.info("\u001B[32mSvensk översättning: {}\u001B[0m", svTranslation);
+                translations.put("sv", svTranslation);
+            } else {
+                translations.put("sv", task.getDescription());
+            }
+            
+            // Översätt till engelska
+            if (!sourceLanguage.equals("en")) {
+                String enTranslation = translateClient.translate(task.getDescription(), sourceLanguage, "en");
+                log.info("\u001B[32mEngelsk översättning: {}\u001B[0m", enTranslation);
+                translations.put("en", enTranslation);
+            } else {
+                translations.put("en", task.getDescription());
+            }
+            
+            // Översätt till polska
+            if (!sourceLanguage.equals("pl")) {
+                String plTranslation = translateClient.translate(task.getDescription(), sourceLanguage, "pl");
+                log.info("\u001B[32mPolsk översättning: {}\u001B[0m", plTranslation);
+                translations.put("pl", plTranslation);
+            } else {
+                translations.put("pl", task.getDescription());
+            }
+            
+            // Översätt till ukrainska
+            if (!sourceLanguage.equals("uk")) {
+                String ukTranslation = translateClient.translate(task.getDescription(), sourceLanguage, "uk");
+                log.info("\u001B[32mUkrainsk översättning: {}\u001B[0m", ukTranslation);
+                translations.put("uk", ukTranslation);
+            } else {
+                translations.put("uk", task.getDescription());
+            }
+            
+            log.info("\u001B[32mAlla översättningar klara. Sparar i task-objektet.\u001B[0m");
+            task.setTranslations(translations);
+            
+        } catch (Exception e) {
+            log.error("\u001B[31mFel vid översättning: {}\u001B[0m", e.getMessage());
+            e.printStackTrace();
+        }
         
         // Spara ändringarna
         Task savedTask = taskRepository.save(task);
         pendingTaskRepository.save(pendingTask);
+        
+        log.info("\u001B[32mUppgift godkänd och sparad med ID: {}\u001B[0m", savedTask.getId());
+        if (savedTask.getTranslations() != null) {
+            log.info("\u001B[32mAntal sparade översättningar: {}\u001B[0m", savedTask.getTranslations().size());
+        } else {
+            log.warn("\u001B[33mInga översättningar sparade!\u001B[0m");
+        }
         
         return savedTask;
     }
@@ -220,6 +282,58 @@ public class PendingTaskService {
             
             newTask.setDescription(finalDescription);
             log.info("Lade till kontaktinformation till beskrivningen, total längd: {}", finalDescription.length());
+        }
+        
+        // Översätt beskrivningen till alla språk
+        log.info("\u001B[32mPåbörjar översättning av beskrivning: {}\u001B[0m", newTask.getDescription());
+        String sourceLanguage = translateClient.detectLanguage(newTask.getDescription());
+        log.info("\u001B[32mDetekterat källspråk: {}\u001B[0m", sourceLanguage);
+        
+        Map<String, String> translations = new HashMap<>();
+        
+        try {
+            // Översätt till svenska
+            if (!sourceLanguage.equals("sv")) {
+                String svTranslation = translateClient.translate(newTask.getDescription(), sourceLanguage, "sv");
+                log.info("\u001B[32mSvensk översättning: {}\u001B[0m", svTranslation);
+                translations.put("sv", svTranslation);
+            } else {
+                translations.put("sv", newTask.getDescription());
+            }
+            
+            // Översätt till engelska
+            if (!sourceLanguage.equals("en")) {
+                String enTranslation = translateClient.translate(newTask.getDescription(), sourceLanguage, "en");
+                log.info("\u001B[32mEngelsk översättning: {}\u001B[0m", enTranslation);
+                translations.put("en", enTranslation);
+            } else {
+                translations.put("en", newTask.getDescription());
+            }
+            
+            // Översätt till polska
+            if (!sourceLanguage.equals("pl")) {
+                String plTranslation = translateClient.translate(newTask.getDescription(), sourceLanguage, "pl");
+                log.info("\u001B[32mPolsk översättning: {}\u001B[0m", plTranslation);
+                translations.put("pl", plTranslation);
+            } else {
+                translations.put("pl", newTask.getDescription());
+            }
+            
+            // Översätt till ukrainska
+            if (!sourceLanguage.equals("uk")) {
+                String ukTranslation = translateClient.translate(newTask.getDescription(), sourceLanguage, "uk");
+                log.info("\u001B[32mUkrainsk översättning: {}\u001B[0m", ukTranslation);
+                translations.put("uk", ukTranslation);
+            } else {
+                translations.put("uk", newTask.getDescription());
+            }
+            
+            log.info("\u001B[32mAlla översättningar klara. Sparar i task-objektet.\u001B[0m");
+            newTask.setTranslations(translations);
+            
+        } catch (Exception e) {
+            log.error("\u001B[31mFel vid översättning: {}\u001B[0m", e.getMessage());
+            e.printStackTrace();
         }
         
         // Sätt vem som tilldelade uppgiften (den som godkände e-postrapporten)

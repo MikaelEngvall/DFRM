@@ -233,149 +233,44 @@ const PendingTasks = () => {
   };
 
   const handleRowClick = (item) => {
-    try {
-      setLoading(true);
-      
-      // Hantera olika typer av ID:n (email-xxx, task-xxx, approved-xxx)
-      let itemId = item.id;
-      let itemType = item.type || 'task'; // Default till 'task' om ingen typ är angiven
-      
-      // Om ID innehåller prefix, extrahera det verkliga ID:t
-      if (typeof itemId === 'string' && itemId.includes('-')) {
-        const parts = itemId.split('-');
-        itemType = parts[0];
-        itemId = parts.slice(1).join('-'); // Hantera ID:n som kan innehålla streck
-      }
-      
-      console.log(`Klickade på rad: ${itemType} med ID ${itemId}`);
-
-      // Uppgift från e-postrapport
-      if (itemType === 'email') {
-        const selectedReport = emailReports.find(report => report.id === itemId);
-        if (selectedReport) {
-          console.log("Vald e-postrapport:", selectedReport);
-          setSelectedTask(selectedReport);
-          
-          // Hitta lägenhetsobjekt baserat på apartmentId om det finns
-          let apartmentObj = '';
-          if (selectedReport.apartmentId) {
-            const foundApartment = apartments.find(apt => apt.id === selectedReport.apartmentId);
-            if (foundApartment) {
-              apartmentObj = foundApartment.id;
-            }
-          }
-          
-          // Hitta hyresgästobjekt baserat på tenantId eller e-postadressen
-          let tenantObj = '';
-          if (selectedReport.tenantId) {
-            const foundTenant = tenants.find(t => t.id === selectedReport.tenantId);
-            if (foundTenant) {
-              tenantObj = foundTenant.id;
-            }
-          } else if (selectedReport.email) {
-            // Försök matcha hyresgäst baserat på e-post
-            const foundTenant = tenants.find(t => t.email === selectedReport.email);
-            if (foundTenant) {
-              tenantObj = foundTenant.id;
-              
-              // Om hyresgästen har en lägenhet och vi inte har lägenhetsobjekt, använd den
-              if (!apartmentObj && foundTenant.apartmentId) {
-                apartmentObj = foundTenant.apartmentId;
-              }
-            }
-          }
-          
-          // Bygg titeln i formatet "Adress: [address] Lgh [apartment]"
-          let title = '';
-          if (selectedReport.address) {
-            title = `${selectedReport.address}`;
-            if (selectedReport.apartment) {
-              title += ` Lgh ${selectedReport.apartment}`;
-            }
-          } else {
-            // Fallback om adress saknas
-            title = selectedReport.name ? `Felanmälan från ${selectedReport.name}` : 'Felanmälan';
-          }
-          
-          console.log("Sätter titel:", title);
-          console.log("Sätter lägenhet:", apartmentObj);
-          console.log("Sätter hyresgäst:", tenantObj);
-          
-          // Förifyll formuläret med data från e-postrapporten
-          setFormData({
-            title: title,
-            description: selectedReport.description || '',
-            dueDate: '',
-            priority: 'MEDIUM',
-            status: 'NEW',
-            assignedToUserId: '',
-            assignedByUserId: currentUser.id,
-            apartmentId: apartmentObj,
-            tenantId: tenantObj,
-            comments: '',
-            isRecurring: false,
-            recurringPattern: '',
-          });
-          
-          setOpenModal(true);
-        } else {
-          console.error("Kunde inte hitta e-postrapport med ID:", itemId);
-        }
-      } 
-      // Vanlig uppgift eller godkänd uppgift
-      else {
-        // Sök i både pendingTasks och approvedTasks
-        const selectedTask = 
-          pendingTasks.find(task => task.id === itemId) || 
-          (approvedTasks ? approvedTasks.find(task => task.id === itemId) : null);
-        
-        if (selectedTask) {
-          console.log("Vald uppgift:", selectedTask);
-          setSelectedTask(selectedTask);
-          
-          // Förifyll formulär med task-information för vanliga väntande uppgifter
-          if (selectedTask.task) {
-            // Fixa tidszonsproblemet för befintliga uppgifter
-            let dueDateString = '';
-            
-            if (selectedTask.task.dueDate) {
-              // Konvertera ISO-datumsträngen till ett lokalt datum
-              const dueDate = new Date(selectedTask.task.dueDate);
-              
-              // Använd lokal tidszon för att säkerställa att datumet visas korrekt
-              const year = dueDate.getFullYear();
-              const month = String(dueDate.getMonth() + 1).padStart(2, '0'); // +1 eftersom JS-månader är 0-indexerade
-              const day = String(dueDate.getDate()).padStart(2, '0');
-              
-              dueDateString = `${year}-${month}-${day}`;
-            }
-            
-            setFormData({
-              title: selectedTask.task.title || '',
-              description: selectedTask.task.description || '',
-              dueDate: dueDateString,
-              priority: selectedTask.task.priority || '',
-              status: selectedTask.task.status || '',
-              assignedToUserId: selectedTask.task.assignedToUserId || '',
-              assignedByUserId: selectedTask.task.assignedByUserId || '',
-              apartmentId: selectedTask.task.apartmentId || '',
-              tenantId: selectedTask.task.tenantId || '',
-              comments: selectedTask.task.comments || '',
-              isRecurring: selectedTask.task.isRecurring || false,
-              recurringPattern: selectedTask.task.recurringPattern || '',
-            });
-          }
-          
-          setOpenModal(true);
-        } else {
-          console.error("Kunde inte hitta uppgift med ID:", itemId);
-        }
-      }
-    } catch (error) {
-      console.error("Fel vid hantering av radklick:", error);
-    } finally {
-      setLoading(false);
+    setSelectedTask(item);
+    
+    // Om det är en e-postrapport
+    if (item && !item.task && item.name) {
+      setFormData({
+        title: item.address ? `${item.address}${item.apartment ? ` Lgh ${item.apartment}` : ''}` : `Felanmälan från ${item.name}`,
+        description: item.description || '',
+        dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        priority: 'MEDIUM',
+        status: 'NEW',
+        assignedToUserId: '',
+        assignedByUserId: currentUser.id,
+        apartmentId: item.apartmentId || '',
+        tenantId: item.tenantId || '',
+        comments: '',
+        isRecurring: false,
+        recurringPattern: '',
+      });
+    } 
+    // Om det är en vanlig väntande uppgift
+    else if (item && item.task) {
+      setFormData({
+        title: item.task.title || '',
+        description: item.task.description || '',
+        dueDate: item.task.dueDate ? new Date(item.task.dueDate).toISOString().split('T')[0] : '',
+        priority: item.task.priority || '',
+        status: item.task.status || '',
+        assignedToUserId: item.task.assignedToUserId || '',
+        assignedByUserId: item.task.assignedByUserId || currentUser.id,
+        apartmentId: item.task.apartmentId || '',
+        tenantId: item.task.tenantId || '',
+        comments: item.task.comments || '',
+        isRecurring: item.task.isRecurring || false,
+        recurringPattern: item.task.recurringPattern || '',
+      });
     }
+    
+    setOpenModal(true);
   };
 
   const handleReviewClick = (pendingTask) => {
@@ -426,8 +321,12 @@ const PendingTasks = () => {
       }
 
       if (isEmailReport) {
+        // Ta bort eventuellt prefix från ID:t
+        const cleanId = selectedTask.id.replace('email-', '');
+        console.log('Konverterar e-postrapport med ID:', cleanId);
+        
         // För e-postrapporter, konvertera till en uppgift med pendingEmailReportService
-        const newTask = await pendingEmailReportService.convertToTask(selectedTask.id, taskData);
+        const newTask = await pendingEmailReportService.convertToTask(cleanId, taskData);
         console.log('Konverterad e-postrapport till uppgift:', newTask);
       } else if (selectedTask && selectedTask.task) {
         // För vanliga uppgifter, uppdatera först uppgiften

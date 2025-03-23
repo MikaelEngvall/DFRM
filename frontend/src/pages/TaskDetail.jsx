@@ -315,14 +315,13 @@ const TaskDetail = () => {
                   <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
                     {t('tasks.fields.description')}
                   </p>
-                  <p className="mt-1 text-sm text-gray-900 dark:text-white whitespace-pre-wrap">
-                    {task.description || '-'}
-                    {task.descriptionLanguage && task.descriptionLanguage !== currentLocale && task.descriptionTranslations && task.descriptionTranslations[currentLocale] && (
-                      <span className="block mt-2 text-xs italic text-gray-500 dark:text-gray-400">
-                        {t('tasks.translatedFrom', { language: t(`languages.${task.descriptionLanguage}`) })}
-                      </span>
-                    )}
-                  </p>
+                  <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+                    <p className="text-gray-900 dark:text-white whitespace-pre-wrap">
+                      {task.translations && task.translations[currentLocale] 
+                        ? task.translations[currentLocale] 
+                        : task.description}
+                    </p>
+                  </div>
                 </div>
                 
                 <div>
