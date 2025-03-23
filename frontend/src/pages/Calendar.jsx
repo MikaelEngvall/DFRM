@@ -248,10 +248,13 @@ const Calendar = () => {
   };
 
 
-  const getPriorityDotColor = (priority) => {
+  const getPriorityDotColor = (priority, status) => {
+    // Ingen blinkning för avklarade eller avbrutna uppgifter
+    const isCompleted = status === 'COMPLETED' || status === 'CANCELLED';
+    
     switch (priority) {
       case 'URGENT':
-        return 'bg-red-500 animate-blink scale-[2.0]';
+        return isCompleted ? 'bg-red-500 scale-[2.0]' : 'bg-red-500 animate-blink scale-[2.0]';
       case 'HIGH':
         return 'bg-orange-500 scale-[2.0]';
       case 'MEDIUM':
@@ -264,75 +267,35 @@ const Calendar = () => {
   };
 
   const renderTaskItem = (task) => {
-    // Statusfärger
+    // Inre funktion för att hämta statusfärg
     const getStatusColor = (status) => {
       switch (status) {
-        case 'COMPLETED':
-          return 'bg-green-100 border-green-300 text-green-800';
-        case 'IN_PROGRESS':
-          return 'bg-yellow-100 border-yellow-300 text-yellow-800';
-        default: // PENDING eller andra status
-          return 'bg-gray-100 border-gray-300 text-gray-700';
+        case 'COMPLETED': return 'bg-green-100 text-green-800 border-green-200';
+        case 'IN_PROGRESS': return 'bg-blue-100 text-blue-800 border-blue-200';
+        case 'PENDING': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+        case 'CANCELLED': return 'bg-red-100 text-red-800 border-red-200';
+        default: return 'bg-gray-100 text-gray-800 border-gray-200';
       }
     };
     
-    // Prioritetsglow-effekt men utan pulsering
-    const getPriorityGlow = (priority) => {
-      switch (priority) {
-        case 'URGENT':
-          return 'shadow-[0_0_8px_3px_rgba(239,68,68,0.4)]';
-        case 'HIGH':
-          return 'shadow-[0_0_6px_2px_rgba(234,179,8,0.4)]';
-        default:
-          return '';
-      }
-    };
-
-    // Kontrollera om uppgiften är en visningstid
-    const isShowing = task.title && task.title.startsWith('Visning:');
-    
-    // Hämta användarens förnamn
-    const assignedUser = users.find(u => u.id === task.assignedToUserId);
-    const firstName = assignedUser ? assignedUser.firstName : '';
-    
-    // Visa bara förnamn och adressen från uppgiftens titel
-    let address = '';
-    if (isShowing) {
-      address = task.title.substring(task.title.indexOf(':') + 1).trim();
-    } else {
-      address = task.title || '';
-    }
-    
-    // Specifik styling för visningar
-    if (isShowing) {
-      return (
-        <div 
-          key={task.id} 
-          onClick={() => handleTaskClick(task)}
-          className={`mb-1 p-2 rounded-md cursor-pointer bg-purple-600 text-white border border-purple-800 shadow-sm hover:shadow-md transition-shadow duration-200`}
-        >
-          <div className="flex flex-col">
-            <div className="font-medium">{firstName}</div>
-            <div className="text-xs text-purple-100">{address}</div>
-          </div>
-        </div>
-      );
-    }
-    
-    // Normal rendering för vanliga uppgifter
     return (
       <div 
         key={task.id} 
-        onClick={() => handleTaskClick(task)}
-        className={`mb-1 p-2 rounded-md cursor-pointer border ${getStatusColor(task.status)} ${getPriorityGlow(task.priority)} hover:shadow-md transition-shadow duration-200`}
+        onClick={(e) => {
+          e.stopPropagation(); // Stoppa bubbling
+          handleTaskClick(task);
+        }}
+        className={`mb-1 p-2 rounded-md cursor-pointer flex items-start justify-between border ${getStatusColor(task.status)}`}
       >
-        <div className="flex justify-between">
-          <div className="flex flex-col">
-            <div className="font-medium">{firstName}</div>
-            <div className="text-xs text-gray-500">{address}</div>
+        <div className="flex flex-col overflow-hidden">
+          <div className="font-medium truncate">{task.title}</div>
+          <div className="text-xs opacity-75 truncate">
+            {task.assignedToUser?.firstName || t('tasks.unassigned')}
           </div>
-          <div className={`h-2 w-2 rounded-full ${getPriorityDotColor(task.priority)}`}></div>
         </div>
+        <div 
+          className={`w-3 h-3 rounded-full mt-1 flex-shrink-0 ${getPriorityDotColor(task.priority, task.status)}`}
+        />
       </div>
     );
   };
@@ -340,6 +303,10 @@ const Calendar = () => {
   const handleShowingClick = (showing) => {
     setSelectedShowing(showing);
     setIsShowingModalOpen(true);
+    // Stäng taskModal om den är öppen
+    if (isTaskModalOpen) {
+      setIsTaskModalOpen(false);
+    }
   };
 
   // Lägg till funktion för att uppdatera visningsstatus
@@ -363,18 +330,29 @@ const Calendar = () => {
 
   // Funktion för att rendera visningsobjekt i kalendern
   const renderShowingItem = (showing) => {
-    const firstName = showing.assignedTo ? showing.assignedTo.firstName : '';
-    const address = showing.apartmentAddress || '';
+    // Funktion för att formatera tid
+    const formatTime = (dateString) => {
+      if (!dateString) return '';
+      const date = new Date(dateString);
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    };
     
     return (
       <div 
-        key={showing.id} 
-        onClick={() => handleShowingClick(showing)}
-        className="mb-1 p-2 rounded-md cursor-pointer bg-purple-600 text-white border border-purple-800 shadow-sm hover:shadow-md transition-shadow duration-200"
+        key={showing.id}
+        onClick={(e) => {
+          e.stopPropagation(); // Stoppa bubbling
+          handleShowingClick(showing);
+        }}
+        className={`mb-1 p-2 rounded-md cursor-pointer bg-indigo-100 text-indigo-800 border border-indigo-200 flex items-start justify-between`}
       >
-        <div className="flex flex-col">
-          <div className="font-medium">{firstName}</div>
-          <div className="text-xs text-purple-100">{address}</div>
+        <div className="flex flex-col overflow-hidden">
+          <div className="font-medium truncate">{showing.title || showing.address}</div>
+          <div className="text-xs opacity-75 truncate">
+            {showing.startTime ? formatTime(showing.startTime) : ''} 
+            {showing.startTime && showing.endTime ? ' - ' : ''} 
+            {showing.endTime ? formatTime(showing.endTime) : ''}
+          </div>
         </div>
       </div>
     );
