@@ -133,10 +133,24 @@ public class InterestService {
             
             String subject = "Bekräftelse av visningstid för " + interest.getApartment();
             
-            String emailBody = responseMessage + "\n\n" +
-                    "Visningstid: " + formattedDateTime + "\n\n" +
-                    "Med vänliga hälsningar,\n" +
-                    "Duggals Fastigheter";
+            // Kontrollera om responseMessage redan innehåller visningstiden
+            boolean containsDateTime = responseMessage.contains("Visningstid:") || 
+                                      responseMessage.contains(formattedDateTime);
+            
+            // Bygg e-postmeddelandet
+            String emailBody;
+            if (containsDateTime) {
+                // Om visningstiden redan finns i meddelandet, använd bara meddelandet som det är
+                emailBody = responseMessage + "\n\n" +
+                        "Med vänliga hälsningar,\n" +
+                        "Duggals Fastigheter";
+            } else {
+                // Annars lägg till visningstiden som tidigare
+                emailBody = responseMessage + "\n\n" +
+                        "Visningstid: " + formattedDateTime + "\n\n" +
+                        "Med vänliga hälsningar,\n" +
+                        "Duggals Fastigheter";
+            }
             
             // Använd intresse-e-post för att skicka bekräftelse
             emailService.sendInterestEmail(interest.getEmail(), subject, emailBody);
