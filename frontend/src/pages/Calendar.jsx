@@ -873,21 +873,24 @@ const Calendar = () => {
 
               <div>
                 <h4 className="text-sm font-medium text-gray-500 dark:text-gray-300">{t('showings.fields.assignedTo')}</h4>
+                <div className="mt-1 text-base font-medium text-gray-900 dark:text-white mb-2">
+                  {users.find(u => u.id === selectedShowing.assignedTo)?.firstName || t('showings.unassigned')}
+                </div>
                 <select
-                  value={selectedShowing.assignedTo?.id || ''}
+                  value={selectedShowing.assignedTo || ''}
                   onChange={async (e) => {
                     try {
                       await handleAssignShowing(e.target.value);
                       setSelectedShowing({
                         ...selectedShowing,
-                        assignedTo: users.find(u => u.id === e.target.value)
+                        assignedTo: e.target.value
                       });
                     } catch (err) {
                       console.error('Error assigning showing:', err);
                       setError(t('showings.messages.assignError'));
                     }
                   }}
-                  className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                 >
                   <option value="">{t('showings.unassigned')}</option>
                   {users.map((user) => (
