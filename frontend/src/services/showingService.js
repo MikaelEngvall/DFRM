@@ -99,6 +99,16 @@ const showingService = {
       console.error(`Error deleting showing ${id}:`, error);
       throw error;
     }
+  },
+  
+  assignShowing: async (showingId, userId) => {
+    try {
+      const response = await api.patch(`/api/showings/${showingId}/assign`, { userId });
+      return response.data;
+    } catch (error) {
+      console.error('Error assigning showing:', error);
+      throw error;
+    }
   }
 };
 

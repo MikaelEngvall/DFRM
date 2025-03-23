@@ -6,6 +6,7 @@ import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.dfrm.model.Interest;
@@ -22,6 +23,9 @@ public class ShowingService {
     
     private final ShowingRepository showingRepository;
     private final InterestRepository interestRepository;
+    
+    @Autowired
+    private UserService userService;
     
     public ShowingService(ShowingRepository showingRepository, InterestRepository interestRepository) {
         this.showingRepository = showingRepository;
@@ -131,5 +135,33 @@ public class ShowingService {
     
     public List<Showing> getActiveShowings() {
         return showingRepository.findByStatus("SCHEDULED");
+    }
+
+    public Showing assignShowingToUser(String showingId, String userId) {
+        Optional<Showing> showingOpt = showingRepository.findById(showingId);
+        Optional<User> userOpt = userService.getUserById(userId);
+
+        if (showingOpt.isEmpty() || userOpt.isEmpty()) {
+            throw new IllegalArgumentException("Visning eller användare hittades inte");
+        }
+
+        Showing showing = showingOpt.get();
+        showing.setAssignedTo(userOpt.get());
+        showing.setUpdatedAt(LocalDateTime.now());
+
+        return showingRepository.save(showing);
+    }
+
+    public Showing unassignShowing(String showingId) {
+        Optional<Showing> showingOpt = showingRepository.findById(showingId);
+        if (showingOpt.isEmpty()) {
+            throw new IllegalArgumentException("Visning hittades inte");
+        }
+
+        Showing showing = showingOpt.get();
+        showing.setAssignedTo(null);
+        showing.setUpdatedAt(LocalDateTime.now());
+
+        return showingRepository.save(showing);
     }
 } 

@@ -13,6 +13,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -123,12 +124,53 @@ public class ShowingController {
     
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyAuthority('ROLE_SUPERADMIN', 'ROLE_ADMIN', 'SUPERADMIN', 'ADMIN')")
-    public ResponseEntity<Showing> updateShowing(@PathVariable String id, @RequestBody Showing updatedShowing) {
+    public ResponseEntity<Showing> updateShowing(@PathVariable String id, @RequestBody Map<String, Object> showingData) {
         try {
-            Showing showing = showingService.updateShowing(id, updatedShowing);
-            return ResponseEntity.ok(showing);
+            // Hämta den befintliga visningen
+            Optional<Showing> existingShowingOpt = showingService.getShowingById(id);
+            if (existingShowingOpt.isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+            Showing existingShowing = existingShowingOpt.get();
+
+            // Uppdatera fält från request
+            if (showingData.get("title") != null) existingShowing.setTitle((String) showingData.get("title"));
+            if (showingData.get("description") != null) existingShowing.setDescription((String) showingData.get("description"));
+            if (showingData.get("dateTime") != null) {
+                existingShowing.setDateTime(LocalDateTime.parse((String) showingData.get("dateTime"), 
+                    DateTimeFormatter.ISO_DATE_TIME));
+            }
+            if (showingData.get("status") != null) existingShowing.setStatus((String) showingData.get("status"));
+            if (showingData.get("apartmentAddress") != null) existingShowing.setApartmentAddress((String) showingData.get("apartmentAddress"));
+            if (showingData.get("apartmentDetails") != null) existingShowing.setApartmentDetails((String) showingData.get("apartmentDetails"));
+            if (showingData.get("notes") != null) existingShowing.setNotes((String) showingData.get("notes"));
+            
+            // Hantera assignedToUserId
+            String assignedToUserId = (String) showingData.get("assignedToUserId");
+            if (assignedToUserId != null) {
+                Optional<User> userOpt = userService.getUserById(assignedToUserId);
+                if (userOpt.isPresent()) {
+                    existingShowing.setAssignedTo(userOpt.get());
+                } else {
+                    return ResponseEntity.badRequest().build();
+                }
+            }
+
+            // Hantera kontaktinformation
+            if (showingData.get("contactName") != null) existingShowing.setContactName((String) showingData.get("contactName"));
+            if (showingData.get("contactEmail") != null) existingShowing.setContactEmail((String) showingData.get("contactEmail"));
+            if (showingData.get("contactPhone") != null) existingShowing.setContactPhone((String) showingData.get("contactPhone"));
+
+            // Uppdatera timestamp
+            existingShowing.setUpdatedAt(LocalDateTime.now());
+
+            Showing updatedShowing = showingService.updateShowing(id, existingShowing);
+            return ResponseEntity.ok(updatedShowing);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            log.error("Fel vid uppdatering av visning: {}", e.getMessage(), e);
+            return ResponseEntity.badRequest().build();
         }
     }
     
@@ -159,6 +201,26 @@ public class ShowingController {
             return ResponseEntity.ok().build();
         } catch (Exception e) {
             return ResponseEntity.notFound().build();
+        }
+    }
+
+    @PatchMapping("/{id}/assign")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPERADMIN', 'ROLE_ADMIN', 'SUPERADMIN', 'ADMIN')")
+    public ResponseEntity<Showing> assignShowing(
+            @PathVariable String id,
+            @RequestBody Map<String, String> assignData) {
+        
+        String userId = assignData.get("userId");
+        if (userId == null || userId.isEmpty()) {
+            return ResponseEntity.badRequest().build();
+        }
+        
+        try {
+            Showing showing = showingService.assignShowingToUser(id, userId);
+            return ResponseEntity.ok(showing);
+        } catch (IllegalArgumentException e) {
+            log.error("Fel vid tilldelning av visning: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
         }
     }
 } 

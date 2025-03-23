@@ -5,7 +5,7 @@ import Modal from '../components/Modal';
 import AlertModal from '../components/AlertModal';
 import Title from '../components/Title';
 import DataTable from '../components/DataTable';
-import { interestService, taskService } from '../services';
+import { interestService, taskService, userService } from '../services';
 import { EnvelopeIcon, FunnelIcon, XMarkIcon, CalendarIcon, ClockIcon } from '@heroicons/react/24/outline';
 
 const Interests = () => {
@@ -28,6 +28,8 @@ const Interests = () => {
   });
   const [showFilters, setShowFilters] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+  const [selectedAgent, setSelectedAgent] = useState('');
+  const [users, setUsers] = useState([]);
 
   // Formatera datum till lokalt format
   const formatDate = (dateString) => {
@@ -59,6 +61,21 @@ const Interests = () => {
       .replace(/\s+/g, ' ')           // Ta bort överflödiga mellanslag
       .trim();
   };
+
+  // Hämta användare när komponenten laddas
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const usersData = await userService.getAllUsers();
+        setUsers(usersData);
+      } catch (err) {
+        console.error('Error fetching users:', err);
+        setError(t('common.error'));
+      }
+    };
+
+    fetchUsers();
+  }, []);
 
   // Hämta intresseanmälningar från API
   const fetchInterests = async (bypassCache = false) => {
@@ -212,7 +229,7 @@ const Interests = () => {
 
   // I handleScheduleShowing-funktionen, ändra för att automatiskt lägga till datum och tid i meddelandet
   const handleScheduleShowing = async () => {
-    if (!showingDate || !showingTime || !responseMail) {
+    if (!showingDate || !showingTime || !responseMail || !selectedAgent) {
       setError(t('interests.messages.fieldsRequired'));
       return;
     }
@@ -227,72 +244,16 @@ const Interests = () => {
       // Skapa en ISO-datumsträngformat för att lagra visningsdatum och tid
       const showingDateTime = `${showingDate}T${showingTime}:00`;
       
-      // Kontrollera om meddelandet redan innehåller datum och tid
-      let fullResponseMessage = responseMail;
-      if (!responseMail.includes(formattedDate) && !responseMail.includes(formattedTime)) {
-        // Lägg till datum och tid i meddelandet om det inte redan finns
-        fullResponseMessage = `${responseMail}\n\nVisningstid: ${formattedDate} kl. ${formattedTime}`;
-      }
-      
-      // Debugging: Visa intressedetaljer
-      console.log("=== INTRESSE SOM UPPDATERAS ===");
-      console.log("ID:", selectedInterest.id);
-      console.log("Namn:", selectedInterest.name);
-      console.log("Email:", selectedInterest.email);
-      console.log("Lägenhet:", selectedInterest.apartment?.address || 'Ingen lägenhet angiven');
-      console.log("Status:", selectedInterest.status);
-      
-      // Logga data som vi ska skicka
-      console.log("=== DATA SOM SKICKAS ===");
-      console.log("Interest ID:", selectedInterest.id);
-      console.log("Reviewed By ID:", currentUser.id);
-      console.log("Response Message:", fullResponseMessage);
-      console.log("Showing DateTime:", showingDateTime);
-      
-      // Visa manuellt meddelande i DOM:en för debugging
-      document.body.insertAdjacentHTML('beforeend', 
-        `<div style="position:fixed;top:20px;right:20px;background:yellow;padding:10px;z-index:9999;max-width:500px;overflow:auto;">
-          <h3>Debugging Info</h3>
-          <p>URL: http://localhost:8080/api/interests/${selectedInterest.id}/schedule-showing</p>
-          <p>ID: ${selectedInterest.id}</p>
-          <p>Status: ${selectedInterest.status}</p>
-        </div>`
-      );
-      
       // Förbered data för API-anrop
       const apiData = {
         reviewedById: currentUser.id,
-        responseMessage: fullResponseMessage,
-        showingDateTime: showingDateTime
+        responseMessage: responseMail,
+        showingDateTime: showingDateTime,
+        assignedToUserId: selectedAgent
       };
       
-      // Prova alla tre metoder i sekvens tills en lyckas
-      let result;
-      
-      try {
-        // Metod 1: Prova fetch först
-        console.log("=== METOD 1: FETCH API ===");
-        result = await interestService.scheduleShowingV3(selectedInterest.id, apiData);
-        console.log("FETCH lyckades!");
-      } catch (err1) {
-        console.error("FETCH misslyckades:", err1);
-        
-        try {
-          // Metod 2: Prova Axios V2
-          console.log("=== METOD 2: AXIOS V2 ===");
-          result = await interestService.scheduleShowingV2(selectedInterest.id, apiData);
-          console.log("AXIOS V2 lyckades!");
-        } catch (err2) {
-          console.error("AXIOS V2 misslyckades:", err2);
-          
-          // Metod 3: Prova Original
-          console.log("=== METOD 3: ORIGINAL ===");
-          result = await interestService.scheduleShowing(selectedInterest.id, apiData);
-          console.log("ORIGINAL lyckades!");
-        }
-      }
-      
-      console.log("=== SLUTRESULTAT ===", result);
+      // Anropa API
+      const result = await interestService.scheduleShowing(selectedInterest.id, apiData);
       
       // Uppdatera listor efter schemaläggning
       fetchInterests();
@@ -302,32 +263,17 @@ const Interests = () => {
       setSuccessMessage(t('interests.messages.showingScheduled'));
       setTimeout(() => setSuccessMessage(''), 3000);
       
-      // Ta bort debug-elementet
-      const debugElement = document.querySelector('div[style*="position:fixed"]');
-      if (debugElement) debugElement.remove();
-      
       // Stäng modalen och återställ formuläret
       setIsShowingModalOpen(false);
       setResponseMail('');
       setShowingDate('');
       setShowingTime('');
+      setSelectedAgent('');
       setSelectedInterest(null);
     } catch (err) {
-      console.error('=== ALLA METODER MISSLYCKADES ===');
-      console.error(err);
-      
-      if (err.response) {
-        console.error("Status:", err.response.status);
-        console.error("StatusText:", err.response.statusText);
-        console.error("URL:", err.config?.url || "URL saknas");
-        console.error("Data:", err.response.data);
-      } else if (err.request) {
-        console.error("Ingen respons:", err.request);
-      } else {
-        console.error("Fel:", err.message);
-      }
-      
+      console.error('Error scheduling showing:', err);
       setError(err.response?.data?.message || err.message || t('interests.messages.showingScheduleError'));
+    } finally {
       setIsLoading(false);
     }
   };
@@ -744,6 +690,7 @@ const Interests = () => {
             setResponseMail('');
             setShowingDate('');
             setShowingTime('');
+            setSelectedAgent('');
           }}
           title={t('interests.scheduleShowing')}
         >
@@ -797,6 +744,26 @@ const Interests = () => {
                   </div>
                 </div>
               </div>
+
+              {/* Ansvarig mäklare */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  {t('interests.fields.assignedTo')}
+                </label>
+                <select
+                  value={selectedAgent}
+                  onChange={(e) => setSelectedAgent(e.target.value)}
+                  className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  required
+                >
+                  <option value="">{t('common.select')}</option>
+                  {users.map((user) => (
+                    <option key={user.id} value={user.id}>
+                      {user.firstName} {user.lastName}
+                    </option>
+                  ))}
+                </select>
+              </div>
               
               {/* E-post till intresseanmälaren */}
               <div className="mb-3">
@@ -832,7 +799,7 @@ const Interests = () => {
                   type="button"
                   className="inline-flex justify-center rounded-md border border-transparent bg-purple-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
                   onClick={handleScheduleShowing}
-                  disabled={isLoading || !showingDate || !showingTime || !responseMail}
+                  disabled={isLoading || !showingDate || !showingTime || !responseMail || !selectedAgent}
                 >
                   {isLoading ? t('common.loading') : t('interests.actions.sendAndSchedule')}
                 </button>

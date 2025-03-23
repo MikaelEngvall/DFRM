@@ -623,40 +623,41 @@ const translations = {
     addNew: 'Lägg till visning',
     edit: 'Redigera visning',
     details: 'Visningsdetaljer',
-    defaultTitle: 'Visning av lägenhet',
+    defaultTitle: 'Visning',
     dateTime: 'Datum och tid',
     status: 'Status',
     apartment: 'Lägenhet',
-    assignedTo: 'Ansvarig',
-    contact: 'Kontakt',
+    contact: 'Kontaktperson',
     notes: 'Anteckningar',
     fields: {
+      assignedTo: 'Tilldelad till',
       title: 'Titel',
       description: 'Beskrivning',
       dateTime: 'Datum och tid',
       status: 'Status',
-      assignedTo: 'Ansvarig',
-      contactName: 'Kontaktnamn',
-      contactEmail: 'Kontakte-post',
-      contactPhone: 'Kontakttelefon',
-      notes: 'Anteckningar'
-    },
-    statusTypes: {
-      PENDING: 'Väntande',
-      CONFIRMED: 'Bekräftad',
-      COMPLETED: 'Avklarad',
-      CANCELLED: 'Avbruten',
-      SCHEDULED: 'Planerad'
+      apartmentAddress: 'Lägenhetsadress',
+      apartmentDetails: 'Lägenhetsdetaljer',
+      contactName: 'Kontaktperson',
+      contactEmail: 'Kontakt e-post',
+      contactPhone: 'Kontakt telefon'
     },
     actions: {
-      complete: 'Markera som avklarad',
+      assign: 'Tilldela visning',
+      edit: 'Redigera',
+      complete: 'Markera som genomförd',
       cancel: 'Avbryt visning'
     },
     messages: {
-      updateSuccess: 'Visningen har uppdaterats',
-      updateError: 'Ett fel uppstod när visningen skulle uppdateras',
-      completed: 'Visningen har markerats som avklarad',
-      cancelled: 'Visningen har avbrutits'
+      assignSuccess: 'Visningen har tilldelats framgångsrikt',
+      assignError: 'Det gick inte att tilldela visningen',
+      unassigned: 'Ej tilldelad'
+    },
+    assignModal: {
+      title: 'Tilldela visning',
+      selectUser: 'Välj användare',
+      noUserSelected: 'Ingen användare vald',
+      confirm: 'Bekräfta tilldelning',
+      cancel: 'Avbryt'
     }
   }
 };

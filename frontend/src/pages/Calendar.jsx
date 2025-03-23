@@ -385,8 +385,8 @@ const Calendar = () => {
       return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     };
 
-    // Hitta ansvarig mäklare
-    const assignedUser = users.find(user => user.id === showing.assignedToUserId);
+    // Hitta ansvarig mäklare genom att söka i users-arrayen med ID:t
+    const assignedUser = users.find(user => user.id === showing.assignedTo);
     
     return (
       <div 
@@ -500,22 +500,15 @@ const Calendar = () => {
     return hasRole(['ADMIN', 'SUPERADMIN']);
   };
 
-  // Lägg till funktion för att uppdatera visningsstatus
-  const handleUpdateShowingStatus = async (showingId, newStatus) => {
+  const handleAssignShowing = async (userId) => {
     try {
-      await showingService.updateStatus(showingId, newStatus);
-      setIsShowingModalOpen(false);
-      setSelectedShowing(null);
-      
-      // Uppdatera kalendern
-      fetchCalendarData();
-      
-      // Visa bekräftelsemeddelande
-      setSuccessMessage(t(`showings.messages.${newStatus.toLowerCase()}`));
+      await showingService.assignShowing(selectedShowing.id, userId);
+      await fetchCalendarData();
+      setSuccessMessage(t('showings.messages.assignSuccess'));
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err) {
-      console.error(`Error updating showing status: ${err}`);
-      setError(t('common.error'));
+      console.error('Error assigning showing:', err);
+      throw err;
     }
   };
 
@@ -877,87 +870,44 @@ const Calendar = () => {
                   {t(`showings.statusTypes.${selectedShowing.status}`)}
                 </p>
               </div>
-            </div>
-            
-            <div className="border-t pt-4 border-gray-200 dark:border-gray-700">
-              <h4 className="text-sm font-medium text-gray-500 dark:text-gray-300">{t('showings.apartment')}</h4>
-              <p className="text-base font-medium text-gray-900 dark:text-white">
-                {selectedShowing.apartmentAddress}
-              </p>
-              
-              {selectedShowing.apartmentDetails && (
-                <p className="text-sm text-gray-500 dark:text-gray-300 mt-1">
-                  {selectedShowing.apartmentDetails}
-                </p>
-              )}
-            </div>
-            
-            <div className="border-t pt-4 border-gray-200 dark:border-gray-700">
-              <h4 className="text-sm font-medium text-gray-500 dark:text-gray-300">{t('showings.assignedTo')}</h4>
-              <p className="text-base font-medium text-gray-900 dark:text-white">
-                {selectedShowing.assignedTo?.firstName} {selectedShowing.assignedTo?.lastName}
-              </p>
-              
-              <p className="text-sm text-gray-500 dark:text-gray-300">
-                {selectedShowing.assignedTo?.email}
-              </p>
-            </div>
-            
-            {selectedShowing.contactName && (
-              <div className="border-t pt-4 border-gray-200 dark:border-gray-700">
-                <h4 className="text-sm font-medium text-gray-500 dark:text-gray-300">{t('showings.contact')}</h4>
-                <p className="text-base font-medium text-gray-900 dark:text-white">
-                  {selectedShowing.contactName}
-                </p>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mt-1">
-                  {selectedShowing.contactEmail && (
-                    <p className="text-sm text-gray-500 dark:text-gray-300">
-                      {selectedShowing.contactEmail}
-                    </p>
-                  )}
-                  
-                  {selectedShowing.contactPhone && (
-                    <p className="text-sm text-gray-500 dark:text-gray-300">
-                      {selectedShowing.contactPhone}
-                    </p>
-                  )}
-                </div>
-              </div>
-            )}
-            
-            {selectedShowing.notes && (
-              <div className="border-t pt-4 border-gray-200 dark:border-gray-700">
-                <h4 className="text-sm font-medium text-gray-500 dark:text-gray-300">{t('showings.notes')}</h4>
-                <p className="text-sm text-gray-900 dark:text-white whitespace-pre-line">
-                  {selectedShowing.notes}
-                </p>
-              </div>
-            )}
-            
-            {hasRole(['ADMIN', 'SUPERADMIN']) && (
-              <div className="border-t pt-4 border-gray-200 dark:border-gray-700 flex justify-end space-x-2">
-                <button
-                  onClick={() => handleEditShowing(selectedShowing)}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+
+              <div>
+                <h4 className="text-sm font-medium text-gray-500 dark:text-gray-300">{t('showings.fields.assignedTo')}</h4>
+                <select
+                  value={selectedShowing.assignedTo?.id || ''}
+                  onChange={async (e) => {
+                    try {
+                      await handleAssignShowing(e.target.value);
+                      setSelectedShowing({
+                        ...selectedShowing,
+                        assignedTo: users.find(u => u.id === e.target.value)
+                      });
+                    } catch (err) {
+                      console.error('Error assigning showing:', err);
+                      setError(t('showings.messages.assignError'));
+                    }
+                  }}
+                  className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                 >
-                  {t('common.edit')}
-                </button>
-                <button
-                  onClick={() => handleUpdateShowingStatus(selectedShowing.id, 'COMPLETED')}
-                  className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
-                >
-                  {t('showings.actions.complete')}
-                </button>
-                
-                <button
-                  onClick={() => handleUpdateShowingStatus(selectedShowing.id, 'CANCELLED')}
-                  className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
-                >
-                  {t('showings.actions.cancel')}
-                </button>
+                  <option value="">{t('showings.unassigned')}</option>
+                  {users.map((user) => (
+                    <option key={user.id} value={user.id}>
+                      {user.firstName} {user.lastName}
+                    </option>
+                  ))}
+                </select>
               </div>
-            )}
+            </div>
+
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
+                type="button"
+                onClick={() => handleEditShowing(selectedShowing)}
+                className="px-4 py-2 bg-primary text-white rounded-md hover:bg-secondary"
+              >
+                {t('showings.actions.edit')}
+              </button>
+            </div>
           </div>
         </Modal>
       )}
