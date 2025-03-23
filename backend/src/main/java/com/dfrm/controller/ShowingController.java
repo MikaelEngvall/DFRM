@@ -123,7 +123,7 @@ public class ShowingController {
     }
     
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyAuthority('ROLE_SUPERADMIN', 'ROLE_ADMIN', 'SUPERADMIN', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
     public ResponseEntity<Showing> updateShowing(@PathVariable String id, @RequestBody Map<String, Object> showingData) {
         try {
             // Hämta den befintliga visningen
@@ -175,7 +175,7 @@ public class ShowingController {
     }
     
     @PutMapping("/{id}/status")
-    @PreAuthorize("hasAnyAuthority('ROLE_SUPERADMIN', 'ROLE_ADMIN', 'SUPERADMIN', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
     public ResponseEntity<Showing> updateShowingStatus(
             @PathVariable String id,
             @RequestBody Map<String, String> statusUpdate) {
@@ -205,7 +205,7 @@ public class ShowingController {
     }
 
     @PatchMapping("/{id}/assign")
-    @PreAuthorize("hasAnyAuthority('ROLE_SUPERADMIN', 'ROLE_ADMIN', 'SUPERADMIN', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
     public ResponseEntity<Showing> assignShowing(
             @PathVariable String id,
             @RequestBody Map<String, String> assignData) {
@@ -220,6 +220,54 @@ public class ShowingController {
             return ResponseEntity.ok(showing);
         } catch (IllegalArgumentException e) {
             log.error("Fel vid tilldelning av visning: {}", e.getMessage());
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @PatchMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
+    public ResponseEntity<Showing> patchShowing(@PathVariable String id, @RequestBody Map<String, Object> showingData) {
+        try {
+            // Hämta den befintliga visningen
+            Optional<Showing> existingShowingOpt = showingService.getShowingById(id);
+            if (existingShowingOpt.isEmpty()) {
+                return ResponseEntity.notFound().build();
+            }
+            Showing existingShowing = existingShowingOpt.get();
+
+            // Uppdatera endast de fält som finns i request
+            if (showingData.get("title") != null) existingShowing.setTitle((String) showingData.get("title"));
+            if (showingData.get("description") != null) existingShowing.setDescription((String) showingData.get("description"));
+            if (showingData.get("dateTime") != null) {
+                existingShowing.setDateTime(LocalDateTime.parse((String) showingData.get("dateTime"), 
+                    DateTimeFormatter.ISO_DATE_TIME));
+            }
+            if (showingData.get("status") != null) existingShowing.setStatus((String) showingData.get("status"));
+            if (showingData.get("apartmentAddress") != null) existingShowing.setApartmentAddress((String) showingData.get("apartmentAddress"));
+            if (showingData.get("apartmentDetails") != null) existingShowing.setApartmentDetails((String) showingData.get("apartmentDetails"));
+            if (showingData.get("notes") != null) existingShowing.setNotes((String) showingData.get("notes"));
+            
+            // Hantera assignedToUserId
+            String assignedToUserId = (String) showingData.get("assignedToUserId");
+            if (assignedToUserId != null) {
+                Optional<User> userOpt = userService.getUserById(assignedToUserId);
+                userOpt.ifPresent(existingShowing::setAssignedTo);
+            }
+
+            // Hantera kontaktinformation
+            if (showingData.get("contactName") != null) existingShowing.setContactName((String) showingData.get("contactName"));
+            if (showingData.get("contactEmail") != null) existingShowing.setContactEmail((String) showingData.get("contactEmail"));
+            if (showingData.get("contactPhone") != null) existingShowing.setContactPhone((String) showingData.get("contactPhone"));
+
+            // Uppdatera timestamp
+            existingShowing.setUpdatedAt(LocalDateTime.now());
+
+            Showing updatedShowing = showingService.updateShowing(id, existingShowing);
+            return ResponseEntity.ok(updatedShowing);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build();
+        } catch (Exception e) {
+            log.error("Fel vid uppdatering av visning: {}", e.getMessage(), e);
             return ResponseEntity.badRequest().build();
         }
     }

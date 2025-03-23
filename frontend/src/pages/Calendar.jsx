@@ -254,22 +254,18 @@ const Calendar = () => {
     }
   };
 
-
-  const getPriorityDotColor = (priority, status) => {
-    // Ingen blinkning för avklarade eller avbrutna uppgifter
-    const isCompleted = status === 'COMPLETED' || status === 'CANCELLED';
-    
+  const getPriorityDotColor = (priority) => {
     switch (priority) {
       case 'URGENT':
-        return isCompleted ? 'bg-red-500 scale-[2.0]' : 'bg-red-500 animate-blink scale-[2.0]';
+        return 'bg-red-500 animate-blink scale-[1.5]';
       case 'HIGH':
-        return 'bg-orange-500 scale-[2.0]';
+        return 'bg-orange-500 scale-[1.5]';
       case 'MEDIUM':
-        return 'bg-yellow-500 scale-[2.0]';
+        return 'bg-yellow-500 scale-[1.5]';
       case 'LOW':
-        return 'bg-green-500 scale-[2.0]';
+        return 'bg-green-500 scale-[1.5]';
       default:
-        return 'bg-gray-400 scale-[2.0]';
+        return 'bg-gray-400 scale-[1.5]';
     }
   };
 
@@ -288,23 +284,23 @@ const Calendar = () => {
 
   const renderTaskItem = (task) => {
     const statusColor = getStatusColor(task.status);
-    const isUrgent = task.priority === 'URGENT';
-
+    const assignedUser = users.find(user => user.id === task.assignedToUserId);
+    
     return (
       <div
         key={task.id}
         onClick={() => handleTaskClick(task)}
-        className={`mb-1 p-2 rounded cursor-pointer hover:bg-opacity-80 flex items-center ${statusColor}`}
+        className={`mb-1 p-2 rounded cursor-pointer hover:bg-opacity-80 ${statusColor}`}
       >
-        {isUrgent && (
-          <div className="w-2 h-2 rounded-full bg-red-500 mr-2 animate-pulse" />
-        )}
-        <div className="flex-grow">
-          <div className="text-sm font-medium text-gray-900 dark:text-white truncate">
-            {task.title}
-          </div>
-          <div className="text-xs text-gray-600 dark:text-gray-300 truncate">
-            {task?.translations?.[currentLocale] || task.description}
+        <div className="flex items-center">
+          <div className={`w-2 h-2 rounded-full mr-2 ${getPriorityDotColor(task.priority)}`} />
+          <div className="flex-grow">
+            <div className="text-sm font-medium text-gray-900 dark:text-white truncate">
+              {task.title}
+            </div>
+            <div className="text-xs text-gray-600 dark:text-gray-300 truncate">
+              {assignedUser ? assignedUser.firstName : t('tasks.unassigned')}
+            </div>
           </div>
         </div>
       </div>
@@ -350,8 +346,7 @@ const Calendar = () => {
     try {
       const updatedData = {
         ...showingFormData,
-        // Konvertera datetime till UTC utan att justera tiden
-        dateTime: showingFormData.dateTime ? showingFormData.dateTime.replace('T', ' ') + ':00' : null,
+        dateTime: showingFormData.dateTime ? new Date(showingFormData.dateTime).toISOString() : null,
         assignedToUserId: showingFormData.assignedToUserId || null,
         apartmentId: showingFormData.apartmentId || null
       };

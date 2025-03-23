@@ -73,7 +73,7 @@ const showingService = {
   
   update: async (id, showingData) => {
     try {
-      const response = await api.put(`/api/showings/${id}`, showingData);
+      const response = await api.patch(`/api/showings/${id}`, showingData);
       return response.data;
     } catch (error) {
       console.error(`Error updating showing ${id}:`, error);
@@ -101,12 +101,12 @@ const showingService = {
     }
   },
   
-  assignShowing: async (showingId, userId) => {
+  assignShowing: async (id, userId) => {
     try {
-      const response = await api.patch(`/api/showings/${showingId}/assign`, { userId });
+      const response = await api.patch(`/api/showings/${id}/assign`, { userId });
       return response.data;
     } catch (error) {
-      console.error('Error assigning showing:', error);
+      console.error(`Error assigning showing ${id} to user ${userId}:`, error);
       throw error;
     }
   }
