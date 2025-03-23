@@ -263,7 +263,9 @@ const Dashboard = () => {
               title={t('interests.actions.checkEmails')}
               className="ml-4 bg-gray-600 hover:bg-gray-700 text-white p-2 rounded-md"
             >
-              <EnvelopeIcon className="h-5 w-5" />
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
             </button>
           </div>
           <div className="space-y-4" onClick={handleInterestsClick} style={{ cursor: 'pointer' }}>
@@ -330,22 +332,6 @@ const Dashboard = () => {
           alt="DFRM Logotype"
           className="w-full h-auto px-4 sm:px-6 lg:px-8"
         />
-      </div>
-
-      {/* Intresseanmälningsruta */}
-      <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 mb-6">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold text-gray-800 dark:text-white">
-            {t('dashboard.interests')}
-          </h2>
-          <button
-            onClick={handleCheckInterestEmails}
-            title={t('interests.actions.checkEmails')}
-            className="bg-gray-200 text-gray-700 p-2 rounded-md hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
-          >
-            <EnvelopeIcon className="h-5 w-5" />
-          </button>
-        </div>
       </div>
     </div>
   );
