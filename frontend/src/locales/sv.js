@@ -340,6 +340,7 @@ const translations = {
       approve: 'Godkänn',
       reject: 'Avslå'
     },
+    unassigned: 'Ej tilldelad',
   },
 
   pendingTasks: {

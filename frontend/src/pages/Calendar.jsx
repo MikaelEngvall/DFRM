@@ -270,13 +270,15 @@ const Calendar = () => {
     // Inre funktion för att hämta statusfärg
     const getStatusColor = (status) => {
       switch (status) {
-        case 'COMPLETED': return 'bg-green-100 text-green-800 border-green-200';
-        case 'IN_PROGRESS': return 'bg-blue-100 text-blue-800 border-blue-200';
-        case 'PENDING': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+        case 'COMPLETED': return 'bg-green-600 text-white border-green-700';
+        case 'IN_PROGRESS': return 'bg-blue-600 text-white border-blue-700';
+        case 'PENDING': return 'bg-gray-100 text-gray-800 border-gray-200';
         case 'CANCELLED': return 'bg-red-100 text-red-800 border-red-200';
         default: return 'bg-gray-100 text-gray-800 border-gray-200';
       }
     };
+
+    const assignedUser = users.find(user => user.id === task.assignedToUserId);
     
     return (
       <div 
@@ -289,8 +291,8 @@ const Calendar = () => {
       >
         <div className="flex flex-col overflow-hidden">
           <div className="font-medium truncate">{task.title}</div>
-          <div className="text-xs opacity-75 truncate">
-            {task.assignedToUser?.firstName || t('tasks.unassigned')}
+          <div className={`text-xs ${task.status === 'COMPLETED' || task.status === 'IN_PROGRESS' ? 'opacity-75' : 'opacity-65'} truncate`}>
+            {assignedUser ? assignedUser.firstName : t('tasks.unassigned')}
           </div>
         </div>
         <div 
