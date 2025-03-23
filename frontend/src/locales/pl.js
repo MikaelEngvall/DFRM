@@ -35,6 +35,7 @@ export default {
     permissions: 'Uprawnienia',
     unauthorized: 'Nie masz uprawnień do wykonania tej akcji',
     notSpecified: 'Nie określono',
+    at: 'o',
   },
 
   languages: {
@@ -52,6 +53,7 @@ export default {
     tasks: 'Zadania',
     calendar: 'Kalendarz',
     pendingTasks: 'Oczekujące zadania',
+    interests: 'Zapytania o mieszkania',
     logout: 'Wyloguj',
     profile: 'Profil',
     settings: 'Ustawienia',
