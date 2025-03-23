@@ -273,43 +273,38 @@ const Calendar = () => {
     }
   };
 
-  const renderTaskItem = (task) => {
-    const getStatusColor = (status) => {
-      switch (status) {
-        case 'COMPLETED':
-          return 'bg-green-100 dark:bg-green-800';
-        case 'IN_PROGRESS':
-          return 'bg-yellow-100 dark:bg-yellow-800';
-        case 'PENDING':
-          return 'bg-orange-100 dark:bg-orange-800';
-        default:
-          return 'bg-gray-100 dark:bg-gray-800';
-      }
-    };
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'COMPLETED':
+        return 'bg-green-100 dark:bg-green-800';
+      case 'IN_PROGRESS':
+        return 'bg-blue-100 dark:bg-blue-800';
+      case 'PENDING':
+        return 'bg-yellow-100 dark:bg-yellow-800';
+      default:
+        return 'bg-gray-100 dark:bg-gray-800';
+    }
+  };
 
-    // Använd översättningen om den finns, annars använd originalbeskrivningen
-    const description = task.translations && task.translations[currentLocale] 
-      ? task.translations[currentLocale] 
-      : task.description;
+  const renderTaskItem = (task) => {
+    const statusColor = getStatusColor(task.status);
+    const isUrgent = task.priority === 'URGENT';
 
     return (
       <div
         key={task.id}
-        onClick={(e) => {
-          e.stopPropagation();
-          handleTaskClick(task);
-        }}
-        className={`p-1 mb-1 rounded cursor-pointer text-sm ${getStatusColor(task.status)} hover:opacity-75 transition-opacity`}
+        onClick={() => handleTaskClick(task)}
+        className={`mb-1 p-2 rounded cursor-pointer hover:bg-opacity-80 flex items-center ${statusColor}`}
       >
-        <div className="flex items-center">
-          <div className={`w-2 h-2 rounded-full mr-2 ${getPriorityDotColor(task.priority, task.status)}`}></div>
-          <div className="truncate">
-            <span className="font-medium">{task.title}</span>
-            {description && (
-              <p className="text-xs text-gray-600 dark:text-gray-300 truncate">
-                {description}
-              </p>
-            )}
+        {isUrgent && (
+          <div className="w-2 h-2 rounded-full bg-red-500 mr-2 animate-pulse" />
+        )}
+        <div className="flex-grow">
+          <div className="text-sm font-medium text-gray-900 dark:text-white truncate">
+            {task.title}
+          </div>
+          <div className="text-xs text-gray-600 dark:text-gray-300 truncate">
+            {task?.translations?.[currentLocale] || task.description}
           </div>
         </div>
       </div>
