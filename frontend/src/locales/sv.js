@@ -47,6 +47,10 @@ const translations = {
     english: 'engelska',
     polish: 'polska',
     ukrainian: 'ukrainska',
+    sv: 'Svenska',
+    en: 'Engelska',
+    pl: 'Polska',
+    uk: 'Ukrainska'
   },
 
   navigation: {
@@ -341,6 +345,7 @@ const translations = {
       reject: 'Avslå'
     },
     unassigned: 'Ej tilldelad',
+    translations: 'Översättningar',
   },
 
   pendingTasks: {
