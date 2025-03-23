@@ -549,7 +549,9 @@ const translations = {
     actions: {
       edit: 'Редагувати',
       delete: 'Видалити',
-      assign: 'Призначити'
+      assign: 'Призначити',
+      complete: 'Завершити',
+      cancel: 'Скасувати'
     },
     fields: {
       title: 'Назва',
@@ -576,7 +578,9 @@ const translations = {
       deleteSuccess: 'Показ видалено',
       deleteError: 'Виникла помилка під час видалення показу',
       assignSuccess: 'Показ призначено',
-      assignError: 'Виникла помилка під час призначення показу'
+      assignError: 'Виникла помилка під час призначення показу',
+      updateSuccess: 'Показ оновлено',
+      updateError: 'Виникла помилка під час оновлення показу'
     }
   },
 };

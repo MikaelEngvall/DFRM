@@ -556,7 +556,9 @@ export default {
     actions: {
       edit: 'Edytuj',
       delete: 'Usuń',
-      assign: 'Przypisz'
+      assign: 'Przypisz',
+      complete: 'Zakończ',
+      cancel: 'Anuluj'
     },
     fields: {
       title: 'Tytuł',
@@ -583,7 +585,9 @@ export default {
       deleteSuccess: 'Pokaz został usunięty',
       deleteError: 'Wystąpił błąd podczas usuwania pokazu',
       assignSuccess: 'Pokaz został przypisany',
-      assignError: 'Wystąpił błąd podczas przypisywania pokazu'
+      assignError: 'Wystąpił błąd podczas przypisywania pokazu',
+      updateSuccess: 'Pokaz został zaktualizowany',
+      updateError: 'Wystąpił błąd podczas aktualizacji pokazu'
     }
   }
 }; 

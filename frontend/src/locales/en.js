@@ -575,7 +575,9 @@ export default {
     actions: {
       edit: 'Edit',
       delete: 'Delete',
-      assign: 'Assign'
+      assign: 'Assign',
+      complete: 'Complete',
+      cancel: 'Cancel'
     },
     fields: {
       title: 'Title',
@@ -584,7 +586,7 @@ export default {
       status: 'Status',
       assignedTo: 'Assigned To',
       apartmentId: 'Apartment',
-      contactName: 'Contact Person',
+      contactName: 'Contact Name',
       contactEmail: 'Email',
       contactPhone: 'Phone',
       notes: 'Notes'
@@ -602,7 +604,9 @@ export default {
       deleteSuccess: 'Showing has been deleted',
       deleteError: 'An error occurred while deleting the showing',
       assignSuccess: 'Showing has been assigned',
-      assignError: 'An error occurred while assigning the showing'
+      assignError: 'An error occurred while assigning the showing',
+      updateSuccess: 'Showing has been updated',
+      updateError: 'An error occurred while updating the showing'
     }
   }
 }; 

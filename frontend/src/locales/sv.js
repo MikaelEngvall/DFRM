@@ -629,7 +629,9 @@ const translations = {
     actions: {
       edit: 'Redigera',
       delete: 'Ta bort',
-      assign: 'Tilldela'
+      assign: 'Tilldela',
+      complete: 'Genomförd',
+      cancel: 'Avbryt'
     },
     fields: {
       title: 'Titel',
@@ -647,7 +649,7 @@ const translations = {
       PENDING: 'Väntar',
       CONFIRMED: 'Bekräftad',
       COMPLETED: 'Genomförd',
-      CANCELLED: 'Avbokad',
+      CANCELLED: 'Avbruten',
       SCHEDULED: 'Schemalagd'
     },
     messages: {
@@ -656,7 +658,9 @@ const translations = {
       deleteSuccess: 'Visningen har tagits bort',
       deleteError: 'Ett fel uppstod när visningen skulle tas bort',
       assignSuccess: 'Visningen har tilldelats',
-      assignError: 'Ett fel uppstod när visningen skulle tilldelas'
+      assignError: 'Ett fel uppstod när visningen skulle tilldelas',
+      updateSuccess: 'Visningen har uppdaterats',
+      updateError: 'Ett fel uppstod när visningen skulle uppdateras'
     }
   }
 };

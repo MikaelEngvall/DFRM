@@ -906,6 +906,48 @@ const Calendar = () => {
             </div>
 
             <div className="flex justify-end space-x-3 mt-6">
+              {selectedShowing.status !== 'COMPLETED' && selectedShowing.status !== 'CANCELLED' && (
+                <>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        await showingService.update(selectedShowing.id, { ...selectedShowing, status: 'COMPLETED' });
+                        await fetchCalendarData();
+                        setIsShowingModalOpen(false);
+                        setSelectedShowing(null);
+                        setSuccessMessage(t('showings.messages.updateSuccess'));
+                        setTimeout(() => setSuccessMessage(''), 3000);
+                      } catch (err) {
+                        console.error('Error completing showing:', err);
+                        setError(t('showings.messages.updateError'));
+                      }
+                    }}
+                    className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+                  >
+                    {t('showings.actions.complete')}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      try {
+                        await showingService.update(selectedShowing.id, { ...selectedShowing, status: 'CANCELLED' });
+                        await fetchCalendarData();
+                        setIsShowingModalOpen(false);
+                        setSelectedShowing(null);
+                        setSuccessMessage(t('showings.messages.updateSuccess'));
+                        setTimeout(() => setSuccessMessage(''), 3000);
+                      } catch (err) {
+                        console.error('Error cancelling showing:', err);
+                        setError(t('showings.messages.updateError'));
+                      }
+                    }}
+                    className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+                  >
+                    {t('showings.actions.cancel')}
+                  </button>
+                </>
+              )}
               <button
                 type="button"
                 onClick={() => handleEditShowing(selectedShowing)}
