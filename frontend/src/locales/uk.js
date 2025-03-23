@@ -35,6 +35,7 @@ const translations = {
     permissions: 'Дозволи',
     unauthorized: 'У вас немає прав для виконання цієї дії',
     notSpecified: 'Не вказано',
+    at: 'о',
   },
 
   languages: {
@@ -59,6 +60,7 @@ const translations = {
     lightMode: 'Світлий режим',
     staff: 'Персонал',
     import: 'Імпорт даних',
+    interests: 'Запити зацікавлених',
   },
 
   auth: {
