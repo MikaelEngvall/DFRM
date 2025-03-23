@@ -63,7 +63,6 @@ public class EnvConfigUnified {
 
     @PostConstruct
     public void init() {
-        log.info("Initierar miljövariabelhantering (EnvConfigUnified)");
         
         try {
             // Metod 1: Använd dotenv-biblioteket (primär metod)
@@ -75,7 +74,6 @@ public class EnvConfigUnified {
                 loadWithCustomImplementation();
             }
             
-            log.info("Miljövariabelhantering slutförd");
         } catch (Exception e) {
             log.error("Fel vid inläsning av miljövariabler: {}", e.getMessage(), e);
         }
@@ -87,7 +85,6 @@ public class EnvConfigUnified {
      */
     private boolean loadWithDotenvLibrary() {
         try {
-            log.info("Försöker ladda miljövariabler med dotenv-biblioteket");
             
             // Testa alla möjliga sökvägar i ordning
             Dotenv dotenv = null;
@@ -102,9 +99,7 @@ public class EnvConfigUnified {
                 if (searchDir.isEmpty()) {
                     searchDir = ".";
                 }
-                
-                log.debug("Söker efter .env-fil i katalog: {}", searchDir);
-                
+                                
                 dotenv = Dotenv.configure()
                     .directory(searchDir)
                     .ignoreIfMalformed()

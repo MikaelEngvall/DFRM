@@ -40,6 +40,9 @@ public class EmailService {
     @Value("${mail.interest.username:intresse@duggalsfastigheter.se}")
     private String interestEmail;
     
+    @Value("${mail.interest.password:${EMAIL_PASSWORD_INTEREST:}}")
+    private String interestPassword;
+    
     @Value("${spring.mail.host}")
     private String mailHost;
     
@@ -214,24 +217,31 @@ public class EmailService {
                 props.put("mail.smtp.timeout", "60000");
                 props.put("mail.smtp.writetimeout", "60000");
                 
-                // Ställ in debug-läge
-                props.put("mail.debug", "true");
+                // Ställ in debug-läge till false för att dölja debugfönstret
+                props.put("mail.debug", "false");
                 
                 // Använd samma host men specifik port för intresse
                 interestMailSender.setHost(mainSender.getHost());
                 interestMailSender.setPort(587); // Port 587 för SMTP
                 interestMailSender.setUsername(interestEmail);
-                interestMailSender.setPassword(mainSender.getPassword());
-                interestMailSender.setJavaMailProperties(props);
+                
+                // VIKTIGT: Använd det specifika lösenordet för intresse-kontot istället för huvudlösenordet
+                interestMailSender.setPassword(interestPassword);
                 
                 log.info("Konfigurerade intresse-mailsender på {}:{} med användarnamn {}", 
                          interestMailSender.getHost(), interestMailSender.getPort(), interestMailSender.getUsername());
+                
+                // Logga password-längd (inte själva lösenordet) för diagnostik
+                log.info("Intresse-lösenordets längd: {}", interestPassword != null ? interestPassword.length() : "null");
+                
+                interestMailSender.setJavaMailProperties(props);
             } else {
                 // Fallback om huvudmailsender inte är av rätt typ
                 log.warn("Huvudmailsender är inte av typen JavaMailSenderImpl, använder defaultvärden för intresse");
                 interestMailSender.setHost("mailcluster.loopia.se");
                 interestMailSender.setPort(587);
                 interestMailSender.setUsername(interestEmail);
+                interestMailSender.setPassword(interestPassword);
                 
                 // Skapa properties för SMTP
                 Properties props = new Properties();
@@ -242,7 +252,7 @@ public class EmailService {
                 props.put("mail.smtp.connectiontimeout", "60000");
                 props.put("mail.smtp.timeout", "60000");
                 props.put("mail.smtp.writetimeout", "60000");
-                props.put("mail.debug", "true");
+                props.put("mail.debug", "false");
                 
                 interestMailSender.setJavaMailProperties(props);
             }
@@ -299,8 +309,8 @@ public class EmailService {
                 
                 props.put("mail.smtp.socketFactory.fallback", "true");
                 
-                // Aktivera debug för att se detaljerad information
-                props.put("mail.debug", "true");
+                // Inaktivera debug för att dölja det gula fönstret
+                props.put("mail.debug", "false");
                 
                 // Sätt pool-inställningar om många e-postmeddelanden ska skickas
                 props.put("mail.smtp.quitwait", "false");    // Vänta inte på QUIT-svar

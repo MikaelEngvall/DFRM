@@ -128,7 +128,7 @@ public class InterestService {
         log.info("Sending showing confirmation email to: {}", interest.getEmail());
         
         try {
-            DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+            DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd 'kl.' HH:mm");
             String formattedDateTime = showingDateTime.format(dateFormatter);
             
             String subject = "Bekräftelse av visningstid för " + interest.getApartment();
@@ -136,7 +136,7 @@ public class InterestService {
             String emailBody = responseMessage + "\n\n" +
                     "Visningstid: " + formattedDateTime + "\n\n" +
                     "Med vänliga hälsningar,\n" +
-                    interest.getReviewedBy().getFirstName() + " " + interest.getReviewedBy().getLastName();
+                    "Duggals Fastigheter";
             
             // Använd intresse-e-post för att skicka bekräftelse
             emailService.sendInterestEmail(interest.getEmail(), subject, emailBody);

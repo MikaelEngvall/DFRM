@@ -241,19 +241,19 @@ public class InterestEmailListener {
             String phone = extractPhone(content);
             String extractedMessage = extractMessage(content);
             
-            // Logga extraherade fält i grönt för tydlig visualisering
-            log.info("\u001B[32mExtraherade fält från intresseanmälan:\u001B[0m");
-            log.info("\u001B[32m - Namn: {}\u001B[0m", name);
-            log.info("\u001B[32m - E-post: {}\u001B[0m", email);
-            log.info("\u001B[32m - Telefon: {}\u001B[0m", phone);
-            log.info("\u001B[32m - Lägenhet: {}\u001B[0m", apartment);
-            log.info("\u001B[32m - Ämne: {}\u001B[0m", subject);
-            log.info("\u001B[32m - Meddelande: {}\u001B[0m", extractedMessage.length() > 100 ? 
+            // Logga extraherade fält på debug-nivå utan färgkodning
+            log.debug("Extraherade fält från intresseanmälan:");
+            log.debug(" - Namn: {}", name);
+            log.debug(" - E-post: {}", email);
+            log.debug(" - Telefon: {}", phone);
+            log.debug(" - Lägenhet: {}", apartment);
+            log.debug(" - Ämne: {}", subject);
+            log.debug(" - Meddelande: {}", extractedMessage.length() > 100 ? 
                      extractedMessage.substring(0, 100) + "..." : extractedMessage);
             
             // Om inget meddelande extraherades, logga varning men fortsätt att spara
             if (extractedMessage.isEmpty()) {
-                log.warn("\u001B[32mInget meddelande hittades mellan 'Meddelande:' och '---'. Intresseanmälan sparas ändå.\u001B[0m");
+                log.warn("Inget meddelande hittades. Intresseanmälan sparas ändå.");
             }
             
             // Skapa och spara ny intresseanmälan med endast det extraherade meddelandet
@@ -269,7 +269,7 @@ public class InterestEmailListener {
         
             log.info("Sparar ny intresseanmälan från: {} för lägenhet: {}", interest.getEmail(), interest.getApartment());
             Interest savedInterest = interestRepository.save(interest);
-            log.info("\u001B[32mSparad intresseanmälan med ID: {}\u001B[0m", savedInterest.getId());
+            log.info("Sparad intresseanmälan med ID: {}", savedInterest.getId());
         } catch (Exception e) {
             log.error("Fel vid bearbetning av intresseanmälan: {}", e.getMessage(), e);
         }
@@ -279,48 +279,48 @@ public class InterestEmailListener {
     private String extractContent(Message message) {
         try {
             Object content = message.getContent();
-            log.info("\u001B[32mFörsöker extrahera innehåll från e-post av typ: {}\u001B[0m", message.getContentType());
+            log.debug("Försöker extrahera innehåll från e-post av typ: {}", message.getContentType());
             
             String result = "";
             if (content instanceof String) {
                 result = (String) content;
-                log.info("\u001B[32mExtraherat textinnehåll med längd: {}\u001B[0m", result.length());
+                log.debug("Extraherat textinnehåll med längd: {}", result.length());
             } else if (content instanceof MimeMultipart) {
                 MimeMultipart multipart = (MimeMultipart) content;
                 StringBuilder sb = new StringBuilder();
                 
-                log.info("\u001B[32mExtraherar innehåll från multipart-meddelande med {} delar\u001B[0m", multipart.getCount());
+                log.debug("Extraherar innehåll från multipart-meddelande med {} delar", multipart.getCount());
                 
                 for (int i = 0; i < multipart.getCount(); i++) {
                     BodyPart bodyPart = multipart.getBodyPart(i);
-                    log.info("\u001B[32mBearbetar del {} med innehållstyp: {}\u001B[0m", i, bodyPart.getContentType());
+                    log.debug("Bearbetar del {} med innehållstyp: {}", i, bodyPart.getContentType());
                     
                     if (bodyPart.getContentType().toLowerCase().startsWith("text/plain")) {
                         String partContent = bodyPart.getContent().toString();
                         sb.append(partContent);
-                        log.info("\u001B[32mLade till text/plain-innehåll med längd: {}\u001B[0m", partContent.length());
+                        log.debug("Lade till text/plain-innehåll med längd: {}", partContent.length());
                     } else if (bodyPart.getContentType().toLowerCase().startsWith("text/html")) {
                         // För HTML-innehåll, försök extrahera texten
                         String htmlContent = bodyPart.getContent().toString();
-                        log.info("\u001B[32mHittade HTML-innehåll med längd: {}\u001B[0m", htmlContent.length());
+                        log.debug("Hittade HTML-innehåll med längd: {}", htmlContent.length());
                         // Lägg till HTML-innehållet som det är, kommer att rensas senare
                         sb.append(htmlContent);
                     } else {
-                        log.info("\u001B[32mHoppar över innehåll av typ: {}\u001B[0m", bodyPart.getContentType());
+                        log.debug("Hoppar över innehåll av typ: {}", bodyPart.getContentType());
                     }
                 }
                 
                 result = sb.toString();
-                log.info("\u001B[32mExtraktion klar. Totalt extraherat innehåll: {} tecken\u001B[0m", result.length());
+                log.debug("Extraktion klar. Totalt extraherat innehåll: {} tecken", result.length());
             } else {
-                log.warn("\u001B[32mOkänd innehållstyp: {}. Returnerar tom sträng.\u001B[0m", 
+                log.warn("Okänd innehållstyp: {}. Returnerar tom sträng.", 
                     content != null ? content.getClass().getName() : "null");
                 return "";
             }
             
             // Rensa HTML-innehåll och normalisera radbrytningar
             String cleanedContent = cleanHtmlContent(result);
-            log.info("\u001B[32mRensat HTML-innehåll. Ny längd: {} tecken\u001B[0m", cleanedContent.length());
+            log.debug("Rensat HTML-innehåll. Ny längd: {} tecken", cleanedContent.length());
             return cleanedContent;
             
         } catch (Exception e) {
@@ -334,11 +334,6 @@ public class InterestEmailListener {
         if (content == null) {
             return "";
         }
-        
-        // Logga original-innehållet (begränsat för läsbarhet)
-        String contentPreview = content.length() > 300 ? content.substring(0, 300) + "..." : content;
-        log.info("\u001B[32m=== ORIGINAL HTML-INNEHÅLL (begränsat till 300 tecken) ===\u001B[0m");
-        log.info("\u001B[32m{}\u001B[0m", contentPreview);
         
         // Ersätt <br> med radbrytningar först för att bevara radstrukturen
         String result = content.replaceAll("<br\\s*/?\\s*>", "\n");
@@ -361,11 +356,7 @@ public class InterestEmailListener {
         // Ytterligare rensning av tomma rader
         result = result.replaceAll("\\s*\\n\\s*", "\n");
         
-        // Logga det rensade innehållet (fullständigt)
-        log.info("\u001B[32m=== RENSAT INNEHÅLL ===\u001B[0m");
-        log.info("\u001B[32m{}\u001B[0m", result);
-        
-        log.info("\u001B[32mHtml-rensning: Ursprunglig längd: {}, Ny längd: {}\u001B[0m", 
+        log.debug("Html-rensning: Ursprunglig längd: {}, Ny längd: {}", 
                 content.length(), result.length());
         
         return result;
