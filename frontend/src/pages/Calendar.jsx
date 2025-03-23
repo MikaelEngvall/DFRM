@@ -330,7 +330,7 @@ const Calendar = () => {
       description: showing.description || '',
       dateTime: showing.dateTime ? new Date(showing.dateTime).toISOString().slice(0, 16) : '',
       status: showing.status || '',
-      assignedToUserId: showing.assignedTo?.id || '',
+      assignedToUserId: showing.assignedTo || '',
       apartmentId: showing.apartmentId || '',
       contactName: showing.contactName || '',
       contactEmail: showing.contactEmail || '',
@@ -960,14 +960,17 @@ const Calendar = () => {
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-100">
                 {t('showings.fields.assignedTo')}
               </label>
+              <div className="mt-1 text-base font-medium text-gray-900 dark:text-white mb-2">
+                {users.find(u => u.id === showingFormData.assignedToUserId)?.firstName || t('showings.unassigned')}
+              </div>
               <select
                 name="assignedToUserId"
-                value={showingFormData.assignedToUserId}
+                value={showingFormData.assignedToUserId || ''}
                 onChange={handleShowingInputChange}
-                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                 required
               >
-                <option value="">{t('common.select')}</option>
+                <option value="">{t('showings.unassigned')}</option>
                 {users.map((user) => (
                   <option key={user.id} value={user.id}>
                     {user.firstName} {user.lastName}

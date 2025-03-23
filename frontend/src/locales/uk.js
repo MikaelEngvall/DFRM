@@ -539,27 +539,28 @@ const translations = {
   },
 
   showings: {
-    title: 'Покази квартир',
-    addNew: 'Додати показ',
-    edit: 'Редагувати показ',
+    title: 'Покази',
     details: 'Деталі показу',
-    defaultTitle: 'Показ квартири',
+    edit: 'Редагувати показ',
+    defaultTitle: 'Показ',
     dateTime: 'Дата та час',
     status: 'Статус',
-    apartment: 'Квартира',
-    assignedTo: 'Призначено',
-    contact: 'Контакт',
-    notes: 'Нотатки',
     unassigned: 'Не призначено',
+    actions: {
+      edit: 'Редагувати',
+      delete: 'Видалити',
+      assign: 'Призначити'
+    },
     fields: {
       title: 'Назва',
       description: 'Опис',
       dateTime: 'Дата та час',
       status: 'Статус',
       assignedTo: 'Призначено',
-      contactName: 'Ім\'я та прізвище',
-      contactEmail: 'Контактний email',
-      contactPhone: 'Контактний телефон',
+      apartmentId: 'Квартира',
+      contactName: 'Контактна особа',
+      contactEmail: 'Email',
+      contactPhone: 'Телефон',
       notes: 'Нотатки'
     },
     statusTypes: {
@@ -569,15 +570,13 @@ const translations = {
       CANCELLED: 'Скасовано',
       SCHEDULED: 'Заплановано'
     },
-    actions: {
-      complete: 'Позначити як завершений',
-      cancel: 'Скасувати показ'
-    },
     messages: {
-      updateSuccess: 'Показ оновлено',
-      updateError: 'Помилка при оновленні показу',
-      completed: 'Показ позначено як завершений',
-      cancelled: 'Показ скасовано'
+      saveSuccess: 'Показ збережено',
+      saveError: 'Виникла помилка під час збереження показу',
+      deleteSuccess: 'Показ видалено',
+      deleteError: 'Виникла помилка під час видалення показу',
+      assignSuccess: 'Показ призначено',
+      assignError: 'Виникла помилка під час призначення показу'
     }
   },
 };

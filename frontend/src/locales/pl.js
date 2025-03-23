@@ -544,27 +544,28 @@ export default {
   },
 
   showings: {
-    title: 'Pokazy mieszkań',
-    addNew: 'Dodaj pokaz',
-    edit: 'Edytuj pokaz',
+    title: 'Pokazy',
     details: 'Szczegóły pokazu',
-    defaultTitle: 'Pokaz mieszkania',
+    edit: 'Edytuj pokaz',
+    defaultTitle: 'Pokaz',
     dateTime: 'Data i godzina',
     status: 'Status',
-    apartment: 'Mieszkanie',
-    assignedTo: 'Przypisany do',
-    contact: 'Kontakt',
-    notes: 'Notatki',
     unassigned: 'Nieprzypisany',
+    actions: {
+      edit: 'Edytuj',
+      delete: 'Usuń',
+      assign: 'Przypisz'
+    },
     fields: {
       title: 'Tytuł',
       description: 'Opis',
       dateTime: 'Data i godzina',
       status: 'Status',
       assignedTo: 'Przypisany do',
-      contactName: 'Imię i nazwisko',
-      contactEmail: 'Email kontaktowy',
-      contactPhone: 'Telefon kontaktowy',
+      apartmentId: 'Mieszkanie',
+      contactName: 'Osoba kontaktowa',
+      contactEmail: 'Email',
+      contactPhone: 'Telefon',
       notes: 'Notatki'
     },
     statusTypes: {
@@ -574,15 +575,13 @@ export default {
       CANCELLED: 'Anulowany',
       SCHEDULED: 'Zaplanowany'
     },
-    actions: {
-      complete: 'Oznacz jako zakończony',
-      cancel: 'Anuluj pokaz'
-    },
     messages: {
-      updateSuccess: 'Pokaz został zaktualizowany',
-      updateError: 'Wystąpił błąd podczas aktualizacji pokazu',
-      completed: 'Pokaz został oznaczony jako zakończony',
-      cancelled: 'Pokaz został anulowany'
+      saveSuccess: 'Pokaz został zapisany',
+      saveError: 'Wystąpił błąd podczas zapisywania pokazu',
+      deleteSuccess: 'Pokaz został usunięty',
+      deleteError: 'Wystąpił błąd podczas usuwania pokazu',
+      assignSuccess: 'Pokaz został przypisany',
+      assignError: 'Wystąpił błąd podczas przypisywania pokazu'
     }
   }
 }; 

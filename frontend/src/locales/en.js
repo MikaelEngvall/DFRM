@@ -566,26 +566,27 @@ export default {
 
   showings: {
     title: 'Showings',
-    addNew: 'Add showing',
-    edit: 'Edit showing',
-    details: 'Showing details',
-    defaultTitle: 'Apartment showing',
-    dateTime: 'Date and time',
+    details: 'Showing Details',
+    edit: 'Edit Showing',
+    defaultTitle: 'Showing',
+    dateTime: 'Date and Time',
     status: 'Status',
-    apartment: 'Apartment',
-    assignedTo: 'Assigned to',
-    contact: 'Contact',
-    notes: 'Notes',
     unassigned: 'Unassigned',
+    actions: {
+      edit: 'Edit',
+      delete: 'Delete',
+      assign: 'Assign'
+    },
     fields: {
       title: 'Title',
       description: 'Description',
-      dateTime: 'Date and time',
+      dateTime: 'Date and Time',
       status: 'Status',
-      assignedTo: 'Assigned to',
-      contactName: 'Contact name',
-      contactEmail: 'Contact email',
-      contactPhone: 'Contact phone',
+      assignedTo: 'Assigned To',
+      apartmentId: 'Apartment',
+      contactName: 'Contact Person',
+      contactEmail: 'Email',
+      contactPhone: 'Phone',
       notes: 'Notes'
     },
     statusTypes: {
@@ -595,15 +596,13 @@ export default {
       CANCELLED: 'Cancelled',
       SCHEDULED: 'Scheduled'
     },
-    actions: {
-      complete: 'Mark as completed',
-      cancel: 'Cancel showing'
-    },
     messages: {
-      updateSuccess: 'Showing has been updated',
-      updateError: 'An error occurred while updating the showing',
-      completed: 'Showing has been marked as completed',
-      cancelled: 'Showing has been cancelled'
+      saveSuccess: 'Showing has been saved',
+      saveError: 'An error occurred while saving the showing',
+      deleteSuccess: 'Showing has been deleted',
+      deleteError: 'An error occurred while deleting the showing',
+      assignSuccess: 'Showing has been assigned',
+      assignError: 'An error occurred while assigning the showing'
     }
   }
 }; 

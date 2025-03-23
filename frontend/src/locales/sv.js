@@ -620,44 +620,43 @@ const translations = {
 
   showings: {
     title: 'Visningar',
-    addNew: 'Lägg till visning',
-    edit: 'Redigera visning',
     details: 'Visningsdetaljer',
+    edit: 'Redigera visning',
     defaultTitle: 'Visning',
     dateTime: 'Datum och tid',
     status: 'Status',
-    apartment: 'Lägenhet',
-    contact: 'Kontaktperson',
-    notes: 'Anteckningar',
+    unassigned: 'Ej tilldelad',
+    actions: {
+      edit: 'Redigera',
+      delete: 'Ta bort',
+      assign: 'Tilldela'
+    },
     fields: {
-      assignedTo: 'Tilldelad till',
       title: 'Titel',
       description: 'Beskrivning',
       dateTime: 'Datum och tid',
       status: 'Status',
-      apartmentAddress: 'Lägenhetsadress',
-      apartmentDetails: 'Lägenhetsdetaljer',
+      assignedTo: 'Tilldelad till',
+      apartmentId: 'Lägenhet',
       contactName: 'Kontaktperson',
-      contactEmail: 'Kontakt e-post',
-      contactPhone: 'Kontakt telefon'
+      contactEmail: 'E-post',
+      contactPhone: 'Telefon',
+      notes: 'Anteckningar'
     },
-    actions: {
-      assign: 'Tilldela visning',
-      edit: 'Redigera',
-      complete: 'Markera som genomförd',
-      cancel: 'Avbryt visning'
+    statusTypes: {
+      PENDING: 'Väntar',
+      CONFIRMED: 'Bekräftad',
+      COMPLETED: 'Genomförd',
+      CANCELLED: 'Avbokad',
+      SCHEDULED: 'Schemalagd'
     },
     messages: {
-      assignSuccess: 'Visningen har tilldelats framgångsrikt',
-      assignError: 'Det gick inte att tilldela visningen',
-      unassigned: 'Ej tilldelad'
-    },
-    assignModal: {
-      title: 'Tilldela visning',
-      selectUser: 'Välj användare',
-      noUserSelected: 'Ingen användare vald',
-      confirm: 'Bekräfta tilldelning',
-      cancel: 'Avbryt'
+      saveSuccess: 'Visningen har sparats',
+      saveError: 'Ett fel uppstod när visningen skulle sparas',
+      deleteSuccess: 'Visningen har tagits bort',
+      deleteError: 'Ett fel uppstod när visningen skulle tas bort',
+      assignSuccess: 'Visningen har tilldelats',
+      assignError: 'Ett fel uppstod när visningen skulle tilldelas'
     }
   }
 };
