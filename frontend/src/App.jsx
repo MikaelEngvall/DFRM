@@ -16,7 +16,6 @@ import Calendar from './pages/Calendar';
 import Staff from './pages/Staff';
 import Import from './pages/Import';
 import Interests from './pages/Interests';
-import DebugAuthHelper from './components/DebugAuthHelper';
 
 // Wrapper-komponent för sidor som kräver navigation
 const NavigationWrapper = ({ children }) => {
@@ -37,7 +36,6 @@ const NavigationWrapper = ({ children }) => {
       } bg-gray-100 dark:bg-gray-800`}>
         {children}
       </div>
-      {user && <DebugAuthHelper />}
     </div>
   );
 };

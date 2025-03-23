@@ -354,16 +354,13 @@ const Calendar = () => {
     try {
       const updatedData = {
         ...showingFormData,
-        // Konvertera datetime till ISO-format om det behövs
-        dateTime: showingFormData.dateTime ? new Date(showingFormData.dateTime).toISOString() : null,
-        // Säkerställ att ID:n är i rätt format
+        // Konvertera datetime till UTC utan att justera tiden
+        dateTime: showingFormData.dateTime ? showingFormData.dateTime.replace('T', ' ') + ':00' : null,
         assignedToUserId: showingFormData.assignedToUserId || null,
         apartmentId: showingFormData.apartmentId || null
       };
 
       await showingService.update(selectedShowing.id, updatedData);
-      
-      // Uppdatera kalendern för att visa de nya ändringarna
       await fetchCalendarData();
       
       setIsShowingEditModalOpen(false);
@@ -381,8 +378,9 @@ const Calendar = () => {
     // Funktion för att formatera tid
     const formatTime = (dateString) => {
       if (!dateString) return '';
-      const date = new Date(dateString);
-      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      // Antag att tiden kommer i UTC och behåll den som den är
+      const [date, time] = dateString.split('T');
+      return time.substring(0, 5);
     };
 
     // Hitta ansvarig mäklare genom att söka i users-arrayen med ID:t
@@ -392,7 +390,7 @@ const Calendar = () => {
       <div 
         key={showing.id}
         onClick={(e) => {
-          e.stopPropagation(); // Stoppa bubbling
+          e.stopPropagation();
           handleShowingClick(showing);
         }}
         className="mb-1 p-2 rounded-md cursor-pointer bg-purple-600 text-white border border-purple-800 shadow-sm hover:shadow-md transition-shadow duration-200"
@@ -860,7 +858,12 @@ const Calendar = () => {
               <div>
                 <h4 className="text-sm font-medium text-gray-500 dark:text-gray-300">{t('showings.dateTime')}</h4>
                 <p className="text-base font-medium text-gray-900 dark:text-white">
-                  {new Date(selectedShowing.dateTime).toLocaleDateString()} {t('common.at')} {new Date(selectedShowing.dateTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                  {(() => {
+                    if (!selectedShowing.dateTime) return '';
+                    const [date, time] = selectedShowing.dateTime.split('T');
+                    const [year, month, day] = date.split('-');
+                    return `${day}/${month}/${year} ${t('common.at')} ${time.substring(0, 5)}`;
+                  })()}
                 </p>
               </div>
               
