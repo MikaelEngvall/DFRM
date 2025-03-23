@@ -537,6 +537,49 @@ const translations = {
     partialSuccess: 'Надіслано {{sent}} з {{total}} електронних листів. Деякі одержувачі не отримали повідомлення.',
     testSend: 'Надіслати тестове повідомлення'
   },
+
+  showings: {
+    title: 'Покази квартир',
+    addNew: 'Додати показ',
+    edit: 'Редагувати показ',
+    details: 'Деталі показу',
+    defaultTitle: 'Показ квартири',
+    dateTime: 'Дата та час',
+    status: 'Статус',
+    apartment: 'Квартира',
+    assignedTo: 'Призначено',
+    contact: 'Контакт',
+    notes: 'Нотатки',
+    unassigned: 'Не призначено',
+    fields: {
+      title: 'Назва',
+      description: 'Опис',
+      dateTime: 'Дата та час',
+      status: 'Статус',
+      assignedTo: 'Призначено',
+      contactName: 'Ім\'я та прізвище',
+      contactEmail: 'Контактний email',
+      contactPhone: 'Контактний телефон',
+      notes: 'Нотатки'
+    },
+    statusTypes: {
+      PENDING: 'Очікує',
+      CONFIRMED: 'Підтверджено',
+      COMPLETED: 'Завершено',
+      CANCELLED: 'Скасовано',
+      SCHEDULED: 'Заплановано'
+    },
+    actions: {
+      complete: 'Позначити як завершений',
+      cancel: 'Скасувати показ'
+    },
+    messages: {
+      updateSuccess: 'Показ оновлено',
+      updateError: 'Помилка при оновленні показу',
+      completed: 'Показ позначено як завершений',
+      cancelled: 'Показ скасовано'
+    }
+  },
 };
 
 export default translations; 

@@ -542,4 +542,47 @@ export default {
     testSend: 'Wyślij wiadomość testową',
     button: 'E-mail'
   },
+
+  showings: {
+    title: 'Pokazy mieszkań',
+    addNew: 'Dodaj pokaz',
+    edit: 'Edytuj pokaz',
+    details: 'Szczegóły pokazu',
+    defaultTitle: 'Pokaz mieszkania',
+    dateTime: 'Data i godzina',
+    status: 'Status',
+    apartment: 'Mieszkanie',
+    assignedTo: 'Przypisany do',
+    contact: 'Kontakt',
+    notes: 'Notatki',
+    unassigned: 'Nieprzypisany',
+    fields: {
+      title: 'Tytuł',
+      description: 'Opis',
+      dateTime: 'Data i godzina',
+      status: 'Status',
+      assignedTo: 'Przypisany do',
+      contactName: 'Imię i nazwisko',
+      contactEmail: 'Email kontaktowy',
+      contactPhone: 'Telefon kontaktowy',
+      notes: 'Notatki'
+    },
+    statusTypes: {
+      PENDING: 'Oczekujący',
+      CONFIRMED: 'Potwierdzony',
+      COMPLETED: 'Zakończony',
+      CANCELLED: 'Anulowany',
+      SCHEDULED: 'Zaplanowany'
+    },
+    actions: {
+      complete: 'Oznacz jako zakończony',
+      cancel: 'Anuluj pokaz'
+    },
+    messages: {
+      updateSuccess: 'Pokaz został zaktualizowany',
+      updateError: 'Wystąpił błąd podczas aktualizacji pokazu',
+      completed: 'Pokaz został oznaczony jako zakończony',
+      cancelled: 'Pokaz został anulowany'
+    }
+  }
 }; 

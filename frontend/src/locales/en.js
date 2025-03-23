@@ -35,6 +35,7 @@ export default {
     permissions: 'Permissions',
     unauthorized: 'You do not have permission to perform this action',
     notSpecified: 'Not specified',
+    at: 'at',
   },
 
   languages: {
@@ -561,5 +562,48 @@ export default {
     noInterests: 'No interest inquiries',
     reviewRequest: 'Review Interest Inquiry',
     addComments: 'Add Comments',
+  },
+
+  showings: {
+    title: 'Showings',
+    addNew: 'Add showing',
+    edit: 'Edit showing',
+    details: 'Showing details',
+    defaultTitle: 'Apartment showing',
+    dateTime: 'Date and time',
+    status: 'Status',
+    apartment: 'Apartment',
+    assignedTo: 'Assigned to',
+    contact: 'Contact',
+    notes: 'Notes',
+    unassigned: 'Unassigned',
+    fields: {
+      title: 'Title',
+      description: 'Description',
+      dateTime: 'Date and time',
+      status: 'Status',
+      assignedTo: 'Assigned to',
+      contactName: 'Contact name',
+      contactEmail: 'Contact email',
+      contactPhone: 'Contact phone',
+      notes: 'Notes'
+    },
+    statusTypes: {
+      PENDING: 'Pending',
+      CONFIRMED: 'Confirmed',
+      COMPLETED: 'Completed',
+      CANCELLED: 'Cancelled',
+      SCHEDULED: 'Scheduled'
+    },
+    actions: {
+      complete: 'Mark as completed',
+      cancel: 'Cancel showing'
+    },
+    messages: {
+      updateSuccess: 'Showing has been updated',
+      updateError: 'An error occurred while updating the showing',
+      completed: 'Showing has been marked as completed',
+      cancelled: 'Showing has been cancelled'
+    }
   }
 }; 
