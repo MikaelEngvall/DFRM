@@ -344,11 +344,11 @@ const Calendar = () => {
           e.stopPropagation(); // Stoppa bubbling
           handleShowingClick(showing);
         }}
-        className={`mb-1 p-2 rounded-md cursor-pointer bg-indigo-100 text-indigo-800 border border-indigo-200 flex items-start justify-between`}
+        className="mb-1 p-2 rounded-md cursor-pointer bg-purple-600 text-white border border-purple-800 shadow-sm hover:shadow-md transition-shadow duration-200"
       >
         <div className="flex flex-col overflow-hidden">
           <div className="font-medium truncate">{showing.title || showing.address}</div>
-          <div className="text-xs opacity-75 truncate">
+          <div className="text-xs text-purple-100 truncate">
             {showing.startTime ? formatTime(showing.startTime) : ''} 
             {showing.startTime && showing.endTime ? ' - ' : ''} 
             {showing.endTime ? formatTime(showing.endTime) : ''}
