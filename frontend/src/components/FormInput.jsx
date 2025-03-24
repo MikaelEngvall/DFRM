@@ -29,7 +29,7 @@ const FormInput = ({
         autoComplete={autoComplete}
         placeholder={placeholder}
         disabled={disabled}
-        className={`block w-full rounded-md shadow-sm sm:text-sm ${
+        className={`block w-full rounded-md shadow-sm py-3 text-base leading-normal ${
           error
             ? 'border-red-300 text-red-900 placeholder-red-300 focus:border-red-500 focus:ring-red-500 dark:border-red-500 dark:text-red-300 dark:placeholder-red-400'
             : 'border-gray-300 focus:border-primary focus:ring-primary dark:border-gray-600 dark:bg-gray-700 dark:text-white'
