@@ -264,15 +264,15 @@ const Calendar = () => {
   const getPriorityDotColor = (priority) => {
     switch (priority) {
       case 'URGENT':
-        return 'bg-red-500 animate-blink scale-[1.5]';
+        return 'bg-red-500 animate-blink border border-red-600 shadow-sm';
       case 'HIGH':
-        return 'bg-orange-500 scale-[1.5]';
+        return 'bg-orange-500 border border-orange-600 shadow-sm';
       case 'MEDIUM':
-        return 'bg-yellow-500 scale-[1.5]';
+        return 'bg-yellow-500 border border-yellow-600 shadow-sm';
       case 'LOW':
-        return 'bg-green-500 scale-[1.5]';
+        return 'bg-green-500 border border-green-600 shadow-sm';
       default:
-        return 'bg-gray-400 scale-[1.5]';
+        return 'bg-gray-400 border border-gray-500 shadow-sm';
     }
   };
 
@@ -303,7 +303,7 @@ const Calendar = () => {
         className={`mb-1 p-2 rounded cursor-pointer hover:bg-opacity-80 ${statusColor}`}
       >
         <div className="flex items-center">
-          <div className={`w-2 h-2 rounded-full mr-2 ${getPriorityDotColor(task.priority)}`} />
+          <div className={`w-3 h-3 min-w-[0.75rem] rounded-full mr-2 ${getPriorityDotColor(task.priority)}`} />
           <div className="flex-grow">
             <div className="text-sm font-medium text-gray-900 dark:text-white truncate">
               {task.title}
