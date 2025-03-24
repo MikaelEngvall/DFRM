@@ -309,14 +309,22 @@ const PendingTasks = () => {
       
       // Fixa tidszonsproblemet för dueDate
       if (taskData.dueDate) {
+        // Skapa ett Date-objekt från datumet och ange tiden till 12:00 för att undvika tidzonsförskjutningar
         const dueDateParts = taskData.dueDate.split('-');
         if (dueDateParts.length === 3) {
           const year = parseInt(dueDateParts[0]);
           const month = parseInt(dueDateParts[1]) - 1; // JS månad är 0-baserad
           const day = parseInt(dueDateParts[2]);
           
-          const fixedDate = new Date(Date.UTC(year, month, day, 12, 0, 0));
-          taskData.dueDate = fixedDate.toISOString();
+          // Skapa ett datum med lokal tid (12:00) för att undvika dagförskjutningar
+          const localDate = new Date(year, month, day, 12, 0, 0);
+          
+          // Omvandla datumet till ISO-format medan vi behåller rätt dag
+          const isoDate = localDate.toISOString().split('T')[0] + 'T12:00:00.000Z';
+          taskData.dueDate = isoDate;
+          
+          console.log(`Origianl dueDate: ${taskData.dueDate}`);
+          console.log(`Korrigerat dueDate: ${isoDate}, dag: ${localDate.getDate()}`);
         }
       }
 
@@ -325,9 +333,29 @@ const PendingTasks = () => {
         const cleanId = selectedTask.id.replace('email-', '');
         console.log('Konverterar e-postrapport med ID:', cleanId);
         
-        // För e-postrapporter, konvertera till en uppgift med pendingEmailReportService
-        const newTask = await pendingEmailReportService.convertToTask(cleanId, taskData);
-        console.log('Konverterad e-postrapport till uppgift:', newTask);
+        // För felsökning
+        console.log('Fullständigt e-postrapport-objekt:', selectedTask);
+        
+        try {
+          // För e-postrapporter, konvertera till en uppgift med pendingEmailReportService
+          const newTask = await pendingEmailReportService.convertToTask(cleanId, taskData);
+          console.log('Konverterad e-postrapport till uppgift:', newTask);
+        } catch (error) {
+          console.error('Fel vid konvertering av e-postrapport:', error);
+          
+          // Om vi får ett 404-fel, kan det vara för att ID:t fortfarande har fel format
+          if (error.response && error.response.status === 404) {
+            // Försök med ett annat ID-format: ta bort "task-" prefixet om det finns
+            const alternativeId = cleanId.replace('task-', '');
+            console.log('Försöker med alternativt ID-format:', alternativeId);
+            
+            const newTask = await pendingEmailReportService.convertToTask(alternativeId, taskData);
+            console.log('Konverterad e-postrapport till uppgift med alternativt ID:', newTask);
+          } else {
+            // Återkasta felet om det inte var ett 404-fel
+            throw error;
+          }
+        }
       } else if (selectedTask && selectedTask.task) {
         // För vanliga uppgifter, uppdatera först uppgiften
         await taskService.updateTask(selectedTask.task.id, taskData);
@@ -373,6 +401,25 @@ const PendingTasks = () => {
         taskData.apartmentId = taskData.apartmentId.id;
       }
       
+      if (taskData.dueDate) {
+        // Skapa ett Date-objekt från datumet och ange tiden till 12:00 för att undvika tidzonsförskjutningar
+        const dueDateParts = taskData.dueDate.split('-');
+        if (dueDateParts.length === 3) {
+          const year = parseInt(dueDateParts[0]);
+          const month = parseInt(dueDateParts[1]) - 1; // JS månad är 0-baserad
+          const day = parseInt(dueDateParts[2]);
+          
+          // Skapa ett datum med lokal tid (12:00) för att undvika dagförskjutningar
+          const localDate = new Date(year, month, day, 12, 0, 0);
+          
+          // Omvandla datumet till ISO-format medan vi behåller rätt dag
+          const isoDate = localDate.toISOString().split('T')[0] + 'T12:00:00.000Z';
+          taskData.dueDate = isoDate;
+          
+          console.log(`Korrigerat dueDate för avvisning: ${isoDate}, dag: ${localDate.getDate()}`);
+        }
+      }
+      
       if (isEmailReport) {
         // Avvisa e-postrapporten
         await pendingEmailReportService.rejectEmailReport(
@@ -381,21 +428,6 @@ const PendingTasks = () => {
           reviewComments
         );
       } else {
-        // Uppdatera uppgiften före avvisning för vanliga väntande uppgifter
-        // Fixa tidszonsproblemet även här för avvisade uppgifter
-        
-        if (taskData.dueDate) {
-          const dueDateParts = taskData.dueDate.split('-');
-          if (dueDateParts.length === 3) {
-            const year = parseInt(dueDateParts[0]);
-            const month = parseInt(dueDateParts[1]) - 1; // JS månad är 0-baserad
-            const day = parseInt(dueDateParts[2]);
-            
-            const fixedDate = new Date(Date.UTC(year, month, day, 12, 0, 0));
-            taskData.dueDate = fixedDate.toISOString();
-          }
-        }
-        
         console.log('Skickar avvisad uppgiftsdata till servern:', taskData);
         
         await taskService.updateTask(selectedTask.task.id, taskData);

@@ -60,7 +60,16 @@ const pendingEmailReportService = {
    */
   convertToTask: async (id, taskData) => {
     try {
-      const response = await api.post(`/api/pending-tasks/${id}/convert-to-task`, taskData);
+      // Rensa ID från alla prefix (email-, task-)
+      const cleanId = id.replace('email-', '').replace('task-', '');
+      console.log(`Försöker konvertera e-postrapport med rensat ID: ${cleanId}`);
+      
+      // Använd det rena ID:t utan prefix
+      const endpoint = `/api/pending-tasks/${cleanId}/convert-to-task`;
+      console.log(`Använder endpoint: ${endpoint}`);
+      
+      // Gör API-anropet med det rena ID:t
+      const response = await api.post(endpoint, taskData);
       
       // Invalidera cachen för e-postrapporter
       invalidateCache(CACHE_KEYS.EMAIL_REPORTS);
@@ -81,7 +90,14 @@ const pendingEmailReportService = {
    */
   rejectEmailReport: async (id, reviewedById, reason) => {
     try {
-      const response = await api.post(`/api/pending-tasks/${id}/reject-email`, {
+      // Rensa ID från alla prefix (email-, task-)
+      const cleanId = id.replace('email-', '').replace('task-', '');
+      console.log(`Avvisar e-postrapport med rensat ID: ${cleanId}`);
+      
+      const endpoint = `/api/pending-tasks/${cleanId}/reject-email`;
+      console.log(`Använder endpoint för avvisning: ${endpoint}`);
+      
+      const response = await api.post(endpoint, {
         reviewedById,
         reason
       });

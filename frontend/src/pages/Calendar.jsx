@@ -74,6 +74,9 @@ const Calendar = () => {
       const startDateStr = startOfMonth.toISOString().split('T')[0];
       const endDateStr = endOfMonth.toISOString().split('T')[0];
       
+      // Logga för felsökning
+      console.log(`Hämtar data för period: ${startDateStr} till ${endDateStr}`);
+      
       // Hämta både uppgifter och visningar parallellt
       const [tasksData, usersData, apartmentsData, tenantsData, showingsData] = await Promise.all([
         taskService.getTasksByDateRange(startDateStr, endDateStr),
@@ -82,6 +85,10 @@ const Calendar = () => {
         tenantService.getAllTenants(),
         showingService.getForCalendar(startDateStr, endDateStr) // Hämta visningar för kalendern
       ]);
+      
+      // Logga data för felsökning
+      console.log(`Antal hämtade uppgifter: ${tasksData.length}`);
+      console.log('Uppgifter:', tasksData);
       
       setTasks(tasksData);
       setUsers(usersData);
@@ -283,6 +290,9 @@ const Calendar = () => {
   };
 
   const renderTaskItem = (task) => {
+    // Logga task-objektet för felsökning
+    console.log('Rendering task:', task);
+    
     const statusColor = getStatusColor(task.status);
     const assignedUser = users.find(user => user.id === task.assignedToUserId);
     
@@ -473,16 +483,26 @@ const Calendar = () => {
       
       // Filtrera uppgifter för denna dag
       const dayTasks = tasks.filter(task => {
+        if (!task.dueDate) return false;
         const taskDate = new Date(task.dueDate);
+        // Jämför endast år, månad och dag, ignorera tid
         return taskDate.getDate() === day && 
                taskDate.getMonth() === month && 
                taskDate.getFullYear() === year;
       });
       
+      // Logga för 24 mars specifikt (för felsökning)
+      if (day === 24 && month === 2 && year === 2024) { // Mars är månad 2 (0-indexerat)
+        console.log(`Uppgifter för 24 mars:`, dayTasks);
+        console.log(`Alla uppgifter:`, tasks);
+        console.log(`Filtrering för datum: ${day}/${month+1}/${year}`);
+      }
+      
       // Filtrera visningar för denna dag
       const dayShowings = showings.filter(showing => {
         if (!showing.dateTime) return false;
         const showingDate = new Date(showing.dateTime);
+        // Jämför endast år, månad och dag, ignorera tid
         return showingDate.getDate() === day && 
                showingDate.getMonth() === month && 
                showingDate.getFullYear() === year;
