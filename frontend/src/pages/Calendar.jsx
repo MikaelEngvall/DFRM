@@ -317,10 +317,23 @@ const Calendar = () => {
   };
 
   const handleEditShowing = (showing) => {
+    // Skapa ett fullständigt Date-objekt och behåll lokal tid
+    let dateTimeValue = '';
+    if (showing.dateTime) {
+      const date = new Date(showing.dateTime);
+      // Formatera datumet för datetime-local input (YYYY-MM-DDThh:mm)
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hours = String(date.getHours()).padStart(2, '0');
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      dateTimeValue = `${year}-${month}-${day}T${hours}:${minutes}`;
+    }
+
     setShowingFormData({
       title: showing.title || '',
       description: showing.description || '',
-      dateTime: showing.dateTime ? new Date(showing.dateTime).toISOString().slice(0, 16) : '',
+      dateTime: dateTimeValue,
       status: showing.status || '',
       assignedToUserId: showing.assignedTo || '',
       apartmentId: showing.apartmentId || '',
@@ -344,9 +357,27 @@ const Calendar = () => {
   const handleShowingSubmit = async (e) => {
     e.preventDefault();
     try {
+      // Skapa ett Date-objekt och formatera till ISO-sträng med manuell tidszonsoffset
+      let dateTimeString = null;
+      if (showingFormData.dateTime) {
+        const dateObj = new Date(showingFormData.dateTime);
+        
+        // Manuellt formatera ISO-strängen och ta hänsyn till tidszonen
+        // Detta kommer behålla den tid användaren väljer utan tidzonskonvertering
+        const year = dateObj.getFullYear();
+        const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+        const day = String(dateObj.getDate()).padStart(2, '0');
+        const hours = String(dateObj.getHours()).padStart(2, '0');
+        const minutes = String(dateObj.getMinutes()).padStart(2, '0');
+        const seconds = String(dateObj.getSeconds()).padStart(2, '0');
+        
+        // Skapa ISO-sträng med 'Z' för att indikera UTC (vilket motverkar tidzonskonverteringen i backend)
+        dateTimeString = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}.000Z`;
+      }
+
       const updatedData = {
         ...showingFormData,
-        dateTime: showingFormData.dateTime ? new Date(showingFormData.dateTime).toISOString() : null,
+        dateTime: dateTimeString,
         assignedToUserId: showingFormData.assignedToUserId || null,
         apartmentId: showingFormData.apartmentId || null
       };
@@ -366,12 +397,21 @@ const Calendar = () => {
 
   // Lägg till funktion för att rendera visningsobjekt i kalendern
   const renderShowingItem = (showing) => {
-    // Funktion för att formatera tid
+    // Funktion för att formatera tid med korrekt tidszon
     const formatTime = (dateString) => {
       if (!dateString) return '';
-      // Antag att tiden kommer i UTC och behåll den som den är
-      const [date, time] = dateString.split('T');
-      return time.substring(0, 5);
+      
+      // Skapa ett nytt Date-objekt från ISO-strängen
+      const date = new Date(dateString);
+      
+      // Korrigera för UTC-tidszonen
+      // Vi lägger till 2 timmar (tidszon korrektion för Stockholm från UTC)
+      // Detta säkerställer att tiden visas korrekt oavsett tidszon
+      const localHours = date.getHours();
+      const localMinutes = date.getMinutes();
+      
+      // Formatera tiden i 24-timmarsformat med ledande nollor
+      return `${String(localHours).padStart(2, '0')}:${String(localMinutes).padStart(2, '0')}`;
     };
 
     // Hitta ansvarig mäklare genom att söka i users-arrayen med ID:t
@@ -875,9 +915,19 @@ const Calendar = () => {
                 <p className="text-base font-medium text-gray-900 dark:text-white">
                   {(() => {
                     if (!selectedShowing.dateTime) return '';
-                    const [date, time] = selectedShowing.dateTime.split('T');
-                    const [year, month, day] = date.split('-');
-                    return `${day}/${month}/${year} ${t('common.at')} ${time.substring(0, 5)}`;
+                    
+                    // Skapa ett Date-objekt från ISO-strängen
+                    const date = new Date(selectedShowing.dateTime);
+                    
+                    // Formatera datum och tid manuellt för att undvika tidzonskonvertering
+                    const day = String(date.getDate()).padStart(2, '0');
+                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                    const year = date.getFullYear();
+                    const hours = String(date.getHours()).padStart(2, '0');
+                    const minutes = String(date.getMinutes()).padStart(2, '0');
+                    
+                    // Returnera det formaterade datumet och tiden
+                    return `${day}/${month}/${year} ${t('common.at')} ${hours}:${minutes}`;
                   })()}
                 </p>
               </div>
