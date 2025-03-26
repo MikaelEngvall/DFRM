@@ -64,13 +64,11 @@ function verifyTranslations() {
   
   LANGUAGES.filter(lang => lang !== 'sv').forEach(lang => {
     const langKeys = extractKeys(locales[lang]).sort();
-    console.log(`\n${lang.toUpperCase()} contains ${langKeys.length} translation keys.`);
     
     // Hitta saknade nycklar
     const missingKeys = svKeys.filter(key => !langKeys.includes(key));
     if (missingKeys.length > 0) {
       hasErrors = true;
-      console.log(`MISSING KEYS in ${lang}: ${missingKeys.length} keys are missing:`);
       missingKeys.forEach(key => console.log(`  - ${key}`));
     } else {
       console.log(`OK: All keys from Swedish exist in ${lang}.`);
@@ -79,7 +77,6 @@ function verifyTranslations() {
     // Hitta extra nycklar som inte finns i svenska
     const extraKeys = langKeys.filter(key => !svKeys.includes(key));
     if (extraKeys.length > 0) {
-      console.log(`EXTRA KEYS in ${lang}: ${extraKeys.length} keys are not in Swedish:`);
       extraKeys.forEach(key => console.log(`  - ${key}`));
     }
   });

@@ -70,7 +70,6 @@ public class EnvConfigUnified {
             
             // Metod 2: Använd egen implementation som backup
             if (!dotenvSuccess) {
-                log.info("Dotenv-biblioteket kunde inte hitta .env-filen, försöker med egen implementation");
                 loadWithCustomImplementation();
             }
             
@@ -107,13 +106,11 @@ public class EnvConfigUnified {
                     .load();
                 
                 if (!dotenv.entries().isEmpty()) {
-                    log.info("Hittade .env-fil i katalog: {}", searchDir);
                     break;
                 }
             }
             
             if (dotenv == null || dotenv.entries().isEmpty()) {
-                log.info("Dotenv kunde inte hitta någon .env-fil");
                 return false;
             }
             
@@ -147,10 +144,7 @@ public class EnvConfigUnified {
             } else {
                 propertySources.addFirst(new MapPropertySource("dotenvProperties", envMap));
             }
-            
-            log.info("Laddat {} miljövariabler med dotenv", envMap.size());
-            log.debug("Laddade miljövariabler: {}", loadedVars);
-            
+                        
             return !envMap.isEmpty();
         } catch (Exception e) {
             log.error("Fel vid användning av dotenv-biblioteket: {}", e.getMessage(), e);
@@ -161,14 +155,11 @@ public class EnvConfigUnified {
     /**
      * Laddar miljövariabler med egen implementation som backup-lösning
      */
-    private void loadWithCustomImplementation() {
-        log.info("Använder egen implementation för att ladda miljövariabler");
-        
+    private void loadWithCustomImplementation() {        
         // Hitta .env-filen
         File envFile = findEnvFile();
         
         if (envFile == null) {
-            log.info("Ingen .env-fil hittades. Hoppar över inläsning av miljövariabler.");
             log.debug("Aktuell arbetskatalog: {}", new File(".").getAbsolutePath());
             return;
         }
@@ -220,9 +211,7 @@ public class EnvConfigUnified {
             } else {
                 propertySources.addFirst(new MapPropertySource("envConfigProperties", envMap));
             }
-            
-            log.info("Laddat {} miljövariabler med egen implementation", loadedVars.size());
-            log.debug("Laddade miljövariabler: {}", loadedVars);
+
             
         } catch (IOException e) {
             log.error("Fel vid inläsning av .env-fil: {}", e.getMessage(), e);

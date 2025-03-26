@@ -13,15 +13,12 @@ export const CACHE_KEYS = {
   APARTMENTS: 'cached_apartments',
   TENANTS: 'cached_tenants',
   USERS: 'cached_users',
-  KEYS: 'cached_keys',
   TASKS: 'cached_tasks',
+  TASK_MESSAGES: 'task_messages',
+  SHOWINGS: 'showings',
+  KEYS: 'cached_keys',
   PENDING_TASKS: 'cached_pending_tasks',
   UNREVIEWED_COUNT: 'cached_unreviewed_count',
-  EMAIL_REPORTS: 'cached_email_reports',
-  // Nycklar för intresseanmälningar
-  INTERESTS: 'cached_interests',
-  INTERESTS_FOR_REVIEW: 'cached_interests_for_review',
-  REVIEWED_INTERESTS: 'cached_reviewed_interests'
 };
 
 // Standardtid innan cache anses vara för gammal (i millisekunder)
@@ -221,4 +218,44 @@ export const invalidateAllEntityCaches = () => {
  */
 export const hasCachedData = (cacheKey, ttl = DEFAULT_CACHE_TTL) => {
   return getFromCache(cacheKey, ttl) !== null;
+};
+
+// Cache duration i millisekunder (5 minuter)
+const CACHE_DURATION = 5 * 60 * 1000;
+
+// Hämta alla nycklar från cachen
+export const getCacheKeys = () => {
+  try {
+    return Object.keys(localStorage)
+      .filter(key => key.startsWith('cache_'))
+      .map(key => key.replace('cache_', ''));
+  } catch (error) {
+    console.error('Error getting cache keys:', error);
+    return [];
+  }
+};
+
+// Rensa hela cachen
+export const clearCache = () => {
+  try {
+    const keys = getCacheKeys();
+    keys.forEach(key => {
+      localStorage.removeItem(`cache_${key}`);
+      localStorage.removeItem(`cache_timestamp_${key}`);
+    });
+    console.log('Cache cleared');
+  } catch (error) {
+    console.error('Error clearing cache:', error);
+  }
+};
+
+// Rensa specifik cache
+export const clearCacheByKey = (key) => {
+  try {
+    localStorage.removeItem(`cache_${key}`);
+    localStorage.removeItem(`cache_timestamp_${key}`);
+    console.log(`Cache cleared for key: ${key}`);
+  } catch (error) {
+    console.error(`Error clearing cache for key ${key}:`, error);
+  }
 }; 

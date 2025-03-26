@@ -179,30 +179,73 @@ const getTasksByTenant = async (tenantId, bypassCache = false) => {
 
 const getTasksByDateRange = async (startDate, endDate, bypassCache = false) => {
   try {
+    console.log(`getTasksByDateRange anropat med: startDate=${startDate}, endDate=${endDate}, bypassCache=${bypassCache}`);
+    
+    // Formatera datum om de inte redan är korrekt formaterade
+    const formattedStartDate = typeof startDate === 'string' ? startDate : new Date(startDate).toISOString().split('T')[0];
+    const formattedEndDate = typeof endDate === 'string' ? endDate : new Date(endDate).toISOString().split('T')[0];
+    
     // Kontrollera om data finns i cache och om vi inte explicit vill gå förbi cachen
     if (!bypassCache) {
       const cachedTasks = getFromCache(CACHE_KEYS.TASKS);
       if (cachedTasks) {
-        // Konvertera sträng-datumen till Date-objekt för att jämförelsen ska fungera
-        const startDateObj = new Date(startDate);
-        const endDateObj = new Date(endDate);
+        console.log('Hämtar uppgifter från cache:', cachedTasks.length);
         
-        return cachedTasks.filter(task => {
+        // Konvertera sträng-datumen till Date-objekt för att jämförelsen ska fungera
+        const startDateObj = new Date(formattedStartDate);
+        const endDateObj = new Date(formattedEndDate);
+        
+        // För att hantera datum i olika format, sätt tidsdelen till midnatt
+        startDateObj.setHours(0, 0, 0, 0);
+        endDateObj.setHours(23, 59, 59, 999); // Slutet av dagen
+        
+        const filteredTasks = cachedTasks.filter(task => {
           if (!task.dueDate) return false;
           
-          // Konvertera task.dueDate till endast datum (utan tid)
-          const taskDate = new Date(task.dueDate);
-          const taskDateString = taskDate.toISOString().split('T')[0];
-          const taskDateObj = new Date(taskDateString);
-          
-          return taskDateObj >= startDateObj && taskDateObj <= endDateObj;
+          try {
+            // Konvertera task.dueDate till endast datum (utan tid)
+            let taskDate;
+            if (typeof task.dueDate === 'string') {
+              // Hantera både "YYYY-MM-DD" och ISO-format
+              if (task.dueDate.includes('T')) {
+                taskDate = new Date(task.dueDate);
+              } else {
+                const [y, m, d] = task.dueDate.split('-').map(Number);
+                taskDate = new Date(y, m - 1, d); // Månad är 0-baserad
+              }
+            } else if (task.dueDate instanceof Date) {
+              taskDate = task.dueDate;
+            } else {
+              console.error('Uppgift har ogiltigt datumformat:', task);
+              return false;
+            }
+            
+            taskDate.setHours(0, 0, 0, 0); // Sätt tid till midnatt för att jämföra endast datum
+            
+            return taskDate >= startDateObj && taskDate <= endDateObj;
+          } catch (e) {
+            console.error('Fel vid bearbetning av uppgiftsdatum:', e, task);
+            return false;
+          }
         });
+        
+        console.log(`Filtrerade ${filteredTasks.length} uppgifter från cache.`);
+        return filteredTasks;
       }
     }
     
+    console.log(`Anropar API med datum: ${formattedStartDate} till ${formattedEndDate}`);
     const response = await api.get('/api/tasks/date-range', {
-      params: { startDate, endDate }
+      params: { startDate: formattedStartDate, endDate: formattedEndDate }
     });
+    
+    console.log(`API-svar med ${response.data.length} uppgifter.`);
+    
+    // Spara den nya datan i cache
+    if (response.data && !bypassCache) {
+      saveToCache(CACHE_KEYS.TASKS, response.data);
+    }
+    
     return response.data;
   } catch (error) {
     console.error('Error fetching tasks by date range:', error);

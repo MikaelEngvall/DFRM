@@ -57,6 +57,41 @@ const Calendar = () => {
 
   useEffect(() => {
     fetchCalendarData();
+    
+    // Lägg till en loggning för att se vilka dagar i månaden som har uppgifter
+    const checkTasksDistribution = () => {
+      const tasksPerDay = {};
+      tasks.forEach(task => {
+        if (!task.dueDate) return;
+        
+        try {
+          let taskDate;
+          if (typeof task.dueDate === 'string') {
+            if (task.dueDate.includes('T')) {
+              taskDate = new Date(task.dueDate);
+            } else {
+              const [y, m, d] = task.dueDate.split('-').map(Number);
+              taskDate = new Date(y, m - 1, d);
+            }
+          } else if (task.dueDate instanceof Date) {
+            taskDate = task.dueDate;
+          } else {
+            return;
+          }
+          
+          const day = taskDate.getDate();
+          tasksPerDay[day] = (tasksPerDay[day] || 0) + 1;
+        } catch (e) {
+          console.error('Fel vid analys av uppgiftsdatum:', e);
+        }
+      });
+      
+      console.log('Uppgifter per dag i aktuell månad:', tasksPerDay);
+    };
+    
+    if (tasks.length > 0) {
+      checkTasksDistribution();
+    }
   }, [currentDate]);
 
   const fetchCalendarData = async () => {
@@ -79,7 +114,7 @@ const Calendar = () => {
       
       // Hämta både uppgifter och visningar parallellt
       const [tasksData, usersData, apartmentsData, tenantsData, showingsData] = await Promise.all([
-        taskService.getTasksByDateRange(startDateStr, endDateStr),
+        taskService.getTasksByDateRange(startDateStr, endDateStr, true), // Satt till true för att undvika cache-problem
         userService.getAllUsers(),
         apartmentService.getAllApartments(),
         tenantService.getAllTenants(),
@@ -290,12 +325,17 @@ const Calendar = () => {
   };
 
   const renderTaskItem = (task) => {
-    // Logga task-objektet för felsökning
+    // Förbättrad loggning för felsökning
     console.log('Rendering task:', task);
-    
-    const statusColor = getStatusColor(task.status);
+    console.log('Task ID:', task.id);
+    console.log('Task title:', task.title);
+    console.log('Task dueDate:', task.dueDate);
+    console.log('Task status:', task.status);
+    console.log('Task assignedToUserId:', task.assignedToUserId);
+
+    const statusColor = getStatusColor(task.status || 'PENDING');
     const assignedUser = users.find(user => user.id === task.assignedToUserId);
-    
+
     return (
       <div
         key={task.id}
@@ -303,7 +343,7 @@ const Calendar = () => {
         className={`mb-1 p-2 rounded cursor-pointer hover:bg-opacity-80 ${statusColor}`}
       >
         <div className="flex items-center">
-          <div className={`w-3 h-3 min-w-[0.75rem] rounded-full mr-2 ${getPriorityDotColor(task.priority)}`} />
+          <div className={`w-3 h-3 min-w-[0.75rem] rounded-full mr-2 ${getPriorityDotColor(task.priority || 'MEDIUM')}`} />
           <div className="flex-grow">
             <div className="text-sm font-medium text-gray-900 dark:text-white truncate">
               {task.title}
@@ -484,16 +524,41 @@ const Calendar = () => {
       // Filtrera uppgifter för denna dag
       const dayTasks = tasks.filter(task => {
         if (!task.dueDate) return false;
-        const taskDate = new Date(task.dueDate);
-        // Jämför endast år, månad och dag, ignorera tid
-        return taskDate.getDate() === day && 
-               taskDate.getMonth() === month && 
-               taskDate.getFullYear() === year;
+        
+        // Hantera olika format av dueDate
+        let taskDate;
+        try {
+          // Om det är en ISO-sträng
+          if (typeof task.dueDate === 'string') {
+            // Stöd för både "YYYY-MM-DD" och fullt ISO-format
+            if (task.dueDate.includes('T')) {
+              taskDate = new Date(task.dueDate);
+            } else {
+              // För "YYYY-MM-DD" format
+              const [y, m, d] = task.dueDate.split('-').map(Number);
+              taskDate = new Date(y, m - 1, d); // Månad är 0-baserad
+            }
+          } else if (task.dueDate instanceof Date) {
+            taskDate = task.dueDate;
+          } else {
+            console.error('Uppgift har ogiltigt datumformat:', task);
+            return false;
+          }
+          
+          // Jämför endast år, månad och dag, ignorera tid
+          return taskDate.getDate() === day && 
+                 taskDate.getMonth() === month && 
+                 taskDate.getFullYear() === year;
+        } catch (e) {
+          console.error('Fel vid bearbetning av uppgiftsdatum:', e);
+          return false;
+        }
       });
       
-      // Logga för 24 mars specifikt (för felsökning)
-      if (day === 24 && month === 2 && year === 2024) { // Mars är månad 2 (0-indexerat)
-        console.log(`Uppgifter för 24 mars:`, dayTasks);
+      // Logga för specifik dag (för felsökning)
+      const today = new Date();
+      if (day === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
+        console.log(`Uppgifter för idag (${day}/${month+1}/${year}):`, dayTasks);
         console.log(`Alla uppgifter:`, tasks);
         console.log(`Filtrering för datum: ${day}/${month+1}/${year}`);
       }

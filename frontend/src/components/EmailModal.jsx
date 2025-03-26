@@ -54,7 +54,6 @@ const EmailModal = ({ isOpen, onClose, onSend, recipients = [], sender = "info@d
     try {
       setSending(true);
       setError(null);
-      console.log(`EmailModal handleSubmit: Skickar e-post till ${recipients.length} mottagare...`);
       
       // Sätt en fallback-timer som avbryter sändningen om den tar för lång tid
       // Detta är en extra säkerhet utöver timeout i API-anropet
