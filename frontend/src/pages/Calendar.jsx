@@ -49,10 +49,8 @@ const Calendar = () => {
     status: '',
     assignedToUserId: '',
     apartmentId: '',
-    contactName: '',
-    contactEmail: '',
-    contactPhone: '',
-    notes: ''
+    notes: '',
+    descriptionLanguage: 'sv' // Standardspråk är svenska
   });
 
   useEffect(() => {
@@ -367,30 +365,38 @@ const Calendar = () => {
   };
 
   const handleEditShowing = (showing) => {
-    // Skapa ett fullständigt Date-objekt och behåll lokal tid
+    // Formatera datum för datetime-local input
     let dateTimeValue = '';
     if (showing.dateTime) {
       const date = new Date(showing.dateTime);
-      // Formatera datumet för datetime-local input (YYYY-MM-DDThh:mm)
       const year = date.getFullYear();
       const month = String(date.getMonth() + 1).padStart(2, '0');
       const day = String(date.getDate()).padStart(2, '0');
       const hours = String(date.getHours()).padStart(2, '0');
       const minutes = String(date.getMinutes()).padStart(2, '0');
+      
       dateTimeValue = `${year}-${month}-${day}T${hours}:${minutes}`;
+    }
+
+    // Hämta beskrivning baserat på prefererat språk eller originalspråket
+    let description = showing.description || '';
+    let descriptionLanguage = showing.descriptionLanguage || 'sv';
+    
+    // Om översättningar finns och valt språk finns som översättning, använd den
+    if (showing.translations && showing.translations[currentLocale]) {
+      description = showing.translations[currentLocale];
+      descriptionLanguage = currentLocale;
     }
 
     setShowingFormData({
       title: showing.title || '',
-      description: showing.description || '',
+      description: description,
       dateTime: dateTimeValue,
       status: showing.status || '',
-      assignedToUserId: showing.assignedTo || '',
+      assignedToUserId: showing.assignedToUserId || '',
       apartmentId: showing.apartmentId || '',
-      contactName: showing.contactName || '',
-      contactEmail: showing.contactEmail || '',
-      contactPhone: showing.contactPhone || '',
-      notes: showing.notes || ''
+      notes: showing.notes || '',
+      descriptionLanguage: descriptionLanguage
     });
     setIsShowingEditModalOpen(true);
     setIsShowingModalOpen(false);
@@ -411,30 +417,41 @@ const Calendar = () => {
       let dateTimeString = null;
       if (showingFormData.dateTime) {
         const dateObj = new Date(showingFormData.dateTime);
-        
+
         // Manuellt formatera ISO-strängen och ta hänsyn till tidszonen
-        // Detta kommer behålla den tid användaren väljer utan tidzonskonvertering
         const year = dateObj.getFullYear();
         const month = String(dateObj.getMonth() + 1).padStart(2, '0');
         const day = String(dateObj.getDate()).padStart(2, '0');
         const hours = String(dateObj.getHours()).padStart(2, '0');
         const minutes = String(dateObj.getMinutes()).padStart(2, '0');
         const seconds = String(dateObj.getSeconds()).padStart(2, '0');
-        
-        // Skapa ISO-sträng med 'Z' för att indikera UTC (vilket motverkar tidzonskonverteringen i backend)
+
+        // Skapa ISO-sträng med 'Z' för att indikera UTC
         dateTimeString = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}.000Z`;
       }
+
+      // Hantera översättningar
+      let translations = selectedShowing.translations || {};
+      const descriptionLanguage = showingFormData.descriptionLanguage;
+      
+      // Uppdatera översättningen för det aktuella språket
+      translations = {
+        ...translations,
+        [descriptionLanguage]: showingFormData.description
+      };
 
       const updatedData = {
         ...showingFormData,
         dateTime: dateTimeString,
         assignedToUserId: showingFormData.assignedToUserId || null,
-        apartmentId: showingFormData.apartmentId || null
+        apartmentId: showingFormData.apartmentId || null,
+        translations: translations,
+        descriptionLanguage: descriptionLanguage
       };
 
       await showingService.update(selectedShowing.id, updatedData);
       await fetchCalendarData();
-      
+
       setIsShowingEditModalOpen(false);
       setSelectedShowing(null);
       setSuccessMessage(t('showings.messages.updateSuccess'));
@@ -1128,8 +1145,23 @@ const Calendar = () => {
               value={showingFormData.title}
               onChange={handleShowingInputChange}
             />
-            
-            <div className="mb-3">
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-100 mb-1">
+                {t('showings.fields.descriptionLanguage')}
+              </label>
+              <select
+                name="descriptionLanguage"
+                value={showingFormData.descriptionLanguage}
+                onChange={handleShowingInputChange}
+                className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white mb-2"
+              >
+                <option value="sv">{t('languages.swedish')}</option>
+                <option value="en">{t('languages.english')}</option>
+                <option value="pl">{t('languages.polish')}</option>
+                <option value="uk">{t('languages.ukrainian')}</option>
+              </select>
+
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-100">
                 {t('showings.fields.description')}
               </label>
@@ -1153,29 +1185,6 @@ const Calendar = () => {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-100">
-                {t('showings.fields.assignedTo')}
-              </label>
-              <div className="mt-1 text-base font-medium text-gray-900 dark:text-white mb-2">
-                {users.find(u => u.id === showingFormData.assignedToUserId)?.firstName || t('showings.unassigned')}
-              </div>
-              <select
-                name="assignedToUserId"
-                value={showingFormData.assignedToUserId || ''}
-                onChange={handleShowingInputChange}
-                className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                required
-              >
-                <option value="">{t('showings.unassigned')}</option>
-                {users.map((user) => (
-                  <option key={user.id} value={user.id}>
-                    {user.firstName} {user.lastName}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-100">
                 {t('showings.fields.status')}
               </label>
               <select
@@ -1194,30 +1203,22 @@ const Calendar = () => {
             </div>
 
             <FormInput
-              label={t('showings.fields.contactName')}
-              name="contactName"
+              label={t('showings.fields.assignedToUserId')}
+              name="assignedToUserId"
               type="text"
-              value={showingFormData.contactName}
+              value={showingFormData.assignedToUserId}
               onChange={handleShowingInputChange}
             />
 
             <FormInput
-              label={t('showings.fields.contactEmail')}
-              name="contactEmail"
-              type="email"
-              value={showingFormData.contactEmail}
+              label={t('showings.fields.apartmentId')}
+              name="apartmentId"
+              type="text"
+              value={showingFormData.apartmentId}
               onChange={handleShowingInputChange}
             />
 
-            <FormInput
-              label={t('showings.fields.contactPhone')}
-              name="contactPhone"
-              type="tel"
-              value={showingFormData.contactPhone}
-              onChange={handleShowingInputChange}
-            />
-
-            <div className="mb-3">
+            <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-100">
                 {t('showings.fields.notes')}
               </label>
