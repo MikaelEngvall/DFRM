@@ -68,8 +68,6 @@ public class PendingTaskService {
     }
     
     public Task approveTask(String id, User reviewedBy, String reviewComments) {
-        log.info("\u001B[32mStartar godkännande av uppgift med ID: {}\u001B[0m", id);
-        
         Optional<PendingTask> pendingTaskOpt = pendingTaskRepository.findById(id);
         if (pendingTaskOpt.isEmpty()) {
             throw new IllegalArgumentException("Pending task not found");
@@ -85,9 +83,7 @@ public class PendingTaskService {
         task.setStatus(TaskStatus.APPROVED.name());
         
         // Översätt beskrivningen till alla språk
-        log.info("\u001B[32mPåbörjar översättning av beskrivning: {}\u001B[0m", task.getDescription());
         String sourceLanguage = translateClient.detectLanguage(task.getDescription());
-        log.info("\u001B[32mDetekterat källspråk: {}\u001B[0m", sourceLanguage);
         
         Map<String, String> translations = new HashMap<>();
         
@@ -95,7 +91,6 @@ public class PendingTaskService {
             // Översätt till svenska
             if (!sourceLanguage.equals("sv")) {
                 String svTranslation = translateClient.translate(task.getDescription(), sourceLanguage, "sv");
-                log.info("\u001B[32mSvensk översättning: {}\u001B[0m", svTranslation);
                 translations.put("sv", svTranslation);
             } else {
                 translations.put("sv", task.getDescription());
@@ -104,7 +99,6 @@ public class PendingTaskService {
             // Översätt till engelska
             if (!sourceLanguage.equals("en")) {
                 String enTranslation = translateClient.translate(task.getDescription(), sourceLanguage, "en");
-                log.info("\u001B[32mEngelsk översättning: {}\u001B[0m", enTranslation);
                 translations.put("en", enTranslation);
             } else {
                 translations.put("en", task.getDescription());
@@ -113,7 +107,6 @@ public class PendingTaskService {
             // Översätt till polska
             if (!sourceLanguage.equals("pl")) {
                 String plTranslation = translateClient.translate(task.getDescription(), sourceLanguage, "pl");
-                log.info("\u001B[32mPolsk översättning: {}\u001B[0m", plTranslation);
                 translations.put("pl", plTranslation);
             } else {
                 translations.put("pl", task.getDescription());
@@ -122,13 +115,11 @@ public class PendingTaskService {
             // Översätt till ukrainska
             if (!sourceLanguage.equals("uk")) {
                 String ukTranslation = translateClient.translate(task.getDescription(), sourceLanguage, "uk");
-                log.info("\u001B[32mUkrainsk översättning: {}\u001B[0m", ukTranslation);
                 translations.put("uk", ukTranslation);
             } else {
                 translations.put("uk", task.getDescription());
             }
             
-            log.info("\u001B[32mAlla översättningar klara. Sparar i task-objektet.\u001B[0m");
             task.setTranslations(translations);
             
         } catch (Exception e) {
@@ -140,10 +131,7 @@ public class PendingTaskService {
         Task savedTask = taskRepository.save(task);
         pendingTaskRepository.save(pendingTask);
         
-        log.info("\u001B[32mUppgift godkänd och sparad med ID: {}\u001B[0m", savedTask.getId());
-        if (savedTask.getTranslations() != null) {
-            log.info("\u001B[32mAntal sparade översättningar: {}\u001B[0m", savedTask.getTranslations().size());
-        } else {
+        if (savedTask.getTranslations() == null) {
             log.warn("\u001B[33mInga översättningar sparade!\u001B[0m");
         }
         
@@ -177,28 +165,19 @@ public class PendingTaskService {
      * @return Den skapade uppgiften
      */
     public Task convertEmailReportToTask(String emailReportId, Task newTask, User reviewedBy) {
-        log.info("Konverterar e-postrapport {} till uppgift", emailReportId);
-        
         // Hitta e-postrapporten
         PendingTask emailReport = pendingTaskRepository.findById(emailReportId)
             .orElseThrow(() -> new IllegalArgumentException("Kan inte hitta e-postrapport med ID: " + emailReportId));
-        
-        // Logga all information som finns i e-postrapporten för felsökning
-        log.info("E-postrapport data: name={}, email={}, phone={}, address={}, apartment={}", 
-            emailReport.getName(), emailReport.getEmail(), emailReport.getPhone(), 
-            emailReport.getAddress(), emailReport.getApartment());
         
         // Säkerställ att uppgiftens data är korrekt
         newTask.setAssignedByUserId(reviewedBy.getId());
         
         // Använd befintliga ID:n från e-postrapporten
         if ((newTask.getTenantId() == null || newTask.getTenantId().isEmpty()) && emailReport.getTenantId() != null) {
-            log.info("Använder tenantId från e-postrapporten: {}", emailReport.getTenantId());
             newTask.setTenantId(emailReport.getTenantId());
         }
         
         if ((newTask.getApartmentId() == null || newTask.getApartmentId().isEmpty()) && emailReport.getApartmentId() != null) {
-            log.info("Använder apartmentId från e-postrapporten: {}", emailReport.getApartmentId());
             newTask.setApartmentId(emailReport.getApartmentId());
         }
         
@@ -211,83 +190,57 @@ public class PendingTaskService {
             newTask.setPriority("MEDIUM");
         }
         
-        if (newTask.getDueDate() == null) {
-            // Sätt standard förfallodatum till 7 dagar från nu
-            newTask.setDueDate(LocalDate.now().plusDays(7));
-        }
-        
-        // Om description är tom, använd beskrivningen från emailReport
-        if (newTask.getDescription() == null || newTask.getDescription().isEmpty()) {
+        // Om uppgiften saknar beskrivning, använd beskrivningen från e-postrapporten
+        if ((newTask.getDescription() == null || newTask.getDescription().isEmpty()) && 
+            emailReport.getDescription() != null && !emailReport.getDescription().isEmpty()) {
             newTask.setDescription(emailReport.getDescription());
-            log.info("Använde beskrivning från e-postrapporten, längd: {}", 
-                emailReport.getDescription() != null ? emailReport.getDescription().length() : 0);
         }
         
-        // Sätt titel baserat på adress och lägenhetsnummer enligt specificerat format
-        // Titel ska vara i formatet "Address Lgh ApartmentNumber"
+        // Om titeln inte är angiven, skapa en baserad på adress eller namn från e-postrapporten
         if (newTask.getTitle() == null || newTask.getTitle().isEmpty()) {
             StringBuilder titleBuilder = new StringBuilder();
             
             if (emailReport.getAddress() != null && !emailReport.getAddress().isEmpty()) {
-                // Använd adressen direkt
                 titleBuilder.append(emailReport.getAddress().trim());
-                
-                // Lägg till lägenhetsnumret om det finns i korrekt format
                 if (emailReport.getApartment() != null && !emailReport.getApartment().isEmpty()) {
-                    // Se till att det finns mellanrum mellan adress och "Lgh"
-                    if (!titleBuilder.toString().endsWith(" ")) {
-                        titleBuilder.append(" ");
-                    }
-                    
-                    // Lägg till "Lgh " + lägenhetsnumret
-                    titleBuilder.append("Lgh ").append(emailReport.getApartment().trim());
+                    titleBuilder.append(" Lgh ").append(emailReport.getApartment().trim());
                 }
-                
                 newTask.setTitle(titleBuilder.toString());
-                log.info("Skapade titel från adress och lägenhetsnummer: '{}'", newTask.getTitle());
-            } else if (emailReport.getName() != null && !emailReport.getName().isEmpty()) {
-                // Fallback om adress saknas
-                newTask.setTitle("Felanmälan från " + emailReport.getName());
-                log.info("Skapade titel från namn: '{}'", newTask.getTitle());
-            } else if (emailReport.getEmail() != null && !emailReport.getEmail().isEmpty()) {
-                // Fallback om varken adress eller namn finns
-                newTask.setTitle("Felanmälan från " + emailReport.getEmail());
-                log.info("Skapade titel från e-post: '{}'", newTask.getTitle());
-            } else {
-                // Sista fallback om ingen information finns
-                newTask.setTitle("Felanmälan utan kontaktuppgifter");
-                log.info("Skapade generisk titel: '{}'", newTask.getTitle());
             }
-        } else {
-            log.info("Använde redan satt titel: '{}'", newTask.getTitle());
+            else if (emailReport.getName() != null && !emailReport.getName().isEmpty()) {
+                newTask.setTitle("Felanmälan från " + emailReport.getName().trim());
+            }
+            else if (emailReport.getEmail() != null && !emailReport.getEmail().isEmpty()) {
+                newTask.setTitle("Felanmälan från " + emailReport.getEmail().trim());
+            }
+            else {
+                newTask.setTitle("Felanmälan " + LocalDate.now());
+            }
         }
         
-        // Överför kontaktinformation till beskrivningen
-        StringBuilder contactInfo = new StringBuilder();
-        if (emailReport.getName() != null && !emailReport.getName().isEmpty()) {
-            contactInfo.append("Kontaktperson: ").append(emailReport.getName()).append("\n");
-        }
-        if (emailReport.getEmail() != null && !emailReport.getEmail().isEmpty()) {
-            contactInfo.append("E-post: ").append(emailReport.getEmail()).append("\n");
-        }
-        if (emailReport.getPhone() != null && !emailReport.getPhone().isEmpty()) {
-            contactInfo.append("Telefon: ").append(emailReport.getPhone()).append("\n");
-        }
-        
-        // Lägg till kontaktinformation om det finns någon
-        if (contactInfo.length() > 0) {
-            String finalDescription = contactInfo.toString() + 
-                "\n---\n" + 
-                (newTask.getDescription() != null ? newTask.getDescription() : "");
+        // Lägg till kontaktinformation i beskrivningen om den finns
+        if (emailReport.getName() != null || emailReport.getEmail() != null || emailReport.getPhone() != null) {
+            StringBuilder contactInfo = new StringBuilder();
+            contactInfo.append("\n\n--- Kontaktinformation ---\n");
             
+            if (emailReport.getName() != null && !emailReport.getName().isEmpty()) {
+                contactInfo.append("Namn: ").append(emailReport.getName()).append("\n");
+            }
+            
+            if (emailReport.getEmail() != null && !emailReport.getEmail().isEmpty()) {
+                contactInfo.append("E-post: ").append(emailReport.getEmail()).append("\n");
+            }
+            
+            if (emailReport.getPhone() != null && !emailReport.getPhone().isEmpty()) {
+                contactInfo.append("Telefon: ").append(emailReport.getPhone()).append("\n");
+            }
+            
+            String finalDescription = (newTask.getDescription() != null ? newTask.getDescription() : "") + contactInfo.toString();
             newTask.setDescription(finalDescription);
-            log.info("Lade till kontaktinformation till beskrivningen, total längd: {}", finalDescription.length());
         }
         
         // Översätt beskrivningen till alla språk
-        log.info("\u001B[32mPåbörjar översättning av beskrivning: {}\u001B[0m", newTask.getDescription());
         String sourceLanguage = translateClient.detectLanguage(newTask.getDescription());
-        log.info("\u001B[32mDetekterat källspråk: {}\u001B[0m", sourceLanguage);
         
         Map<String, String> translations = new HashMap<>();
         
@@ -295,7 +248,6 @@ public class PendingTaskService {
             // Översätt till svenska
             if (!sourceLanguage.equals("sv")) {
                 String svTranslation = translateClient.translate(newTask.getDescription(), sourceLanguage, "sv");
-                log.info("\u001B[32mSvensk översättning: {}\u001B[0m", svTranslation);
                 translations.put("sv", svTranslation);
             } else {
                 translations.put("sv", newTask.getDescription());
@@ -304,7 +256,6 @@ public class PendingTaskService {
             // Översätt till engelska
             if (!sourceLanguage.equals("en")) {
                 String enTranslation = translateClient.translate(newTask.getDescription(), sourceLanguage, "en");
-                log.info("\u001B[32mEngelsk översättning: {}\u001B[0m", enTranslation);
                 translations.put("en", enTranslation);
             } else {
                 translations.put("en", newTask.getDescription());
@@ -313,7 +264,6 @@ public class PendingTaskService {
             // Översätt till polska
             if (!sourceLanguage.equals("pl")) {
                 String plTranslation = translateClient.translate(newTask.getDescription(), sourceLanguage, "pl");
-                log.info("\u001B[32mPolsk översättning: {}\u001B[0m", plTranslation);
                 translations.put("pl", plTranslation);
             } else {
                 translations.put("pl", newTask.getDescription());
@@ -322,13 +272,11 @@ public class PendingTaskService {
             // Översätt till ukrainska
             if (!sourceLanguage.equals("uk")) {
                 String ukTranslation = translateClient.translate(newTask.getDescription(), sourceLanguage, "uk");
-                log.info("\u001B[32mUkrainsk översättning: {}\u001B[0m", ukTranslation);
                 translations.put("uk", ukTranslation);
             } else {
                 translations.put("uk", newTask.getDescription());
             }
             
-            log.info("\u001B[32mAlla översättningar klara. Sparar i task-objektet.\u001B[0m");
             newTask.setTranslations(translations);
             
         } catch (Exception e) {
@@ -341,7 +289,6 @@ public class PendingTaskService {
         
         // Spara uppgiften
         Task savedTask = taskRepository.save(newTask);
-        log.info("Sparade ny uppgift med ID: {} från e-postrapport: {}", savedTask.getId(), emailReportId);
         
         // Uppdatera e-postrapporten som granskad och konverterad
         emailReport.setReviewedBy(reviewedBy);
@@ -349,7 +296,6 @@ public class PendingTaskService {
         emailReport.setStatus("CONVERTED");
         emailReport.setTask(savedTask);
         pendingTaskRepository.save(emailReport);
-        log.info("Uppdaterade e-postrapport {} som konverterad", emailReportId);
         
         return savedTask;
     }
@@ -398,8 +344,7 @@ public class PendingTaskService {
             .filter(pendingTask -> pendingTask.getTask() != null && 
                     "APPROVED".equals(pendingTask.getTask().getStatus()))
             .toList();
-        
-        System.out.println("Efter filtrering: " + approvedTasks.size() + " godkända uppgifter");
+
         
         return approvedTasks;
     }
