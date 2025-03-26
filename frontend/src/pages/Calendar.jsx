@@ -761,29 +761,6 @@ const Calendar = () => {
               />
             </div>
 
-            {/* Översättningar */}
-            {selectedTask?.translations && Object.keys(selectedTask.translations).length > 0 && (
-              <div className="mt-4">
-                <h4 className="text-md font-medium text-gray-900 dark:text-white mb-2">
-                  {t('tasks.translations')}
-                </h4>
-                <div className="space-y-4">
-                  {Object.entries(selectedTask.translations).map(([lang, translation]) => (
-                    <div key={lang} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                      <div className="flex items-center mb-2">
-                        <span className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                          {t(`languages.${lang}`)}:
-                        </span>
-                      </div>
-                      <p className="text-gray-900 dark:text-white whitespace-pre-wrap">
-                        {translation}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <FormInput
                 label={t('tasks.fields.dueDate')}
