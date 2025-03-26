@@ -1,10 +1,12 @@
 package com.dfrm.service;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
@@ -82,16 +84,23 @@ public class TaskMessageService {
         
         // Använd GoogleTranslateClient för att översätta meddelandet till alla språk
         try {
-            Map<String, String> translations = new HashMap<>();
-            for (Language targetLanguage : Language.values()) {
-                if (targetLanguage != language) {
-                    // Använd GoogleTranslateClient för att översätta innehållet
-                    String translatedContent = googleTranslateClient.translate(content, language.getCode(), targetLanguage.getCode());
-                    translations.put(targetLanguage.getCode(), translatedContent);
-                    log.info("Översatt meddelande från {} till {}: {}", language.getCode(), targetLanguage.getCode(), translatedContent);
-                }
-            }
+            // Skapa en lista med alla språk som ska översättas till
+            List<String> targetLanguages = Arrays.stream(Language.values())
+                .map(Language::getCode)
+                .collect(Collectors.toList());
+            
+            // Använd den nya metoden för att översätta till alla språk på en gång
+            Map<String, String> translations = googleTranslateClient.translateToMultipleLanguages(
+                content, 
+                language.getCode(), 
+                targetLanguages
+            );
+            
+            // Ta bort källspråket från översättningarna, eftersom det redan är originaltexten
+            translations.remove(language.getCode());
+            
             message.setTranslations(translations);
+            log.info("Message translated to {} languages", translations.size());
         } catch (Exception e) {
             log.error("Fel vid översättning av meddelande", e);
             // Om översättningen misslyckas, använd originalinnehållet för alla språk

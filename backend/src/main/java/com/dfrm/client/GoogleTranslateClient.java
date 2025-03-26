@@ -1,10 +1,20 @@
 package com.dfrm.client;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -12,8 +22,11 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class GoogleTranslateClient {
     
-    @Value("${google.translate.api.key:}")
+    @Value("${google.translate.api.key}")
     private String apiKey;
+    
+    private final RestTemplate restTemplate = new RestTemplate();
+    private final ObjectMapper objectMapper = new ObjectMapper();
     
     // Supporterade språk
     private static final String SWEDISH = "sv";
@@ -21,157 +34,158 @@ public class GoogleTranslateClient {
     private static final String POLISH = "pl";
     private static final String UKRAINIAN = "uk";
     
-    // Central översättningsstruktur - fraser på svenska, engelska, polska, ukrainska
-    private final Map<String, Map<String, String>> translations = initializeTranslations();
-    
-    // Initialiseringsmetod för alla översättningar
-    private Map<String, Map<String, String>> initializeTranslations() {
-        Map<String, Map<String, String>> allTranslations = new HashMap<>();
-        
-        // Viktigt
-        addTranslation(allTranslations, "detta är viktigt", "this is important", "to jest ważne", "це важливо");
-        addTranslation(allTranslations, "viktigt", "important", "ważne", "важливо");
-        
-        // Hälsningar
-        addTranslation(allTranslations, "hej", "hello", "cześć", "привіт");
-        addTranslation(allTranslations, "tack", "thank you", "dziękuję", "дякую");
-        addTranslation(allTranslations, "välkommen", "welcome", "witamy", "ласкаво просимо");
-        addTranslation(allTranslations, "god dag", "good day", "dzień dobry", "добрий день");
-        addTranslation(allTranslations, "hej då", "goodbye", "do widzenia", "до побачення");
-        
-        // Ja/Nej
-        addTranslation(allTranslations, "ja", "yes", "tak", "так");
-        addTranslation(allTranslations, "nej", "no", "nie", "ні");
-        
-        // Andra fraser
-        addTranslation(allTranslations, "widże", "widget", "widżet", "віджет");
-        addTranslation(allTranslations, "jag ser", "i see", "widzę", "я бачу");
-        
-        return allTranslations;
-    }
-    
-    // Hjälpmetod för att lägga till översättningar för alla språk
-    private void addTranslation(Map<String, Map<String, String>> allTranslations, 
-                                String swedish, String english, String polish, String ukrainian) {
-        // Svenska översättningar
-        if (!allTranslations.containsKey(SWEDISH)) {
-            allTranslations.put(SWEDISH, new HashMap<>());
-        }
-        Map<String, String> svTranslations = allTranslations.get(SWEDISH);
-        svTranslations.put(swedish.toLowerCase(), swedish);
-        svTranslations.put(english.toLowerCase(), swedish);
-        svTranslations.put(polish.toLowerCase(), swedish);
-        svTranslations.put(ukrainian.toLowerCase(), swedish);
-        
-        // Engelska översättningar
-        if (!allTranslations.containsKey(ENGLISH)) {
-            allTranslations.put(ENGLISH, new HashMap<>());
-        }
-        Map<String, String> enTranslations = allTranslations.get(ENGLISH);
-        enTranslations.put(swedish.toLowerCase(), english);
-        enTranslations.put(english.toLowerCase(), english);
-        enTranslations.put(polish.toLowerCase(), english);
-        enTranslations.put(ukrainian.toLowerCase(), english);
-        
-        // Polska översättningar
-        if (!allTranslations.containsKey(POLISH)) {
-            allTranslations.put(POLISH, new HashMap<>());
-        }
-        Map<String, String> plTranslations = allTranslations.get(POLISH);
-        plTranslations.put(swedish.toLowerCase(), polish);
-        plTranslations.put(english.toLowerCase(), polish);
-        plTranslations.put(polish.toLowerCase(), polish);
-        plTranslations.put(ukrainian.toLowerCase(), polish);
-        
-        // Ukrainska översättningar
-        if (!allTranslations.containsKey(UKRAINIAN)) {
-            allTranslations.put(UKRAINIAN, new HashMap<>());
-        }
-        Map<String, String> ukTranslations = allTranslations.get(UKRAINIAN);
-        ukTranslations.put(swedish.toLowerCase(), ukrainian);
-        ukTranslations.put(english.toLowerCase(), ukrainian);
-        ukTranslations.put(polish.toLowerCase(), ukrainian);
-        ukTranslations.put(ukrainian.toLowerCase(), ukrainian);
-    }
-    
-    // Språkdetekteringsmetod (behållen från originalversionen)
+    /**
+     * Detekterar språket i en text med Google Translate API
+     * 
+     * @param text Texten vars språk ska detekteras
+     * @return Språkkoden för det detekterade språket
+     */
     public String detectLanguage(String text) {
+        if (text == null || text.trim().isEmpty()) {
+            return SWEDISH; // Standard är svenska om texten är tom
+        }
+        
         log.info("Detecting language for text: {} (first 50 chars)", 
                 text.length() > 50 ? text.substring(0, 50) + "..." : text);
         
-        text = text.toLowerCase();
-        
-        // Polska språkdetektering
-        if (text.contains("tak") || text.contains("dzień dobry") || text.contains("cześć") || 
-            text.contains("dziękuję") || text.contains("proszę") || text.contains("ważne")) {
-            return POLISH;
-        }
-        
-        // Engelska språkdetektering
-        if (text.contains("hello") || text.contains("thank you") || text.contains("important") || 
-            text.contains("please") || text.contains("yes") || text.contains("no")) {
-            return ENGLISH;
-        }
-        
-        // Ukrainska språkdetektering
-        if (text.contains("привіт") || text.contains("дякую") || text.contains("важливо") || 
-            text.contains("будь ласка") || text.contains("так") || text.contains("ні")) {
-            return UKRAINIAN;
-        }
-        
-        // Svenska språkdetektering (standard)
-        if (text.contains("hej") || text.contains("tack") || text.contains("viktigt") || 
-            text.contains("snälla") || text.contains("ja") || text.contains("nej")) {
+        try {
+            // Skapa URL för Google Detect Language API
+            String url = UriComponentsBuilder.fromHttpUrl("https://translation.googleapis.com/language/translate/v2/detect")
+                .queryParam("key", apiKey)
+                .toUriString();
+            
+            // Skapa request body
+            Map<String, Object> requestBody = new HashMap<>();
+            requestBody.put("q", text);
+            
+            // Skapa headers
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("Content-Type", "application/json");
+            
+            // Skicka request
+            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
+            ResponseEntity<String> response = restTemplate.exchange(
+                url, HttpMethod.POST, entity, String.class);
+            
+            // Parsa svaret
+            JsonNode rootNode = objectMapper.readTree(response.getBody());
+            String languageCode = rootNode
+                .path("data")
+                .path("detections")
+                .path(0)
+                .path(0)
+                .path("language")
+                .asText();
+            
+            log.info("Detected language: {}", languageCode);
+            
+            // Om språket inte är ett av våra supporterade språk, använd engelska
+            if (!languageCode.equals(SWEDISH) && 
+                !languageCode.equals(ENGLISH) && 
+                !languageCode.equals(POLISH) && 
+                !languageCode.equals(UKRAINIAN)) {
+                log.info("Unsupported language detected ({}), defaulting to English", languageCode);
+                return ENGLISH;
+            }
+            
+            return languageCode;
+            
+        } catch (Exception e) {
+            log.error("Error detecting language: {}", e.getMessage(), e);
+            // Fallback till svenska vid fel
             return SWEDISH;
         }
-        
-        // Default till svenska
-        return SWEDISH;
     }
     
-    // Förenklad översättningsmetod som använder den centrala översättningsstrukturen
+    /**
+     * Översätter text från ett språk till ett annat med Google Translate API
+     * 
+     * @param text Texten som ska översättas
+     * @param sourceLanguage Källspråket
+     * @param targetLanguage Målspråket
+     * @return Den översatta texten
+     */
     public String translate(String text, String sourceLanguage, String targetLanguage) {
-        log.info("Translating text from {} to {}: {} (first 50 chars)", 
-                sourceLanguage, targetLanguage, 
-                text.length() > 50 ? text.substring(0, 50) + "..." : text);
+        if (text == null || text.trim().isEmpty()) {
+            return text;
+        }
         
         // Om källspråk och målspråk är samma, returnera ursprungstexten
         if (sourceLanguage.equals(targetLanguage)) {
             return text;
         }
         
-        // Kontrollera om vi har översättningar för målspråket
-        if (!translations.containsKey(targetLanguage)) {
-            log.warn("No translations available for target language: {}", targetLanguage);
+        log.info("Translating text from {} to {}: {} (first 50 chars)", 
+                sourceLanguage, targetLanguage, 
+                text.length() > 50 ? text.substring(0, 50) + "..." : text);
+        
+        try {
+            // Skapa URL för Google Translate API
+            String url = UriComponentsBuilder.fromHttpUrl("https://translation.googleapis.com/language/translate/v2")
+                .queryParam("key", apiKey)
+                .toUriString();
+            
+            // Skapa request body
+            Map<String, Object> requestBody = new HashMap<>();
+            requestBody.put("q", text);
+            requestBody.put("source", sourceLanguage);
+            requestBody.put("target", targetLanguage);
+            requestBody.put("format", "text");
+            
+            // Skapa headers
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("Content-Type", "application/json");
+            
+            // Skicka request
+            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
+            ResponseEntity<String> response = restTemplate.exchange(
+                url, HttpMethod.POST, entity, String.class);
+            
+            // Parsa svaret
+            JsonNode rootNode = objectMapper.readTree(response.getBody());
+            String translatedText = rootNode
+                .path("data")
+                .path("translations")
+                .path(0)
+                .path("translatedText")
+                .asText();
+            
+            log.info("Translation successful");
+            return translatedText;
+            
+        } catch (Exception e) {
+            log.error("Error translating text: {}", e.getMessage(), e);
+            // Fallback till att lägga till ett prefix på originaltexten vid fel
             return addPrefix(text, targetLanguage);
         }
+    }
+    
+    /**
+     * Översätter text till flera språk samtidigt
+     * 
+     * @param text Texten som ska översättas
+     * @param sourceLanguage Källspråket
+     * @param targetLanguages Lista med målspråk
+     * @return Map där nyckeln är språkkod och värdet är översatt text
+     */
+    public Map<String, String> translateToMultipleLanguages(String text, String sourceLanguage, List<String> targetLanguages) {
+        Map<String, String> translations = new HashMap<>();
         
-        // Hämta översättningarna för målspråket
-        Map<String, String> targetTranslations = translations.get(targetLanguage);
+        // Lägg till källspråket direkt
+        translations.put(sourceLanguage, text);
         
-        // Sök igenom texten efter kända fraser att översätta
-        String lowerText = text.toLowerCase();
-        for (Map.Entry<String, String> entry : targetTranslations.entrySet()) {
-            String phrase = entry.getKey();
-            String translation = entry.getValue();
-            
-            if (lowerText.contains(phrase)) {
-                // Om texten är exakt en fras vi känner till, returnera översättningen
-                if (lowerText.trim().equals(phrase)) {
-                    return translation;
-                }
-                
-                // Annars ersätt den kända frasen med översättningen
-                // (detta är en förenkling som kan ge konstiga resultat med sammansatta meningar)
-                lowerText = lowerText.replace(phrase, translation);
+        // Översätt till varje målspråk
+        for (String targetLanguage : targetLanguages) {
+            if (!targetLanguage.equals(sourceLanguage)) {
+                String translatedText = translate(text, sourceLanguage, targetLanguage);
+                translations.put(targetLanguage, translatedText);
             }
         }
         
-        // Om ingen matchning av kända fraser, returnera en generisk översättning
-        return addPrefix(text, targetLanguage);
+        return translations;
     }
     
-    // Hjälpmetod för att lägga till språkspecifik prefix för generiska översättningar
+    // Hjälpmetod för att lägga till språkspecifik prefix för fallbacks
     private String addPrefix(String text, String targetLanguage) {
         switch (targetLanguage) {
             case ENGLISH:

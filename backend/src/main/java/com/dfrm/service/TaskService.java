@@ -2,11 +2,13 @@ package com.dfrm.service;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.dfrm.client.GoogleTranslateClient;
 import com.dfrm.model.Task;
 import com.dfrm.repository.ApartmentRepository;
 import com.dfrm.repository.TaskRepository;
@@ -14,9 +16,11 @@ import com.dfrm.repository.TenantRepository;
 import com.dfrm.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class TaskService {
     
     private final TaskRepository taskRepository;
@@ -24,6 +28,7 @@ public class TaskService {
     private final ApartmentRepository apartmentRepository;
     private final UserRepository userRepository;
     private final TaskMessageService taskMessageService;
+    private final GoogleTranslateClient translateClient;
     
     public List<Task> getAllTasks(String status, String priority, String tenantId, String apartmentId) {
         // Använd specifika repository-metoder baserat på parametrarna
@@ -68,6 +73,28 @@ public class TaskService {
             // Garantera att vi bara har LocalDate utan tidsdel
             LocalDate dueDate = task.getDueDate();
             task.setDueDate(dueDate); // Detta säkerställer att endast datumdelen används
+        }
+        
+        // Översätt uppgiftsbeskrivningen om det finns en och den inte redan har översättningar
+        if (task.getDescription() != null && !task.getDescription().isEmpty() && 
+            (task.getTranslations() == null || task.getTranslations().isEmpty())) {
+            try {
+                String sourceLanguage = translateClient.detectLanguage(task.getDescription());
+                log.info("Detected language for task description: {}", sourceLanguage);
+                
+                // Översätt till alla stödda språk
+                List<String> targetLanguages = List.of("sv", "en", "pl", "uk");
+                Map<String, String> translations = translateClient.translateToMultipleLanguages(
+                    task.getDescription(), 
+                    sourceLanguage, 
+                    targetLanguages
+                );
+                
+                task.setTranslations(translations);
+                log.info("Task description translated to {} languages", translations.size());
+            } catch (Exception e) {
+                log.error("Error translating task description: {}", e.getMessage(), e);
+            }
         }
         
         return taskRepository.save(task);
