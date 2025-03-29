@@ -97,51 +97,75 @@ const PendingTasks = () => {
     {
       key: 'id',
       label: 'ID',
-      render: (_, pendingTask) => pendingTask.id ? pendingTask.id : '-'
+      render: (_, pendingTask) => pendingTask.id ? pendingTask.id.replace('approved-', '') : '-'
     },
     {
       key: 'taskTitle',
       label: t('pendingTasks.fields.task'),
-      render: (_, pendingTask) => pendingTask.task ? pendingTask.task.title : '-'
+      render: (_, pendingTask) => {
+        console.log('Task data for row:', pendingTask);
+        return pendingTask.task?.title || 
+              (pendingTask.description || '-');
+      }
     },
     {
       key: 'requestedBy',
       label: t('pendingTasks.fields.requestedBy'),
-      render: (admin) => admin ? `${admin.firstName} ${admin.lastName}` : '-'
+      render: (_, pendingTask) => {
+        if (pendingTask.requestedBy) {
+          return `${pendingTask.requestedBy.firstName || ''} ${pendingTask.requestedBy.lastName || ''}`;
+        } else if (pendingTask.requestedByTenant) {
+          return `${pendingTask.requestedByTenant.firstName || ''} ${pendingTask.requestedByTenant.lastName || ''}`;
+        } else if (pendingTask.name) {
+          return pendingTask.name;
+        } else {
+          return '-';
+        }
+      }
     },
     {
       key: 'requestedAt',
       label: t('pendingTasks.fields.requestedAt'),
-      render: (date) => date ? new Date(date).toLocaleString() : '-'
+      render: (_, pendingTask) => pendingTask.requestedAt ? new Date(pendingTask.requestedAt).toLocaleString() : '-'
     },
     {
       key: 'taskPriority',
       label: t('tasks.fields.priority'),
-      render: (_, pendingTask) => pendingTask.task && pendingTask.task.priority ? 
-        t(`tasks.priorities.${pendingTask.task.priority}`) : '-'
+      render: (_, pendingTask) => {
+        const priority = pendingTask.task?.priority || 'MEDIUM';
+        return t(`tasks.priorities.${priority}`);
+      }
     },
     {
       key: 'taskStatus',
       label: t('tasks.fields.status'),
-      render: (_, pendingTask) => pendingTask.task && pendingTask.task.status ? 
-        t(`tasks.status.${pendingTask.task.status}`) : '-'
+      render: (_, pendingTask) => {
+        const status = pendingTask.task?.status || pendingTask.status || 'PENDING';
+        return t(`tasks.status.${status}`);
+      }
     },
     {
       key: 'reviewedBy',
       label: t('pendingTasks.fields.reviewedBy'),
-      render: (user) => user ? `${user.firstName} ${user.lastName}` : '-'
+      render: (_, pendingTask) => {
+        if (pendingTask.reviewedBy) {
+          return `${pendingTask.reviewedBy.firstName || ''} ${pendingTask.reviewedBy.lastName || ''}`;
+        } else {
+          return '-';
+        }
+      }
     },
     {
       key: 'reviewedAt',
       label: t('pendingTasks.fields.reviewedAt'),
-      render: (date) => date ? new Date(date).toLocaleString() : '-'
+      render: (_, pendingTask) => pendingTask.reviewedAt ? new Date(pendingTask.reviewedAt).toLocaleString() : '-'
     },
     {
       key: 'actions',
       label: t('common.actions'),
       render: (_, pendingTask) => (
         <div className="flex space-x-2">
-          {!pendingTask.reviewedBy && (
+          {!pendingTask.reviewedBy && !pendingTask.approved && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -504,12 +528,21 @@ const PendingTasks = () => {
             // Logga för debugging
             console.log("Lägger till godkänd uppgift:", task.id, task);
             
-            uniqueDataMap.set(task.id, {
+            // Se till att task-objektet är meningsfullt
+            const enhancedTask = {
               ...task,
               id: `approved-${task.id}`,
               type: 'approved',
-              approved: true
-            });
+              approved: true,
+              // Om task saknas, skapa ett grundläggande task-objekt från tillgänglig data
+              task: task.task || {
+                title: task.description || `Uppgift ${task.id}`,
+                status: task.status || 'REVIEWED',
+                priority: 'MEDIUM'
+              }
+            };
+
+            uniqueDataMap.set(task.id, enhancedTask);
           }
         });
       }
