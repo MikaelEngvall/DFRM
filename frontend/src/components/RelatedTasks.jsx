@@ -98,7 +98,7 @@ const RelatedTasks = ({ entityType, entityId, limit = 5, showAddButton = true })
   const getStatusIcon = (status) => {
     switch (status) {
       case 'COMPLETED':
-      case 'APPROVED':
+      case 'REVIEWED':
         return <CheckCircleIcon className="h-5 w-5 text-green-500" />;
       case 'PENDING':
         return <ClockIcon className="h-5 w-5 text-yellow-500" />;

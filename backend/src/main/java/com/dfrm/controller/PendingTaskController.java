@@ -69,7 +69,18 @@ public class PendingTaskController {
 
     @GetMapping("/approved")
     public ResponseEntity<List<PendingTask>> getApprovedTasks() {
-        return ResponseEntity.ok(pendingTaskRepository.findByReviewedByIsNotNullOrderByReviewedAtDesc());
+        List<PendingTask> approvedTasks = pendingTaskRepository.findByReviewedByIsNotNullOrderByReviewedAtDesc();
+        log.info("Hämtar godkända uppgifter, hittade {} uppgifter", approvedTasks.size());
+        
+        // Logga detaljer för debugging
+        for (PendingTask task : approvedTasks) {
+            log.info("Godkänd uppgift - ID: {}, ReviewedBy: {}, Task: {}", 
+                    task.getId(), 
+                    task.getReviewedBy() != null ? task.getReviewedBy().getFirstName() : "null", 
+                    task.getTask() != null ? task.getTask().getTitle() : "null");
+        }
+        
+        return ResponseEntity.ok(approvedTasks);
     }
 
     @PostMapping("/request-approval")

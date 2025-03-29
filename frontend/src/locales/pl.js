@@ -350,8 +350,8 @@ export default {
 
   pendingTasks: {
     title: 'Oczekujące zadania',
-    addNew: 'Utwórz wniosek',
-    details: 'Szczegóły oczekującego zadania',
+    noTasks: 'Brak oczekujących zadań do wyświetlenia',
+    noApprovedTasks: 'Brak zatwierdzonych zadań do wyświetlenia',
     showApproved: 'Pokaż zatwierdzone',
     emailReport: 'Oczekujące zadanie',
     fields: {
@@ -386,7 +386,6 @@ export default {
       approvedTasksError: 'Wystąpił błąd podczas pobierania zatwierdzonych zadań',
       emailCheckError: 'Wystąpił błąd podczas sprawdzania poczty'
     },
-    noTasks: 'Brak oczekujących zadań',
     noDescription: 'Brak opisu',
     reviewRequest: 'Sprawdź wniosek',
     addComments: 'Dodaj komentarze',

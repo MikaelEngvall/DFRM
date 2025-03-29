@@ -95,6 +95,11 @@ const PendingTasks = () => {
   // Originalkolumner för vanliga väntande uppgifter
   const pendingTaskColumns = [
     {
+      key: 'id',
+      label: 'ID',
+      render: (_, pendingTask) => pendingTask.id ? pendingTask.id : '-'
+    },
+    {
       key: 'taskTitle',
       label: t('pendingTasks.fields.task'),
       render: (_, pendingTask) => pendingTask.task ? pendingTask.task.title : '-'
@@ -200,14 +205,25 @@ const PendingTasks = () => {
 
   const fetchApprovedTasks = async () => {
     try {
-      // Hämta både APPROVED och CONVERTED uppgifter
-      const [approvedData, convertedData] = await Promise.all([
-        pendingTaskService.getPendingTasksByStatus('APPROVED'),
-        pendingTaskService.getPendingTasksByStatus('CONVERTED')
-      ]);
+      // Använd getApproved-metoden som hämtar godkända uppgifter från backend
+      const approvedData = await pendingTaskService.getApproved();
       
-      // Kombinera de två listorna
-      setApprovedTasks([...approvedData, ...convertedData]);
+      // Logga data för felsökning
+      console.log("Mottagna godkända uppgifter:", approvedData);
+      
+      // Skriver mer detaljerad debug-info
+      if (approvedData && Array.isArray(approvedData)) {
+        console.log(`Fick ${approvedData.length} godkända uppgifter:`);
+        approvedData.forEach((task, index) => {
+          console.log(`Uppgift ${index+1}:`);
+          console.log(`  ID: ${task.id}`);
+          console.log(`  ReviewedBy: ${task.reviewedBy ? task.reviewedBy.firstName : 'ingen'}`);
+          console.log(`  Task: ${task.task ? task.task.title : 'ingen uppgift'}`);
+        });
+      }
+      
+      // Sätt godkända uppgifter
+      setApprovedTasks(approvedData);
       return true;
     } catch (err) {
       console.error('Error fetching approved tasks:', err);
@@ -233,6 +249,9 @@ const PendingTasks = () => {
   };
 
   const handleRowClick = (item) => {
+    // Logga hela objektet för diagnostik
+    console.log("Klickad uppgift:", item);
+    
     setSelectedTask(item);
     
     // Om det är en e-postrapport
@@ -473,74 +492,74 @@ const PendingTasks = () => {
   };
 
   const getDisplayData = () => {
-    if (!pendingTasks || !emailReports) {
-        return [];
-    }
-
-    // Skapa en Map för att hålla de slutliga unika objekten med ID som nyckel
     const uniqueDataMap = new Map();
     
-    // För att debugga
-    console.log("Email reports innan filtrering:", emailReports.length);
-    console.log("Pending tasks innan filtrering:", pendingTasks.length);
-    
-    // Prioritera email-rapporter (lägg till dem först)
-    if (emailReports && emailReports.length > 0) {
-        emailReports.forEach(report => {
-            if (report && report.id) {
-                uniqueDataMap.set(report.id, {
-                    ...report,
-                    id: `email-${report.id}`,
-                    type: 'email'
-                });
-            }
-        });
-    }
-    
-    // Lägg till vanliga uppgifter (om de inte redan finns i mappen)
-    if (pendingTasks && pendingTasks.length > 0) {
-        pendingTasks.forEach(task => {
-            if (task && task.id && !uniqueDataMap.has(task.id)) {
-                uniqueDataMap.set(task.id, {
-                    ...task,
-                    id: `task-${task.id}`,
-                    type: 'task'
-                });
-            }
-        });
-    }
-    
-    // Lägg till godkända uppgifter om filterknappen är aktiverad
-    if (showApproved && approvedTasks && approvedTasks.length > 0) {
+    // Välj vilka kolumner och data att visa baserat på om vi visar godkända uppgifter eller ej
+    if (showApproved) {
+      // När vi visar godkända uppgifter, visa bara de godkända
+      if (approvedTasks && approvedTasks.length > 0) {
+        console.log(`Lägger till ${approvedTasks.length} godkända uppgifter till vyn`);
         approvedTasks.forEach(task => {
-            if (task && task.id && !uniqueDataMap.has(task.id)) {
-                uniqueDataMap.set(task.id, {
-                    ...task,
-                    id: `approved-${task.id}`,
-                    type: 'approved',
-                    approved: true
-                });
-            }
+          if (task && task.id) {
+            // Logga för debugging
+            console.log("Lägger till godkänd uppgift:", task.id, task);
+            
+            uniqueDataMap.set(task.id, {
+              ...task,
+              id: `approved-${task.id}`,
+              type: 'approved',
+              approved: true
+            });
+          }
         });
+      }
+    } else {
+      // När vi visar väntande uppgifter, visa både e-postrapporter och väntande uppgifter
+      
+      // Lägg till e-postrapporter (om de inte redan finns i mappen)
+      if (emailReports && emailReports.length > 0) {
+        emailReports.forEach(report => {
+          if (report && report.id) {
+            uniqueDataMap.set(report.id, {
+              ...report,
+              id: `email-${report.id}`,
+              type: 'email'
+            });
+          }
+        });
+      }
+      
+      // Lägg till vanliga uppgifter (om de inte redan finns i mappen)
+      if (pendingTasks && pendingTasks.length > 0) {
+        pendingTasks.forEach(task => {
+          if (task && task.id) {
+            uniqueDataMap.set(task.id, {
+              ...task,
+              id: `task-${task.id}`,
+              type: 'task'
+            });
+          }
+        });
+      }
     }
     
     // Konvertera Map till array för rendering
     const finalData = Array.from(uniqueDataMap.values());
     
     // Logga för felsökning
-    console.log(`Visar ${finalData.length} unika objekt`);
+    console.log(`Visar ${finalData.length} unika objekt, varav ${finalData.filter(item => item.approved).length} godkända`);
     
     return finalData;
   };
 
   const getColumns = () => {
-    // Använd e-postrapportkolumner om vi är på fliken "Väntande uppgifter"
-    if (!showApproved) {
-      return emailReportColumns;
+    // Om showApproved är true, använd alltid pendingTaskColumns
+    if (showApproved) {
+      return pendingTaskColumns;
     }
     
-    // Annars använd vanliga väntande uppgiftskolumner
-    return pendingTaskColumns;
+    // Annars använd emailReportColumns för väntande uppgifter
+    return emailReportColumns;
   };
 
   const getRowClassName = (row) => {
@@ -615,7 +634,7 @@ const PendingTasks = () => {
       {getDisplayData().length === 0 ? (
         <div className="text-center py-10">
           <p className="text-gray-500 dark:text-gray-400">
-            {!showApproved ? t('pendingTasks.noTasks') : t('pendingTasks.noTasks')}
+            {!showApproved ? t('pendingTasks.noTasks') : t('pendingTasks.noApprovedTasks')}
           </p>
         </div>
       ) : (

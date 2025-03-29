@@ -350,8 +350,8 @@ const translations = {
 
   pendingTasks: {
     title: 'Väntande uppgifter',
-    addNew: 'Skapa förfrågan',
-    details: 'Uppgiftsdetaljer',
+    noTasks: 'Inga väntande uppgifter att visa',
+    noApprovedTasks: 'Inga godkända uppgifter att visa',
     showApproved: 'Visa godkända',
     emailReport: 'Väntande uppgift',
     fields: {
@@ -385,7 +385,6 @@ const translations = {
       approvedTasksError: 'Ett fel uppstod när godkända uppgifter skulle hämtas',
       emailCheckError: 'Ett fel uppstod vid läsning av e-post'
     },
-    noTasks: 'Inga väntande uppgifter',
     noDescription: 'Ingen beskrivning',
     reviewRequest: 'Granska förfrågan',
     addComments: 'Lägg till kommentarer',

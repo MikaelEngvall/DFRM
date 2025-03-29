@@ -350,9 +350,11 @@ export default {
 
   pendingTasks: {
     title: 'Pending Tasks',
+    noTasks: 'No pending tasks to show',
+    noApprovedTasks: 'No approved tasks to show',
+    showApproved: 'Show approved',
     addNew: 'Create request',
     details: 'Pending task details',
-    showApproved: 'Show approved',
     emailReport: 'Pending task',
     fields: {
       task: 'Task',
@@ -386,7 +388,6 @@ export default {
       approvedTasksError: 'An error occurred while fetching approved tasks',
       emailCheckError: 'An error occurred while checking emails'
     },
-    noTasks: 'No pending tasks',
     noDescription: 'No description',
     reviewRequest: 'Review request',
     addComments: 'Add comments',

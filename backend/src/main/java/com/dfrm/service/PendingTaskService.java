@@ -79,7 +79,7 @@ public class PendingTaskService {
         pendingTask.setStatus("REVIEWED");
         
         Task task = pendingTask.getTask();
-        task.setStatus(TaskStatus.APPROVED.name());
+        task.setStatus(TaskStatus.REVIEWED.name());
         
         // Översätt beskrivningen till alla språk
         String sourceLanguage = translateClient.detectLanguage(task.getDescription());
@@ -277,7 +277,7 @@ public class PendingTaskService {
         // Filtrera efter uppgifter med status = APPROVED
         List<PendingTask> approvedTasks = allTasks.stream()
             .filter(pendingTask -> pendingTask.getTask() != null && 
-                    "APPROVED".equals(pendingTask.getTask().getStatus()))
+                    "REVIEWED".equals(pendingTask.getTask().getStatus()))
             .toList();
 
         

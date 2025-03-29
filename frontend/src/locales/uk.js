@@ -347,9 +347,9 @@ const translations = {
 
   pendingTasks: {
     title: 'Очікуючі завдання',
-    addNew: 'Створити запит',
-    details: 'Деталі очікуючого завдання',
-    showApproved: 'Показати схвалені',
+    noTasks: 'Немає очікуючих завдань для відображення',
+    noApprovedTasks: 'Немає затверджених завдань для відображення',
+    showApproved: 'Показати затверджені',
     emailReport: 'Очікуюче завдання',
     fields: {
       task: 'Завдання',
@@ -383,7 +383,6 @@ const translations = {
       approvedTasksError: 'Помилка при отриманні схвалених завдань',
       emailCheckError: 'Помилка при перевірці пошти'
     },
-    noTasks: 'Немає очікуючих завдань',
     noDescription: 'Немає опису',
     reviewRequest: 'Розглянути запит',
     addComments: 'Додати коментарі',
