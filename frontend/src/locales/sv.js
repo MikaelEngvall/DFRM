@@ -302,6 +302,7 @@ const translations = {
       APPROVED: 'Godkänd',
       REJECTED: 'Avvisad',
       NOT_FEASIBLE: 'Ej genomförbar',
+      CONVERTED: 'Konverterad',
     },
     messages: {
       saveSuccess: 'Uppgiften har sparats',

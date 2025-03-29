@@ -140,6 +140,7 @@ const PendingTasks = () => {
       key: 'taskStatus',
       label: t('tasks.fields.status'),
       render: (_, pendingTask) => {
+        // Försök först med task, sedan med status på pendingTask och till sist med ett standardvärde
         const status = pendingTask.task?.status || pendingTask.status || 'PENDING';
         return t(`tasks.status.${status}`);
       }
@@ -148,11 +149,16 @@ const PendingTasks = () => {
       key: 'reviewedBy',
       label: t('pendingTasks.fields.reviewedBy'),
       render: (_, pendingTask) => {
+        // Kontrollera reviewedBy-objektet och visa namn om det finns
         if (pendingTask.reviewedBy) {
-          return `${pendingTask.reviewedBy.firstName || ''} ${pendingTask.reviewedBy.lastName || ''}`;
-        } else {
-          return '-';
+          // Om reviewedBy är ett objekt med namn
+          if (typeof pendingTask.reviewedBy === 'object') {
+            return `${pendingTask.reviewedBy.firstName || ''} ${pendingTask.reviewedBy.lastName || ''}`.trim() || '-';
+          }
+          // Om reviewedBy bara är ett ID, visa det istället
+          return typeof pendingTask.reviewedBy === 'string' ? pendingTask.reviewedBy : '-';
         }
+        return '-';
       }
     },
     {
@@ -528,7 +534,7 @@ const PendingTasks = () => {
             // Logga för debugging
             console.log("Lägger till godkänd uppgift:", task.id, task);
             
-            // Se till att task-objektet är meningsfullt
+            // Se till att task-objektet är meningsfullt och att reviewedBy-fältet finns
             const enhancedTask = {
               ...task,
               id: `approved-${task.id}`,
@@ -537,9 +543,11 @@ const PendingTasks = () => {
               // Om task saknas, skapa ett grundläggande task-objekt från tillgänglig data
               task: task.task || {
                 title: task.description || `Uppgift ${task.id}`,
-                status: task.status || 'REVIEWED',
+                status: task.status || 'CONVERTED',
                 priority: 'MEDIUM'
-              }
+              },
+              // Säkerställ att reviewedBy finns och är korrekt formaterat
+              reviewedBy: task.reviewedBy || { firstName: 'Okänd', lastName: '' }
             };
 
             uniqueDataMap.set(task.id, enhancedTask);
