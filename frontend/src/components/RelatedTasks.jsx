@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { taskService } from '../services';
+import { taskService, apartmentService, tenantService } from '../services';
 import { useLocale } from '../contexts/LocaleContext';
+import { useTaskModal } from '../contexts/TaskModalContext';
 import {
   ClockIcon,
   CheckCircleIcon, 
@@ -14,15 +15,57 @@ import {
 const RelatedTasks = ({ entityType, entityId, limit = 5, showAddButton = true }) => {
   const { t } = useLocale();
   const navigate = useNavigate();
+  const { openTaskModal } = useTaskModal();
   const [tasks, setTasks] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [apartments, setApartments] = useState([]);
+  const [tenants, setTenants] = useState([]);
 
   useEffect(() => {
     if (entityId) {
       fetchRelatedTasks();
+      
+      // Hämta även lägenhet eller hyresgäst-data baserat på typ
+      if (entityType === 'apartment') {
+        fetchApartment();
+      } else if (entityType === 'tenant') {
+        fetchTenant();
+      }
     }
   }, [entityId, entityType]);
+  
+  const fetchApartment = async () => {
+    try {
+      // Hämta specifika lägenheten först
+      const apartment = await apartmentService.getApartmentById(entityId);
+      if (apartment) {
+        setApartments([apartment]);
+      } else {
+        // Fallback: hämta alla lägenheter om vi inte kan hämta den specifika
+        const allApartments = await apartmentService.getAllApartments();
+        setApartments(allApartments);
+      }
+    } catch (err) {
+      console.error('Error fetching apartment:', err);
+    }
+  };
+  
+  const fetchTenant = async () => {
+    try {
+      // Hämta specifika hyresgästen först
+      const tenant = await tenantService.getTenantById(entityId);
+      if (tenant) {
+        setTenants([tenant]);
+      } else {
+        // Fallback: hämta alla hyresgäster om vi inte kan hämta den specifika
+        const allTenants = await tenantService.getAllTenants();
+        setTenants(allTenants);
+      }
+    } catch (err) {
+      console.error('Error fetching tenant:', err);
+    }
+  };
 
   const fetchRelatedTasks = async () => {
     try {
@@ -90,15 +133,21 @@ const RelatedTasks = ({ entityType, entityId, limit = 5, showAddButton = true })
   };
 
   const handleAddTask = () => {
-    const searchParams = new URLSearchParams();
-    
     if (entityType === 'apartment') {
-      searchParams.set('apartmentId', entityId);
+      const apartment = apartments.find(a => a.id === entityId);
+      if (apartment) {
+        openTaskModal({ apartment });
+      } else {
+        openTaskModal({ apartmentId: entityId });
+      }
     } else if (entityType === 'tenant') {
-      searchParams.set('tenantId', entityId);
+      const tenant = tenants.find(t => t.id === entityId);
+      if (tenant) {
+        openTaskModal({ tenant });
+      } else {
+        openTaskModal({ tenantId: entityId });
+      }
     }
-    
-    navigate(`/tasks/new?${searchParams.toString()}`);
   };
 
   const handleViewAll = () => {

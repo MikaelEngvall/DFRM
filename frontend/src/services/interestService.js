@@ -139,7 +139,6 @@ export const interestService = {
   
   checkEmails: async () => {
     try {
-      console.log('Manually checking interest emails');
       const response = await api.post('/api/interests/check-emails');
       
       // Rensa cache efter ändring
@@ -316,5 +315,4 @@ function clearInterestCache() {
   localStorage.removeItem(CACHE_KEYS.INTERESTS);
   localStorage.removeItem(CACHE_KEYS.INTERESTS_FOR_REVIEW);
   localStorage.removeItem(CACHE_KEYS.REVIEWED_INTERESTS);
-  console.log('Interest cache cleared');
 } 

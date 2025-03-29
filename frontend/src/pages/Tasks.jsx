@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
 import AlertModal from '../components/AlertModal';
@@ -9,6 +9,7 @@ import { PlusIcon, PaperAirplaneIcon, FunnelIcon, XMarkIcon } from '@heroicons/r
 import { taskService, apartmentService, tenantService, userService, taskMessageService } from '../services';
 import { useLocale } from '../contexts/LocaleContext';
 import { useAuth } from '../contexts/AuthContext';
+import { useTaskModal } from '../contexts/TaskModalContext';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import TaskMessages from '../components/TaskMessages';
 
@@ -19,7 +20,7 @@ const Tasks = () => {
   const navigate = useNavigate();
   const params = useParams();
   const queryParams = new URLSearchParams(location.search);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const { isTaskModalOpen, initialTaskData, openTaskModal, closeTaskModal } = useTaskModal();
   const [selectedTask, setSelectedTask] = useState(null);
   const [tasks, setTasks] = useState([]);
   const [apartments, setApartments] = useState([]);
@@ -50,6 +51,9 @@ const Tasks = () => {
     priority: queryParams.get('priority') || '',
   });
   const [showFilters, setShowFilters] = useState(false);
+
+  const initialDataProcessedRef = useRef(false);
+  const initialLoadRef = useRef(false);
 
   const renderAssignedUser = (assignedUserId) => {
     if (!assignedUserId) return '-';
@@ -95,7 +99,110 @@ const Tasks = () => {
 
   useEffect(() => {
     fetchInitialData();
-  }, []);
+    
+    // Hantera URL-parametrar - men endast en gång vid första renderingen
+    if (!initialLoadRef.current) {
+      initialLoadRef.current = true;
+      
+      if (queryParams.get('tenantId')) {
+        openTaskModal({
+          tenantId: queryParams.get('tenantId')
+        });
+        return; // Avsluta early för att undvika att processa initialData i samma rendering
+      } else if (queryParams.get('apartmentId')) {
+        openTaskModal({
+          apartmentId: queryParams.get('apartmentId')
+        });
+        return; // Avsluta early för att undvika att processa initialData i samma rendering
+      }
+    }
+    
+    // Om vi har initialTaskData och vi inte redan har bearbetat det
+    if (initialTaskData && 
+        Object.keys(initialTaskData).length > 0 && 
+        !initialDataProcessedRef.current && 
+        apartments.length > 0 && 
+        tenants.length > 0) {
+      
+      initialDataProcessedRef.current = true;
+      
+      // Uppdatera formuläret med initialTaskData
+      setFormData(prev => ({
+        ...prev,
+        ...initialTaskData
+      }));
+      
+      // Om vi har tenant-objektet, använd det för att fylla i tenantId och eventuell lägenhet
+      if (initialTaskData.tenant) {
+        const tenant = initialTaskData.tenant;
+        
+        // Uppdatera formData med hyresgäst och eventuell lägenhet
+        setFormData(prev => ({
+          ...prev,
+          tenantId: tenant.id,
+          // Om hyresgästen har en lägenhet kopplad, fyll i den också
+          apartmentId: tenant.apartmentId || 
+                      (tenant.apartment && typeof tenant.apartment === 'object' ? tenant.apartment.id : tenant.apartment)
+        }));
+        
+        // Nu när vi har ställt in initial data, återställ context för att förhindra ytterligare loopar
+        setTimeout(() => initialDataProcessedRef.current = false, 500);
+      } 
+      // Om vi bara har tenantId, använd det
+      else if (initialTaskData.tenantId) {
+        setFormData(prev => ({
+          ...prev,
+          tenantId: initialTaskData.tenantId
+        }));
+        
+        // Leta efter hyresgästen för att se om den har en lägenhet kopplad
+        const tenant = tenants.find(t => t.id === initialTaskData.tenantId);
+        if (tenant) {
+          handleTenantSelect(tenant);
+        }
+        
+        // Nu när vi har ställt in initial data, återställ context för att förhindra ytterligare loopar
+        setTimeout(() => initialDataProcessedRef.current = false, 500);
+      }
+      
+      // Om vi har apartment-objektet, använd det
+      if (initialTaskData.apartment) {
+        const apartment = initialTaskData.apartment;
+        
+        // Uppdatera formData med lägenhet
+        setFormData(prev => ({
+          ...prev,
+          apartmentId: apartment.id
+        }));
+        
+        // Om det finns hyresgäster kopplade till lägenheten, fyll i första hyresgästen
+        if (apartment.tenants && apartment.tenants.length > 0) {
+          handleApartmentSelect(apartment);
+        }
+      } 
+      // Om vi bara har apartmentId, använd det
+      else if (initialTaskData.apartmentId) {
+        setFormData(prev => ({
+          ...prev,
+          apartmentId: initialTaskData.apartmentId
+        }));
+        
+        // Leta efter lägenheten för att se om den har hyresgäster
+        const apartment = apartments.find(a => a.id === initialTaskData.apartmentId);
+        if (apartment) {
+          handleApartmentSelect(apartment);
+        }
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialTaskData, apartments.length, tenants.length, openTaskModal]);
+  
+  // När modalen stängs, återställ initialDataProcessedRef
+  useEffect(() => {
+    if (!isTaskModalOpen) {
+      initialDataProcessedRef.current = false;
+    }
+  }, [isTaskModalOpen]);
 
   const fetchInitialData = async () => {
     try {
@@ -132,9 +239,66 @@ const Tasks = () => {
     }));
   };
 
-  // Ny funktion för att hantera val av lägenhet
-  const handleApartmentSelect = (apartment) => {
+  // När en hyresgäst väljs, uppdatera lägenhetsfältet om hyresgästen har en kopplad lägenhet
+  const handleTenantSelect = (tenant) => {
+    // Uppdatera alltid formData med vald hyresgäst
+    setFormData(prev => ({
+      ...prev,
+      tenantId: tenant.id
+    }));
     
+    // Kolla om hyresgästen har en lägenhet
+    if (tenant) {
+      // Olika API-implementationer kan returnera olika strukturer
+      // Variant 1: tenant.apartment är ett ID
+      if (tenant.apartmentId) {
+        setFormData(prev => ({
+          ...prev,
+          apartmentId: tenant.apartmentId
+        }));
+        console.log(`Hittade lägenhet direkt via tenant.apartmentId: ${tenant.apartmentId}`);
+      } 
+      // Variant 2: tenant.apartment är ett objekt
+      else if (tenant.apartment && typeof tenant.apartment === 'object' && tenant.apartment.id) {
+        setFormData(prev => ({
+          ...prev,
+          apartmentId: tenant.apartment.id
+        }));
+        console.log(`Hittade lägenhet direkt via tenant.apartment.id: ${tenant.apartment.id}`);
+      }
+      // Variant 3: tenant.apartment är ett ID som sträng
+      else if (tenant.apartment && typeof tenant.apartment === 'string') {
+        setFormData(prev => ({
+          ...prev,
+          apartmentId: tenant.apartment
+        }));
+        console.log(`Hittade lägenhet direkt via tenant.apartment: ${tenant.apartment}`);
+      }
+      // Om ingen av ovanstående, leta efter lägenheten i listan
+      else {
+        // Sök i apartments efter en lägenhet som har denna hyresgäst kopplad
+        const relatedApartment = apartments.find(apt => 
+          apt.tenants && apt.tenants.some(t => 
+            (typeof t === 'string' && t === tenant.id) || 
+            (typeof t === 'object' && t.id === tenant.id)
+          )
+        );
+        
+        if (relatedApartment) {
+          setFormData(prev => ({
+            ...prev,
+            apartmentId: relatedApartment.id
+          }));
+          console.log(`Hittade lägenhet via sökning: ${relatedApartment.street} ${relatedApartment.number}, LGH ${relatedApartment.apartmentNumber}`);
+        } else {
+          console.log('Hittade ingen lägenhet kopplad till denna hyresgäst');
+        }
+      }
+    }
+  };
+
+  // Förbättrad funktion för att hantera val av lägenhet
+  const handleApartmentSelect = (apartment) => {
     // Uppdatera alltid formData med vald lägenhet
     setFormData(prev => ({
       ...prev,
@@ -153,15 +317,17 @@ const Tasks = () => {
             ...prev,
             tenantId: relatedTenant.id
           }));
+          console.log(`Hittade hyresgäst direkt via apartment.tenants: ${relatedTenant.firstName} ${relatedTenant.lastName}`);
         }
       } 
       // I andra API-implementationer kan det vara en array av objekt
-      else if (apartment.tenants[0].id) {
+      else if (typeof apartment.tenants[0] === 'object' && apartment.tenants[0].id) {
         const tenantId = apartment.tenants[0].id;
         setFormData(prev => ({
           ...prev,
           tenantId: tenantId
         }));
+        console.log(`Hittade hyresgäst direkt via apartment.tenants[0].id: ${tenantId}`);
       }
     } else {
       console.log('Lägenheten har inga kopplade hyresgäster, söker efter relaterade hyresgäster...');
@@ -170,7 +336,7 @@ const Tasks = () => {
       const relatedTenants = tenants.filter(tenant => 
         tenant.apartment && (
           tenant.apartment === apartment.id || 
-          tenant.apartment.id === apartment.id || 
+          (typeof tenant.apartment === 'object' && tenant.apartment.id === apartment.id) || 
           tenant.apartmentId === apartment.id
         )
       );
@@ -189,50 +355,20 @@ const Tasks = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError(null);
+    
     try {
-      // Skapa en kopia av formData med aktuell användare som assignedBy för nya uppgifter
-      const taskData = { ...formData };
+      const taskData = {
+        ...formData,
+        assignedByUserId: currentUser.id
+      };
       
-      // Logga data som skickas till servern för felsökning
-      console.log('Skickar uppgiftsdata till servern:', taskData);
-      
-      if (!selectedTask) {
-        // För ny uppgift, sätt automatiskt assignedByUserId till aktuell användare
-        taskData.assignedByUserId = currentUser.id;
-      }
-      
-      // Säkerställ att tenantId och apartmentId är strängar, inte objekt
-      if (taskData.tenantId && typeof taskData.tenantId === 'object') {
-        taskData.tenantId = taskData.tenantId.id;
-      }
-      
-      if (taskData.apartmentId && typeof taskData.apartmentId === 'object') {
-        taskData.apartmentId = taskData.apartmentId.id;
-      }
-      
-      if (selectedTask) {
-        // För existerande uppgift, uppdatera återkommande mönster om det har ändrats
-        if (selectedTask.isRecurring !== taskData.isRecurring || 
-            selectedTask.recurringPattern !== taskData.recurringPattern) {
-          await taskService.updateRecurringPattern(selectedTask.id, taskData.recurringPattern);
-        }
-        await taskService.updateTask(selectedTask.id, taskData);
-      } else {
-        // För ny uppgift, skapa normal eller återkommande beroende på valet
-        if (taskData.isRecurring && taskData.recurringPattern) {
-          await taskService.createRecurringTask(taskData);
-        } else {
-          await taskService.createTask(taskData);
-        }
-      }
-      
-      await fetchInitialData();
-      setIsModalOpen(false);
-      setSelectedTask(null);
-      resetForm();
+      await taskService.createTask(taskData);
+      closeTaskModal();
+      fetchInitialData();
     } catch (err) {
-      setError(selectedTask ? t('tasks.messages.saveError') : t('tasks.messages.saveError'));
-      console.error('Error saving task:', err);
+      console.error('Error creating task:', err);
+      setError(t('tasks.errors.createError'));
     }
   };
 
@@ -251,6 +387,7 @@ const Tasks = () => {
       isRecurring: false,
       recurringPattern: '',
     });
+    closeTaskModal();
   };
 
   const handleEdit = (task) => {
@@ -280,7 +417,7 @@ const Tasks = () => {
       recurringPattern: task.recurringPattern || '',
     });
     
-    setIsModalOpen(true);
+    openTaskModal();
   };
 
   const handleDelete = (task) => {
@@ -383,7 +520,7 @@ const Tasks = () => {
             onClick={() => {
               resetForm();
               setSelectedTask(null);
-              setIsModalOpen(true);
+              openTaskModal();
             }}
             className="bg-primary text-white px-4 py-2 rounded-md hover:bg-secondary transition-colors flex items-center"
           >
@@ -511,9 +648,9 @@ const Tasks = () => {
       
       {/* Modalform för att lägga till/redigera uppgifter */}
       <Modal
-        isOpen={isModalOpen}
+        isOpen={isTaskModalOpen}
         onClose={() => {
-          setIsModalOpen(false);
+          closeTaskModal();
           setSelectedTask(null);
           resetForm();
         }}
@@ -643,6 +780,7 @@ const Tasks = () => {
                 name="tenantId"
                 value={formData.tenantId}
                 onChange={handleInputChange}
+                onSelect={handleTenantSelect}
                 options={tenants}
                 displayField={(tenant) => `${tenant.firstName} ${tenant.lastName}`}
                 placeholder={t('common.search')}

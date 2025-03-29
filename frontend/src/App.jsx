@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'r
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { LocaleProvider } from './contexts/LocaleContext';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { TaskModalProvider } from './contexts/TaskModalContext';
 import PrivateRoute from './components/PrivateRoute';
 import Navigation from './components/Navigation';
 import Dashboard from './pages/Dashboard';
@@ -49,100 +50,110 @@ const App = () => {
       <ThemeProvider>
         <LocaleProvider>
           <AuthProvider>
-            <div className="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-200">
-              <Routes>
-                <Route path="/login" element={<Login />} />
-                
-                {/* Skyddade rutter med navigation */}
-                <Route path="/" element={
-                  <PrivateRoute>
-                    <NavigationWrapper>
-                      <Navigate to="/dashboard" replace />
-                    </NavigationWrapper>
-                  </PrivateRoute>
-                } />
-                
-                <Route path="/dashboard" element={
-                  <PrivateRoute>
-                    <NavigationWrapper>
-                      <Dashboard />
-                    </NavigationWrapper>
-                  </PrivateRoute>
-                } />
-                
-                <Route path="/apartments" element={
-                  <PrivateRoute>
-                    <NavigationWrapper>
-                      <Apartments />
-                    </NavigationWrapper>
-                  </PrivateRoute>
-                } />
-                
-                <Route path="/tenants" element={
-                  <PrivateRoute>
-                    <NavigationWrapper>
-                      <Tenants />
-                    </NavigationWrapper>
-                  </PrivateRoute>
-                } />
-                
-                <Route path="/keys" element={
-                  <PrivateRoute>
-                    <NavigationWrapper>
-                      <Keys />
-                    </NavigationWrapper>
-                  </PrivateRoute>
-                } />
-                
-                <Route path="/tasks" element={
-                  <PrivateRoute>
-                    <NavigationWrapper>
-                      <Tasks />
-                    </NavigationWrapper>
-                  </PrivateRoute>
-                } />
-                
-                <Route path="/pending-tasks" element={
-                  <PrivateRoute>
-                    <NavigationWrapper>
-                      <PendingTasks />
-                    </NavigationWrapper>
-                  </PrivateRoute>
-                } />
-                
-                <Route path="/interests" element={
-                  <PrivateRoute requiredRoles={['ADMIN', 'SUPERADMIN']}>
-                    <NavigationWrapper>
-                      <Interests />
-                    </NavigationWrapper>
-                  </PrivateRoute>
-                } />
-                
-                <Route path="/calendar" element={
-                  <PrivateRoute>
-                    <NavigationWrapper>
-                      <Calendar />
-                    </NavigationWrapper>
-                  </PrivateRoute>
-                } />
-                
-                <Route path="/staff" element={
-                  <PrivateRoute>
-                    <NavigationWrapper>
-                      <Staff />
-                    </NavigationWrapper>
-                  </PrivateRoute>
-                } />
-                
-                <Route path="/import" element={
-                  <PrivateRoute requiredRoles={['SUPERADMIN']}>
-                    <NavigationWrapper>
-                      <Import />
-                    </NavigationWrapper>
-                  </PrivateRoute>
-                } />
-              </Routes>
-            </div>
+            <TaskModalProvider>
+              <div className="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-200">
+                <Routes>
+                  <Route path="/login" element={<Login />} />
+                  
+                  {/* Skyddade rutter med navigation */}
+                  <Route path="/" element={
+                    <PrivateRoute>
+                      <NavigationWrapper>
+                        <Navigate to="/dashboard" replace />
+                      </NavigationWrapper>
+                    </PrivateRoute>
+                  } />
+                  
+                  <Route path="/dashboard" element={
+                    <PrivateRoute>
+                      <NavigationWrapper>
+                        <Dashboard />
+                      </NavigationWrapper>
+                    </PrivateRoute>
+                  } />
+                  
+                  <Route path="/apartments" element={
+                    <PrivateRoute>
+                      <NavigationWrapper>
+                        <Apartments />
+                      </NavigationWrapper>
+                    </PrivateRoute>
+                  } />
+                  
+                  <Route path="/tenants" element={
+                    <PrivateRoute>
+                      <NavigationWrapper>
+                        <Tenants />
+                      </NavigationWrapper>
+                    </PrivateRoute>
+                  } />
+                  
+                  <Route path="/keys" element={
+                    <PrivateRoute>
+                      <NavigationWrapper>
+                        <Keys />
+                      </NavigationWrapper>
+                    </PrivateRoute>
+                  } />
+                  
+                  <Route path="/tasks" element={
+                    <PrivateRoute>
+                      <NavigationWrapper>
+                        <Tasks />
+                      </NavigationWrapper>
+                    </PrivateRoute>
+                  } />
+                  
+                  <Route path="/tasks/:id" element={
+                    <PrivateRoute>
+                      <NavigationWrapper>
+                        <Tasks />
+                      </NavigationWrapper>
+                    </PrivateRoute>
+                  } />
+                  
+                  <Route path="/pending-tasks" element={
+                    <PrivateRoute>
+                      <NavigationWrapper>
+                        <PendingTasks />
+                      </NavigationWrapper>
+                    </PrivateRoute>
+                  } />
+                  
+                  <Route path="/interests" element={
+                    <PrivateRoute requiredRoles={['ADMIN', 'SUPERADMIN']}>
+                      <NavigationWrapper>
+                        <Interests />
+                      </NavigationWrapper>
+                    </PrivateRoute>
+                  } />
+                  
+                  <Route path="/calendar" element={
+                    <PrivateRoute>
+                      <NavigationWrapper>
+                        <Calendar />
+                      </NavigationWrapper>
+                    </PrivateRoute>
+                  } />
+                  
+                  <Route path="/staff" element={
+                    <PrivateRoute>
+                      <NavigationWrapper>
+                        <Staff />
+                      </NavigationWrapper>
+                    </PrivateRoute>
+                  } />
+                  
+                  <Route path="/import" element={
+                    <PrivateRoute requiredRoles={['SUPERADMIN']}>
+                      <NavigationWrapper>
+                        <Import />
+                      </NavigationWrapper>
+                    </PrivateRoute>
+                  } />
+                </Routes>
+              </div>
+            </TaskModalProvider>
           </AuthProvider>
         </LocaleProvider>
       </ThemeProvider>
