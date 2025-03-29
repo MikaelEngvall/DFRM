@@ -373,6 +373,7 @@ export default {
       approve: 'Zatwierdź',
       reject: 'Odrzuć',
       review: 'Sprawdź',
+      checkEmails: 'Sprawdź pocztę'
     },
     messages: {
       approveSuccess: 'Zadanie zostało zatwierdzone',
@@ -382,6 +383,7 @@ export default {
       createSuccess: 'Wniosek został utworzony',
       createError: 'Wystąpił błąd podczas tworzenia wniosku',
       approvedTasksError: 'Wystąpił błąd podczas pobierania zatwierdzonych zadań',
+      emailCheckError: 'Wystąpił błąd podczas sprawdzania poczty'
     },
     noTasks: 'Brak oczekujących zadań',
     noDescription: 'Brak opisu',

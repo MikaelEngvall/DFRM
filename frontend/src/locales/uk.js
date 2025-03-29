@@ -370,6 +370,7 @@ const translations = {
       approve: 'Схвалити',
       reject: 'Відхилити',
       review: 'Розглянути',
+      checkEmails: 'Перевірити пошту'
     },
     messages: {
       approveSuccess: 'Завдання схвалено',
@@ -379,6 +380,7 @@ const translations = {
       createSuccess: 'Запит створено',
       createError: 'Помилка при створенні запиту',
       approvedTasksError: 'Помилка при отриманні схвалених завдань',
+      emailCheckError: 'Помилка при перевірці пошти'
     },
     noTasks: 'Немає очікуючих завдань',
     noDescription: 'Немає опису',
@@ -584,6 +586,48 @@ const translations = {
       updateSuccess: 'Показ оновлено',
       updateError: 'Виникла помилка під час оновлення показу'
     }
+  },
+
+  interests: {
+    title: 'Запити зацікавлених',
+    details: 'Деталі запиту зацікавленості',
+    showReviewed: 'Показати розглянуті',
+    fields: {
+      name: 'Ім\'я',
+      email: 'Електронна пошта',
+      phone: 'Телефон',
+      contact: 'Контактна інформація',
+      message: 'Повідомлення',
+      apartment: 'Квартира',
+      pageUrl: 'URL сторінки',
+      received: 'Отримано',
+      status: 'Статус',
+      reviewedBy: 'Розглянуто',
+      reviewedAt: 'Дата розгляду',
+      reviewComments: 'Коментарі до розгляду',
+      userAgent: 'User Agent',
+      remoteIp: 'IP-адреса'
+    },
+    actions: {
+      review: 'Розглянути',
+      reject: 'Відхилити',
+      checkEmails: 'Перевірити пошту'
+    },
+    status: {
+      NEW: 'Новий',
+      REVIEWED: 'Розглянуто',
+      REJECTED: 'Відхилено',
+    },
+    messages: {
+      reviewSuccess: 'Запит зацікавленості розглянуто',
+      reviewError: 'Помилка при розгляді запиту зацікавленості',
+      rejectSuccess: 'Запит зацікавленості відхилено',
+      rejectError: 'Помилка при відхиленні запиту зацікавленості',
+      emailCheckError: 'Помилка при перевірці пошти'
+    },
+    noInterests: 'Немає запитів зацікавленості',
+    reviewRequest: 'Розглянути запит зацікавленості',
+    addComments: 'Додати коментарі',
   },
 };
 

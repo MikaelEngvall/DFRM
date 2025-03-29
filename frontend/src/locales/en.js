@@ -373,6 +373,7 @@ export default {
       approve: 'Approve',
       reject: 'Reject',
       review: 'Review',
+      checkEmails: 'Check Emails'
     },
     messages: {
       approveSuccess: 'Task has been approved',
@@ -382,6 +383,7 @@ export default {
       createSuccess: 'Request has been created',
       createError: 'An error occurred while creating the request',
       approvedTasksError: 'An error occurred while fetching approved tasks',
+      emailCheckError: 'An error occurred while checking emails'
     },
     noTasks: 'No pending tasks',
     noDescription: 'No description',
@@ -547,6 +549,7 @@ export default {
     actions: {
       review: 'Review',
       reject: 'Reject',
+      checkEmails: 'Check Emails'
     },
     status: {
       NEW: 'New',
@@ -558,6 +561,7 @@ export default {
       reviewError: 'An error occurred while reviewing the interest inquiry',
       rejectSuccess: 'Interest inquiry has been rejected',
       rejectError: 'An error occurred while rejecting the interest inquiry',
+      emailCheckError: 'An error occurred while checking emails'
     },
     noInterests: 'No interest inquiries',
     reviewRequest: 'Review Interest Inquiry',
