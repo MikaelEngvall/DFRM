@@ -36,6 +36,7 @@ const translations = {
     unauthorized: 'У вас немає прав для виконання цієї дії',
     notSpecified: 'Не вказано',
     at: 'о',
+    forceUpdate: 'Примусове оновлення',
   },
 
   languages: {

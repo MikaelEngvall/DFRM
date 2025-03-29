@@ -36,6 +36,7 @@ export default {
     unauthorized: 'Nie masz uprawnień do wykonania tej akcji',
     notSpecified: 'Nie określono',
     at: 'o',
+    forceUpdate: 'Wymuś aktualizację'
   },
 
   languages: {
@@ -591,5 +592,47 @@ export default {
       updateSuccess: 'Pokaz został zaktualizowany',
       updateError: 'Wystąpił błąd podczas aktualizacji pokazu'
     }
-  }
+  },
+
+  interests: {
+    title: 'Zapytania o mieszkania',
+    details: 'Szczegóły zapytania',
+    showReviewed: 'Pokaż rozpatrzone',
+    fields: {
+      name: 'Imię i nazwisko',
+      email: 'Email',
+      phone: 'Telefon',
+      contact: 'Informacje kontaktowe',
+      message: 'Wiadomość',
+      apartment: 'Mieszkanie',
+      pageUrl: 'URL strony',
+      received: 'Otrzymano',
+      status: 'Status',
+      reviewedBy: 'Rozpatrzone przez',
+      reviewedAt: 'Data rozpatrzenia',
+      reviewComments: 'Komentarze do przeglądu',
+      userAgent: 'User Agent',
+      remoteIp: 'Adres IP'
+    },
+    actions: {
+      review: 'Rozpatrz',
+      reject: 'Odrzuć',
+      checkEmails: 'Sprawdź pocztę'
+    },
+    status: {
+      NEW: 'Nowy',
+      REVIEWED: 'Rozpatrzony',
+      REJECTED: 'Odrzucony',
+    },
+    messages: {
+      reviewSuccess: 'Zapytanie zostało rozpatrzone',
+      reviewError: 'Wystąpił błąd podczas rozpatrywania zapytania',
+      rejectSuccess: 'Zapytanie zostało odrzucone',
+      rejectError: 'Wystąpił błąd podczas odrzucania zapytania',
+      emailCheckError: 'Wystąpił błąd podczas sprawdzania poczty'
+    },
+    noInterests: 'Brak zapytań o mieszkania',
+    reviewRequest: 'Rozpatrz zapytanie',
+    addComments: 'Dodaj komentarze',
+  },
 }; 

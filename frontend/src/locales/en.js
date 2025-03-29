@@ -36,6 +36,7 @@ export default {
     unauthorized: 'You do not have permission to perform this action',
     notSpecified: 'Not specified',
     at: 'at',
+    forceUpdate: 'Force Update',
   },
 
   languages: {
