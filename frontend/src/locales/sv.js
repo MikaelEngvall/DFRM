@@ -290,6 +290,7 @@ const translations = {
       descriptionPlaceholder: 'Ange en detaljerad beskrivning av uppgiften...',
       descriptionPresent: 'Beskrivning finns tillgänglig',
       noDescription: 'Ingen beskrivning tillgänglig',
+      phoneNumber: 'Telefonnummer',
     },
     priorities: {
       LOW: 'Låg',

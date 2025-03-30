@@ -40,6 +40,7 @@ const Calendar = () => {
     isRecurring: false,
     recurringPattern: '',
     descriptionLanguage: '',
+    phoneNumber: '',
   });
   const [successMessage, setSuccessMessage] = useState('');
   const [showingFormData, setShowingFormData] = useState({
@@ -324,10 +325,14 @@ const Calendar = () => {
       // Hämta den fullständiga uppgiften med alla detaljer
       const fullTask = await taskService.getTaskById(task.id);
       
+      console.log('Mottagen uppgift från server:', fullTask);
+      
       // Använd översättningen om den finns, annars använd originalbeskrivningen
       const description = fullTask.translations && fullTask.translations[currentLocale] 
         ? fullTask.translations[currentLocale] 
         : fullTask.description;
+      
+      console.log('Beskrivningsvärde som används:', description);
       
       // Hantera dueDate korrekt med hänsyn till tidzoner
       let formattedDueDate = '';
@@ -367,6 +372,7 @@ const Calendar = () => {
       
       // Skapa en formaterad titel som innehåller adress, lägenhetsnummer och telefonnummer
       let formattedTitle = fullTask.title || '';
+      let phoneNumber = '';
       
       // Om vi har lägenhetsdata, använd adressen och lägenhetsnumret
       if (apartmentData) {
@@ -379,11 +385,23 @@ const Calendar = () => {
         
         // Lägg till telefonnummer om det finns hyresgästdata
         if (tenantData && tenantData.phone) {
-          formattedTitle += ` ${tenantData.phone}`;
+          phoneNumber = tenantData.phone;
+        }
+      } else {
+        // Försök att extrahera telefonnummer från den befintliga titeln om det finns
+        const phoneRegex = /(\d{3,4}[-\s]?\d{2,3}[-\s]?\d{2,3})/;
+        const phoneMatch = formattedTitle.match(phoneRegex);
+        if (phoneMatch) {
+          phoneNumber = phoneMatch[1];
+          // Ta bort telefonnumret från titeln för att undvika duplicering
+          formattedTitle = formattedTitle.replace(phoneRegex, '').trim();
         }
       }
       
-      setSelectedTask(fullTask);
+      setSelectedTask({
+        ...fullTask,
+        phoneNumber // Spara telefonnumret i selectedTask för användning i modalen
+      });
       
       // Skapa en kopia av form data och sätt värdena
       const updatedFormData = {
@@ -399,9 +417,15 @@ const Calendar = () => {
         comments: fullTask.comments || '',
         isRecurring: fullTask.isRecurring || false,
         recurringPattern: fullTask.recurringPattern || '',
+        phoneNumber: phoneNumber // Lägg till telefonnumret i formData
       };
       
+      console.log('FormData innan uppdatering:', formData);
+      console.log('FormData som kommer att användas:', updatedFormData);
+      
       setFormData(updatedFormData);
+      console.log('Modal kommer att öppnas med beskrivningen:', updatedFormData.description);
+      
       setIsTaskModalOpen(true);
     } catch (error) {
       console.error('Error fetching task details:', error);
@@ -435,6 +459,7 @@ const Calendar = () => {
       comments: '',
       isRecurring: false,
       recurringPattern: '',
+      phoneNumber: '',
     });
     
     setIsTaskModalOpen(true);
@@ -455,6 +480,7 @@ const Calendar = () => {
       isRecurring: false,
       recurringPattern: '',
       descriptionLanguage: '',
+      phoneNumber: '',
     });
   };
 
@@ -1032,6 +1058,25 @@ const Calendar = () => {
               required
             />
             
+            {formData.phoneNumber && (
+              <div className="mb-3">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {t('tasks.fields.phoneNumber') || 'Telefonnummer'}
+                </label>
+                <div className="mt-1">
+                  <a 
+                    href={`tel:${formData.phoneNumber.replace(/[\s-]/g, '')}`}
+                    className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                      <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
+                    </svg>
+                    {formData.phoneNumber}
+                  </a>
+                </div>
+              </div>
+            )}
+            
             <div className="mb-3">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 {t('tasks.fields.description')}
@@ -1043,12 +1088,10 @@ const Calendar = () => {
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                 rows="5"
                 placeholder={t('tasks.fields.descriptionPlaceholder')}
+                onFocus={() => {
+                  console.log('Textarean har fokus med beskrivning:', formData.description);
+                }}
               />
-              {selectedTask && (
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  {formData.description ? t('tasks.fields.descriptionPresent') : t('tasks.fields.noDescription')}
-                </p>
-              )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -288,6 +288,7 @@ export default {
       descriptionPlaceholder: 'Enter a detailed description of the task...',
       descriptionPresent: 'Description is available',
       noDescription: 'No description available',
+      phoneNumber: 'Phone number',
     },
     priorities: {
       LOW: 'Low',
