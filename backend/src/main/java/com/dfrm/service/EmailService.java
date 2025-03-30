@@ -1,5 +1,6 @@
 package com.dfrm.service;
 
+import java.io.UnsupportedEncodingException;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.ExecutorService;
@@ -391,12 +392,15 @@ public class EmailService {
         try {
             log.info("Skickar e-post till {} mottagare från {}", toEmails.size(), fromEmail);
             
+            // Konvertera radbrytningar till HTML-radbrytningar
+            String formattedHtmlContent = preserveLineBreaks(htmlContent);
+            
             // Skapa meddelandet
             MimeMessage message = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
             
-            // Ange avsändare
-            helper.setFrom(fromEmail);
+            // Ange avsändare med namn "Duggals Fastigheter"
+            helper.setFrom(new InternetAddress(fromEmail, "Duggals Fastigheter"));
             
             // Sätt huvudmottagaren (från-adressen får också meddelandet)
             log.info("Lägger till huvudmottagare: {}", fromEmail);
@@ -411,15 +415,15 @@ public class EmailService {
             
             // Sätt ämne och innehåll
             helper.setSubject(subject);
-            helper.setText(htmlContent, true);
+            helper.setText(formattedHtmlContent, true);
             
             // Skicka meddelandet i batches om det är många mottagare
             if (toEmails.size() > 50) {
-                return sendInBatches(fromEmail, toEmails, subject, htmlContent);
+                return sendInBatches(fromEmail, toEmails, subject, formattedHtmlContent);
             } else {
                 // Skicka meddelandet
                 log.info("Skickar e-post med {} BCC-mottagare", toEmails.size());
-            mailSender.send(message);
+                mailSender.send(message);
                 log.info("E-post skickad framgångsrikt");
                 return true;
             }
@@ -434,6 +438,30 @@ public class EmailService {
                 log.error("Slutgiltigt fel vid skickande av e-post: {}", directEx.getMessage(), directEx);
                 return false;
             }
+        }
+    }
+    
+    /**
+     * Konverterar vanliga radbrytningar (\n) till HTML-radbrytningar (<br>)
+     * för att bevara formateringen i mejlet.
+     * 
+     * @param content Innehållet att formatera
+     * @return HTML-formaterat innehåll med bevarade radbrytningar
+     */
+    private String preserveLineBreaks(String content) {
+        if (content == null) {
+            return "";
+        }
+        
+        // Först kontrollera om innehållet redan är HTML
+        boolean isHtml = content.trim().startsWith("<") && content.contains("</");
+        
+        if (isHtml) {
+            // Om det redan är HTML, ersätt bara vanliga radbrytningar
+            return content.replace("\n", "<br>");
+        } else {
+            // Om det är vanlig text, konvertera till HTML med radbrytningar
+            return "<div>" + content.replace("\n", "<br>") + "</div>";
         }
     }
     
@@ -457,7 +485,8 @@ public class EmailService {
                 MimeMessage message = mailSender.createMimeMessage();
                 MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
                 
-                helper.setFrom(fromEmail);
+                // Ange avsändare med namn "Duggals Fastigheter"
+                helper.setFrom(new InternetAddress(fromEmail, "Duggals Fastigheter"));
                 
                 // Sätt huvudmottagaren (från-adressen får också meddelandet)
                 log.info("Lägger till huvudmottagare i batch: {}", fromEmail);
@@ -496,8 +525,11 @@ public class EmailService {
     /**
      * Skickar e-post med direkt SMTP-koppling som reservmetod.
      */
-    public boolean sendBatchWithDirectMethod(String fromEmail, List<String> recipients, String subject, String htmlContent) throws MessagingException {
+    public boolean sendBatchWithDirectMethod(String fromEmail, List<String> recipients, String subject, String htmlContent) throws MessagingException, UnsupportedEncodingException {
         log.info("Försöker skicka direkt via SMTP till {} mottagare", recipients.size());
+        
+        // Konvertera radbrytningar till HTML-radbrytningar
+        String formattedHtmlContent = preserveLineBreaks(htmlContent);
         
         // Hämta SMTP-inställningar från JavaMailSender
         JavaMailSenderImpl mailSenderImpl = (JavaMailSenderImpl) mailSender;
@@ -525,7 +557,9 @@ public class EmailService {
         
         // Skapa meddelande
         MimeMessage message = new MimeMessage(session);
-        message.setFrom(new InternetAddress(fromEmail));
+        
+        // Sätt avsändare med namn "Duggals Fastigheter"
+        message.setFrom(new InternetAddress(fromEmail, "Duggals Fastigheter", "UTF-8"));
         
         // Sätt huvudmottagaren (från-adressen får också meddelandet)
         log.info("Lägger till huvudmottagare i direktmetoden: {}", fromEmail);
@@ -540,7 +574,7 @@ public class EmailService {
         
         // Skapa HTML-innehåll
         MimeBodyPart messageBodyPart = new MimeBodyPart();
-        messageBodyPart.setContent(htmlContent, "text/html; charset=UTF-8");
+        messageBodyPart.setContent(formattedHtmlContent, "text/html; charset=UTF-8");
         
         Multipart multipart = new MimeMultipart();
         multipart.addBodyPart(messageBodyPart);

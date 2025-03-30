@@ -1,24 +1,57 @@
 import api from './api';
 import { getFromCache, saveToCache, addToCache, updateInCache, removeFromCache, CACHE_KEYS } from '../utils/cacheManager';
 
-const getAllTasks = async (params = {}, bypassCache = false) => {
+const getAllTasks = async (bypassCache = false) => {
   try {
-    // Kontrollera om data finns i cache och om vi inte explicit vill gå förbi cachen
+    console.log(`getAllTasks anropat med bypassCache=${bypassCache}`);
+    
+    // Kontrollera om data finns i cachen och om vi inte vill gå förbi den
     if (!bypassCache) {
-      const cachedData = getFromCache(CACHE_KEYS.TASKS);
-      if (cachedData) return cachedData;
+      const cachedTasks = getFromCache(CACHE_KEYS.TASKS);
+      if (cachedTasks) {
+        console.log(`Returnerar ${cachedTasks.length} uppgifter från cache`);
+        return cachedTasks;
+      }
+    } else {
+      console.log('Tvingad att gå förbi cachen och hämta från API');
     }
     
-    const response = await api.get('/api/tasks', { params });
+    console.log('Hämtar alla uppgifter från API');
+    const response = await api.get('/api/tasks');
+    console.log(`API returnerade ${response.data.length} uppgifter`);
     
-    // Spara den nya datan i cache endast om API-anropet lyckades
-    if (response.data) {
-      saveToCache(CACHE_KEYS.TASKS, response.data);
+    // Normalisera datumsformatet för alla uppgifter
+    const normalizedTasks = response.data.map(task => {
+      if (!task.dueDate) return task;
+      
+      try {
+        // Kontrollera datumformatet
+        if (typeof task.dueDate === 'string') {
+          // Vi behåller datumet som det är, men ser till att det är i YYYY-MM-DD-format
+          if (task.dueDate.includes('T')) {
+            const dateObj = new Date(task.dueDate);
+            task.dueDate = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
+          }
+        } else if (task.dueDate instanceof Date) {
+          const dateObj = task.dueDate;
+          task.dueDate = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
+        }
+      } catch (e) {
+        console.error('Fel vid normalisering av datum för uppgift:', e, task);
+      }
+      
+      return task;
+    });
+    
+    // Spara den nya datan i cache om vi inte ska gå förbi den
+    if (!bypassCache) {
+      console.log(`Sparar ${normalizedTasks.length} uppgifter i cache`);
+      saveToCache(CACHE_KEYS.TASKS, normalizedTasks);
     }
     
-    return response.data;
+    return normalizedTasks;
   } catch (error) {
-    console.error('Error fetching tasks:', error);
+    console.error('Error fetching all tasks:', error);
     throw error;
   }
 };

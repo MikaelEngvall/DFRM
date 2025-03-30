@@ -38,13 +38,33 @@ const showingService = {
       const normalizedShowings = response.data.map(showing => {
         if (!showing.dateTime) return showing;
         
-        const date = new Date(showing.dateTime);
-        const localDate = new Date(date.getTime() + date.getTimezoneOffset() * 60000);
-        
-        return {
-          ...showing,
-          dateTime: showing.dateTime
-        };
+        try {
+          // Normalisera datumet för att hantera tidszoner korrekt
+          const date = new Date(showing.dateTime);
+          
+          // Formatera datum i ISO-format
+          const year = date.getFullYear();
+          const month = String(date.getMonth() + 1).padStart(2, '0');
+          const day = String(date.getDate()).padStart(2, '0');
+          const hours = String(date.getHours()).padStart(2, '0');
+          const minutes = String(date.getMinutes()).padStart(2, '0');
+          
+          // Skapa en lokalversion av datumet med tidzon-kompensation
+          const formattedDateTime = `${year}-${month}-${day}T${hours}:${minutes}:00`;
+          
+          // Lägg till ett hjälpfält för filtrering i kalender-komponent
+          const dateObj = new Date(year, month - 1, day, hours, minutes);
+          
+          return {
+            ...showing,
+            dateTime: formattedDateTime,
+            // Lägg till ett hjälpfält för att underlätta filtrering
+            _dateTimeObj: dateObj
+          };
+        } catch (e) {
+          console.error('Fel vid normalisering av visningstid:', e, showing);
+          return showing;
+        }
       });
       
       return normalizedShowings;

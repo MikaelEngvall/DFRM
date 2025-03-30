@@ -124,13 +124,51 @@ const Calendar = () => {
       
       // Hämta alla uppgifter för månaden, tvinga hämtning från API genom att sätta bypassCache till true
       console.log('Kalender: Anropar taskService.getTasksByDateRange...');
-      const fetchedTasks = await taskService.getTasksByDateRange(startDate, endDate, true);
+      
+      // Försök flera gånger om det behövs, med escalation till mer direkta metoder
+      let fetchedTasks = [];
+      try {
+        // Först försöker vi med vanligt API-anrop
+        fetchedTasks = await taskService.getTasksByDateRange(startDate, endDate, true);
+        console.log(`Kalender: Mottog ${fetchedTasks.length} uppgifter för perioden via API`);
+      } catch (error) {
+        console.error('Kalender: Kunde inte hämta uppgifter via API:', error);
+        
+        // Om API misslyckas, försök hämta alla uppgifter och filtrera manuellt
+        console.log('Kalender: Försöker med direkt hämtning av alla uppgifter...');
+        const allTasks = await taskService.getAllTasks(true);
+        
+        // Filtrera manuellt baserat på datum
+        fetchedTasks = allTasks.filter(task => {
+          if (!task.dueDate) return false;
+          
+          try {
+            const taskDate = typeof task.dueDate === 'string' 
+              ? new Date(task.dueDate.includes('T') ? task.dueDate : `${task.dueDate}T00:00:00`)
+              : task.dueDate;
+            
+            // Konvertera till lokala datum objekt
+            const taskLocalDate = new Date(taskDate.getFullYear(), taskDate.getMonth(), taskDate.getDate());
+            const startLocalDate = new Date(firstDay.getFullYear(), firstDay.getMonth(), firstDay.getDate());
+            const endLocalDate = new Date(lastDay.getFullYear(), lastDay.getMonth(), lastDay.getDate());
+            
+            return taskLocalDate >= startLocalDate && taskLocalDate <= endLocalDate;
+          } catch (e) {
+            console.error('Fel vid filtrering av uppgiftsdatum:', e);
+            return false;
+          }
+        });
+        
+        console.log(`Kalender: Filtrerade fram ${fetchedTasks.length} uppgifter manuellt`);
+      }
       
       // Verifiera att vi faktiskt får data
       console.log(`Kalender: Mottog ${fetchedTasks.length} uppgifter för perioden`);
+      console.log('Kalender: Dagar i aktuell månad:', getDaysInMonth(year, month));
       
       if (fetchedTasks.length === 0) {
         console.warn('Kalender: Varning - Inga uppgifter hämtades för den aktuella perioden');
+        console.warn('Kalender: Kontrollerar direkt i databasen/API om det verkligen finns uppgifter...');
       } else {
         console.log('Kalender: Exempel på hämtade uppgifter:', 
           fetchedTasks.slice(0, 3).map(task => ({
@@ -307,10 +345,48 @@ const Calendar = () => {
         }
       }
       
+      // Hämta lägenhetsdata om det finns ett apartmentId
+      let apartmentData = null;
+      if (fullTask.apartmentId) {
+        try {
+          apartmentData = await apartmentService.getApartmentById(fullTask.apartmentId);
+        } catch (e) {
+          console.error('Kunde inte hämta lägenhetsdata:', e);
+        }
+      }
+      
+      // Hämta hyresgästdata om det finns ett tenantId
+      let tenantData = null;
+      if (fullTask.tenantId) {
+        try {
+          tenantData = await tenantService.getTenantById(fullTask.tenantId);
+        } catch (e) {
+          console.error('Kunde inte hämta hyresgästdata:', e);
+        }
+      }
+      
+      // Skapa en formaterad titel som innehåller adress, lägenhetsnummer och telefonnummer
+      let formattedTitle = fullTask.title || '';
+      
+      // Om vi har lägenhetsdata, använd adressen och lägenhetsnumret
+      if (apartmentData) {
+        const street = apartmentData.street || '';
+        const number = apartmentData.number || '';
+        const apartmentNumber = apartmentData.apartmentNumber || '';
+        
+        // Kombinera adress och lägenhetsnummer i titeln
+        formattedTitle = `${street} ${number} lgh ${apartmentNumber}`;
+        
+        // Lägg till telefonnummer om det finns hyresgästdata
+        if (tenantData && tenantData.phone) {
+          formattedTitle += ` ${tenantData.phone}`;
+        }
+      }
+      
       setSelectedTask(fullTask);
       setFormData({
         ...formData,
-        title: fullTask.title || '',
+        title: formattedTitle,
         description: description || '',
         dueDate: formattedDueDate,
         priority: fullTask.priority || '',
@@ -340,9 +416,12 @@ const Calendar = () => {
     const formattedDate = `${year}-${month}-${day}`;
     
     setSelectedTask(null);
+    
+    // Skapa en tom formulärdata med standardvärden
+    // Låt titel och beskrivning vara tomma för att uppmuntra användaren att fylla i korrekt information
     setFormData({
-      title: '',
-      description: '',
+      title: '', // Användaren förväntas ange adress, lägenhetsnummer och telefonnummer här
+      description: '', // Användaren förväntas ange meddelandet från e-post här
       dueDate: formattedDate,
       priority: 'MEDIUM',
       status: 'PENDING',
@@ -767,11 +846,26 @@ const Calendar = () => {
       // Filtrera visningar för denna dag (behåll befintlig filtreringslogik för visningar)
       const dayShowings = showings.filter(showing => {
         if (!showing.dateTime) return false;
-        const showingDate = new Date(showing.dateTime);
-        // Jämför endast år, månad och dag, ignorera tid
-        return showingDate.getDate() === day && 
-               showingDate.getMonth() === month && 
-               showingDate.getFullYear() === year;
+        
+        try {
+          // Använd _dateTimeObj om det finns tillgängligt
+          if (showing._dateTimeObj instanceof Date) {
+            const matches = showing._dateTimeObj.getDate() === day && 
+                           showing._dateTimeObj.getMonth() === month && 
+                           showing._dateTimeObj.getFullYear() === year;
+            return matches;
+          }
+          
+          // Fallback till manuell konvertering
+          const showingDate = new Date(showing.dateTime);
+          // Jämför endast år, månad och dag, ignorera tid
+          return showingDate.getDate() === day && 
+                 showingDate.getMonth() === month && 
+                 showingDate.getFullYear() === year;
+        } catch (e) {
+          console.error('Fel vid filtrering av visning:', e);
+          return false;
+        }
       });
       
       days.push(
