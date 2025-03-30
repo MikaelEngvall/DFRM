@@ -502,6 +502,19 @@ const Calendar = () => {
     }
   };
 
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'COMPLETED':
+        return 'bg-green-100 dark:bg-green-800 border-green-200 dark:border-green-700';
+      case 'IN_PROGRESS':
+        return 'bg-blue-100 dark:bg-blue-800 border-blue-200 dark:border-blue-700';
+      case 'PENDING':
+        return 'bg-yellow-100 dark:bg-yellow-800 border-yellow-200 dark:border-yellow-700';
+      default:
+        return 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700';
+    }
+  };
+
   const getPriorityDotColor = (priority) => {
     switch (priority) {
       case 'URGENT':
@@ -517,28 +530,15 @@ const Calendar = () => {
     }
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'COMPLETED':
-        return 'bg-green-100 dark:bg-green-800';
-      case 'IN_PROGRESS':
-        return 'bg-blue-100 dark:bg-blue-800';
-      case 'PENDING':
-        return 'bg-yellow-100 dark:bg-yellow-800';
-      default:
-        return 'bg-gray-100 dark:bg-gray-800';
-    }
-  };
-
   const renderTaskItem = (task) => {
     return (
       <div 
         key={task.id} 
-        className={`rounded-md px-2 py-1 mb-1 cursor-pointer ${getPriorityDotColor(task.priority)}`}
+        className={`rounded-md px-2 py-1 mb-1 cursor-pointer w-full border ${getStatusColor(task.status)}`}
         onClick={() => handleTaskClick(task)}
       >
-        <div className="flex items-center space-x-1">
-          <div className={`h-2 w-2 rounded-full ${getStatusColor(task.status)}`}></div>
+        <div className="flex items-center space-x-2">
+          <div className={`h-3 w-3 rounded-full flex-shrink-0 ${getPriorityDotColor(task.priority)}`}></div>
           <span className="text-xs font-medium truncate">{task.title}</span>
         </div>
       </div>
@@ -681,12 +681,15 @@ const Calendar = () => {
           e.stopPropagation();
           handleShowingClick(showing);
         }}
-        className="mb-1 p-2 rounded-md cursor-pointer bg-purple-600 text-white border border-purple-800 shadow-sm hover:shadow-md transition-shadow duration-200"
+        className="mb-1 px-2 py-1 rounded-md cursor-pointer border border-purple-300 dark:border-purple-700 bg-purple-100 dark:bg-purple-900 shadow-sm hover:shadow-md transition-shadow duration-200 w-full"
       >
-        <div className="flex flex-col overflow-hidden">
-          <div className="font-medium truncate">{showing.title || showing.address}</div>
-          <div className="text-xs text-purple-100 truncate">
-            {formatTime(showing.dateTime)} - {assignedUser ? assignedUser.firstName : t('showings.unassigned')}
+        <div className="flex items-center space-x-2">
+          <div className="h-3 w-3 rounded-full flex-shrink-0 bg-purple-600 border border-purple-700 shadow-sm"></div>
+          <div className="truncate">
+            <div className="font-medium text-xs truncate text-purple-900 dark:text-purple-100">{showing.title || showing.address}</div>
+            <div className="text-xs text-purple-700 dark:text-purple-300 truncate">
+              {formatTime(showing.dateTime)} - {assignedUser ? assignedUser.firstName : t('showings.unassigned')}
+            </div>
           </div>
         </div>
       </div>
@@ -883,7 +886,7 @@ const Calendar = () => {
               {day}
             </span>
           </div>
-          <div className="px-1">
+          <div className="px-2 pb-1">
             {/* Visa visningar först */}
             {dayShowings.length > 0 && dayShowings.map(showing => renderShowingItem(showing))}
             
