@@ -95,11 +95,6 @@ const PendingTasks = () => {
   // Originalkolumner för vanliga väntande uppgifter
   const pendingTaskColumns = [
     {
-      key: 'id',
-      label: 'ID',
-      render: (_, pendingTask) => pendingTask.id ? pendingTask.id.replace('approved-', '') : '-'
-    },
-    {
       key: 'taskTitle',
       label: t('pendingTasks.fields.task'),
       render: (_, pendingTask) => {
@@ -149,14 +144,18 @@ const PendingTasks = () => {
       key: 'reviewedBy',
       label: t('pendingTasks.fields.reviewedBy'),
       render: (_, pendingTask) => {
-        // Kontrollera reviewedBy-objektet och visa namn om det finns
+        // Visa bara förnamnet på den som granskade uppgiften
         if (pendingTask.reviewedBy) {
           // Om reviewedBy är ett objekt med namn
           if (typeof pendingTask.reviewedBy === 'object') {
-            return `${pendingTask.reviewedBy.firstName || ''} ${pendingTask.reviewedBy.lastName || ''}`.trim() || '-';
+            return pendingTask.reviewedBy.firstName || '-';
           }
-          // Om reviewedBy bara är ett ID, visa det istället
-          return typeof pendingTask.reviewedBy === 'string' ? pendingTask.reviewedBy : '-';
+          // Om reviewedBy bara är ett ID, försök hämta användarens namn
+          if (typeof pendingTask.reviewedBy === 'string') {
+            // Här skulle vi behöva en funktion för att hämta användarnamn från ID
+            // Tills vidare visa bara ID:t
+            return pendingTask.reviewedBy;
+          }
         }
         return '-';
       }
@@ -247,13 +246,35 @@ const PendingTasks = () => {
         approvedData.forEach((task, index) => {
           console.log(`Uppgift ${index+1}:`);
           console.log(`  ID: ${task.id}`);
-          console.log(`  ReviewedBy: ${task.reviewedBy ? task.reviewedBy.firstName : 'ingen'}`);
+          console.log(`  ReviewedBy: ${task.reviewedBy ? (typeof task.reviewedBy === 'object' ? task.reviewedBy.firstName : task.reviewedBy) : 'ingen'}`);
           console.log(`  Task: ${task.task ? task.task.title : 'ingen uppgift'}`);
         });
       }
       
+      // Berika godkända uppgifter med användarnamn om de saknas
+      const enrichedApprovedTasks = await Promise.all(
+        approvedData.map(async (task) => {
+          // Om reviewedBy bara är ett ID, försök hämta användarobjektet
+          if (task.reviewedBy && typeof task.reviewedBy === 'string') {
+            try {
+              const user = users.find(u => u.id === task.reviewedBy);
+              if (user) {
+                task.reviewedBy = {
+                  id: user.id,
+                  firstName: user.firstName,
+                  lastName: user.lastName
+                };
+              }
+            } catch (err) {
+              console.error(`Kunde inte hämta användarinformation för ${task.reviewedBy}:`, err);
+            }
+          }
+          return task;
+        })
+      );
+      
       // Sätt godkända uppgifter
-      setApprovedTasks(approvedData);
+      setApprovedTasks(enrichedApprovedTasks);
       return true;
     } catch (err) {
       console.error('Error fetching approved tasks:', err);
@@ -303,20 +324,29 @@ const PendingTasks = () => {
     } 
     // Om det är en vanlig väntande uppgift
     else if (item && item.task) {
+      // Extraktion av task för att hantera fall där task är tomt eller saknar egenskaper
+      const task = item.task || {};
+      
+      // Utskrift för debugging
+      console.log("Task-objekt som används för formulär:", task);
+      
       setFormData({
-        title: item.task.title || '',
-        description: item.task.description || '',
-        dueDate: item.task.dueDate ? new Date(item.task.dueDate).toISOString().split('T')[0] : '',
-        priority: item.task.priority || '',
-        status: item.task.status || '',
-        assignedToUserId: item.task.assignedToUserId || '',
-        assignedByUserId: item.task.assignedByUserId || currentUser.id,
-        apartmentId: item.task.apartmentId || '',
-        tenantId: item.task.tenantId || '',
-        comments: item.task.comments || '',
-        isRecurring: item.task.isRecurring || false,
-        recurringPattern: item.task.recurringPattern || '',
+        title: task.title || item.description || '',
+        description: task.description || item.description || '',
+        dueDate: task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : '',
+        priority: task.priority || 'MEDIUM',
+        status: task.status || item.status || 'PENDING',
+        assignedToUserId: task.assignedToUserId || task.assignedUser || '',
+        assignedByUserId: task.assignedByUserId || currentUser.id,
+        apartmentId: task.apartmentId || item.apartmentId || '',
+        tenantId: task.tenantId || item.tenantId || '',
+        comments: task.comments || '',
+        isRecurring: task.isRecurring || false,
+        recurringPattern: task.recurringPattern || '',
       });
+      
+      // Logga det populerade formuläret för felsökning
+      console.log("Populerat formulär:", formData);
     }
     
     setOpenModal(true);
@@ -547,7 +577,9 @@ const PendingTasks = () => {
                 priority: 'MEDIUM'
               },
               // Säkerställ att reviewedBy finns och är korrekt formaterat
-              reviewedBy: task.reviewedBy || { firstName: 'Okänd', lastName: '' }
+              reviewedBy: task.reviewedBy || { firstName: 'Okänd', lastName: '' },
+              // Se till att requestedAt är satt för att visa när uppgiften efterfrågades
+              requestedAt: task.requestedAt || task.reviewedAt || new Date().toISOString()
             };
 
             uniqueDataMap.set(task.id, enhancedTask);
