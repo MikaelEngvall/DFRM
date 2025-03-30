@@ -204,20 +204,65 @@ public class TaskController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
             @PathVariable(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Map<String, LocalDate> pathVars) {
         
+        System.out.println("DEBUG: getTasksByDateRange anropad med startDate=" + startDate + ", endDate=" + endDate);
+        
         // Om startDate och endDate är null, använd variabler från path
         if (startDate == null && pathVars != null && pathVars.containsKey("startDate")) {
             startDate = pathVars.get("startDate");
+            System.out.println("DEBUG: Använder startDate från pathVars: " + startDate);
         }
         
         if (endDate == null && pathVars != null && pathVars.containsKey("endDate")) {
             endDate = pathVars.get("endDate");
+            System.out.println("DEBUG: Använder endDate från pathVars: " + endDate);
         }
         
         // Validera att båda datumen finns
         if (startDate == null || endDate == null) {
+            System.out.println("DEBUG: Saknas datumvärden: startDate=" + startDate + ", endDate=" + endDate);
             throw new IllegalArgumentException("Both startDate and endDate are required");
         }
         
-        return taskService.getTasksByDateRange(startDate, endDate);
+        // Logga de faktiska datumen som kommer att användas
+        System.out.println("DEBUG: Hämtar uppgifter mellan " + startDate + " och " + endDate);
+        
+        // Spara datumen i final-variabler för användning i lambda-uttryck
+        final LocalDate finalStartDate = startDate;
+        final LocalDate finalEndDate = endDate;
+        
+        // Hämta uppgifter från service
+        List<Task> tasks = taskService.getTasksByDateRange(finalStartDate, finalEndDate);
+        
+        // Logga antalet uppgifter som hittades
+        System.out.println("DEBUG: Hittade " + tasks.size() + " uppgifter för intervallet");
+        
+        // Om inga uppgifter hittades, försök hämta alla och filtrera manuellt
+        if (tasks.isEmpty()) {
+            System.out.println("DEBUG: Inga uppgifter hittades, försöker med alternativ metod");
+            List<Task> allTasks = taskService.getAllTasks(null, null, null, null);
+            
+            System.out.println("DEBUG: Totalt antal uppgifter i databasen: " + allTasks.size());
+            
+            // Filtrera uppgifter manuellt med final-variabler
+            List<Task> filteredTasks = allTasks.stream()
+                .filter(task -> {
+                    if (task.getDueDate() == null) {
+                        return false;
+                    }
+                    
+                    // Kontrollera om uppgiften ligger inom intervallet
+                    return !task.getDueDate().isBefore(finalStartDate) && !task.getDueDate().isAfter(finalEndDate);
+                })
+                .toList();
+            
+            System.out.println("DEBUG: Manuellt filtrerat fram " + filteredTasks.size() + " uppgifter");
+            
+            if (!filteredTasks.isEmpty()) {
+                System.out.println("DEBUG: Returnerar manuellt filtrerade uppgifter istället");
+                return filteredTasks;
+            }
+        }
+        
+        return tasks;
     }
 } 

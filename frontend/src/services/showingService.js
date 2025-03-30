@@ -31,6 +31,29 @@ const showingService = {
     }
   },
   
+  getShowingsByDateRange: async (startDate, endDate) => {
+    try {
+      const response = await api.get(`/api/showings/calendar?startDate=${startDate}&endDate=${endDate}`);
+      
+      const normalizedShowings = response.data.map(showing => {
+        if (!showing.dateTime) return showing;
+        
+        const date = new Date(showing.dateTime);
+        const localDate = new Date(date.getTime() + date.getTimezoneOffset() * 60000);
+        
+        return {
+          ...showing,
+          dateTime: showing.dateTime
+        };
+      });
+      
+      return normalizedShowings;
+    } catch (error) {
+      console.error('Error fetching showings by date range:', error);
+      throw error;
+    }
+  },
+  
   getForUser: async (userId) => {
     try {
       const response = await api.get(`/api/showings/user/${userId}`);

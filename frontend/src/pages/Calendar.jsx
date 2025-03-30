@@ -67,6 +67,9 @@ const Calendar = () => {
           if (typeof task.dueDate === 'string') {
             if (task.dueDate.includes('T')) {
               taskDate = new Date(task.dueDate);
+              // Justera för tidszon
+              const offset = taskDate.getTimezoneOffset() * 60000;
+              taskDate = new Date(taskDate.getTime() + offset);
             } else {
               const [y, m, d] = task.dueDate.split('-').map(Number);
               taskDate = new Date(y, m - 1, d);
@@ -85,6 +88,8 @@ const Calendar = () => {
       });
       
       console.log('Uppgifter per dag i aktuell månad:', tasksPerDay);
+      console.log('Totalt antal uppgifter:', tasks.length);
+      console.log('Exempel på uppgifter:', tasks.slice(0, 3));
     };
     
     if (tasks.length > 0) {
@@ -97,42 +102,146 @@ const Calendar = () => {
     setError(null);
     
     try {
-      // Beräkna månadens start- och slutdatum
+      // Beräkna start- och slutdatum baserat på aktuell månad
       const year = currentDate.getFullYear();
       const month = currentDate.getMonth();
-      const startOfMonth = new Date(year, month, 1);
-      const endOfMonth = new Date(year, month + 1, 0);
+      const firstDay = new Date(year, month, 1);
+      const lastDay = new Date(year, month + 1, 0);
       
-      // Formatera datum för API-anrop
-      const startDateStr = startOfMonth.toISOString().split('T')[0];
-      const endDateStr = endOfMonth.toISOString().split('T')[0];
+      // Formatera datumen till "YYYY-MM-DD", och se till att INTE använda toISOString()
+      // eftersom det orsakar problem med tidzoner
+      const formatDateToLocalString = (date) => {
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, '0');
+        const d = String(date.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+      };
       
-      // Logga för felsökning
-      console.log(`Hämtar data för period: ${startDateStr} till ${endDateStr}`);
+      const startDate = formatDateToLocalString(firstDay);
+      const endDate = formatDateToLocalString(lastDay);
       
-      // Hämta både uppgifter och visningar parallellt
-      const [tasksData, usersData, apartmentsData, tenantsData, showingsData] = await Promise.all([
-        taskService.getTasksByDateRange(startDateStr, endDateStr, true), // Satt till true för att undvika cache-problem
-        userService.getAllUsers(),
-        apartmentService.getAllApartments(),
-        tenantService.getAllTenants(),
-        showingService.getForCalendar(startDateStr, endDateStr) // Hämta visningar för kalendern
-      ]);
+      console.log(`Kalender: Hämtar uppgifter för perioden: ${startDate} till ${endDate}`);
       
-      // Logga data för felsökning
-      console.log(`Antal hämtade uppgifter: ${tasksData.length}`);
-      console.log('Uppgifter:', tasksData);
+      // Hämta alla uppgifter för månaden, tvinga hämtning från API genom att sätta bypassCache till true
+      console.log('Kalender: Anropar taskService.getTasksByDateRange...');
+      const fetchedTasks = await taskService.getTasksByDateRange(startDate, endDate, true);
       
-      setTasks(tasksData);
-      setUsers(usersData);
-      setApartments(apartmentsData);
-      setTenants(tenantsData);
-      setShowings(showingsData); // Spara visningar i state
+      // Verifiera att vi faktiskt får data
+      console.log(`Kalender: Mottog ${fetchedTasks.length} uppgifter för perioden`);
       
-      setIsLoading(false);
+      if (fetchedTasks.length === 0) {
+        console.warn('Kalender: Varning - Inga uppgifter hämtades för den aktuella perioden');
+      } else {
+        console.log('Kalender: Exempel på hämtade uppgifter:', 
+          fetchedTasks.slice(0, 3).map(task => ({
+            id: task.id,
+            title: task.title,
+            dueDate: task.dueDate
+          }))
+        );
+      }
+      
+      // Normalisera datumsformatet för alla uppgifter
+      console.log('Kalender: Normaliserar datumformat för uppgifter...');
+      const normalizedTasks = fetchedTasks.map(task => {
+        if (!task.dueDate) {
+          console.log(`Kalender: Uppgift saknar förfallodatum:`, {id: task.id, title: task.title});
+          return task;
+        }
+        
+        // Normalisera datum för att säkerställa korrekt representation
+        let normalizedDate;
+        try {
+          if (typeof task.dueDate === 'string') {
+            if (task.dueDate.includes('T')) {
+              // ISO-format med tid
+              const date = new Date(task.dueDate);
+              normalizedDate = formatDateToLocalString(date);
+              console.log(`Kalender: Normaliserat ISO-datumformat för uppgift ${task.id}: ${task.dueDate} -> ${normalizedDate}`);
+            } else {
+              // Redan i rätt format
+              normalizedDate = task.dueDate;
+              console.log(`Kalender: Uppgift ${task.id} har redan korrekt datumformat: ${normalizedDate}`);
+            }
+          } else if (task.dueDate instanceof Date) {
+            normalizedDate = formatDateToLocalString(task.dueDate);
+            console.log(`Kalender: Normaliserat Date-objekt för uppgift ${task.id}: ${task.dueDate} -> ${normalizedDate}`);
+          }
+          
+          // Skapa ett Date-objekt för _dueDateObj för att underlätta filtrering
+          const dueDateParts = normalizedDate.split('-').map(Number);
+          const dueDateObj = new Date(dueDateParts[0], dueDateParts[1] - 1, dueDateParts[2]);
+          
+          return {
+            ...task,
+            dueDate: normalizedDate,
+            // Lägg till ett extra fält för att underlätta filtrering i kalendervyn
+            _dueDateObj: dueDateObj
+          };
+        } catch (e) {
+          console.error(`Kalender: Fel vid normalisering av datum för uppgift ${task.id}:`, e, task);
+          return task;
+        }
+      });
+      
+      console.log(`Kalender: Uppgifter efter normalisering: ${normalizedTasks.length}`);
+      
+      // Gruppera uppgifter per dag för loggning
+      const tasksByDay = {};
+      normalizedTasks.forEach(task => {
+        if (task.dueDate) {
+          const day = task.dueDate.split('-')[2]; // Extrahera dagen från YYYY-MM-DD
+          if (!tasksByDay[day]) tasksByDay[day] = [];
+          tasksByDay[day].push(task);
+        }
+      });
+      
+      console.log('Kalender: Uppgifter per dag:', Object.keys(tasksByDay).map(day => `${day}: ${tasksByDay[day].length} uppgifter`));
+      
+      setTasks(normalizedTasks);
+      
+      // Hämta också visningarna för kalendern
+      try {
+        const showingsData = await showingService.getShowingsByDateRange(startDate, endDate);
+        setShowings(showingsData);
+      } catch (err) {
+        console.error('Error fetching showings:', err);
+        // Fortsätt trots fel med visningar - det är inte kritiskt
+      }
+      
+      // Hämta användare för att fylla i dropdowns
+      if (users.length === 0) {
+        try {
+          const usersData = await userService.getAllUsers();
+          setUsers(usersData);
+        } catch (err) {
+          console.error('Error fetching users:', err);
+        }
+      }
+      
+      // Hämta lägenheter för att fylla i dropdowns
+      if (apartments.length === 0) {
+        try {
+          const apartmentsData = await apartmentService.getAllApartments();
+          setApartments(apartmentsData);
+        } catch (err) {
+          console.error('Error fetching apartments:', err);
+        }
+      }
+      
+      // Hämta hyresgäster för att fylla i dropdowns
+      if (tenants.length === 0) {
+        try {
+          const tenantsData = await tenantService.getAllTenants();
+          setTenants(tenantsData);
+        } catch (err) {
+          console.error('Error fetching tenants:', err);
+        }
+      }
     } catch (err) {
-      console.error("Error fetching calendar data:", err);
-      setError(t('common.error'));
+      console.error('Kalender: Fel vid hämtning av data:', err);
+      setError(err.message || t('common.error'));
+    } finally {
       setIsLoading(false);
     }
   };
@@ -182,12 +291,28 @@ const Calendar = () => {
         ? fullTask.translations[currentLocale] 
         : fullTask.description;
       
+      // Hantera dueDate korrekt med hänsyn till tidzoner
+      let formattedDueDate = '';
+      if (fullTask.dueDate) {
+        if (fullTask.dueDate.includes('T')) {
+          // Om datumet är i ISO-format med tid, omvandla till lokal tid
+          const dueDate = new Date(fullTask.dueDate);
+          const year = dueDate.getFullYear();
+          const month = String(dueDate.getMonth() + 1).padStart(2, '0');
+          const day = String(dueDate.getDate()).padStart(2, '0');
+          formattedDueDate = `${year}-${month}-${day}`;
+        } else {
+          // Om det är i "YYYY-MM-DD"-format, använd det direkt
+          formattedDueDate = fullTask.dueDate;
+        }
+      }
+      
       setSelectedTask(fullTask);
       setFormData({
         ...formData,
         title: fullTask.title || '',
         description: description || '',
-        dueDate: fullTask.dueDate ? fullTask.dueDate.split('T')[0] : '',
+        dueDate: formattedDueDate,
         priority: fullTask.priority || '',
         status: fullTask.status || '',
         assignedToUserId: fullTask.assignedToUserId || '',
@@ -208,7 +333,11 @@ const Calendar = () => {
   const handleDayClick = (date) => {
     if (!isAdminOrSuperAdmin()) return;
     
-    const formattedDate = date.toISOString().split('T')[0];
+    // Formatera datumet i YYYY-MM-DD-format utan att ändra tidszonen
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const formattedDate = `${year}-${month}-${day}`;
     
     setSelectedTask(null);
     setFormData({
@@ -323,33 +452,15 @@ const Calendar = () => {
   };
 
   const renderTaskItem = (task) => {
-    // Förbättrad loggning för felsökning
-    console.log('Rendering task:', task);
-    console.log('Task ID:', task.id);
-    console.log('Task title:', task.title);
-    console.log('Task dueDate:', task.dueDate);
-    console.log('Task status:', task.status);
-    console.log('Task assignedToUserId:', task.assignedToUserId);
-
-    const statusColor = getStatusColor(task.status || 'PENDING');
-    const assignedUser = users.find(user => user.id === task.assignedToUserId);
-
     return (
-      <div
-        key={task.id}
+      <div 
+        key={task.id} 
+        className={`rounded-md px-2 py-1 mb-1 cursor-pointer ${getPriorityDotColor(task.priority)}`}
         onClick={() => handleTaskClick(task)}
-        className={`mb-1 p-2 rounded cursor-pointer hover:bg-opacity-80 ${statusColor}`}
       >
-        <div className="flex items-center">
-          <div className={`w-3 h-3 min-w-[0.75rem] rounded-full mr-2 ${getPriorityDotColor(task.priority || 'MEDIUM')}`} />
-          <div className="flex-grow">
-            <div className="text-sm font-medium text-gray-900 dark:text-white truncate">
-              {task.title}
-            </div>
-            <div className="text-xs text-gray-600 dark:text-gray-300 truncate">
-              {assignedUser ? assignedUser.firstName : t('tasks.unassigned')}
-            </div>
-          </div>
+        <div className="flex items-center space-x-1">
+          <div className={`h-2 w-2 rounded-full ${getStatusColor(task.status)}`}></div>
+          <span className="text-xs font-medium truncate">{task.title}</span>
         </div>
       </div>
     );
@@ -503,7 +614,112 @@ const Calendar = () => {
     );
   };
 
-  // Uppdatera renderCalendar-funktionen för att inkludera visningar
+  // Robust funktion för att filtrera uppgifter efter datum
+  const filterTasksByDate = (tasks, targetYear, targetMonth, targetDay) => {
+    if (!tasks || tasks.length === 0) return [];
+    
+    // Bygg ett formatterat datum för loggning
+    const targetDateString = `${targetYear}-${String(targetMonth + 1).padStart(2, '0')}-${String(targetDay).padStart(2, '0')}`;
+    
+    // Logga filtreringskriterierna för aktuellt datum
+    const today = new Date();
+    const isToday = targetDay === today.getDate() && 
+                    targetMonth === today.getMonth() && 
+                    targetYear === today.getFullYear();
+                    
+    if (isToday) {
+      console.log(`Kalender: Filtrerar uppgifter för dagens datum: ${targetDateString}`);
+      console.log(`Kalender: Antal uppgifter att filtrera: ${tasks.length}`);
+    }
+    
+    // Filtrera uppgifter direkt baserat på dueDate-strängen om den har formatet YYYY-MM-DD
+    const exactDateMatches = tasks.filter(task => {
+      if (typeof task.dueDate === 'string' && task.dueDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        const [taskYear, taskMonth, taskDay] = task.dueDate.split('-').map(Number);
+        const matches = taskDay === targetDay && 
+                       (taskMonth - 1) === targetMonth && // taskMonth är 1-baserad, targetMonth är 0-baserad
+                       taskYear === targetYear;
+                       
+        if (matches && isToday) {
+          console.log(`Kalender: Direkt strängjämförelse hittade uppgift: ${task.id} - ${task.title}, dueDate=${task.dueDate}`);
+        }
+        
+        return matches;
+      }
+      return false;
+    });
+    
+    if (exactDateMatches.length > 0) {
+      if (isToday) {
+        console.log(`Kalender: Hittade ${exactDateMatches.length} uppgifter med exakt datumjämförelse`);
+      }
+      return exactDateMatches;
+    }
+    
+    // Fallback till konvertering av datumformat
+    const filteredTasks = tasks.filter(task => {
+      if (!task.dueDate) return false;
+      
+      try {
+        // Om vi har ett förberäknat datumobjekt från normaliseringen, använd det
+        if (task._dueDateObj instanceof Date) {
+          const matches = task._dueDateObj.getDate() === targetDay && 
+                         task._dueDateObj.getMonth() === targetMonth && 
+                         task._dueDateObj.getFullYear() === targetYear;
+                         
+          if (matches && isToday) {
+            console.log(`Kalender: Matchad med _dueDateObj: ${task.id} - ${task.title}, dueDate=${task.dueDate}`);
+          }
+          
+          return matches;
+        }
+        
+        // Annars bearbeta datumet direkt från dueDate-fältet
+        let taskDate;
+        if (typeof task.dueDate === 'string') {
+          if (task.dueDate.includes('T')) {
+            // ISO-format med tid
+            taskDate = new Date(task.dueDate);
+            // Justera för tidszon
+            const offset = taskDate.getTimezoneOffset() * 60000;
+            taskDate = new Date(taskDate.getTime() + offset);
+          } else {
+            // Format "YYYY-MM-DD"
+            const [y, m, d] = task.dueDate.split('-').map(Number);
+            taskDate = new Date(y, m - 1, d); // Månad är 0-baserad
+          }
+        } else if (task.dueDate instanceof Date) {
+          taskDate = task.dueDate;
+        } else {
+          console.error('Uppgift har ogiltigt datumformat:', task);
+          return false;
+        }
+        
+        // Jämför endast år, månad och dag
+        const matches = taskDate.getDate() === targetDay && 
+                       taskDate.getMonth() === targetMonth && 
+                       taskDate.getFullYear() === targetYear;
+        
+        // Logga träffar för dagens datum (för felsökning)
+        if (matches && isToday) {
+          console.log(`Kalender: Uppgift matchad med datumkonvertering: ${task.id} - ${task.title}, dueDate=${task.dueDate}`);
+        }
+        
+        return matches;
+      } catch (e) {
+        console.error(`Kalender: Fel vid bearbetning av uppgiftsdatum för ${task.id}:`, e);
+        return false;
+      }
+    });
+    
+    if (isToday) {
+      console.log(`Kalender: Totalt antal matchade uppgifter för dagens datum: ${filteredTasks.length}`);
+    }
+    
+    return filteredTasks;
+  };
+  
+  // Uppdatera renderCalendar-funktionen för att använda den nya filteringsfunktionen
   const renderCalendar = () => {
     const days = [];
     const year = currentDate.getFullYear();
@@ -538,49 +754,17 @@ const Calendar = () => {
       const isAdminOrSuperAdmin = hasRole(['ADMIN', 'SUPERADMIN']);
       const isClickable = isAdminOrSuperAdmin;
       
-      // Filtrera uppgifter för denna dag
-      const dayTasks = tasks.filter(task => {
-        if (!task.dueDate) return false;
-        
-        // Hantera olika format av dueDate
-        let taskDate;
-        try {
-          // Om det är en ISO-sträng
-          if (typeof task.dueDate === 'string') {
-            // Stöd för både "YYYY-MM-DD" och fullt ISO-format
-            if (task.dueDate.includes('T')) {
-              taskDate = new Date(task.dueDate);
-            } else {
-              // För "YYYY-MM-DD" format
-              const [y, m, d] = task.dueDate.split('-').map(Number);
-              taskDate = new Date(y, m - 1, d); // Månad är 0-baserad
-            }
-          } else if (task.dueDate instanceof Date) {
-            taskDate = task.dueDate;
-          } else {
-            console.error('Uppgift har ogiltigt datumformat:', task);
-            return false;
-          }
-          
-          // Jämför endast år, månad och dag, ignorera tid
-          return taskDate.getDate() === day && 
-                 taskDate.getMonth() === month && 
-                 taskDate.getFullYear() === year;
-        } catch (e) {
-          console.error('Fel vid bearbetning av uppgiftsdatum:', e);
-          return false;
-        }
-      });
+      // Använd vår nya robusta filtreringsfunktion
+      const dayTasks = filterTasksByDate(tasks, year, month, day);
       
       // Logga för specifik dag (för felsökning)
       const today = new Date();
       if (day === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
         console.log(`Uppgifter för idag (${day}/${month+1}/${year}):`, dayTasks);
-        console.log(`Alla uppgifter:`, tasks);
-        console.log(`Filtrering för datum: ${day}/${month+1}/${year}`);
+        console.log(`Antal uppgifter för idag: ${dayTasks.length}`);
       }
       
-      // Filtrera visningar för denna dag
+      // Filtrera visningar för denna dag (behåll befintlig filtreringslogik för visningar)
       const dayShowings = showings.filter(showing => {
         if (!showing.dateTime) return false;
         const showingDate = new Date(showing.dateTime);

@@ -185,11 +185,13 @@ const getTasksByDateRange = async (startDate, endDate, bypassCache = false) => {
     const formattedStartDate = typeof startDate === 'string' ? startDate : new Date(startDate).toISOString().split('T')[0];
     const formattedEndDate = typeof endDate === 'string' ? endDate : new Date(endDate).toISOString().split('T')[0];
     
+    console.log(`Formaterade datum: startDate=${formattedStartDate}, endDate=${formattedEndDate}`);
+    
     // Kontrollera om data finns i cache och om vi inte explicit vill gå förbi cachen
     if (!bypassCache) {
       const cachedTasks = getFromCache(CACHE_KEYS.TASKS);
       if (cachedTasks) {
-        console.log('Hämtar uppgifter från cache:', cachedTasks.length);
+        console.log(`Hämtar uppgifter från cache (${cachedTasks.length} uppgifter)`);
         
         // Konvertera sträng-datumen till Date-objekt för att jämförelsen ska fungera
         const startDateObj = new Date(formattedStartDate);
@@ -199,8 +201,12 @@ const getTasksByDateRange = async (startDate, endDate, bypassCache = false) => {
         startDateObj.setHours(0, 0, 0, 0);
         endDateObj.setHours(23, 59, 59, 999); // Slutet av dagen
         
+        console.log(`Datumintervall för filtrering: ${startDateObj.toISOString()} till ${endDateObj.toISOString()}`);
+        
         const filteredTasks = cachedTasks.filter(task => {
-          if (!task.dueDate) return false;
+          if (!task.dueDate) {
+            return false;
+          }
           
           try {
             // Konvertera task.dueDate till endast datum (utan tid)
@@ -222,6 +228,11 @@ const getTasksByDateRange = async (startDate, endDate, bypassCache = false) => {
             
             taskDate.setHours(0, 0, 0, 0); // Sätt tid till midnatt för att jämföra endast datum
             
+            // Logg för att debugga datum-jämförelse (för första 5 uppgifterna)
+            if (filteredTasks.length < 5) {
+              console.log(`Uppgift ${task.id || 'unknown'}: dueDate=${task.dueDate}, parsed=${taskDate.toISOString()}, in range=${taskDate >= startDateObj && taskDate <= endDateObj}`);
+            }
+            
             return taskDate >= startDateObj && taskDate <= endDateObj;
           } catch (e) {
             console.error('Fel vid bearbetning av uppgiftsdatum:', e, task);
@@ -229,26 +240,146 @@ const getTasksByDateRange = async (startDate, endDate, bypassCache = false) => {
           }
         });
         
-        console.log(`Filtrerade ${filteredTasks.length} uppgifter från cache.`);
+        console.log(`Filtrerade ${filteredTasks.length} uppgifter från cache för tidsperioden.`);
+        if (filteredTasks.length > 0) {
+          console.log('Exempel på filtrerade uppgifter:', filteredTasks.slice(0, 3));
+        }
+        
         return filteredTasks;
+      } else {
+        console.log('Inga uppgifter i cache, anropar API.');
       }
+    } else {
+      console.log('bypassCache=true, anropar API direkt.');
     }
     
     console.log(`Anropar API med datum: ${formattedStartDate} till ${formattedEndDate}`);
+    
+    // Ändra anropsmetoden för att använda allmänna /api/tasks-endpointen istället
+    // Eftersom date-range-endpointen verkar vara felaktig eller inte fungera ordentligt
+    try {
+      console.log('Försöker hämta alla uppgifter och filtrera dem lokalt');
+      const allTasksResponse = await api.get('/api/tasks');
+      console.log(`API-svar med ${allTasksResponse.data.length} uppgifter totalt.`);
+      
+      // Filtrera uppgifterna lokalt baserat på dueDate
+      const startDateObj = new Date(formattedStartDate);
+      const endDateObj = new Date(formattedEndDate);
+      startDateObj.setHours(0, 0, 0, 0);
+      endDateObj.setHours(23, 59, 59, 999);
+      
+      const filteredTasks = allTasksResponse.data.filter(task => {
+        if (!task.dueDate) return false;
+        
+        try {
+          let taskDate;
+          if (typeof task.dueDate === 'string') {
+            if (task.dueDate.includes('T')) {
+              taskDate = new Date(task.dueDate);
+            } else {
+              const [y, m, d] = task.dueDate.split('-').map(Number);
+              taskDate = new Date(y, m - 1, d);
+            }
+          } else if (task.dueDate instanceof Date) {
+            taskDate = task.dueDate;
+          } else {
+            return false;
+          }
+          
+          taskDate.setHours(0, 0, 0, 0);
+          
+          return taskDate >= startDateObj && taskDate <= endDateObj;
+        } catch (e) {
+          console.error('Fel vid filtrering av datum:', e);
+          return false;
+        }
+      });
+      
+      console.log(`Filtrerade fram ${filteredTasks.length} uppgifter från API-svaret för datumintervallet`);
+      
+      // Om vi kunde filtrera fram några uppgifter, använd dem
+      if (filteredTasks.length > 0) {
+        const normalizedTasks = filteredTasks.map(task => {
+          if (!task.dueDate) return task;
+          
+          try {
+            // Kontrollera datumformatet
+            if (typeof task.dueDate === 'string') {
+              // Vi behåller datumet som det är, men ser till att det är i YYYY-MM-DD-format
+              if (task.dueDate.includes('T')) {
+                const dateObj = new Date(task.dueDate);
+                task.dueDate = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
+              }
+            } else if (task.dueDate instanceof Date) {
+              const dateObj = task.dueDate;
+              task.dueDate = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
+            }
+          } catch (e) {
+            console.error('Fel vid normalisering av datum för uppgift:', e, task);
+          }
+          
+          return task;
+        });
+        
+        // Spara i cachen
+        if (normalizedTasks && !bypassCache) {
+          saveToCache(CACHE_KEYS.TASKS, normalizedTasks);
+        }
+        
+        return normalizedTasks;
+      }
+    } catch (err) {
+      console.error('Fel vid hämtning av alla uppgifter:', err);
+    }
+    
+    // Fallback: Försök med det ursprungliga date-range API-anropet
+    console.log('Fallback: Provar ursprungliga date-range API-anropet');
     const response = await api.get('/api/tasks/date-range', {
       params: { startDate: formattedStartDate, endDate: formattedEndDate }
     });
     
     console.log(`API-svar med ${response.data.length} uppgifter.`);
-    
-    // Spara den nya datan i cache
-    if (response.data && !bypassCache) {
-      saveToCache(CACHE_KEYS.TASKS, response.data);
+    if (response.data.length > 0) {
+      console.log('Exempel på uppgifter från API:', response.data.slice(0, 3));
+    } else {
+      console.warn('API returnerade inga uppgifter för det angivna datumintervallet.');
     }
     
-    return response.data;
+    // Normalisera datumsformatet för alla uppgifter
+    const normalizedTasks = response.data.map(task => {
+      if (!task.dueDate) return task;
+      
+      try {
+        // Kontrollera datumformatet
+        if (typeof task.dueDate === 'string') {
+          // Vi behåller datumet som det är, men ser till att det är i YYYY-MM-DD-format
+          if (task.dueDate.includes('T')) {
+            const dateObj = new Date(task.dueDate);
+            task.dueDate = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
+          }
+        } else if (task.dueDate instanceof Date) {
+          const dateObj = task.dueDate;
+          task.dueDate = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
+        }
+      } catch (e) {
+        console.error('Fel vid normalisering av datum för uppgift:', e, task);
+      }
+      
+      return task;
+    });
+    
+    console.log(`Antal uppgifter efter normalisering: ${normalizedTasks.length}`);
+    
+    // Spara den nya datan i cache
+    if (normalizedTasks && !bypassCache) {
+      console.log(`Sparar ${normalizedTasks.length} uppgifter i cache.`);
+      saveToCache(CACHE_KEYS.TASKS, normalizedTasks);
+    }
+    
+    return normalizedTasks;
   } catch (error) {
     console.error('Error fetching tasks by date range:', error);
+    console.error('API URL:', '/api/tasks/date-range', 'Params:', { startDate, endDate });
     throw error;
   }
 };
