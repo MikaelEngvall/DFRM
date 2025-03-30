@@ -284,7 +284,10 @@ export default {
       isRecurring: 'Recurring',
       recurringPattern: 'Recurring pattern',
       details: 'Task details',
-      assignment: 'Assignment'
+      assignment: 'Assignment',
+      descriptionPlaceholder: 'Enter a detailed description of the task...',
+      descriptionPresent: 'Description is available',
+      noDescription: 'No description available',
     },
     priorities: {
       LOW: 'Low',

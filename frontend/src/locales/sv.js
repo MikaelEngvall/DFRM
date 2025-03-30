@@ -286,7 +286,10 @@ const translations = {
       isRecurring: 'Återkommande',
       recurringPattern: 'Återkommandemönster',
       details: 'Uppgiftsdetaljer',
-      assignment: 'Tilldelning'
+      assignment: 'Tilldelning',
+      descriptionPlaceholder: 'Ange en detaljerad beskrivning av uppgiften...',
+      descriptionPresent: 'Beskrivning finns tillgänglig',
+      noDescription: 'Ingen beskrivning tillgänglig',
     },
     priorities: {
       LOW: 'Låg',

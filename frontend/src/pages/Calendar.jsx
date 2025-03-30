@@ -384,8 +384,9 @@ const Calendar = () => {
       }
       
       setSelectedTask(fullTask);
-      setFormData({
-        ...formData,
+      
+      // Skapa en kopia av form data och sätt värdena
+      const updatedFormData = {
         title: formattedTitle,
         description: description || '',
         dueDate: formattedDueDate,
@@ -398,7 +399,9 @@ const Calendar = () => {
         comments: fullTask.comments || '',
         isRecurring: fullTask.isRecurring || false,
         recurringPattern: fullTask.recurringPattern || '',
-      });
+      };
+      
+      setFormData(updatedFormData);
       setIsTaskModalOpen(true);
     } catch (error) {
       console.error('Error fetching task details:', error);
@@ -1038,8 +1041,14 @@ const Calendar = () => {
                 value={formData.description}
                 onChange={handleInputChange}
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                rows="3"
+                rows="5"
+                placeholder={t('tasks.fields.descriptionPlaceholder')}
               />
+              {selectedTask && (
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  {formData.description ? t('tasks.fields.descriptionPresent') : t('tasks.fields.noDescription')}
+                </p>
+              )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
