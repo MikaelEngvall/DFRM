@@ -567,7 +567,9 @@ const translations = {
       contactName: 'Контактна особа',
       contactEmail: 'Email',
       contactPhone: 'Телефон',
-      notes: 'Нотатки'
+      notes: 'Нотатки',
+      descriptionLanguage: 'Мова опису',
+      assignedToUserId: 'Призначений користувач'
     },
     statusTypes: {
       PENDING: 'Очікує',

@@ -572,7 +572,9 @@ export default {
       contactName: 'Osoba kontaktowa',
       contactEmail: 'Email',
       contactPhone: 'Telefon',
-      notes: 'Notatki'
+      notes: 'Notatki',
+      descriptionLanguage: 'Język opisu',
+      assignedToUserId: 'Przypisany użytkownik'
     },
     statusTypes: {
       PENDING: 'Oczekujący',

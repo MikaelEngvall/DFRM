@@ -51,7 +51,10 @@ const Calendar = () => {
     assignedToUserId: '',
     apartmentId: '',
     notes: '',
-    descriptionLanguage: 'sv' // Standardspråk är svenska
+    descriptionLanguage: 'sv', // Standardspråk är svenska
+    contactName: '',
+    contactPhone: '',
+    contactEmail: ''
   });
 
   useEffect(() => {
@@ -615,7 +618,10 @@ const Calendar = () => {
       assignedToUserId: showing.assignedToUserId || '',
       apartmentId: showing.apartmentId || '',
       notes: showing.notes || '',
-      descriptionLanguage: descriptionLanguage
+      descriptionLanguage: descriptionLanguage,
+      contactName: showing.contactName || '',
+      contactPhone: showing.contactPhone || '',
+      contactEmail: showing.contactEmail || ''
     });
     setIsShowingEditModalOpen(true);
     setIsShowingModalOpen(false);
@@ -686,22 +692,33 @@ const Calendar = () => {
     // Funktion för att formatera tid med korrekt tidszon
     const formatTime = (dateString) => {
       if (!dateString) return '';
-      
-      // Skapa ett nytt Date-objekt från ISO-strängen
       const date = new Date(dateString);
-      
-      // Korrigera för UTC-tidszonen
-      // Vi lägger till 2 timmar (tidszon korrektion för Stockholm från UTC)
-      // Detta säkerställer att tiden visas korrekt oavsett tidszon
       const localHours = date.getHours();
       const localMinutes = date.getMinutes();
-      
-      // Formatera tiden i 24-timmarsformat med ledande nollor
       return `${String(localHours).padStart(2, '0')}:${String(localMinutes).padStart(2, '0')}`;
     };
 
-    // Hitta ansvarig mäklare genom att söka i users-arrayen med ID:t
-    const assignedUser = users.find(user => user.id === showing.assignedTo);
+    // Bestäm bakgrundsfärg baserat på vem som är tilldelad visningen
+    const getBgColorClass = (assignedToUserId) => {
+      if (assignedToUserId === 'karn') { // Användarnamn för Karn
+        return 'bg-blue-100 dark:bg-blue-900 border-blue-300 dark:border-blue-700';
+      }
+      return 'bg-purple-100 dark:bg-purple-900 border-purple-300 dark:border-purple-700';
+    };
+
+    // Bestäm prickens färg baserat på status
+    const getStatusDotColor = (status) => {
+      switch (status) {
+        case 'CONFIRMED':
+          return 'bg-green-600 border-green-700';
+        case 'CANCELLED':
+          return 'bg-red-600 border-red-700';
+        case 'COMPLETED':
+          return 'bg-yellow-600 border-yellow-700';
+        default:
+          return 'bg-gray-600 border-gray-700';
+      }
+    };
     
     return (
       <div 
@@ -710,14 +727,14 @@ const Calendar = () => {
           e.stopPropagation();
           handleShowingClick(showing);
         }}
-        className="mb-1 px-2 py-1 rounded-md cursor-pointer border border-purple-300 dark:border-purple-700 bg-purple-100 dark:bg-purple-900 shadow-sm hover:shadow-md transition-shadow duration-200 w-full"
+        className={`mb-1 px-2 py-1 rounded-md cursor-pointer border shadow-sm hover:shadow-md transition-shadow duration-200 w-full ${getBgColorClass(showing.assignedToUserId)}`}
       >
         <div className="flex items-center space-x-2">
-          <div className="h-3 w-3 rounded-full flex-shrink-0 bg-purple-600 border border-purple-700 shadow-sm"></div>
+          <div className={`h-3 w-3 rounded-full flex-shrink-0 border shadow-sm ${getStatusDotColor(showing.status)}`}></div>
           <div className="truncate">
             <div className="font-medium text-xs truncate text-purple-900 dark:text-purple-100">{showing.title || showing.address}</div>
             <div className="text-xs text-purple-700 dark:text-purple-300 truncate">
-              {formatTime(showing.dateTime)} - {assignedUser ? assignedUser.firstName : t('showings.unassigned')}
+              {formatTime(showing.dateTime)} - {showing.contactName || t('showings.unassigned')}
             </div>
           </div>
         </div>
@@ -1512,13 +1529,27 @@ const Calendar = () => {
               </select>
             </div>
 
-            <FormInput
-              label={t('showings.fields.assignedToUserId')}
-              name="assignedToUserId"
-              type="text"
-              value={showingFormData.assignedToUserId}
-              onChange={handleShowingInputChange}
-            />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-100">
+                {t('showings.fields.assignedToUserId')}
+              </label>
+              <div className="mt-1 bg-gray-50 dark:bg-gray-800 rounded-md p-3 border border-gray-200 dark:border-gray-700">
+                <div className="grid grid-cols-1 gap-2 p-4 mb-4 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                  <div className="text-gray-700 dark:text-gray-200">
+                    <span className="font-semibold">Kontaktperson: </span>
+                    <span>{showingFormData.contactName}</span>
+                  </div>
+                  <div className="text-gray-700 dark:text-gray-200">
+                    <span className="font-semibold">Telefon: </span>
+                    <span>{showingFormData.contactPhone}</span>
+                  </div>
+                  <div className="text-gray-700 dark:text-gray-200">
+                    <span className="font-semibold">E-post: </span>
+                    <span>{showingFormData.contactEmail}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
 
             <FormInput
               label={t('showings.fields.apartmentId')}

@@ -572,6 +572,14 @@ export default {
     noInterests: 'No interest inquiries',
     reviewRequest: 'Review Interest Inquiry',
     addComments: 'Add Comments',
+    title: 'Interest Requests',
+    new: 'New Interest Request',
+    edit: 'Edit Interest Request',
+    review: 'Review Interest Request',
+    noInterests: 'No interest requests to show',
+    thisWeek: 'This Week',
+    completed: 'Completed',
+    filteredResults: 'interest requests found',
   },
 
   showings: {
@@ -599,7 +607,9 @@ export default {
       contactName: 'Contact Name',
       contactEmail: 'Email',
       contactPhone: 'Phone',
-      notes: 'Notes'
+      notes: 'Notes',
+      descriptionLanguage: 'Description Language',
+      assignedToUserId: 'Assigned User'
     },
     statusTypes: {
       PENDING: 'Pending',

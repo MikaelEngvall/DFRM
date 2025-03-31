@@ -7,7 +7,7 @@ import {
   ChartBarIcon,
   EnvelopeIcon,
 } from '@heroicons/react/24/outline';
-import { apartmentService, tenantService, keyService, pendingTaskService, interestService } from '../services';
+import { apartmentService, tenantService, keyService, pendingTaskService, interestService, taskService } from '../services';
 import { useLocale } from '../contexts/LocaleContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -28,6 +28,16 @@ const Dashboard = () => {
   });
   const [unreviewedCount, setUnreviewedCount] = useState(0);
   const [unreviewedInterestCount, setUnreviewedInterestCount] = useState(0);
+  const [taskStats, setTaskStats] = useState({
+    pending: 0,
+    inProgress: 0,
+    completed: 0
+  });
+  const [interestStats, setInterestStats] = useState({
+    new: 0,
+    thisWeek: 0,
+    completed: 0
+  });
   const [successMessage, setSuccessMessage] = useState('');
 
   useEffect(() => {
@@ -70,6 +80,58 @@ const Dashboard = () => {
     }
   };
 
+  const fetchTaskStats = async () => {
+    try {
+      // Hämta uppgifter med olika status
+      const [pendingTasks, inProgressTasks, completedTasks] = await Promise.all([
+        taskService.getTasksByStatus('PENDING', true),
+        taskService.getTasksByStatus('IN_PROGRESS', true),
+        taskService.getTasksByStatus('COMPLETED', true)
+      ]);
+      
+      setTaskStats({
+        pending: pendingTasks?.length || 0,
+        inProgress: inProgressTasks?.length || 0,
+        completed: completedTasks?.length || 0
+      });
+    } catch (err) {
+      console.error('Error fetching task stats:', err);
+    }
+  };
+
+  const fetchInterestStats = async () => {
+    try {
+      // Hämta antal nya intresseanmälningar
+      const newInterests = await interestService.getInterestsForReview(true);
+      
+      // Hämta alla intresseanmälningar för att filtrera
+      const allInterests = await interestService.getAll(true);
+      
+      // Beräkna antal från denna vecka
+      const today = new Date();
+      const startOfWeek = new Date(today.getFullYear(), today.getMonth(), today.getDate() - today.getDay());
+      
+      const thisWeekInterests = allInterests.filter(interest => {
+        if (!interest.received) return false;
+        const receivedDate = new Date(interest.received);
+        return receivedDate >= startOfWeek;
+      });
+      
+      // Hämta antal avslutade (reviewed/rejected) intresseanmälningar
+      const completedInterests = allInterests.filter(interest => 
+        interest.status === 'REVIEWED' || interest.status === 'REJECTED' || interest.status === 'SHOWING_SCHEDULED'
+      );
+      
+      setInterestStats({
+        new: newInterests?.length || 0,
+        thisWeek: thisWeekInterests?.length || 0,
+        completed: completedInterests?.length || 0
+      });
+    } catch (err) {
+      console.error('Error fetching interest stats:', err);
+    }
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -109,6 +171,9 @@ const Dashboard = () => {
         
         // Hämta olästa uppgifter utan cache
         await fetchUnreviewedCount();
+        
+        // Hämta uppgifts- och intressestatistik
+        await Promise.all([fetchTaskStats(), fetchInterestStats()]);
         
         setError(null);
       } catch (err) {
@@ -269,15 +334,28 @@ const Dashboard = () => {
             </button>
           </div>
           <div className="space-y-4" onClick={handleInterestsClick} style={{ cursor: 'pointer' }}>
-            {unreviewedInterestCount > 0 ? (
-              <p className="text-blue-600 dark:text-blue-400 font-medium">
-                {unreviewedInterestCount} {unreviewedInterestCount === 1 ? 
-                  t('dashboard.sections.newReportNeedReview') : 
-                  t('dashboard.sections.newReportsNeedReview')}
-              </p>
-            ) : (
-              <p className="text-gray-500 dark:text-gray-400">{t('dashboard.sections.noActivity')}</p>
-            )}
+            <div className="grid grid-cols-1 gap-3">
+              <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-md">
+                <span className="text-sm font-medium">{t('interests.status.NEW')}</span>
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${interestStats.new > 0 ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'}`}>
+                  {interestStats.new > 0 ? interestStats.new : t('common.none')}
+                </span>
+              </div>
+              
+              <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-md">
+                <span className="text-sm font-medium">{t('interests.thisWeek')}</span>
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${interestStats.thisWeek > 0 ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'}`}>
+                  {interestStats.thisWeek > 0 ? interestStats.thisWeek : t('common.none')}
+                </span>
+              </div>
+              
+              <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-md">
+                <span className="text-sm font-medium">{t('interests.completed')}</span>
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${interestStats.completed > 0 ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'}`}>
+                  {interestStats.completed > 0 ? interestStats.completed : t('common.none')}
+                </span>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -310,15 +388,28 @@ const Dashboard = () => {
             </button>
           </div>
           <div className="space-y-4" onClick={handleEmailReportsClick} style={{ cursor: 'pointer' }}>
-            {unreviewedCount > 0 ? (
-              <p className="text-blue-600 dark:text-blue-400 font-medium">
-                {unreviewedCount} {unreviewedCount === 1 ? 
-                  t('dashboard.sections.newReportNeedReview') : 
-                  t('dashboard.sections.newReportsNeedReview')}
-              </p>
-            ) : (
-              <p className="text-gray-500 dark:text-gray-400">{t('dashboard.sections.noEvents')}</p>
-            )}
+            <div className="grid grid-cols-1 gap-3">
+              <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-md">
+                <span className="text-sm font-medium">{t('tasks.status.PENDING')}</span>
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${taskStats.pending > 0 ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'}`}>
+                  {taskStats.pending > 0 ? taskStats.pending : t('common.none')}
+                </span>
+              </div>
+              
+              <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-md">
+                <span className="text-sm font-medium">{t('tasks.status.IN_PROGRESS')}</span>
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${taskStats.inProgress > 0 ? 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'}`}>
+                  {taskStats.inProgress > 0 ? taskStats.inProgress : t('common.none')}
+                </span>
+              </div>
+              
+              <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-md">
+                <span className="text-sm font-medium">{t('tasks.status.COMPLETED')}</span>
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${taskStats.completed > 0 ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'}`}>
+                  {taskStats.completed > 0 ? taskStats.completed : t('common.none')}
+                </span>
+              </div>
+            </div>
           </div>
         </div>
       </div>

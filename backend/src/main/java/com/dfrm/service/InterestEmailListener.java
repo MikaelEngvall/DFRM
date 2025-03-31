@@ -110,16 +110,6 @@ public class InterestEmailListener {
                 log.info("Bearbetar e-post: Ämne={}, Från={}", message.getSubject(), getFromAddress(message));
                 
                 try {
-                    // Kontrollera reply-to-adressen
-                    String replyTo = getReplyToAddress(message);
-                    if (!TARGET_REPLY_TO.equals(replyTo)) {
-                        log.warn("Hoppar över e-post med reply-to={} (inte {})", 
-                                 replyTo, TARGET_REPLY_TO);
-                        continue;
-                        } else {
-                        log.info("Godkänd reply-to-adress: {}", replyTo);
-                    }
-                    
                     // Bearbeta e-postmeddelandet
                     processEmail(message);
                     

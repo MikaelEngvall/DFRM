@@ -1,4 +1,4 @@
-const translations = {
+export default {
   common: {
     loading: 'Laddar...',
     error: 'Ett fel uppstod',
@@ -575,11 +575,16 @@ const translations = {
 
   interests: {
     title: 'Intresseanmälningar',
-    emailReport: 'E-postrapport',
-    details: 'Detaljer om intresseanmälan',
+    new: 'Ny intresseanmälan',
+    details: 'Intressedetaljer',
+    edit: 'Redigera intresseanmälan',
+    review: 'Granska intresseanmälan',
     noInterests: 'Inga intresseanmälningar att visa',
-    showReviewed: 'Visa granskade',
+    thisWeek: 'Denna vecka',
+    completed: 'Avslutade',
     filteredResults: 'intresseanmälningar hittades',
+    emailReport: 'E-postrapport',
+    showReviewed: 'Visa granskade',
     addComments: 'Lägg till kommentarer',
     scheduleShowing: 'Boka visningstid',
     showingScheduled: 'Visningstid bokad',
@@ -652,7 +657,9 @@ const translations = {
       contactName: 'Kontaktperson',
       contactEmail: 'E-post',
       contactPhone: 'Telefon',
-      notes: 'Anteckningar'
+      notes: 'Anteckningar',
+      descriptionLanguage: 'Beskrivningsspråk',
+      assignedToUserId: 'Visning bokad med'
     },
     statusTypes: {
       PENDING: 'Väntar',
@@ -672,6 +679,4 @@ const translations = {
       updateError: 'Ett fel uppstod när visningen skulle uppdateras'
     }
   }
-};
-
-export default translations; 
+}; 
