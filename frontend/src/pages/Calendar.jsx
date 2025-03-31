@@ -291,6 +291,7 @@ const Calendar = () => {
   const goToPreviousMonth = () => {
     setCurrentDate(prevDate => {
       const newDate = new Date(prevDate);
+      newDate.setDate(1); // Sätt dagen till 1 först
       newDate.setMonth(newDate.getMonth() - 1);
       return newDate;
     });
@@ -299,6 +300,7 @@ const Calendar = () => {
   const goToNextMonth = () => {
     setCurrentDate(prevDate => {
       const newDate = new Date(prevDate);
+      newDate.setDate(1); // Sätt dagen till 1 först
       newDate.setMonth(newDate.getMonth() + 1);
       return newDate;
     });
