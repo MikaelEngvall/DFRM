@@ -5,8 +5,9 @@ import Modal from '../components/Modal';
 import AlertModal from '../components/AlertModal';
 import Title from '../components/Title';
 import DataTable from '../components/DataTable';
-import { interestService, taskService, userService } from '../services';
+import { interestService, taskService, userService, emailService } from '../services';
 import { EnvelopeIcon, FunnelIcon, XMarkIcon, CalendarIcon, ClockIcon } from '@heroicons/react/24/outline';
+import EmailModal from '../components/EmailModal';
 
 const Interests = () => {
   const { t } = useLocale();
@@ -30,6 +31,7 @@ const Interests = () => {
   const [successMessage, setSuccessMessage] = useState('');
   const [selectedAgent, setSelectedAgent] = useState('');
   const [users, setUsers] = useState([]);
+  const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
 
   // Formatera datum till lokalt format
   const formatDate = (dateString) => {
@@ -275,6 +277,17 @@ const Interests = () => {
       setError(err.response?.data?.message || err.message || t('interests.messages.showingScheduleError'));
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Hantera e-postutskick
+  const handleSendEmail = async (subject, content, recipients) => {
+    try {
+      const result = await emailService.sendBulkEmail(subject, content, recipients);
+      return result;
+    } catch (error) {
+      console.error('Error sending email:', error);
+      throw error;
     }
   };
 
@@ -537,13 +550,13 @@ const Interests = () => {
                       className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-l-md shadow-sm text-gray-900 dark:text-white"
                     />
                     {selectedInterest.email && (
-                      <a 
-                        href={`mailto:${selectedInterest.email}`}
-                        className="mt-1 inline-flex items-center px-3 py-2 border border-l-0 border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-white rounded-r-md"
+                      <button 
+                        onClick={() => setIsEmailModalOpen(true)}
+                        className="mt-1 inline-flex items-center px-3 py-2 border border-l-0 border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-white rounded-r-md hover:bg-gray-200 dark:hover:bg-gray-500"
                         title={t('common.sendEmail')}
                       >
                         <EnvelopeIcon className="h-5 w-5" />
-                      </a>
+                      </button>
                     )}
                   </div>
                 </div>
@@ -676,6 +689,34 @@ const Interests = () => {
                   </p>
                 </div>
               )}
+
+              {/* Kontaktinformation */}
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <h3 className="text-lg font-medium text-gray-900 dark:text-white">{t('interests.fields.contact')}</h3>
+                  <button
+                    onClick={() => setIsEmailModalOpen(true)}
+                    className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+                    title={t('email.send')}
+                  >
+                    <EnvelopeIcon className="h-5 w-5" />
+                  </button>
+                </div>
+                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+                  <p className="text-sm text-gray-600 dark:text-gray-300">
+                    <span className="font-medium">{t('interests.fields.name')}: </span>
+                    {selectedInterest.name}
+                  </p>
+                  <p className="text-sm text-gray-600 dark:text-gray-300">
+                    <span className="font-medium">{t('interests.fields.email')}: </span>
+                    {selectedInterest.email}
+                  </p>
+                  <p className="text-sm text-gray-600 dark:text-gray-300">
+                    <span className="font-medium">{t('interests.fields.phone')}: </span>
+                    {selectedInterest.phone}
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </Modal>
@@ -823,6 +864,16 @@ const Interests = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Lägg till EmailModal */}
+      {selectedInterest && (
+        <EmailModal
+          isOpen={isEmailModalOpen}
+          onClose={() => setIsEmailModalOpen(false)}
+          onSend={handleSendEmail}
+          recipients={[selectedInterest.email]}
+        />
       )}
     </div>
   );
