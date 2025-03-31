@@ -14,6 +14,7 @@ const Calendar = () => {
   const { t, currentLocale } = useLocale();
   const { user: currentUser, hasRole } = useAuth();
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [viewType, setViewType] = useState('month');
   const [tasks, setTasks] = useState([]);
   const [showings, setShowings] = useState([]);  // Ny state för visningar
   const [selectedTask, setSelectedTask] = useState(null);
@@ -51,7 +52,7 @@ const Calendar = () => {
     assignedToUserId: '',
     apartmentId: '',
     notes: '',
-    descriptionLanguage: 'sv', // Standardspråk är svenska
+    descriptionLanguage: 'sv',
     contactName: '',
     contactPhone: '',
     contactEmail: ''
@@ -291,7 +292,7 @@ const Calendar = () => {
   const goToPreviousMonth = () => {
     setCurrentDate(prevDate => {
       const newDate = new Date(prevDate);
-      newDate.setDate(1); // Sätt dagen till 1 först
+      newDate.setDate(1);
       newDate.setMonth(newDate.getMonth() - 1);
       return newDate;
     });
@@ -300,8 +301,40 @@ const Calendar = () => {
   const goToNextMonth = () => {
     setCurrentDate(prevDate => {
       const newDate = new Date(prevDate);
-      newDate.setDate(1); // Sätt dagen till 1 först
+      newDate.setDate(1);
       newDate.setMonth(newDate.getMonth() + 1);
+      return newDate;
+    });
+  };
+
+  const goToPreviousWeek = () => {
+    setCurrentDate(prevDate => {
+      const newDate = new Date(prevDate);
+      newDate.setDate(newDate.getDate() - 7);
+      return newDate;
+    });
+  };
+
+  const goToNextWeek = () => {
+    setCurrentDate(prevDate => {
+      const newDate = new Date(prevDate);
+      newDate.setDate(newDate.getDate() + 7);
+      return newDate;
+    });
+  };
+
+  const goToPreviousDay = () => {
+    setCurrentDate(prevDate => {
+      const newDate = new Date(prevDate);
+      newDate.setDate(newDate.getDate() - 1);
+      return newDate;
+    });
+  };
+
+  const goToNextDay = () => {
+    setCurrentDate(prevDate => {
+      const newDate = new Date(prevDate);
+      newDate.setDate(newDate.getDate() + 1);
       return newDate;
     });
   };
@@ -323,217 +356,6 @@ const Calendar = () => {
     return date.getDate() === today.getDate() &&
            date.getMonth() === today.getMonth() &&
            date.getFullYear() === today.getFullYear();
-  };
-
-  const handleTaskClick = async (task) => {
-    try {
-      // Hämta den fullständiga uppgiften med alla detaljer
-      const fullTask = await taskService.getTaskById(task.id);
-      
-      console.log('Mottagen uppgift från server:', fullTask);
-      
-      // Använd översättningen om den finns, annars använd originalbeskrivningen
-      const description = fullTask.translations && fullTask.translations[currentLocale] 
-        ? fullTask.translations[currentLocale] 
-        : fullTask.description;
-      
-      console.log('Beskrivningsvärde som används:', description);
-      
-      // Hantera dueDate korrekt med hänsyn till tidzoner
-      let formattedDueDate = '';
-      if (fullTask.dueDate) {
-        if (fullTask.dueDate.includes('T')) {
-          // Om datumet är i ISO-format med tid, omvandla till lokal tid
-          const dueDate = new Date(fullTask.dueDate);
-          const year = dueDate.getFullYear();
-          const month = String(dueDate.getMonth() + 1).padStart(2, '0');
-          const day = String(dueDate.getDate()).padStart(2, '0');
-          formattedDueDate = `${year}-${month}-${day}`;
-        } else {
-          // Om det är i "YYYY-MM-DD"-format, använd det direkt
-          formattedDueDate = fullTask.dueDate;
-        }
-      }
-      
-      // Hämta lägenhetsdata om det finns ett apartmentId
-      let apartmentData = null;
-      if (fullTask.apartmentId) {
-        try {
-          apartmentData = await apartmentService.getApartmentById(fullTask.apartmentId);
-        } catch (e) {
-          console.error('Kunde inte hämta lägenhetsdata:', e);
-        }
-      }
-      
-      // Hämta hyresgästdata om det finns ett tenantId
-      let tenantData = null;
-      if (fullTask.tenantId) {
-        try {
-          tenantData = await tenantService.getTenantById(fullTask.tenantId);
-        } catch (e) {
-          console.error('Kunde inte hämta hyresgästdata:', e);
-        }
-      }
-      
-      // Skapa en formaterad titel som innehåller adress, lägenhetsnummer och telefonnummer
-      let formattedTitle = fullTask.title || '';
-      let phoneNumber = '';
-      
-      // Om vi har lägenhetsdata, använd adressen och lägenhetsnumret
-      if (apartmentData) {
-        const street = apartmentData.street || '';
-        const number = apartmentData.number || '';
-        const apartmentNumber = apartmentData.apartmentNumber || '';
-        
-        // Kombinera adress och lägenhetsnummer i titeln
-        formattedTitle = `${street} ${number} lgh ${apartmentNumber}`;
-        
-        // Lägg till telefonnummer om det finns hyresgästdata
-        if (tenantData && tenantData.phone) {
-          phoneNumber = tenantData.phone;
-        }
-      } else {
-        // Försök att extrahera telefonnummer från den befintliga titeln om det finns
-        const phoneRegex = /(\d{3,4}[-\s]?\d{2,3}[-\s]?\d{2,3})/;
-        const phoneMatch = formattedTitle.match(phoneRegex);
-        if (phoneMatch) {
-          phoneNumber = phoneMatch[1];
-          // Ta bort telefonnumret från titeln för att undvika duplicering
-          formattedTitle = formattedTitle.replace(phoneRegex, '').trim();
-        }
-      }
-      
-      setSelectedTask({
-        ...fullTask,
-        phoneNumber // Spara telefonnumret i selectedTask för användning i modalen
-      });
-      
-      // Skapa en kopia av form data och sätt värdena
-      const updatedFormData = {
-        title: formattedTitle,
-        description: description || '',
-        dueDate: formattedDueDate,
-        priority: fullTask.priority || '',
-        status: fullTask.status || '',
-        assignedToUserId: fullTask.assignedToUserId || '',
-        assignedByUserId: fullTask.assignedByUserId || currentUser.id,
-        apartmentId: fullTask.apartmentId || '',
-        tenantId: fullTask.tenantId || '',
-        comments: fullTask.comments || '',
-        isRecurring: fullTask.isRecurring || false,
-        recurringPattern: fullTask.recurringPattern || '',
-        phoneNumber: phoneNumber // Lägg till telefonnumret i formData
-      };
-      
-      console.log('FormData innan uppdatering:', formData);
-      console.log('FormData som kommer att användas:', updatedFormData);
-      
-      setFormData(updatedFormData);
-      console.log('Modal kommer att öppnas med beskrivningen:', updatedFormData.description);
-      
-      setIsTaskModalOpen(true);
-    } catch (error) {
-      console.error('Error fetching task details:', error);
-      setError(t('tasks.messages.fetchError'));
-    }
-  };
-
-  const handleDayClick = (date) => {
-    if (!isAdminOrSuperAdmin()) return;
-    
-    // Formatera datumet i YYYY-MM-DD-format utan att ändra tidszonen
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    const formattedDate = `${year}-${month}-${day}`;
-    
-    setSelectedTask(null);
-    
-    // Skapa en tom formulärdata med standardvärden
-    // Låt titel och beskrivning vara tomma för att uppmuntra användaren att fylla i korrekt information
-    setFormData({
-      title: '', // Användaren förväntas ange adress, lägenhetsnummer och telefonnummer här
-      description: '', // Användaren förväntas ange meddelandet från e-post här
-      dueDate: formattedDate,
-      priority: 'MEDIUM',
-      status: 'PENDING',
-      assignedToUserId: '', 
-      assignedByUserId: currentUser?.id || '',
-      apartmentId: '',
-      tenantId: '',
-      comments: '',
-      isRecurring: false,
-      recurringPattern: '',
-      phoneNumber: '',
-    });
-    
-    setIsTaskModalOpen(true);
-  };
-
-  const resetForm = () => {
-    setFormData({
-      title: '',
-      description: '',
-      dueDate: '',
-      priority: '',
-      status: '',
-      assignedToUserId: '',
-      assignedByUserId: '',
-      apartmentId: '',
-      tenantId: '',
-      comments: '',
-      isRecurring: false,
-      recurringPattern: '',
-      descriptionLanguage: '',
-      phoneNumber: '',
-    });
-  };
-
-  const handleInputChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value,
-    }));
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      const taskData = { ...formData };
-      
-      if (taskData.tenantId && typeof taskData.tenantId === 'object') {
-        taskData.tenantId = taskData.tenantId.id;
-      }
-      
-      if (taskData.apartmentId && typeof taskData.apartmentId === 'object') {
-        taskData.apartmentId = taskData.apartmentId.id;
-      }
-      
-      if (selectedTask) {
-        if (selectedTask.isRecurring !== taskData.isRecurring || 
-            selectedTask.recurringPattern !== taskData.recurringPattern) {
-          await taskService.updateRecurringPattern(selectedTask.id, taskData.recurringPattern);
-        }
-        await taskService.updateTask(selectedTask.id, taskData);
-      } else {
-        taskData.assignedByUserId = currentUser.id;
-        
-        if (taskData.isRecurring && taskData.recurringPattern) {
-          await taskService.createRecurringTask(taskData);
-        } else {
-          await taskService.createTask(taskData);
-        }
-      }
-      
-      await fetchCalendarData();
-      setIsTaskModalOpen(false);
-      setSelectedTask(null);
-      resetForm();
-    } catch (err) {
-      setError(t('tasks.messages.saveError'));
-      console.error('Error saving task:', err);
-    }
   };
 
   const getStatusColor = (status) => {
@@ -579,119 +401,7 @@ const Calendar = () => {
     );
   };
 
-  const handleShowingClick = (showing) => {
-    setSelectedShowing(showing);
-    setIsShowingModalOpen(true);
-    // Stäng taskModal om den är öppen
-    if (isTaskModalOpen) {
-      setIsTaskModalOpen(false);
-    }
-  };
-
-  const handleEditShowing = (showing) => {
-    // Formatera datum för datetime-local input
-    let dateTimeValue = '';
-    if (showing.dateTime) {
-      const date = new Date(showing.dateTime);
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      const hours = String(date.getHours()).padStart(2, '0');
-      const minutes = String(date.getMinutes()).padStart(2, '0');
-      
-      dateTimeValue = `${year}-${month}-${day}T${hours}:${minutes}`;
-    }
-
-    // Hämta beskrivning baserat på prefererat språk eller originalspråket
-    let description = showing.description || '';
-    let descriptionLanguage = showing.descriptionLanguage || 'sv';
-    
-    // Om översättningar finns och valt språk finns som översättning, använd den
-    if (showing.translations && showing.translations[currentLocale]) {
-      description = showing.translations[currentLocale];
-      descriptionLanguage = currentLocale;
-    }
-
-    setShowingFormData({
-      title: showing.title || '',
-      description: description,
-      dateTime: dateTimeValue,
-      status: showing.status || '',
-      assignedToUserId: showing.assignedToUserId || '',
-      apartmentId: showing.apartmentId || '',
-      notes: showing.notes || '',
-      descriptionLanguage: descriptionLanguage,
-      contactName: showing.contactName || '',
-      contactPhone: showing.contactPhone || '',
-      contactEmail: showing.contactEmail || ''
-    });
-    setIsShowingEditModalOpen(true);
-    setIsShowingModalOpen(false);
-  };
-
-  const handleShowingInputChange = (e) => {
-    const { name, value } = e.target;
-    setShowingFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const handleShowingSubmit = async (e) => {
-    e.preventDefault();
-    try {
-      // Skapa ett Date-objekt och formatera till ISO-sträng med manuell tidszonsoffset
-      let dateTimeString = null;
-      if (showingFormData.dateTime) {
-        const dateObj = new Date(showingFormData.dateTime);
-
-        // Manuellt formatera ISO-strängen och ta hänsyn till tidszonen
-        const year = dateObj.getFullYear();
-        const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-        const day = String(dateObj.getDate()).padStart(2, '0');
-        const hours = String(dateObj.getHours()).padStart(2, '0');
-        const minutes = String(dateObj.getMinutes()).padStart(2, '0');
-        const seconds = String(dateObj.getSeconds()).padStart(2, '0');
-
-        // Skapa ISO-sträng med 'Z' för att indikera UTC
-        dateTimeString = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}.000Z`;
-      }
-
-      // Hantera översättningar
-      let translations = selectedShowing.translations || {};
-      const descriptionLanguage = showingFormData.descriptionLanguage;
-      
-      // Uppdatera översättningen för det aktuella språket
-      translations = {
-        ...translations,
-        [descriptionLanguage]: showingFormData.description
-      };
-
-      const updatedData = {
-        ...showingFormData,
-        dateTime: dateTimeString,
-        assignedToUserId: showingFormData.assignedToUserId || null,
-        apartmentId: showingFormData.apartmentId || null,
-        translations: translations,
-        descriptionLanguage: descriptionLanguage
-      };
-
-      await showingService.update(selectedShowing.id, updatedData);
-      await fetchCalendarData();
-
-      setIsShowingEditModalOpen(false);
-      setSelectedShowing(null);
-      setSuccessMessage(t('showings.messages.updateSuccess'));
-      setTimeout(() => setSuccessMessage(''), 3000);
-    } catch (err) {
-      console.error('Error updating showing:', err);
-      setError(t('showings.messages.updateError'));
-    }
-  };
-
-  // Lägg till funktion för att rendera visningsobjekt i kalendern
   const renderShowingItem = (showing) => {
-    // Funktion för att formatera tid med korrekt tidszon
     const formatTime = (dateString) => {
       if (!dateString) return '';
       const date = new Date(dateString);
@@ -700,15 +410,13 @@ const Calendar = () => {
       return `${String(localHours).padStart(2, '0')}:${String(localMinutes).padStart(2, '0')}`;
     };
 
-    // Bestäm bakgrundsfärg baserat på vem som är tilldelad visningen
     const getBgColorClass = (assignedToUserId) => {
-      if (assignedToUserId === 'karn') { // Användarnamn för Karn
+      if (assignedToUserId === 'karn') {
         return 'bg-blue-100 dark:bg-blue-900 border-blue-300 dark:border-blue-700';
       }
       return 'bg-purple-100 dark:bg-purple-900 border-purple-300 dark:border-purple-700';
     };
 
-    // Bestäm prickens färg baserat på status
     const getStatusDotColor = (status) => {
       switch (status) {
         case 'CONFIRMED':
@@ -744,111 +452,177 @@ const Calendar = () => {
     );
   };
 
-  // Robust funktion för att filtrera uppgifter efter datum
   const filterTasksByDate = (tasks, targetYear, targetMonth, targetDay) => {
     if (!tasks || tasks.length === 0) return [];
     
-    // Bygg ett formatterat datum för loggning
     const targetDateString = `${targetYear}-${String(targetMonth + 1).padStart(2, '0')}-${String(targetDay).padStart(2, '0')}`;
-    
-    // Logga filtreringskriterierna för aktuellt datum
     const today = new Date();
     const isToday = targetDay === today.getDate() && 
                     targetMonth === today.getMonth() && 
                     targetYear === today.getFullYear();
-                    
-    if (isToday) {
-      console.log(`Kalender: Filtrerar uppgifter för dagens datum: ${targetDateString}`);
-      console.log(`Kalender: Antal uppgifter att filtrera: ${tasks.length}`);
-    }
     
-    // Filtrera uppgifter direkt baserat på dueDate-strängen om den har formatet YYYY-MM-DD
     const exactDateMatches = tasks.filter(task => {
       if (typeof task.dueDate === 'string' && task.dueDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
         const [taskYear, taskMonth, taskDay] = task.dueDate.split('-').map(Number);
-        const matches = taskDay === targetDay && 
-                       (taskMonth - 1) === targetMonth && // taskMonth är 1-baserad, targetMonth är 0-baserad
-                       taskYear === targetYear;
-                       
-        if (matches && isToday) {
-          console.log(`Kalender: Direkt strängjämförelse hittade uppgift: ${task.id} - ${task.title}, dueDate=${task.dueDate}`);
-        }
-        
-        return matches;
+        return taskDay === targetDay && 
+               (taskMonth - 1) === targetMonth && 
+               taskYear === targetYear;
       }
       return false;
     });
     
-    if (exactDateMatches.length > 0) {
-      if (isToday) {
-        console.log(`Kalender: Hittade ${exactDateMatches.length} uppgifter med exakt datumjämförelse`);
-      }
-      return exactDateMatches;
-    }
+    if (exactDateMatches.length > 0) return exactDateMatches;
     
-    // Fallback till konvertering av datumformat
-    const filteredTasks = tasks.filter(task => {
+    return tasks.filter(task => {
       if (!task.dueDate) return false;
       
       try {
-        // Om vi har ett förberäknat datumobjekt från normaliseringen, använd det
         if (task._dueDateObj instanceof Date) {
-          const matches = task._dueDateObj.getDate() === targetDay && 
-                         task._dueDateObj.getMonth() === targetMonth && 
-                         task._dueDateObj.getFullYear() === targetYear;
-                         
-          if (matches && isToday) {
-            console.log(`Kalender: Matchad med _dueDateObj: ${task.id} - ${task.title}, dueDate=${task.dueDate}`);
-          }
-          
-          return matches;
+          return task._dueDateObj.getDate() === targetDay && 
+                 task._dueDateObj.getMonth() === targetMonth && 
+                 task._dueDateObj.getFullYear() === targetYear;
         }
         
-        // Annars bearbeta datumet direkt från dueDate-fältet
         let taskDate;
         if (typeof task.dueDate === 'string') {
           if (task.dueDate.includes('T')) {
-            // ISO-format med tid
             taskDate = new Date(task.dueDate);
-            // Justera för tidszon
             const offset = taskDate.getTimezoneOffset() * 60000;
             taskDate = new Date(taskDate.getTime() + offset);
           } else {
-            // Format "YYYY-MM-DD"
             const [y, m, d] = task.dueDate.split('-').map(Number);
-            taskDate = new Date(y, m - 1, d); // Månad är 0-baserad
+            taskDate = new Date(y, m - 1, d);
           }
         } else if (task.dueDate instanceof Date) {
           taskDate = task.dueDate;
         } else {
-          console.error('Uppgift har ogiltigt datumformat:', task);
           return false;
         }
         
-        // Jämför endast år, månad och dag
-        const matches = taskDate.getDate() === targetDay && 
-                       taskDate.getMonth() === targetMonth && 
-                       taskDate.getFullYear() === targetYear;
-        
-        // Logga träffar för dagens datum (för felsökning)
-        if (matches && isToday) {
-          console.log(`Kalender: Uppgift matchad med datumkonvertering: ${task.id} - ${task.title}, dueDate=${task.dueDate}`);
-        }
-        
-        return matches;
+        return taskDate.getDate() === targetDay && 
+               taskDate.getMonth() === targetMonth && 
+               taskDate.getFullYear() === targetYear;
       } catch (e) {
-        console.error(`Kalender: Fel vid bearbetning av uppgiftsdatum för ${task.id}:`, e);
         return false;
       }
     });
-    
-    if (isToday) {
-      console.log(`Kalender: Totalt antal matchade uppgifter för dagens datum: ${filteredTasks.length}`);
-    }
-    
-    return filteredTasks;
   };
-  
+
+  const handleNavigationClick = (direction) => {
+    switch (viewType) {
+      case 'month':
+        direction === 'previous' ? goToPreviousMonth() : goToNextMonth();
+        break;
+      case 'week':
+        direction === 'previous' ? goToPreviousWeek() : goToNextWeek();
+        break;
+      case 'day':
+        direction === 'previous' ? goToPreviousDay() : goToNextDay();
+        break;
+    }
+  };
+
+  // Funktion för att formatera tidsintervall
+  const formatTimeRange = (date, hour) => {
+    const startTime = new Date(date);
+    startTime.setHours(hour, 0, 0);
+    const endTime = new Date(startTime);
+    endTime.setHours(hour + 1, 0, 0);
+    
+    return `${String(startTime.getHours()).padStart(2, '0')}:00 - ${String(endTime.getHours()).padStart(2, '0')}:00`;
+  };
+
+  // Funktion för att rendera dagsvyn
+  const renderDayView = () => {
+    const hours = Array.from({ length: 24 }, (_, i) => i);
+    const currentDateEvents = [...tasks, ...showings].filter(event => {
+      const eventDate = new Date(event.dueDate || event.dateTime);
+      return eventDate.getDate() === currentDate.getDate() &&
+             eventDate.getMonth() === currentDate.getMonth() &&
+             eventDate.getFullYear() === currentDate.getFullYear();
+    });
+
+    return (
+      <div className="grid grid-cols-1 h-[calc(100vh-8.5rem)] overflow-y-auto">
+        {hours.map(hour => {
+          const hourEvents = currentDateEvents.filter(event => {
+            const eventDate = new Date(event.dueDate || event.dateTime);
+            return eventDate.getHours() === hour;
+          });
+
+          return (
+            <div key={hour} className="border-b border-gray-200 dark:border-gray-700 min-h-[60px]">
+              <div className="flex">
+                <div className="w-20 py-2 px-4 text-sm text-gray-500 dark:text-gray-400">
+                  {formatTimeRange(currentDate, hour)}
+                </div>
+                <div className="flex-1 p-2">
+                  {hourEvents.map(event => 
+                    'dueDate' in event ? renderTaskItem(event) : renderShowingItem(event)
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
+  // Funktion för att rendera veckovyn
+  const renderWeekView = () => {
+    const startOfWeek = new Date(currentDate);
+    startOfWeek.setDate(currentDate.getDate() - currentDate.getDay() + 1);
+    
+    const weekDays = Array.from({ length: 7 }, (_, i) => {
+      const day = new Date(startOfWeek);
+      day.setDate(startOfWeek.getDate() + i);
+      return day;
+    });
+
+    return (
+      <div className="grid grid-cols-7 h-[calc(100vh-8.5rem)]">
+        {weekDays.map((day, index) => {
+          const dayEvents = [...tasks, ...showings].filter(event => {
+            const eventDate = new Date(event.dueDate || event.dateTime);
+            return eventDate.getDate() === day.getDate() &&
+                   eventDate.getMonth() === day.getMonth() &&
+                   eventDate.getFullYear() === day.getFullYear();
+          });
+
+          const isToday = isDateToday(day);
+
+          return (
+            <div 
+              key={index}
+              className={`border-r border-gray-200 dark:border-gray-700 overflow-y-auto ${
+                isToday ? 'bg-blue-50 dark:bg-blue-900/20' : 'bg-white dark:bg-gray-900'
+              }`}
+            >
+              <div className="p-2 sticky top-0 bg-inherit border-b border-gray-200 dark:border-gray-700">
+                <div className={`text-sm font-medium ${
+                  isToday ? 'text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'
+                }`}>
+                  {t(`calendar.weekdaysShort.${['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'][index]}`)}
+                </div>
+                <div className={`text-lg font-semibold ${
+                  isToday ? 'text-blue-600 dark:text-blue-400' : 'text-gray-900 dark:text-white'
+                }`}>
+                  {day.getDate()}
+                </div>
+              </div>
+              <div className="p-2">
+                {dayEvents.map(event => 
+                  'dueDate' in event ? renderTaskItem(event) : renderShowingItem(event)
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
   // Uppdatera renderCalendar-funktionen för att använda den nya filteringsfunktionen
   const renderCalendar = () => {
     const days = [];
@@ -972,6 +746,127 @@ const Calendar = () => {
     }
   };
 
+  const handleTaskClick = (task) => {
+    setSelectedTask(task);
+    setFormData({
+      ...task,
+      dueDate: task.dueDate ? task.dueDate.split('T')[0] : '',
+    });
+    setIsTaskModalOpen(true);
+  };
+
+  const handleInputChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }));
+  };
+
+  const resetForm = () => {
+    setFormData({
+      title: '',
+      description: '',
+      dueDate: '',
+      priority: '',
+      status: '',
+      assignedToUserId: '',
+      assignedByUserId: '',
+      apartmentId: '',
+      tenantId: '',
+      comments: '',
+      isRecurring: false,
+      recurringPattern: '',
+      descriptionLanguage: '',
+      phoneNumber: '',
+    });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      if (selectedTask) {
+        await taskService.updateTask(selectedTask.id, formData);
+      } else {
+        await taskService.createTask(formData);
+      }
+      await fetchCalendarData();
+      setIsTaskModalOpen(false);
+      setSelectedTask(null);
+      resetForm();
+      setSuccessMessage(t(selectedTask ? 'tasks.messages.updateSuccess' : 'tasks.messages.createSuccess'));
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (err) {
+      console.error('Error submitting task:', err);
+      setError(t('tasks.messages.error'));
+    }
+  };
+
+  const handleShowingClick = (showing) => {
+    setSelectedShowing(showing);
+    setIsShowingModalOpen(true);
+  };
+
+  const handleDayClick = (date) => {
+    if (!hasRole(['ADMIN', 'SUPERADMIN'])) return;
+    
+    setCurrentDate(date);
+    setFormData({
+      ...formData,
+      dueDate: formatShortDate(date)
+    });
+    setIsTaskModalOpen(true);
+  };
+
+  const handleShowingInputChange = (e) => {
+    const { name, value } = e.target;
+    setShowingFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleShowingSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      if (selectedShowing) {
+        await showingService.update(selectedShowing.id, showingFormData);
+      } else {
+        await showingService.create(showingFormData);
+      }
+      await fetchCalendarData();
+      setIsShowingEditModalOpen(false);
+      setSelectedShowing(null);
+      setShowingFormData({
+        title: '',
+        description: '',
+        dateTime: '',
+        status: '',
+        assignedToUserId: '',
+        apartmentId: '',
+        notes: '',
+        descriptionLanguage: 'sv',
+        contactName: '',
+        contactPhone: '',
+        contactEmail: ''
+      });
+      setSuccessMessage(t(selectedShowing ? 'showings.messages.updateSuccess' : 'showings.messages.createSuccess'));
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (err) {
+      console.error('Error submitting showing:', err);
+      setError(t('showings.messages.error'));
+    }
+  };
+
+  const handleEditShowing = (showing) => {
+    setShowingFormData({
+      ...showing,
+      dateTime: showing.dateTime ? showing.dateTime.split('.')[0] : '',
+    });
+    setIsShowingEditModalOpen(true);
+    setIsShowingModalOpen(false);
+  };
+
   if (isLoading && tasks.length === 0) {
     return (
       <div className="flex justify-center items-center h-full">
@@ -985,7 +880,7 @@ const Calendar = () => {
       <div className="flex justify-between items-center p-4 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center space-x-4">
           <button
-            onClick={goToPreviousMonth}
+            onClick={() => handleNavigationClick('previous')}
             className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
           >
             <svg className="h-5 w-5 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -993,10 +888,15 @@ const Calendar = () => {
             </svg>
           </button>
           <h2 className="text-xl font-medium text-gray-900 dark:text-white">
-            {t(`calendar.months.${currentDate.getMonth()}`)} {currentDate.getFullYear()}
+            {viewType === 'day' 
+              ? `${currentDate.getDate()} ${t(`calendar.months.${currentDate.getMonth()}`)} ${currentDate.getFullYear()}`
+              : viewType === 'week'
+              ? `${t(`calendar.months.${currentDate.getMonth()}`)} ${currentDate.getFullYear()}`
+              : `${t(`calendar.months.${currentDate.getMonth()}`)} ${currentDate.getFullYear()}`
+            }
           </h2>
           <button
-            onClick={goToNextMonth}
+            onClick={() => handleNavigationClick('next')}
             className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
           >
             <svg className="h-5 w-5 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -1009,6 +909,40 @@ const Calendar = () => {
           >
             {t('calendar.today')}
           </button>
+          
+          {/* Lägg till knappar för vyväxling */}
+          <div className="ml-4 flex rounded-md shadow-sm">
+            <button
+              onClick={() => setViewType('month')}
+              className={`px-4 py-2 text-sm font-medium rounded-l-md border ${
+                viewType === 'month'
+                  ? 'bg-blue-600 text-white border-blue-600'
+                  : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+              }`}
+            >
+              {t('calendar.month')}
+            </button>
+            <button
+              onClick={() => setViewType('week')}
+              className={`px-4 py-2 text-sm font-medium border-t border-b ${
+                viewType === 'week'
+                  ? 'bg-blue-600 text-white border-blue-600'
+                  : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+              }`}
+            >
+              {t('calendar.week')}
+            </button>
+            <button
+              onClick={() => setViewType('day')}
+              className={`px-4 py-2 text-sm font-medium rounded-r-md border ${
+                viewType === 'day'
+                  ? 'bg-blue-600 text-white border-blue-600'
+                  : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
+              }`}
+            >
+              {t('calendar.day')}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -1043,16 +977,22 @@ const Calendar = () => {
       )}
 
       <div className="flex-1 overflow-hidden">
-        <div className="grid grid-cols-7 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-          {['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'].map((day) => (
-            <div key={day} className="py-2 text-center text-sm text-gray-600 dark:text-gray-400 font-medium">
-              {t(`calendar.weekdaysShort.${day}`)}
+        {viewType === 'month' && (
+          <>
+            <div className="grid grid-cols-7 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+              {['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'].map((day) => (
+                <div key={day} className="py-2 text-center text-sm text-gray-600 dark:text-gray-400 font-medium">
+                  {t(`calendar.weekdaysShort.${day}`)}
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-        <div className="grid grid-cols-7 h-[calc(100vh-8.5rem)]">
-          {renderCalendar()}
-        </div>
+            <div className="grid grid-cols-7 h-[calc(100vh-8.5rem)]">
+              {renderCalendar()}
+            </div>
+          </>
+        )}
+        {viewType === 'week' && renderWeekView()}
+        {viewType === 'day' && renderDayView()}
       </div>
 
       {isTaskModalOpen && (
