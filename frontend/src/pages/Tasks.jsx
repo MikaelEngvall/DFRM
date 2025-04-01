@@ -358,17 +358,43 @@ const Tasks = () => {
     setError(null);
     
     try {
-      const taskData = {
-        ...formData,
-        assignedByUserId: currentUser.id
-      };
+      console.log('handleSubmit - formData:', formData);
+      console.log('handleSubmit - selectedTask:', selectedTask);
       
-      await taskService.createTask(taskData);
+      // Om vi redigerar en befintlig uppgift
+      if (selectedTask) {
+        console.log('Redigerar befintlig uppgift med ID:', selectedTask.id);
+        
+        const taskData = {
+          ...formData,
+          id: selectedTask.id  // Säkerställ att ID:t inkluderas
+        };
+        
+        // Logga vilken funktion som anropas
+        console.log('Anropar taskService.updateTask med ID:', selectedTask.id);
+        console.log('och data:', taskData);
+        
+        await taskService.updateTask(selectedTask.id, taskData);
+      } 
+      // Annars skapar vi en ny uppgift
+      else {
+        console.log('Skapar ny uppgift');
+        
+        const taskData = {
+          ...formData,
+          assignedByUserId: currentUser.id
+        };
+        
+        console.log('Anropar taskService.createTask med data:', taskData);
+        
+        await taskService.createTask(taskData);
+      }
+      
       closeTaskModal();
       fetchInitialData();
     } catch (err) {
-      console.error('Error creating task:', err);
-      setError(t('tasks.errors.createError'));
+      console.error('Error handling task:', err);
+      setError(selectedTask ? t('tasks.errors.updateError') : t('tasks.errors.createError'));
     }
   };
 

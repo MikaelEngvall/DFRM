@@ -91,6 +91,9 @@ const TaskDetail = () => {
       // Skapa en kopia av formulärdatan
       const taskData = { ...formData };
       
+      console.log('Original formData:', formData);
+      console.log('Task ID som ska uppdateras:', id);
+      
       // Säkerställ att tenantId och apartmentId är strängar, inte objekt
       if (taskData.tenantId && typeof taskData.tenantId === 'object') {
         taskData.tenantId = taskData.tenantId.id;
@@ -105,6 +108,11 @@ const TaskDetail = () => {
           task.recurringPattern !== taskData.recurringPattern) {
         await taskService.updateRecurringPattern(task.id, taskData.recurringPattern);
       }
+      
+      // Säkerställ att vi skickar med ID:t så att den befintliga uppgiften uppdateras
+      taskData.id = id;
+      
+      console.log('Data som skickas till updateTask:', taskData);
       
       await taskService.updateTask(id, taskData);
       await fetchData();

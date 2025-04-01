@@ -107,6 +107,9 @@ const updateTask = async (id, taskData) => {
     // Fixera tidzonsproblem innan vi skickar till backend
     const fixedTaskData = { ...taskData };
     
+    console.log('updateTask anropad med ID:', id);
+    console.log('och taskData:', taskData);
+    
     if (fixedTaskData.dueDate) {
       // Garantera att datumet är i formatet "YYYY-MM-DD" utan tidsdel
       const dueDate = new Date(fixedTaskData.dueDate);
@@ -116,8 +119,16 @@ const updateTask = async (id, taskData) => {
       fixedTaskData.dueDate = `${year}-${month}-${day}`;
     }
     
-    // Uppdatera i databasen först
-    const response = await api.patch(`/api/tasks/${id}`, fixedTaskData);
+    // Säkerställ att ID:t ingår i datan som skickas
+    fixedTaskData.id = id;
+    
+    // Försök med PUT istället för PATCH då det kan vara problem med PATCH-behörigheter
+    console.log(`PUT-anrop till /api/tasks/${id} med data:`, fixedTaskData);
+    
+    // Använd PUT istället för PATCH
+    const response = await api.put(`/api/tasks/${id}`, fixedTaskData);
+    
+    console.log('PUT-svar:', response.data);
     
     // Om databasen uppdaterades framgångsrikt, uppdatera cachen
     if (response.data) {
@@ -127,7 +138,24 @@ const updateTask = async (id, taskData) => {
     return response.data;
   } catch (error) {
     console.error(`Error updating task with ID ${id}:`, error);
-    throw error;
+    console.error('Anropsdata:', taskData);
+    console.error('API-svar:', error.response?.data);
+    
+    // Om PUT också misslyckas, försök med vanligt PATCH som backup
+    try {
+      console.log('PUT misslyckades, försöker med PATCH som backup...');
+      const fixedTaskData = { ...taskData, id: id };
+      const response = await api.patch(`/api/tasks/${id}`, fixedTaskData);
+      
+      if (response.data) {
+        updateInCache(CACHE_KEYS.TASKS, id, response.data);
+      }
+      
+      return response.data;
+    } catch (patchError) {
+      console.error('Båda PUT och PATCH misslyckades:', patchError);
+      throw error; // Kasta det ursprungliga felet
+    }
   }
 };
 

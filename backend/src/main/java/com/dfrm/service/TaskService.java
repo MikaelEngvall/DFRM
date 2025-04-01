@@ -50,22 +50,33 @@ public class TaskService {
     }
     
     public Task saveTask(Task task) {
+        log.info("Sparar uppgift: {}", task);
+    
         // Om bara tenantId är angivet men inte tenant-referensen, försök att hitta
         // och sätta tenant-referensen för bakåtkompatibilitet
         if (task.getTenantId() != null && task.getTenant() == null) {
-            tenantRepository.findById(task.getTenantId()).ifPresent(task::setTenant);
+            tenantRepository.findById(task.getTenantId()).ifPresent(tenant -> {
+                task.setTenant(tenant);
+                log.info("Satte tenant-referens baserat på tenantId: {}", tenant.getId());
+            });
         }
         
         // Om bara apartmentId är angivet men inte apartment-referensen, försök att hitta
         // och sätta apartment-referensen för bakåtkompatibilitet
         if (task.getApartmentId() != null && task.getApartment() == null) {
-            apartmentRepository.findById(task.getApartmentId()).ifPresent(task::setApartment);
+            apartmentRepository.findById(task.getApartmentId()).ifPresent(apartment -> {
+                task.setApartment(apartment);
+                log.info("Satte apartment-referens baserat på apartmentId: {}", apartment.getId());
+            });
         }
         
         // Om bara assignedToUserId är angivet men inte assignedUser-referensen, försök att hitta
         // och sätta assignedUser-referensen för bakåtkompatibilitet
         if (task.getAssignedToUserId() != null && task.getAssignedUser() == null) {
-            userRepository.findById(task.getAssignedToUserId()).ifPresent(task::setAssignedUser);
+            userRepository.findById(task.getAssignedToUserId()).ifPresent(user -> {
+                task.setAssignedUser(user);
+                log.info("Satte assignedUser-referens baserat på assignedToUserId: {}", user.getId());
+            });
         }
         
         // Om datumet har en tidsdel, ta bort den
@@ -73,6 +84,7 @@ public class TaskService {
             // Garantera att vi bara har LocalDate utan tidsdel
             LocalDate dueDate = task.getDueDate();
             task.setDueDate(dueDate); // Detta säkerställer att endast datumdelen används
+            log.info("Normaliserade dueDate: {}", dueDate);
         }
         
         // Översätt uppgiftsbeskrivningen om det finns en och den inte redan har översättningar
@@ -97,7 +109,9 @@ public class TaskService {
             }
         }
         
-        return taskRepository.save(task);
+        Task savedTask = taskRepository.save(task);
+        log.info("Uppgift sparad med ID: {}", savedTask.getId());
+        return savedTask;
     }
     
     /**

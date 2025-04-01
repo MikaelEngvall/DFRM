@@ -45,11 +45,44 @@ api.interceptors.response.use(
       switch (status) {
         case 401:
           // Unauthorized - Rensa token och omdirigera
+          console.error('401 Unauthorized - Token ogiltig eller saknas');
           removeAuthToken();
           window.location.href = '/login';
           break;
         case 403:
           console.error('403 Forbidden - Användaren saknar behörighet', config.url);
+          console.error('Request method:', config.method);
+          console.error('Request headers:', config.headers);
+          console.error('Request data:', config.data);
+          
+          // Kontrollera om token finns och är valid
+          const token = getAuthToken();
+          if (token) {
+            try {
+              // Parse JWT token
+              const base64Url = token.split('.')[1];
+              const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+              const payload = JSON.parse(window.atob(base64));
+              
+              // Check token expiration
+              if (payload.exp) {
+                const expDate = new Date(payload.exp * 1000);
+                const now = new Date();
+                if (expDate < now) {
+                  console.error('Token har gått ut, omdirigerar till login');
+                  removeAuthToken();
+                  window.location.href = '/login';
+                } else {
+                  console.error('Token är giltig men användaren saknar behörighet för denna åtgärd');
+                }
+              }
+            } catch (e) {
+              console.error('Fel vid avkodning av token:', e);
+            }
+          } else {
+            console.error('Ingen token hittades');
+            window.location.href = '/login';
+          }
           break;
         case 404:
           console.error('404 Not Found - Resursen finns inte', config.url);

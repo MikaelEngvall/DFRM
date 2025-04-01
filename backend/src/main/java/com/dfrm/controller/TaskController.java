@@ -32,6 +32,7 @@ public class TaskController {
     private final TaskService taskService;
 
     @GetMapping
+    @PreAuthorize("isAuthenticated()")
     public List<Task> getAllTasks(
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String priority,
@@ -41,6 +42,7 @@ public class TaskController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Task> getTaskById(@PathVariable String id) {
         Optional<Task> task = taskService.getTaskById(id);
         return task.map(ResponseEntity::ok)
@@ -48,11 +50,13 @@ public class TaskController {
     }
 
     @PostMapping
+    @PreAuthorize("isAuthenticated()")
     public Task createTask(@RequestBody Task task) {
         return taskService.saveTask(task);
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Task> updateTask(@PathVariable String id, @RequestBody Task task) {
         if (!taskService.existsById(id)) {
             return ResponseEntity.notFound().build();
@@ -62,14 +66,20 @@ public class TaskController {
     }
 
     @PatchMapping("/{id}")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPERADMIN', 'ROLE_ADMIN', 'ROLE_USER', 'SUPERADMIN', 'ADMIN', 'USER')")
     public ResponseEntity<Task> patchTask(@PathVariable String id, @RequestBody Task patchTask) {
+        System.out.println("PATCH-anrop mottaget för task ID: " + id);
+        System.out.println("Data mottagen: " + patchTask);
+        
         Optional<Task> existingTaskOpt = taskService.getTaskById(id);
         
         if (existingTaskOpt.isEmpty()) {
+            System.out.println("Uppgift med ID " + id + " hittades inte");
             return ResponseEntity.notFound().build();
         }
         
         Task existingTask = existingTaskOpt.get();
+        System.out.println("Befintlig uppgift: " + existingTask);
         
         // Detta kunde ersättas med reflection eller en utility-metod
         // som applicerar ändringar från patchTask till existingTask
@@ -120,10 +130,14 @@ public class TaskController {
         }
         existingTask.setRecurring(patchTask.isRecurring());
         
-        return ResponseEntity.ok(taskService.saveTask(existingTask));
+        Task savedTask = taskService.saveTask(existingTask);
+        System.out.println("Uppgift uppdaterad och sparad: " + savedTask);
+        
+        return ResponseEntity.ok(savedTask);
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Void> deleteTask(@PathVariable String id) {
         if (!taskService.existsById(id)) {
             return ResponseEntity.notFound().build();
@@ -133,6 +147,7 @@ public class TaskController {
     }
 
     @PatchMapping("/{id}/status")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Task> updateTaskStatus(@PathVariable String id, @RequestBody Map<String, String> payload) {
         if (!taskService.existsById(id)) {
             return ResponseEntity.notFound().build();
@@ -149,36 +164,43 @@ public class TaskController {
     }
 
     @GetMapping("/status/{status}")
+    @PreAuthorize("isAuthenticated()")
     public List<Task> getTasksByStatus(@PathVariable String status) {
         return taskService.getTasksByStatus(status);
     }
 
     @GetMapping("/priority/{priority}")
+    @PreAuthorize("isAuthenticated()")
     public List<Task> getTasksByPriority(@PathVariable String priority) {
         return taskService.getTasksByPriority(priority);
     }
 
     @GetMapping("/tenant/{tenantId}")
+    @PreAuthorize("isAuthenticated()")
     public List<Task> getTasksByTenantId(@PathVariable String tenantId) {
         return taskService.getTasksByTenantId(tenantId);
     }
 
     @GetMapping("/apartment/{apartmentId}")
+    @PreAuthorize("isAuthenticated()")
     public List<Task> getTasksByApartmentId(@PathVariable String apartmentId) {
         return taskService.getTasksByApartmentId(apartmentId);
     }
 
     @GetMapping("/assigned/{userId}")
+    @PreAuthorize("isAuthenticated()")
     public List<Task> getTasksByAssignedUserId(@PathVariable String userId) {
         return taskService.getTasksByAssignedUserId(userId);
     }
 
     @GetMapping("/overdue")
+    @PreAuthorize("isAuthenticated()")
     public List<Task> getOverdueTasks() {
         return taskService.getOverdueTasks();
     }
 
     @PostMapping("/recurring")
+    @PreAuthorize("isAuthenticated()")
     public Task createRecurringTask(@RequestBody Task task) {
         return taskService.createRecurringTask(task);
     }
@@ -199,6 +221,7 @@ public class TaskController {
     }
 
     @GetMapping("/date-range")
+    @PreAuthorize("isAuthenticated()")
     public List<Task> getTasksByDateRange(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,

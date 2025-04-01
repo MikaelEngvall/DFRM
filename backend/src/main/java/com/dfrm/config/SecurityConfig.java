@@ -55,6 +55,8 @@ public class SecurityConfig {
                 ).permitAll()
                 .requestMatchers("/api/interests/*/schedule-showing").hasAnyAuthority(
                     "ROLE_SUPERADMIN", "ROLE_ADMIN", "SUPERADMIN", "ADMIN")
+                .requestMatchers("/api/tasks/**").hasAnyAuthority(
+                    "ROLE_SUPERADMIN", "ROLE_ADMIN", "ROLE_USER", "SUPERADMIN", "ADMIN", "USER")
                 .anyRequest().authenticated()
             )
             .sessionManagement(session -> session
