@@ -746,13 +746,74 @@ const Calendar = () => {
     }
   };
 
-  const handleTaskClick = (task) => {
-    setSelectedTask(task);
-    setFormData({
-      ...task,
-      dueDate: task.dueDate ? task.dueDate.split('T')[0] : '',
-    });
-    setIsTaskModalOpen(true);
+  const handleTaskClick = async (task) => {
+    try {
+      // Hämta fullständig uppgiftsinformation från API för att garantera att alla detaljer finns
+      const fullTaskData = await taskService.getTaskById(task.id);
+      setSelectedTask(fullTaskData);
+      
+      // Extrahera ID från objekt om det behövs
+      const assignedToUserId = fullTaskData.assignedToUserId || '';
+      
+      const apartmentId = fullTaskData.apartmentId ? 
+        (typeof fullTaskData.apartmentId === 'object' ? fullTaskData.apartmentId.id : fullTaskData.apartmentId) : '';
+      
+      const tenantId = fullTaskData.tenantId ? 
+        (typeof fullTaskData.tenantId === 'object' ? fullTaskData.tenantId.id : fullTaskData.tenantId) : '';
+      
+      // Uppdatera formData med värdena från den hämtade uppgiften
+      setFormData({
+        title: fullTaskData.title || '',
+        description: fullTaskData.description || '',
+        dueDate: fullTaskData.dueDate ? new Date(fullTaskData.dueDate).toISOString().split('T')[0] : '',
+        priority: fullTaskData.priority || '',
+        status: fullTaskData.status || '',
+        assignedToUserId,
+        assignedByUserId: fullTaskData.assignedByUserId || '',
+        apartmentId,
+        tenantId,
+        comments: '',
+        isRecurring: fullTaskData.isRecurring || false,
+        recurringPattern: fullTaskData.recurringPattern || '',
+        descriptionLanguage: fullTaskData.descriptionLanguage || '',
+        phoneNumber: fullTaskData.phoneNumber || '',
+      });
+      
+      setIsTaskModalOpen(true);
+    } catch (err) {
+      console.error('Error fetching full task data:', err);
+      // Fallback till att använda uppgiften från listan om API-anropet misslyckas
+      setSelectedTask(task);
+      
+      // Extrahera ID från objekt om det behövs
+      const assignedToUserId = task.assignedToUserId || '';
+      
+      const apartmentId = task.apartmentId ? 
+        (typeof task.apartmentId === 'object' ? task.apartmentId.id : task.apartmentId) : '';
+      
+      const tenantId = task.tenantId ? 
+        (typeof task.tenantId === 'object' ? task.tenantId.id : task.tenantId) : '';
+      
+      // Uppdatera formData med värdena från uppgiften
+      setFormData({
+        title: task.title || '',
+        description: task.description || '',
+        dueDate: task.dueDate ? task.dueDate.split('T')[0] : '',
+        priority: task.priority || '',
+        status: task.status || '',
+        assignedToUserId,
+        assignedByUserId: task.assignedByUserId || '',
+        apartmentId,
+        tenantId,
+        comments: '',
+        isRecurring: task.isRecurring || false,
+        recurringPattern: task.recurringPattern || '',
+        descriptionLanguage: task.descriptionLanguage || '',
+        phoneNumber: task.phoneNumber || '',
+      });
+      
+      setIsTaskModalOpen(true);
+    }
   };
 
   const handleInputChange = (e) => {
