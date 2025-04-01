@@ -1,5 +1,5 @@
 import api from './api';
-import { getFromCache, saveToCache, CACHE_KEYS } from '../utils/cacheManager';
+import { getFromCache, saveToCache, removeFromCache, CACHE_KEYS } from '../utils/cacheManager';
 import axios from 'axios';
 
 export const interestService = {
@@ -15,7 +15,8 @@ export const interestService = {
       }
       
       console.log('Fetching all interests from API');
-      const response = await api.get('/api/interests');
+      const timestamp = new Date().getTime(); // Lägg till timestamp för att förhindra caching
+      const response = await api.get(`/api/interests?t=${timestamp}`);
       
       // Spara datan i cache
       saveToCache(CACHE_KEYS.INTERESTS, response.data);
@@ -44,7 +45,8 @@ export const interestService = {
       }
       
       console.log('Fetching interests for review from API');
-      const response = await api.get('/api/interests/for-review');
+      const timestamp = new Date().getTime(); // Lägg till timestamp för att förhindra caching
+      const response = await api.get(`/api/interests/for-review?t=${timestamp}`);
       
       // Spara datan i cache
       saveToCache(CACHE_KEYS.INTERESTS_FOR_REVIEW, response.data);
@@ -75,7 +77,8 @@ export const interestService = {
       }
       
       console.log('Fetching reviewed interests from API');
-      const response = await api.get('/api/interests/reviewed');
+      const timestamp = new Date().getTime(); // Lägg till timestamp för att förhindra caching
+      const response = await api.get(`/api/interests/reviewed?t=${timestamp}`);
       
       // Spara datan i cache
       saveToCache(CACHE_KEYS.REVIEWED_INTERESTS, response.data);
@@ -96,9 +99,8 @@ export const interestService = {
   
   getUnreviewedCount: async (skipCache = false) => {
     try {
-      const url = skipCache 
-        ? `/api/interests/unreview-count?t=${new Date().getTime()}` 
-        : '/api/interests/unreview-count';
+      const timestamp = new Date().getTime();
+      const url = `/api/interests/unreview-count?t=${timestamp}`;
       const response = await api.get(url);
       return response.data;
     } catch (error) {
@@ -139,7 +141,8 @@ export const interestService = {
   
   checkEmails: async () => {
     try {
-      const response = await api.post('/api/interests/check-emails');
+      const timestamp = new Date().getTime();
+      const response = await api.post(`/api/interests/check-emails?t=${timestamp}`);
       
       // Rensa cache efter ändring
       clearInterestCache();
@@ -154,7 +157,8 @@ export const interestService = {
   scheduleShowing: async (id, data) => {
     try {
       // Skapa en explicit URL som garanterat inkluderar /api/ prefixet
-      const fullUrl = `http://localhost:8080/api/interests/${id}/schedule-showing`;
+      const timestamp = new Date().getTime();
+      const fullUrl = `http://localhost:8080/api/interests/${id}/schedule-showing?t=${timestamp}`;
       
       console.log("API Call: Schemalägger visning med direkt URL", {
         url: fullUrl,
@@ -307,12 +311,19 @@ export const interestService = {
       console.error(error.message || "Okänt fel");
       throw error;
     }
+  },
+  
+  clearCache: () => {
+    console.log("Manuellt rensar alla intresseanmälningscache");
+    clearInterestCache();
+    return true;
   }
 };
 
-// Hjälpfunktion för att rensa intresse-cache
+// Hjälpfunktion för att rensa cache
 function clearInterestCache() {
-  localStorage.removeItem(CACHE_KEYS.INTERESTS);
-  localStorage.removeItem(CACHE_KEYS.INTERESTS_FOR_REVIEW);
-  localStorage.removeItem(CACHE_KEYS.REVIEWED_INTERESTS);
+  console.log("Rensar cache för intresseanmälningar");
+  removeFromCache(CACHE_KEYS.INTERESTS);
+  removeFromCache(CACHE_KEYS.INTERESTS_FOR_REVIEW);
+  removeFromCache(CACHE_KEYS.REVIEWED_INTERESTS);
 } 

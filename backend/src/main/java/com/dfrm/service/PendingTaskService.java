@@ -33,6 +33,23 @@ public class PendingTaskService {
     private final EmailListener emailListener;
     private final GoogleTranslateClient translateClient;
     
+    /**
+     * Hjälpmetod som kontrollerar om en text innehåller något av de angivna nyckelorden
+     */
+    private boolean containsAnyIgnoreCase(String text, String[] keywords) {
+        if (text == null || text.isEmpty()) {
+            return false;
+        }
+        
+        for (String keyword : keywords) {
+            if (text.contains(keyword)) {
+                return true;
+            }
+        }
+        
+        return false;
+    }
+    
     public List<PendingTask> getAllPendingTasks() {
         return pendingTaskRepository.findAll();
     }
@@ -53,45 +70,94 @@ public class PendingTaskService {
         // Hämta alla obehandlade uppgifter
         List<PendingTask> pendingTasks = pendingTaskRepository.findByReviewedByIsNull();
         
-        // Filtrera bort intresseanmälningar
+        // Explicit exkludera alla typer av intresseanmälningar - väntande uppgifter ska BARA innehålla felanmälningar
         List<PendingTask> filteredTasks = pendingTasks.stream()
             .filter(pendingTask -> {
-                // Kontrollera uppgiftens status
-                if (pendingTask.getStatus() != null && pendingTask.getStatus().equals("INTEREST")) {
+                // 1. DIREKT FILTRERA BORT uppgifter med explicit intressestatus
+                if (pendingTask.getStatus() != null) {
+                    String status = pendingTask.getStatus().toLowerCase();
+                    if (status.equals("interest") || status.contains("intresse")) {
+                        return false;
+                    }
+                }
+                
+                // 2. FILTRERA BORT uppgifter med task-objekt som har intressestatus
+                if (pendingTask.getTask() != null && pendingTask.getTask().getStatus() != null) {
+                    String taskStatus = pendingTask.getTask().getStatus().toLowerCase();
+                    if (taskStatus.equals("interest") || taskStatus.contains("intresse")) {
+                        return false;
+                    }
+                }
+                
+                // 3. FILTRERA BORT uppgifter med ämnen relaterade till intresseanmälningar
+                if (pendingTask.getSubject() != null && 
+                    (pendingTask.getSubject().toLowerCase().contains("intresse") || 
+                     pendingTask.getSubject().toLowerCase().contains("interest") ||
+                     pendingTask.getSubject().toLowerCase().contains("lägenhet") ||
+                     pendingTask.getSubject().toLowerCase().contains("bostad") ||
+                     pendingTask.getSubject().toLowerCase().contains("visning"))) {
                     return false;
                 }
                 
-                // Kontrollera task-objektets status
-                if (pendingTask.getTask() != null && 
-                    pendingTask.getTask().getStatus() != null && 
-                    pendingTask.getTask().getStatus().equals("INTEREST")) {
-                    return false;
-                }
-                
-                // Kontrollera beskrivning och e-post för intresserelaterad text
-                boolean containsInterestKeyword = false;
-                
-                // Kontrollera e-postadressen
+                // 4. FILTRERA BORT uppgifter med e-postadresser innehållande intresserelaterade nyckelord
                 if (pendingTask.getEmail() != null && 
-                    pendingTask.getEmail().toLowerCase().contains("intresse")) {
-                    containsInterestKeyword = true;
+                    (pendingTask.getEmail().toLowerCase().contains("intresse") || 
+                     pendingTask.getEmail().toLowerCase().contains("interest") ||
+                     pendingTask.getEmail().toLowerCase().contains("bostad") ||
+                     pendingTask.getEmail().toLowerCase().contains("lägenhet"))) {
+                    return false;
                 }
                 
-                // Kontrollera beskrivningen
-                if (pendingTask.getDescription() != null && 
-                    pendingTask.getDescription().toLowerCase().contains("intresse")) {
-                    containsInterestKeyword = true;
+                // 5. FILTRERA BORT uppgifter med beskrivningar som tyder på intresseanmälningar
+                if (pendingTask.getDescription() != null) {
+                    String desc = pendingTask.getDescription().toLowerCase();
+                    if (desc.contains("intresse") || 
+                        desc.contains("interest") || 
+                        desc.contains("lägenhet") || 
+                        desc.contains("apartment") ||
+                        desc.contains("visning") ||
+                        desc.contains("showing") ||
+                        desc.contains("bostad") ||
+                        desc.contains("housing") ||
+                        desc.contains("hyra") ||
+                        desc.contains("rent")) {
+                        return false;
+                    }
                 }
                 
-                // Kontrollera task-objektets beskrivning
-                if (pendingTask.getTask() != null && 
-                    pendingTask.getTask().getDescription() != null && 
-                    pendingTask.getTask().getDescription().toLowerCase().contains("intresse")) {
-                    containsInterestKeyword = true;
+                // 6. FILTRERA BORT uppgifter med task-objekt som har intresserelaterad beskrivning
+                if (pendingTask.getTask() != null && pendingTask.getTask().getDescription() != null) {
+                    String taskDesc = pendingTask.getTask().getDescription().toLowerCase();
+                    if (taskDesc.contains("intresse") || 
+                        taskDesc.contains("interest") || 
+                        taskDesc.contains("lägenhet") || 
+                        taskDesc.contains("apartment") ||
+                        taskDesc.contains("visning") ||
+                        taskDesc.contains("showing") ||
+                        taskDesc.contains("bostad") ||
+                        taskDesc.contains("housing") ||
+                        taskDesc.contains("hyra") ||
+                        taskDesc.contains("rent")) {
+                        return false;
+                    }
                 }
                 
-                // Behåll bara de som INTE matchar intressekriterier
-                return !containsInterestKeyword;
+                // 7. FILTRERA BORT uppgifter med task-objekt som har titlar relaterade till intresseanmälningar
+                if (pendingTask.getTask() != null && pendingTask.getTask().getTitle() != null) {
+                    String taskTitle = pendingTask.getTask().getTitle().toLowerCase();
+                    if (taskTitle.contains("intresse") || 
+                        taskTitle.contains("interest") || 
+                        taskTitle.contains("lägenhet") || 
+                        taskTitle.contains("apartment") ||
+                        taskTitle.contains("visning") ||
+                        taskTitle.contains("showing") ||
+                        taskTitle.contains("bostad")) {
+                        return false;
+                    }
+                }
+                
+                // Slutlig kontroll: endast behåll uppgifter som är explicit felanmälningar eller inte intresseanmälningar
+                return true;
             })
             .toList();
             

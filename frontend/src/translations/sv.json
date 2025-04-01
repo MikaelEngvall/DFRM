@@ -1,0 +1,96 @@
+{
+  "interests": {
+    "cacheCleared": "Cachen för intresseanmälningar har uppdaterats",
+    "cacheError": "Kunde inte uppdatera intresseanmälningar",
+    "refreshCache": "Uppdatera intresseanmälningar",
+    "title": "Intresseanmälningar",
+    "actions": {
+      "checkEmails": "Hämta e-post",
+      "review": "Godkänn",
+      "reject": "Avvisa",
+      "scheduleShowing": "Boka visning",
+      "sendAndSchedule": "Skicka och boka"
+    },
+    "fields": {
+      "name": "Namn",
+      "contact": "Kontakt",
+      "email": "E-post",
+      "phone": "Telefon",
+      "apartment": "Lägenhet",
+      "message": "Meddelande",
+      "received": "Mottagen",
+      "status": "Status",
+      "reviewedBy": "Granskad av",
+      "reviewComments": "Kommentarer",
+      "showingDate": "Visningsdatum",
+      "showingTime": "Visningstid",
+      "responseMessage": "Svarsmeddelande",
+      "assignedTo": "Ansvarig",
+      "pageUrl": "Sidlänk"
+    },
+    "status": {
+      "NEW": "Ny",
+      "REVIEWED": "Granskad",
+      "REJECTED": "Avvisad",
+      "SHOWING_SCHEDULED": "Visning bokad"
+    },
+    "showReviewed": "Visa granskade",
+    "noInterests": "Inga intresseanmälningar hittades",
+    "filteredResults": "{{count}} resultat",
+    "details": "Intresseanmälan",
+    "scheduleShowing": "Boka visning",
+    "showingScheduled": "Visning är bokad",
+    "showingInfo": "Bokad visning för {{name}} på {{apartment}}",
+    "addComments": "Lägg till kommentarer",
+    "responsePlaceholder": "Hej!\n\nTack för din intresseanmälan för lägenheten. Vi vill gärna bjuda in dig till en visning.\n\nVänliga hälsningar,\nDuggals Fastigheter",
+    "responseHelp": "Visningstid kommer att läggas till automatiskt",
+    "messages": {
+      "fieldsRequired": "Alla fält är obligatoriska",
+      "reviewError": "Ett fel uppstod vid granskning",
+      "rejectError": "Ett fel uppstod vid avvisning",
+      "showingScheduled": "Visning har bokats och bekräftelse har skickats",
+      "showingScheduleError": "Ett fel uppstod vid bokning av visning",
+      "emailCheckError": "Ett fel uppstod vid läsning av e-post"
+    }
+  },
+  "common": {
+    "greeting": "Hej",
+    "error": "Ett fel har uppstått",
+    "filter": "Filter",
+    "filters": "Filter",
+    "all": "Alla",
+    "apply": "Tillämpa",
+    "clear": "Rensa",
+    "forceUpdate": "Tvinga uppdatering",
+    "showReviewed": "Visa granskade",
+    "loading": "Laddar...",
+    "cancel": "Avbryt",
+    "select": "Välj",
+    "sendEmail": "Skicka e-post",
+    "openLink": "Öppna länk",
+    "at": "kl."
+  },
+  "navigation": {
+    "dashboard": "Dashboard",
+    "apartments": "Lägenheter",
+    "tenants": "Hyresgäster",
+    "keys": "Nycklar",
+    "tasks": "Uppgifter",
+    "pendingTasks": "Väntande uppgifter",
+    "interests": "Intresseanmälningar",
+    "calendar": "Kalender",
+    "staff": "Personal",
+    "import": "Import",
+    "logout": "Logga ut",
+    "lightMode": "Ljust läge",
+    "darkMode": "Mörkt läge"
+  },
+  "email": {
+    "send": "Skicka e-post",
+    "subject": "Ämne",
+    "content": "Innehåll",
+    "recipients": "Mottagare",
+    "sendButton": "Skicka",
+    "cancelButton": "Avbryt"
+  }
+} 

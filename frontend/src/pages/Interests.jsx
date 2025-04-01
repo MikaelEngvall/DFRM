@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useLocale } from '../contexts/LocaleContext';
 import { useAuth } from '../contexts/AuthContext';
 import Modal from '../components/Modal';
@@ -32,6 +32,8 @@ const Interests = () => {
   const [selectedAgent, setSelectedAgent] = useState('');
   const [users, setUsers] = useState([]);
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
+  const [pollingInterval, setPollingInterval] = useState(30000); // 30 sekunder
+  const pollingRef = useRef(null);
 
   // Formatera datum till lokalt format
   const formatDate = (dateString) => {
@@ -126,6 +128,30 @@ const Interests = () => {
       setIsLoading(false);
     }
   };
+
+  // Starta/stoppa polling för automatisk uppdatering
+  useEffect(() => {
+    // Starta polling
+    const startPolling = () => {
+      console.log('Startar polling för intresseanmälningar med intervall:', pollingInterval);
+      pollingRef.current = setInterval(() => {
+        console.log('Polling: Hämtar intresseanmälningar...');
+        fetchInterests(true);
+        fetchReviewedInterests(true);
+      }, pollingInterval);
+    };
+
+    // Starta polling när komponenten laddas
+    startPolling();
+
+    // Rensa intervallet när komponenten avmonteras
+    return () => {
+      console.log('Stoppar polling för intresseanmälningar');
+      if (pollingRef.current) {
+        clearInterval(pollingRef.current);
+      }
+    };
+  }, [pollingInterval]);
 
   // Hämta data när komponenten laddas
   useEffect(() => {

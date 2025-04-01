@@ -15,10 +15,13 @@ import {
   MoonIcon,
   UserIcon,
   DocumentArrowUpIcon,
+  ArrowPathIcon,
 } from '@heroicons/react/24/outline';
 import { useAuth } from '../contexts/AuthContext';
 import { useLocale } from '../contexts/LocaleContext';
 import LanguageSelector from './LanguageSelector';
+import { interestService } from '../services';
+import { toast } from 'react-toastify';
 
 // Flyttar Tooltip-komponenten utanför Navigation-komponenten
 function Tooltip({ text, isVisible }) {
@@ -111,6 +114,18 @@ const Navigation = () => {
 
   const toggleMobileMenu = () => {
     setMobileMenuOpen(!mobileMenuOpen);
+  };
+
+  const handleRefreshInterests = async () => {
+    try {
+      console.log('Manuellt uppdaterar intresseanmälningar...');
+      await interestService.getForReview(true);
+      await interestService.getReviewed(true);
+      toast.success(t('interests.cacheCleared'));
+    } catch (error) {
+      console.error('Error refreshing interests:', error);
+      toast.error(t('interests.cacheError'));
+    }
   };
 
   // Uppdaterad navigation med rollkontroll
@@ -269,12 +284,22 @@ const Navigation = () => {
           </div>
         </div>
         <div className="flex items-center space-x-4">
+          {/* Refresh interest applications button */}
+          {user && hasRole(['ADMIN', 'SUPERADMIN']) && (
+            <button 
+              onClick={handleRefreshInterests}
+              className="text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white"
+              title={t('interests.refreshCache')}
+            >
+              <ArrowPathIcon className="h-6 w-6" />
+            </button>
+          )}
           <ThemeToggle darkMode={darkMode} setDarkMode={setDarkMode} />
           <button 
             className="text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white"
             onClick={handleLogout}
           >
-            {React.createElement(ArrowRightStartOnRectangleIcon, { className: "h-6 w-6" })}
+            <ArrowRightStartOnRectangleIcon className="h-6 w-6" />
           </button>
         </div>
       </div>

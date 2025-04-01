@@ -17,6 +17,8 @@ import Calendar from './pages/Calendar';
 import Staff from './pages/Staff';
 import Import from './pages/Import';
 import Interests from './pages/Interests';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 // Wrapper-komponent för sidor som kräver navigation
 const NavigationWrapper = ({ children }) => {
@@ -52,6 +54,14 @@ const App = () => {
           <AuthProvider>
             <TaskModalProvider>
               <div className="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-200">
+                <ToastContainer 
+                  position="top-right" 
+                  autoClose={3000} 
+                  hideProgressBar={false} 
+                  closeOnClick 
+                  pauseOnHover 
+                  theme="colored"
+                />
                 <Routes>
                   <Route path="/login" element={<Login />} />
                   

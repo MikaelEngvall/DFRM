@@ -216,30 +216,108 @@ const PendingTasks = () => {
         pendingEmailReportService.getAll()
       ]);
       
-      // Filtrera bort intresseanmälningar - dessa har normalt status 'INTEREST' eller kommer från email_reports
-      const filteredPendingData = pendingData.filter(task => {
-        // Kontrollera om uppgiften är en intresseanmälan
-        const isInterest = task.status === 'INTEREST' || 
-                           (task.task && task.task.status === 'INTEREST') ||
-                           (task.email && task.email.includes('intresse')) ||
-                           (task.description && task.description.toLowerCase().includes('intresse')) ||
-                           (task.task && task.task.description && task.task.description.toLowerCase().includes('intresse'));
-                           
-        // Behåll bara de som INTE är intresseanmälningar
-        return !isInterest;
-      });
+      // Komplett lista med nyckelord som indikerar intresseanmälningar
+      const interestKeywords = [
+        // Svenska nyckelord
+        "intresse", "lägenhet", "visning", "bostad", "ledig", "ledigt", 
+        "flyttar", "flytta", "bostadsintresse", "bostadskö", "uthyrning",
+        "hyra", "hyres", "lediga", "bostäder", "boende", 
+
+        // Engelska nyckelord
+        "interest", "apartment", "showing", "housing", "vacant", "available", 
+        "moving", "move", "rental", "rent", "renting", "accommodation",
+        "vacancy", "residence", "property", "viewing", "new home",
+
+        // Generella ord som ofta finns i intresseanmälningar
+        "kvadratmeter", "kvm", "m²", "square meters", "sqm"
+      ];
       
-      // Filtrera även e-postrapporter för att exkludera intresseanmälningar
-      const filteredEmailReports = emailReportsData.filter(report => {
-        const isInterest = report.status === 'INTEREST' || 
-                          (report.email && report.email.includes('intresse')) ||
-                          (report.description && report.description.toLowerCase().includes('intresse'));
-                          
-        return !isInterest;
-      });
+      // Hjälpfunktion för att kontrollera om en text innehåller intresserelaterade nyckelord
+      const containsInterestKeyword = (text) => {
+        if (!text) return false;
+        const lowerText = text.toLowerCase();
+        return interestKeywords.some(keyword => lowerText.includes(keyword));
+      };
       
-      console.log(`Filtrerade bort ${pendingData.length - filteredPendingData.length} intresseanmälningar från väntande uppgifter`);
-      console.log(`Filtrerade bort ${emailReportsData.length - filteredEmailReports.length} intresseanmälningar från e-postrapporter`);
+      // Hjälpfunktion för att kontrollera om objektet verkar vara en intresseanmälan
+      const isInterestRelated = (obj) => {
+        // 1. Kontrollera STATUS - den mest explicita indikatorn
+        if (obj.status === 'INTEREST' || 
+           (obj.status && obj.status.toLowerCase().includes('intresse'))) {
+          return true;
+        }
+        
+        // 2. Kontrollera TASK STATUS om det finns
+        if (obj.task && 
+           (obj.task.status === 'INTEREST' || 
+           (obj.task.status && obj.task.status.toLowerCase().includes('intresse')))) {
+          return true;
+        }
+        
+        // 3. Kontrollera ÄMNE - viktigt för att identifiera e-postämnen relaterade till intresse
+        if (obj.subject && containsInterestKeyword(obj.subject)) {
+          return true;
+        }
+        
+        // 4. Kontrollera E-POST - kan innehålla adresser relaterade till intresseanmälningar
+        if (obj.email && containsInterestKeyword(obj.email)) {
+          return true;
+        }
+        
+        // 5. Kontrollera BESKRIVNING - huvudinnehållet som ofta avslöjar om det är en intresseanmälan
+        if (obj.description && containsInterestKeyword(obj.description)) {
+          return true;
+        }
+        
+        // 6. Kontrollera TASK BESKRIVNING om det finns
+        if (obj.task && obj.task.description && containsInterestKeyword(obj.task.description)) {
+          return true;
+        }
+        
+        // 7. Kontrollera TASK TITEL om det finns
+        if (obj.task && obj.task.title && containsInterestKeyword(obj.task.title)) {
+          return true;
+        }
+        
+        // 8. Kontrollera NAMN på avsändaren - ibland innehåller även namnet ledtrådar
+        if (obj.name && containsInterestKeyword(obj.name)) {
+          return true;
+        }
+        
+        // 9. Kontrollera ADRESS och LÄGENHETSNUMMER - dessa fält kan innehålla ledtrådar
+        if ((obj.address && containsInterestKeyword(obj.address)) || 
+            (obj.apartment && containsInterestKeyword(obj.apartment))) {
+          return true;
+        }
+        
+        // Nämner orden "intresse" eller "lägenhet" någonstans i något fält
+        const allText = [
+          obj.status, obj.subject, obj.email, obj.description, obj.name, 
+          obj.address, obj.apartment, obj.task?.status, obj.task?.title, 
+          obj.task?.description
+        ].filter(Boolean).join(' ').toLowerCase();
+        
+        if (allText.includes('intresse') || 
+            allText.includes('interest') || 
+            allText.includes('lägenhet') || 
+            allText.includes('apartment') ||
+            allText.includes('visning') ||
+            allText.includes('showing')) {
+          return true;
+        }
+        
+        // Om vi kommer hit, är det troligen inte en intresseanmälan
+        return false;
+      };
+      
+      // Filtrera bort ALLA intresseanmälningar från väntande uppgifter
+      const filteredPendingData = pendingData.filter(task => !isInterestRelated(task));
+      
+      // Filtrera också bort intresseanmälningar från e-postrapporter
+      const filteredEmailReports = emailReportsData.filter(report => !isInterestRelated(report));
+      
+      console.log(`Filtrerade bort ${pendingData.length - filteredPendingData.length} intresseanmälningar från ${pendingData.length} väntande uppgifter`);
+      console.log(`Filtrerade bort ${emailReportsData.length - filteredEmailReports.length} intresseanmälningar från ${emailReportsData.length} e-postrapporter`);
       
       setPendingTasks(filteredPendingData);
       setEmailReports(filteredEmailReports);
