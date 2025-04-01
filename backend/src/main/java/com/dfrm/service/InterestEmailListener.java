@@ -202,23 +202,67 @@ public class InterestEmailListener {
             List<Interest> existingInterests = interestRepository.findByEmail(email);
             
             if (!existingInterests.isEmpty()) {
+                log.info("Hittade {} tidigare intresseanmälningar från samma e-post: {}", existingInterests.size(), email);
+                
+                // Extrahera lägenhetsinformation från innehållet för jämförelse
+                String currentApartment = extractApartment(content, subject);
+                
                 for (Interest existing : existingInterests) {
-                    // Rensa både gamla och nya meddelanden för jämförelse (ta bort whitespace)
-                    String cleanExistingMessage = existing.getMessage().replaceAll("\\s+", "").toLowerCase();
+                    // Rensa både gamla och nya meddelanden för jämförelse (ta bort whitespace och gör lowercase)
+                    String cleanExistingMessage = (existing.getMessage() != null) 
+                                                ? existing.getMessage().replaceAll("\\s+", "").toLowerCase() 
+                                                : "";
                     String cleanNewMessage = content.replaceAll("\\s+", "").toLowerCase();
                     
-                    // Om de är identiska, hoppa över
-                    if (cleanExistingMessage.equals(cleanNewMessage)) {
-                        log.warn("Hittade en identisk intresseanmälan - hoppar över dubblett från: {}", email);
+                    log.debug("Jämför nytt meddelande (längd: {}) med befintligt meddelande (längd: {})", 
+                              cleanNewMessage.length(), cleanExistingMessage.length());
+                    
+                    // Om de är exakt samma lägenhet, hoppa över oavsett innehåll
+                    if (existing.getApartment() != null && currentApartment != null && 
+                        existing.getApartment().equalsIgnoreCase(currentApartment)) {
+                        log.warn("Samma lägenhet ({}) har redan registrerats för e-post: {} - hoppar över", 
+                                currentApartment, email);
+                        return;
+                    }
+                    
+                    // Om de är identiska meddelanden, hoppa över
+                    if (!cleanExistingMessage.isEmpty() && !cleanNewMessage.isEmpty() && 
+                        cleanExistingMessage.equals(cleanNewMessage)) {
+                        log.warn("Identiskt meddelandeinnehåll - hoppar över dubblett från: {}", email);
                         return;
                     }
                     
                     // Kolla om de är väldigt lika
                     if (cleanExistingMessage.length() > 30 && cleanNewMessage.length() > 30) {
-                        // Om meddelandena är långa, kolla om de är till 80% lika
-                        if (cleanExistingMessage.contains(cleanNewMessage.substring(0, (int)(cleanNewMessage.length() * 0.8))) || 
-                            cleanNewMessage.contains(cleanExistingMessage.substring(0, (int)(cleanExistingMessage.length() * 0.8)))) {
-                            log.warn("Hittade en liknande intresseanmälan - hoppar över möjlig dubblett från: {}", email);
+                        // Om meddelandena är långa, kolla om de överlappar betydligt
+                        int minLength = Math.min(cleanExistingMessage.length(), cleanNewMessage.length());
+                        int compareLength = (int)(minLength * 0.7); // 70% av det kortare meddelandet
+                        
+                        String existingSubstring = cleanExistingMessage.substring(0, compareLength);
+                        String newSubstring = cleanNewMessage.substring(0, compareLength);
+                        
+                        // Om första 70% av innehållet är identiskt
+                        if (existingSubstring.equals(newSubstring)) {
+                            log.warn("Mycket liknande innehåll (första 70% är identiskt) - hoppar över möjlig dubblett från: {}", email);
+                            return;
+                        }
+                        
+                        // Kontrollera om ett meddelande innehåller mer än 80% av det andra
+                        if (cleanExistingMessage.contains(newSubstring) || 
+                            cleanNewMessage.contains(existingSubstring)) {
+                            log.warn("Överlappande innehåll - hoppar över möjlig dubblett från: {}", email);
+                            return;
+                        }
+                    }
+                    
+                    // Kontrollera tidsskillnad - om anmälan är från senaste timmen, är det sannolikt dubblett
+                    if (existing.getReceived() != null) {
+                        LocalDateTime now = LocalDateTime.now();
+                        LocalDateTime existingTime = existing.getReceived();
+                        long minutesBetween = java.time.Duration.between(existingTime, now).toMinutes();
+                        
+                        if (minutesBetween < 60) { // Inom en timme
+                            log.warn("Ny anmälan från samma e-post inom 60 minuter - hoppar över trolig dubblett från: {}", email);
                             return;
                         }
                     }
