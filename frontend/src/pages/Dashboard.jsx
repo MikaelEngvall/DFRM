@@ -114,12 +114,15 @@ const Dashboard = () => {
       const thisWeekInterests = allInterests.filter(interest => {
         if (!interest.received) return false;
         const receivedDate = new Date(interest.received);
-        return receivedDate >= startOfWeek;
+        // Filtrera också bort visningbokade intresseanmälningar från denna veckas statistik
+        return receivedDate >= startOfWeek && interest.status !== 'SHOWING_SCHEDULED';
       });
       
       // Hämta antal avslutade (reviewed/rejected) intresseanmälningar
+      // Exkludera SHOWING_SCHEDULED från avslutade för att hålla konsekvens med intressetabellen
       const completedInterests = allInterests.filter(interest => 
-        interest.status === 'REVIEWED' || interest.status === 'REJECTED' || interest.status === 'SHOWING_SCHEDULED'
+        (interest.status === 'REVIEWED' || interest.status === 'REJECTED') 
+        && interest.status !== 'SHOWING_SCHEDULED'
       );
       
       setInterestStats({

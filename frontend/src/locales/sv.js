@@ -606,7 +606,9 @@ export default {
       reviewComments: 'Granskningskommentarer',
       responseMessage: 'Meddelande till intressent',
       showingDate: 'Visningsdatum',
-      showingTime: 'Visningstid'
+      showingTime: 'Visningstid',
+      assignedTo: 'Tilldelad till',
+      assignedToUserId: 'Tilldelad till'
     },
     status: {
       NEW: 'Ny',

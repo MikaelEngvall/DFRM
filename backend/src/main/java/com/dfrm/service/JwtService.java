@@ -32,11 +32,19 @@ public class JwtService {
 
     public String generateToken(User user) {
         Map<String, Object> claims = new HashMap<>();
-        String roleWithPrefix = user.getRole().startsWith("ROLE_") ? user.getRole() : "ROLE_" + user.getRole();
+        
+        // Formatera rollen korrekt för att säkerställa att den alltid har prefix
+        String userRole = user.getRole();
+        String roleWithPrefix = userRole != null && !userRole.isEmpty() 
+            ? (userRole.startsWith("ROLE_") ? userRole : "ROLE_" + userRole)
+            : "ROLE_USER"; // Defaultvärde om role är null eller tom
+            
         claims.put("role", roleWithPrefix);
         
-        // Lägg till logging för att se vilken roll som läggs i token
-        System.out.println("Genererar token för " + user.getEmail() + " med roll: " + roleWithPrefix);
+        // Förbättrad loggning
+        System.out.println("Genererar token för användare: " + user.getEmail());
+        System.out.println("Original roll: " + user.getRole());
+        System.out.println("Formaterad roll i token: " + roleWithPrefix);
         
         // Lägg även till originalet för bakåtkompatibilitet
         claims.put("originalRole", user.getRole());

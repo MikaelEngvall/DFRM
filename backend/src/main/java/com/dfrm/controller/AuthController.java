@@ -76,23 +76,47 @@ public class AuthController {
         String email = loginRequest.get("email");
         String password = loginRequest.get("password");
         
+        System.out.println("Försöker logga in användare: " + email);
+        
+        // Kontrollera att både email och lösenord har angetts
+        if (email == null || email.isEmpty() || password == null || password.isEmpty()) {
+            System.out.println("Inloggningsförsök med saknade uppgifter: " + (email == null ? "email saknas" : "lösenord saknas"));
+            return ResponseEntity.badRequest()
+                    .body(Map.of("message", "Både e-post och lösenord måste anges"));
+        }
+        
+        // Kontrollera om användaren existerar först
+        Optional<User> userOpt = userRepository.findByEmail(email);
+        if (userOpt.isEmpty()) {
+            System.out.println("Inloggningsförsök för användare som inte existerar: " + email);
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("message", "Fel användarnamn eller lösenord"));
+        }
+        
+        User user = userOpt.get();
+        
+        // Kontrollera att användaren är aktiv
+        if (!user.isActive()) {
+            System.out.println("Inloggningsförsök för inaktiverad användare: " + email);
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("message", "Användarkontot är inaktiverat. Kontakta administratören."));
+        }
+        
         try {
+            // Försök autentisera med Spring Security
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(email, password));
             
-            Optional<User> userOpt = userRepository.findByEmail(email);
-            if (userOpt.isEmpty()) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body(Map.of("message", "Fel användarnamn eller lösenord"));
-            }
-            
-            User user = userOpt.get();
+            // Om vi kommer hit har autentiseringen lyckats
+            System.out.println("Autentisering lyckades för: " + email);
             
             // Uppdatera senaste inloggningstid
             user.setLastLoginAt(LocalDateTime.now());
             userRepository.save(user);
             
+            // Generera JWT-token
             String token = jwtService.generateToken(user);
+            System.out.println("JWT-token genererad för: " + email);
             
             Map<String, Object> response = new HashMap<>();
             response.put("token", token);
@@ -111,8 +135,14 @@ public class AuthController {
             
             return ResponseEntity.ok(response);
         } catch (BadCredentialsException e) {
+            System.out.println("Felaktiga inloggningsuppgifter för: " + email + " - " + e.getMessage());
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("message", "Fel användarnamn eller lösenord"));
+        } catch (Exception e) {
+            System.out.println("Oväntat fel vid inloggning för: " + email + " - " + e.getMessage());
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "Ett fel inträffade vid inloggning. Försök igen senare."));
         }
     }
     

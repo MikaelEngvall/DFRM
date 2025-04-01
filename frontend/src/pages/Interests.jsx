@@ -191,7 +191,12 @@ const Interests = () => {
 
   // Bestäm vilken data som ska visas baserat på visningsläge
   const getDisplayData = () => {
-    return showReviewed ? reviewedInterests : interests;
+    // Filtrera bort intresseanmälningar med status SHOWING_SCHEDULED
+    // Detta gör att bokade visningar inte kommer att visas i tabellen
+    const filteredInterests = interests.filter(interest => interest.status !== 'SHOWING_SCHEDULED');
+    const filteredReviewedInterests = reviewedInterests.filter(interest => interest.status !== 'SHOWING_SCHEDULED');
+    
+    return showReviewed ? filteredReviewedInterests : filteredInterests;
   };
   
   // Hantera filterändringar

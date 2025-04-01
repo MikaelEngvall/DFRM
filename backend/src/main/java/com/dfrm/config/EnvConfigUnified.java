@@ -90,9 +90,10 @@ public class EnvConfigUnified {
             
             for (String directory : SEARCH_PATHS) {
                 // Strippa bort .env från directory om det finns med
-                String searchDir = directory.endsWith(".env") 
-                    ? directory.substring(0, directory.length() - 5)
-                    : directory;
+                String searchDir = directory;
+                if (directory.endsWith(".env") && directory.length() > 4) {
+                    searchDir = directory.substring(0, directory.length() - 4);
+                }
                 
                 // Om vi har en tom sträng, använd "." för att söka i aktuell katalog
                 if (searchDir.isEmpty()) {
