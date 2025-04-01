@@ -246,6 +246,10 @@ const Dashboard = () => {
   }
 
   const handleEmailReportsClick = () => {
+    navigate('/tasks');
+  };
+
+  const handlePendingTasksClick = () => {
     navigate('/pending-tasks');
   };
 
@@ -392,7 +396,8 @@ const Dashboard = () => {
           </div>
           <div className="space-y-4" onClick={handleEmailReportsClick} style={{ cursor: 'pointer' }}>
             <div className="grid grid-cols-1 gap-3">
-              <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-md">
+              <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-md" 
+                    onClick={(e) => { e.stopPropagation(); handlePendingTasksClick(); }}>
                 <span className="text-sm font-medium">{t('tasks.status.PENDING')}</span>
                 <span className={`px-2 py-1 rounded-full text-xs font-medium ${taskStats.pending > 0 ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'}`}>
                   {taskStats.pending > 0 ? taskStats.pending : t('common.none')}
