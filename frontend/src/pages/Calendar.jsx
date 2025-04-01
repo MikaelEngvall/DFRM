@@ -361,13 +361,13 @@ const Calendar = () => {
   const getStatusColor = (status) => {
     switch (status) {
       case 'COMPLETED':
-        return 'bg-green-100 dark:bg-green-800 border-green-200 dark:border-green-700';
+        return 'bg-green-100 dark:bg-green-800 border-green-200 dark:border-green-700 dark:text-white';
       case 'IN_PROGRESS':
-        return 'bg-blue-100 dark:bg-blue-800 border-blue-200 dark:border-blue-700';
+        return 'bg-blue-100 dark:bg-blue-800 border-blue-200 dark:border-blue-700 dark:text-white';
       case 'PENDING':
-        return 'bg-yellow-100 dark:bg-yellow-800 border-yellow-200 dark:border-yellow-700';
+        return 'bg-yellow-100 dark:bg-yellow-800 border-yellow-200 dark:border-yellow-700 dark:text-white';
       default:
-        return 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700';
+        return 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 dark:text-white';
     }
   };
 
@@ -395,7 +395,7 @@ const Calendar = () => {
       >
         <div className="flex items-center space-x-2">
           <div className={`h-3 w-3 rounded-full flex-shrink-0 ${getPriorityDotColor(task.priority)}`}></div>
-          <span className="text-xs font-medium truncate">{task.title}</span>
+          <span className="text-xs font-medium truncate dark:text-white">{task.title}</span>
         </div>
       </div>
     );
