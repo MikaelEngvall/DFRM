@@ -216,8 +216,33 @@ const PendingTasks = () => {
         pendingEmailReportService.getAll()
       ]);
       
-      setPendingTasks(pendingData);
-      setEmailReports(emailReportsData);
+      // Filtrera bort intresseanmälningar - dessa har normalt status 'INTEREST' eller kommer från email_reports
+      const filteredPendingData = pendingData.filter(task => {
+        // Kontrollera om uppgiften är en intresseanmälan
+        const isInterest = task.status === 'INTEREST' || 
+                           (task.task && task.task.status === 'INTEREST') ||
+                           (task.email && task.email.includes('intresse')) ||
+                           (task.description && task.description.toLowerCase().includes('intresse')) ||
+                           (task.task && task.task.description && task.task.description.toLowerCase().includes('intresse'));
+                           
+        // Behåll bara de som INTE är intresseanmälningar
+        return !isInterest;
+      });
+      
+      // Filtrera även e-postrapporter för att exkludera intresseanmälningar
+      const filteredEmailReports = emailReportsData.filter(report => {
+        const isInterest = report.status === 'INTEREST' || 
+                          (report.email && report.email.includes('intresse')) ||
+                          (report.description && report.description.toLowerCase().includes('intresse'));
+                          
+        return !isInterest;
+      });
+      
+      console.log(`Filtrerade bort ${pendingData.length - filteredPendingData.length} intresseanmälningar från väntande uppgifter`);
+      console.log(`Filtrerade bort ${emailReportsData.length - filteredEmailReports.length} intresseanmälningar från e-postrapporter`);
+      
+      setPendingTasks(filteredPendingData);
+      setEmailReports(filteredEmailReports);
       
       if (showApproved) {
         await fetchApprovedTasks();

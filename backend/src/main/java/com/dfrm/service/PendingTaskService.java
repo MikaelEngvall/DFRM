@@ -50,7 +50,55 @@ public class PendingTaskService {
     }
     
     public List<PendingTask> findPendingTasksForReview() {
-        return pendingTaskRepository.findByReviewedByIsNull();
+        // Hämta alla obehandlade uppgifter
+        List<PendingTask> pendingTasks = pendingTaskRepository.findByReviewedByIsNull();
+        
+        // Filtrera bort intresseanmälningar
+        List<PendingTask> filteredTasks = pendingTasks.stream()
+            .filter(pendingTask -> {
+                // Kontrollera uppgiftens status
+                if (pendingTask.getStatus() != null && pendingTask.getStatus().equals("INTEREST")) {
+                    return false;
+                }
+                
+                // Kontrollera task-objektets status
+                if (pendingTask.getTask() != null && 
+                    pendingTask.getTask().getStatus() != null && 
+                    pendingTask.getTask().getStatus().equals("INTEREST")) {
+                    return false;
+                }
+                
+                // Kontrollera beskrivning och e-post för intresserelaterad text
+                boolean containsInterestKeyword = false;
+                
+                // Kontrollera e-postadressen
+                if (pendingTask.getEmail() != null && 
+                    pendingTask.getEmail().toLowerCase().contains("intresse")) {
+                    containsInterestKeyword = true;
+                }
+                
+                // Kontrollera beskrivningen
+                if (pendingTask.getDescription() != null && 
+                    pendingTask.getDescription().toLowerCase().contains("intresse")) {
+                    containsInterestKeyword = true;
+                }
+                
+                // Kontrollera task-objektets beskrivning
+                if (pendingTask.getTask() != null && 
+                    pendingTask.getTask().getDescription() != null && 
+                    pendingTask.getTask().getDescription().toLowerCase().contains("intresse")) {
+                    containsInterestKeyword = true;
+                }
+                
+                // Behåll bara de som INTE matchar intressekriterier
+                return !containsInterestKeyword;
+            })
+            .toList();
+            
+        log.info("Filtrerade bort {} intresseanmälningar från totalt {} väntande uppgifter", 
+                 pendingTasks.size() - filteredTasks.size(), pendingTasks.size());
+                 
+        return filteredTasks;
     }
     
     public PendingTask createPendingTask(Task task, User requestedBy, String comments) {
