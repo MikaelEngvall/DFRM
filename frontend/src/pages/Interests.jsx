@@ -81,12 +81,24 @@ const Interests = () => {
     fetchUsers();
   }, []);
 
-  // Hämta intresseanmälningar från API
+  // Hämta intresseanmälningar från API och kontrollera e-post samtidigt
   const fetchInterests = async (bypassCache = false) => {
     try {
       setIsLoading(true);
-      console.log('Hämtar intresseanmälningar för granskning, bypassCache:', bypassCache);
-      const data = await interestService.getForReview(bypassCache);
+      console.log('Hämtar intresseanmälningar och kontrollerar e-post för nya intresseanmälningar');
+      
+      // Först kontrollera e-post för nya intresseanmälningar
+      try {
+        await interestService.checkEmails();
+        console.log('E-postkontroll för intresseanmälningar slutförd');
+      } catch (emailError) {
+        console.error('Fel vid kontroll av intresse-e-post:', emailError);
+        // Fortsätt ändå med att hämta befintliga intresseanmälningar
+      }
+      
+      // Sedan hämta alla intresseanmälningar (inklusive de som precis processades)
+      const data = await interestService.getForReview(true);
+      
       console.log('Hämtade intresseanmälningar:', data);
       if (data && Array.isArray(data)) {
         setInterests(data);
@@ -110,7 +122,8 @@ const Interests = () => {
     try {
       setIsLoading(true);
       console.log('Hämtar granskade intresseanmälningar, bypassCache:', bypassCache);
-      const data = await interestService.getReviewed(bypassCache);
+      // Alltid hämta färsk data från servern (bypassCache = true)
+      const data = await interestService.getReviewed(true);
       console.log('Hämtade granskade intresseanmälningar:', data);
       if (data && Array.isArray(data)) {
         setReviewedInterests(data);

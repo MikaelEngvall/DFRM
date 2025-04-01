@@ -19,6 +19,7 @@ export const CACHE_KEYS = {
   KEYS: 'cached_keys',
   PENDING_TASKS: 'cached_pending_tasks',
   UNREVIEWED_COUNT: 'cached_unreviewed_count',
+  INTERESTS_FOR_REVIEW: 'interests_for_review',
 };
 
 // Standardtid innan cache anses vara för gammal (i millisekunder)
@@ -258,4 +259,13 @@ export const clearCacheByKey = (key) => {
   } catch (error) {
     console.error(`Error clearing cache for key ${key}:`, error);
   }
+};
+
+/**
+ * Returnerar antalet intresseanmälningar för granskning från cachen
+ * @returns {number} Antalet intresseanmälningar för granskning, eller 0 om cachen är tom
+ */
+export const getUnreviewedInterestCount = () => {
+  const interests = getFromCache(CACHE_KEYS.INTERESTS_FOR_REVIEW);
+  return interests && Array.isArray(interests) ? interests.length : 0;
 }; 

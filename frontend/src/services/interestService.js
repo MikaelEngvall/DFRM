@@ -35,29 +35,21 @@ export const interestService = {
   
   getForReview: async (bypassCache = false) => {
     try {
-      // Använd cache om det finns och bypassCache är false
-      if (!bypassCache) {
-        const cachedData = getFromCache(CACHE_KEYS.INTERESTS_FOR_REVIEW);
-        if (cachedData) {
-          console.log('Returning cached interests for review data');
-          return cachedData;
-        }
-      }
-      
-      console.log('Fetching interests for review from API');
+      // Alltid hämta färska data från API:et, oavsett bypassCache-värdet
+      console.log('Fetching fresh interests for review from API');
       const timestamp = new Date().getTime(); // Lägg till timestamp för att förhindra caching
       const response = await api.get(`/api/interests/for-review?t=${timestamp}`);
       
-      // Spara datan i cache
+      // Uppdatera cachen med nya data
       saveToCache(CACHE_KEYS.INTERESTS_FOR_REVIEW, response.data);
       return response.data;
     } catch (error) {
       console.error('Error fetching interests for review:', error);
       
-      // Om API-anrop misslyckas, försök använda cache även om bypassCache är true
+      // Om API-anrop misslyckas, försök använda cache som fallback
       const cachedData = getFromCache(CACHE_KEYS.INTERESTS_FOR_REVIEW);
       if (cachedData) {
-        console.log('API call failed, using cached interests for review data');
+        console.log('API call failed, using cached interests for review data as fallback');
         return cachedData;
       }
       
@@ -67,29 +59,21 @@ export const interestService = {
   
   getReviewed: async (bypassCache = false) => {
     try {
-      // Använd cache om det finns
-      if (!bypassCache) {
-        const cachedData = getFromCache(CACHE_KEYS.REVIEWED_INTERESTS);
-        if (cachedData) {
-          console.log('Returning cached reviewed interests data');
-          return cachedData;
-        }
-      }
-      
-      console.log('Fetching reviewed interests from API');
+      // Alltid hämta färska data från API:et, oavsett bypassCache-värdet
+      console.log('Fetching fresh reviewed interests from API');
       const timestamp = new Date().getTime(); // Lägg till timestamp för att förhindra caching
       const response = await api.get(`/api/interests/reviewed?t=${timestamp}`);
       
-      // Spara datan i cache
+      // Uppdatera cachen med nya data
       saveToCache(CACHE_KEYS.REVIEWED_INTERESTS, response.data);
       return response.data;
     } catch (error) {
       console.error('Error fetching reviewed interests:', error);
       
-      // Om API-anrop misslyckas, försök använda cache även om bypassCache är true
+      // Om API-anrop misslyckas, försök använda cache som fallback
       const cachedData = getFromCache(CACHE_KEYS.REVIEWED_INTERESTS);
       if (cachedData) {
-        console.log('API call failed, using cached reviewed interests data');
+        console.log('API call failed, using cached reviewed interests data as fallback');
         return cachedData;
       }
       
@@ -317,6 +301,28 @@ export const interestService = {
     console.log("Manuellt rensar alla intresseanmälningscache");
     clearInterestCache();
     return true;
+  },
+  
+  getInterestsForReview: async () => {
+    try {
+      // Först hämta intresseanmälningar från servern
+      console.log('Hämtar och kontrollerar nya intresseanmälningar');
+      
+      // Kör check-emails för att säkerställa att alla olästa e-postmeddelanden har processats
+      await interestService.checkEmails();
+      
+      // Hämta de uppdaterade intresseanmälningarna
+      const timestamp = new Date().getTime();
+      const response = await api.get(`/api/interests/for-review?t=${timestamp}`);
+      
+      // Uppdatera cachen
+      saveToCache(CACHE_KEYS.INTERESTS_FOR_REVIEW, response.data);
+      
+      return response.data;
+    } catch (error) {
+      console.error('Fel vid hämtning av intresseanmälningar för granskning:', error);
+      throw error;
+    }
   }
 };
 
