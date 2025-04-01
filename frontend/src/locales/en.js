@@ -536,6 +536,9 @@ export default {
     title: 'Interest Inquiries',
     details: 'Interest Inquiry Details',
     showReviewed: 'Show Reviewed',
+    refreshCache: 'Refresh Interest Inquiries',
+    cacheCleared: 'Interest inquiries cache has been updated',
+    cacheError: 'Could not update interest inquiries',
     fields: {
       name: 'Name',
       email: 'Email',

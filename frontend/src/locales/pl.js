@@ -597,6 +597,9 @@ export default {
 
   interests: {
     title: 'Zapytania o mieszkania',
+    refreshCache: 'Odśwież zapytania o mieszkania',
+    cacheCleared: 'Pamięć podręczna zapytań o mieszkania została zaktualizowana',
+    cacheError: 'Nie można zaktualizować zapytań o mieszkania',
     details: 'Szczegóły zapytania',
     showReviewed: 'Pokaż rozpatrzone',
     fields: {

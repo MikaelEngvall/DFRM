@@ -591,6 +591,9 @@ export default {
     showingInfo: 'Boka visning för {name} på lägenhet {apartment}',
     responseHelp: 'Skriv ett meddelande till den intresserade personen. Datum och tid för visningen kommer att läggas till automatiskt i meddelandet.',
     responsePlaceholder: 'Hej!\n\nTack för din intresseanmälan. Vi erbjuder en visning av lägenheten på datum och tid enligt nedan.\n\nVänligen bekräfta om tiden passar genom att svara på detta e-postmeddelande.\n\nMed vänliga hälsningar,',
+    refreshCache: 'Uppdatera intresseanmälningar',
+    cacheCleared: 'Cachen för intresseanmälningar har uppdaterats',
+    cacheError: 'Kunde inte uppdatera intresseanmälningar',
     fields: {
       name: 'Namn',
       email: 'E-post',
