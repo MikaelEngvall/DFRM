@@ -970,7 +970,7 @@ const Calendar = () => {
     <div className="h-screen flex flex-col lg:ml-60">
       <div className="p-4">
         <div className="flex flex-col xl:flex-row justify-between mb-4 items-start xl:items-center">
-          <h1 className="text-2xl font-bold mb-2 xl:mb-0">{t('calendar.title')}</h1>
+          <h1 className="text-2xl font-bold mb-2 xl:mb-0 dark:text-white">{t('calendar.title')}</h1>
           
           <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
             <div className="flex space-x-1">
@@ -1027,9 +1027,6 @@ const Calendar = () => {
               <div>
                 <p className="text-blue-800 dark:text-blue-200 text-sm">
                   {t('calendar.viewOnly')}
-                </p>
-                <p className="text-blue-800 dark:text-blue-200 text-sm mt-1">
-                  {t('calendar.permissions.editOwn')}
                 </p>
               </div>
             </div>
