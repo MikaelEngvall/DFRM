@@ -287,6 +287,8 @@ export default {
       comments: 'Kommentarer',
       address: 'Adress',
       message: 'Meddelande',
+      details: 'Detaljer',
+      assignment: 'Tilldelning',
     },
     status: {
       PENDING: 'Väntande',
@@ -322,6 +324,8 @@ export default {
       markCompleted: 'Markera som avslutad',
       addMessage: 'Lägg till meddelande',
       viewMessages: 'Visa meddelanden',
+      startWork: 'Påbörja arbete',
+      markComplete: 'Markera som avslutad',
     },
     messages: {
       updateSuccess: 'Uppgiften har uppdaterats',
@@ -340,7 +344,19 @@ export default {
       unauthorizedCreate: 'Du har inte behörighet att skapa nya uppgifter',
       title: 'Meddelanden',
       inputPlaceholder: 'Skriv ditt meddelande här...',
-      noMessages: 'Inga meddelanden att visa'
+      noMessages: 'Inga meddelanden att visa',
+      error: 'Ett fel uppstod',
+      saveError: 'Ett fel uppstod vid sparande av uppgiften',
+      sendError: 'Ett fel uppstod vid skickande av meddelandet',
+      translatedFrom: 'Översatt från {language}',
+      translatedFrom: {
+        SV: 'Översatt från svenska',
+        EN: 'Översatt från engelska',
+        PL: 'Översatt från polska',
+        UK: 'Översatt från ukrainska'
+      },
+      delete: 'Ta bort',
+      unknownUser: 'Okänd användare',
     },
     confirmDelete: 'Är du säker på att du vill ta bort uppgiften?',
     noPendingTasks: 'Det finns inga väntande uppgifter',
@@ -368,6 +384,33 @@ export default {
       startDate: 'Startdatum',
       endDate: 'Slutdatum',
       noEndDate: 'Inget slutdatum'
+    },
+    recurringPatterns: {
+      DAILY: 'Dagligen',
+      WEEKLY: 'Varje vecka',
+      BIWEEKLY: 'Varannan vecka',
+      MONTHLY: 'Varje månad',
+      QUARTERLY: 'Varje kvartal', 
+      YEARLY: 'Årligen'
+    },
+    filters: {
+      apartment: 'Lägenhet',
+      tenant: 'Hyresgäst',
+      priority: 'Prioritet',
+      status: 'Status',
+      date: 'Datum',
+      all: 'Alla uppgifter',
+      today: 'Idag',
+      tomorrow: 'Imorgon',
+      thisWeek: 'Denna vecka',
+      overdue: 'Försenade',
+      completed: 'Avslutade',
+    },
+    notFound: 'Uppgiften hittades inte',
+    filteredResults: 'uppgifter hittades',
+    errors: {
+      updateError: 'Ett fel uppstod vid uppdatering av uppgiften',
+      createError: 'Ett fel uppstod vid skapande av uppgiften',
     }
   },
 
