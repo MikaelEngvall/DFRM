@@ -399,6 +399,8 @@ export default {
     month: 'Miesiąc',
     week: 'Tydzień',
     day: 'Dzień',
+    previousMonth: 'Poprzedni miesiąc',
+    nextMonth: 'Następny miesiąc',
     noEvents: 'Brak wydarzeń',
     noTasks: 'Brak zadań',
     clickToAddTask: 'Kliknij na dzień, aby dodać nowe zadanie',
@@ -467,6 +469,10 @@ export default {
       sat: 'So',
       sun: 'Nd',
     },
+    viewOnly: 'Jako USER widzisz tylko swoje zadania w kalendarzu',
+    permissions: {
+      editOwn: 'Jako USER możesz edytować tylko swoje zadania'
+    }
   },
 
   staff: {
