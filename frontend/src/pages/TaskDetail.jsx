@@ -88,9 +88,13 @@ const TaskDetail = () => {
   const handleSave = async (e) => {
     e.preventDefault();
     try {
-      // Skapa en kopia av formulärdatan
-      const taskData = { ...formData };
+      // Skapa en kopia av formulärdatan och bevara all ursprunglig uppgiftsinformation
+      const taskData = {
+        ...task,  // Behåll alla originalfält från uppgiften
+        ...formData, // Uppdatera med ändringar från formuläret
+      };
       
+      console.log('Original task:', task);
       console.log('Original formData:', formData);
       console.log('Task ID som ska uppdateras:', id);
       
@@ -111,6 +115,11 @@ const TaskDetail = () => {
       
       // Säkerställ att vi skickar med ID:t så att den befintliga uppgiften uppdateras
       taskData.id = id;
+      
+      // Kontrollera att assignedToUserId inte går förlorad
+      if (!taskData.assignedToUserId && task.assignedToUserId) {
+        taskData.assignedToUserId = task.assignedToUserId;
+      }
       
       console.log('Data som skickas till updateTask:', taskData);
       

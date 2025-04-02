@@ -847,8 +847,9 @@ const Calendar = () => {
         // För USER-rollen, begränsa vilka fält som kan uppdateras
         if (!hasRole(['ADMIN', 'SUPERADMIN'])) {
           // USER kan bara ändra status, kommentarer och datum på sina egna uppgifter
-          // Behåll assignedToUserId från den valda uppgiften för att förhindra att uppgiften försvinner
+          // Behåll alla viktiga fält från den ursprungliga uppgiften
           const allowedUpdates = {
+            ...selectedTask, // Bevara alla ursprungliga värden
             id: selectedTask.id,
             status: formData.status,
             comments: formData.comments,
@@ -859,7 +860,19 @@ const Calendar = () => {
           await taskService.updateTask(selectedTask.id, allowedUpdates);
         } else {
           // ADMIN och SUPERADMIN kan uppdatera alla fält
-          await taskService.updateTask(selectedTask.id, formData);
+          // Säkerställ att all ursprunglig information bevaras om den inte uttryckligen ändrats
+          const updatedTask = {
+            ...selectedTask, // Bevara ursprungliga värden
+            ...formData,     // Lägg till/ersätt med nya värden
+            id: selectedTask.id
+          };
+          
+          // Kontrollera att viktiga fält inte går förlorade
+          if (!updatedTask.assignedToUserId && selectedTask.assignedToUserId) {
+            updatedTask.assignedToUserId = selectedTask.assignedToUserId;
+          }
+          
+          await taskService.updateTask(selectedTask.id, updatedTask);
         }
       } else {
         // Endast ADMIN och SUPERADMIN kan skapa nya uppgifter

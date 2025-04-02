@@ -365,10 +365,17 @@ const Tasks = () => {
       if (selectedTask) {
         console.log('Redigerar befintlig uppgift med ID:', selectedTask.id);
         
+        // Se till att alla fält från ursprungliga uppgiften bevaras om de inte explicit ändrats
         const taskData = {
-          ...formData,
+          ...selectedTask, // Behåll alla originalfält från selectedTask
+          ...formData,     // Lägg till/uppdatera med ändringar från formuläret
           id: selectedTask.id  // Säkerställ att ID:t inkluderas
         };
+        
+        // Säkerställ att assignedToUserId inte går förlorad
+        if (!taskData.assignedToUserId && selectedTask.assignedToUserId) {
+          taskData.assignedToUserId = selectedTask.assignedToUserId;
+        }
         
         // Logga vilken funktion som anropas
         console.log('Anropar taskService.updateTask med ID:', selectedTask.id);
