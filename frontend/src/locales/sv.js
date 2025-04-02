@@ -268,6 +268,7 @@ export default {
     updateSuccess: 'Uppdaterade uppgift',
     deleteSuccess: 'Tog bort uppgift',
     addCommentSuccess: 'Lade till kommentar',
+    add: 'Lägg till uppgift',
     fields: {
       title: 'Titel',
       description: 'Beskrivning',
@@ -305,6 +306,12 @@ export default {
       '3': 'Hög',
       '4': 'Akut',
     },
+    priorities: {
+      LOW: 'Låg',
+      MEDIUM: 'Medium',
+      HIGH: 'Hög',
+      URGENT: 'Akut',
+    },
     actions: {
       addNew: 'Lägg till uppgift',
       edit: 'Redigera',
@@ -330,7 +337,10 @@ export default {
       statusUpdateSuccess: 'Status har uppdaterats',
       statusUpdateError: 'Kunde inte uppdatera status',
       unauthorizedEdit: 'Du kan bara redigera dina egna uppgifter',
-      unauthorizedCreate: 'Du har inte behörighet att skapa nya uppgifter'
+      unauthorizedCreate: 'Du har inte behörighet att skapa nya uppgifter',
+      title: 'Meddelanden',
+      inputPlaceholder: 'Skriv ditt meddelande här...',
+      noMessages: 'Inga meddelanden att visa'
     },
     confirmDelete: 'Är du säker på att du vill ta bort uppgiften?',
     noPendingTasks: 'Det finns inga väntande uppgifter',
@@ -432,6 +442,15 @@ export default {
     permissions: {
       editOwn: 'Som USER kan du bara redigera dina egna uppgifter',
       admin: 'Som ADMIN/SUPERADMIN kan du se och redigera alla uppgifter och visningar'
+    },
+    weekdaysShort: {
+      mon: 'Mån',
+      tue: 'Tis',
+      wed: 'Ons',
+      thu: 'Tor',
+      fri: 'Fre',
+      sat: 'Lör',
+      sun: 'Sön',
     }
   },
 

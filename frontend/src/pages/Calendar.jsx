@@ -847,11 +847,13 @@ const Calendar = () => {
         // För USER-rollen, begränsa vilka fält som kan uppdateras
         if (!hasRole(['ADMIN', 'SUPERADMIN'])) {
           // USER kan bara ändra status, kommentarer och datum på sina egna uppgifter
+          // Behåll assignedToUserId från den valda uppgiften för att förhindra att uppgiften försvinner
           const allowedUpdates = {
             id: selectedTask.id,
             status: formData.status,
             comments: formData.comments,
-            dueDate: formData.dueDate
+            dueDate: formData.dueDate,
+            assignedToUserId: selectedTask.assignedToUserId // Behåll den ursprungliga tilldelningen
           };
           
           await taskService.updateTask(selectedTask.id, allowedUpdates);
