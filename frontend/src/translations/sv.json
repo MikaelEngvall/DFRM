@@ -4,12 +4,16 @@
     "cacheError": "Kunde inte uppdatera intresseanmälningar",
     "refreshCache": "Uppdatera intresseanmälningar",
     "title": "Intresseanmälningar",
+    "reviewedTitle": "Behandlade intresseanmälningar",
+    "showReviewed": "Visa behandlade",
+    "showUnreviewed": "Visa obehandlade",
     "actions": {
       "checkEmails": "Hämta e-post",
       "review": "Godkänn",
       "reject": "Avvisa",
       "scheduleShowing": "Boka visning",
-      "sendAndSchedule": "Skicka och boka"
+      "sendAndSchedule": "Skicka och boka",
+      "exportToExcel": "Exportera till Excel"
     },
     "fields": {
       "name": "Namn",
@@ -21,7 +25,7 @@
       "received": "Mottagen",
       "status": "Status",
       "reviewedBy": "Granskad av",
-      "reviewComments": "Kommentarer",
+      "reviewComments": "Granskningskommentarer",
       "showingDate": "Visningsdatum",
       "showingTime": "Visningstid",
       "responseMessage": "Svarsmeddelande",
@@ -34,23 +38,51 @@
       "REJECTED": "Avvisad",
       "SHOWING_SCHEDULED": "Visning bokad"
     },
-    "showReviewed": "Visa granskade",
     "noInterests": "Inga intresseanmälningar hittades",
     "filteredResults": "{{count}} resultat",
-    "details": "Intresseanmälan",
+    "details": "Detaljer för intresseanmälan",
     "scheduleShowing": "Boka visning",
     "showingScheduled": "Visning är bokad",
     "showingInfo": "Bokad visning för {{name}} på {{apartment}}",
-    "addComments": "Lägg till kommentarer",
+    "addComments": "Lägg till kommentarer om denna intresseanmälan...",
     "responsePlaceholder": "Hej!\n\nTack för din intresseanmälan för lägenheten. Vi vill gärna bjuda in dig till en visning.\n\nVänliga hälsningar,\nDuggals Fastigheter",
     "responseHelp": "Visningstid kommer att läggas till automatiskt",
     "messages": {
-      "fieldsRequired": "Alla fält är obligatoriska",
-      "reviewError": "Ett fel uppstod vid granskning",
-      "rejectError": "Ett fel uppstod vid avvisning",
-      "showingScheduled": "Visning har bokats och bekräftelse har skickats",
+      "fieldsRequired": "Alla fält måste fyllas i",
+      "reviewError": "Ett fel uppstod vid granskning av intresseanmälan",
+      "rejectError": "Ett fel uppstod vid avvisning av intresseanmälan",
+      "showingScheduled": "Visning har bokats framgångsrikt",
       "showingScheduleError": "Ett fel uppstod vid bokning av visning",
-      "emailCheckError": "Ett fel uppstod vid läsning av e-post"
+      "emailCheckError": "Ett fel uppstod vid läsning av e-post",
+      "reviewSuccess": "Intresseanmälan har markerats som granskad",
+      "rejectSuccess": "Intresseanmälan har markerats som avvisad",
+      "noDataToExport": "Inga data att exportera",
+      "exportSuccess": "Data har exporterats framgångsrikt till Excel",
+      "exportError": "Ett fel uppstod vid export av data"
+    },
+    "tabs": {
+      "unreviewed": "Ogranskade",
+      "reviewed": "Granskade"
+    },
+    "filter": {
+      "title": "Filter",
+      "clear": "Rensa filter"
+    },
+    "showing": {
+      "title": "Boka visning",
+      "date": "Datum",
+      "time": "Tid",
+      "agent": "Välj mäklare",
+      "message": "Meddelande"
+    },
+    "email": {
+      "title": "Skicka e-post",
+      "to": "Till",
+      "subject": "Ämne",
+      "message": "Meddelande",
+      "send": "Skicka",
+      "success": "E-post skickad framgångsrikt",
+      "error": "Ett fel uppstod vid sändning av e-post"
     }
   },
   "common": {

@@ -585,6 +585,8 @@ export default {
     filteredResults: 'intresseanmälningar hittades',
     emailReport: 'E-postrapport',
     showReviewed: 'Visa granskade',
+    showUnreviewed: 'Visa obehandlade',
+    reviewedTitle: 'Behandlade intresseanmälningar',
     addComments: 'Lägg till kommentarer',
     scheduleShowing: 'Boka visningstid',
     showingScheduled: 'Visningstid bokad',
@@ -624,7 +626,8 @@ export default {
       reject: 'Avvisa',
       checkEmails: 'Läs e-post',
       scheduleShowing: 'Boka visning',
-      sendAndSchedule: 'Skicka och boka'
+      sendAndSchedule: 'Skicka och boka',
+      exportToExcel: 'Exportera till Excel'
     },
     messages: {
       reviewError: 'Ett fel uppstod vid granskning av intresseanmälan',

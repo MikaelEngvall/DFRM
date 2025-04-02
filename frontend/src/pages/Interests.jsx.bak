@@ -6,10 +6,17 @@ import AlertModal from '../components/AlertModal';
 import Title from '../components/Title';
 import DataTable from '../components/DataTable';
 import { interestService, taskService, userService, emailService } from '../services';
-import { EnvelopeIcon, CalendarIcon, ClockIcon, ArrowsUpDownIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
+import { EnvelopeIcon, FunnelIcon, XMarkIcon, CalendarIcon, ClockIcon, ArrowsUpDownIcon } from '@heroicons/react/24/outline';
 import EmailModal from '../components/EmailModal';
+import { useToast } from '../hooks/useToast';
 import { useNavigate } from 'react-router-dom';
-import * as XLSX from 'xlsx';
+import { hasRole } from '../utils/userUtils';
+import { formatText } from '../utils/formatUtils';
+import { formatDate } from '../utils/formatDate';
+import useFeedbackModal from '../hooks/useFeedbackModal';
+import { usePeriodicalRefresh } from '../hooks/usePeriodicalRefresh';
+import { reviewStatuses } from '../constants/reviewStatuses';
+import { toast } from 'react-toastify';
 
 const INTEREST_VIEWS = {
   UNREVIEWED: 'unreviewed',
@@ -20,6 +27,7 @@ const Interests = () => {
   const { t } = useLocale();
   const navigate = useNavigate();
   const { user: currentUser } = useAuth();
+  const { showToast } = useToast();
   const [interests, setInterests] = useState([]);
   const [reviewedInterests, setReviewedInterests] = useState([]);
   const [showReviewed, setShowReviewed] = useState(false);
@@ -367,87 +375,6 @@ const Interests = () => {
     }
   };
 
-  // Funktion för att exportera till Excel
-  const exportToExcel = async () => {
-    try {
-      setIsLoading(true);
-      
-      // Hämta enbart granskade/behandlade intresseanmälningar
-      const data = reviewedInterests;
-      
-      if (!data || data.length === 0) {
-        setError(t('interests.messages.noDataToExport'));
-        setIsLoading(false);
-        return;
-      }
-      
-      // Förbered data för Excel export
-      const headers = [
-        t('interests.fields.name'),
-        t('interests.fields.email'),
-        t('interests.fields.phone'),
-        t('interests.fields.apartment'),
-        t('interests.fields.received'),
-        t('interests.fields.status'),
-        t('interests.fields.reviewComments'),
-        t('interests.fields.reviewedBy')
-      ];
-
-      const rows = data.map(interest => [
-        formatText(interest.name) || '-',
-        formatText(interest.email) || '-',
-        formatText(interest.phone) || '-',
-        formatText(interest.apartment) || '-',
-        formatDate(interest.received) || '-',
-        interest.status === 'REVIEWED' ? t('interests.status.REVIEWED') :
-          interest.status === 'REJECTED' ? t('interests.status.REJECTED') :
-          interest.status === 'SHOWING_SCHEDULED' ? t('interests.status.SHOWING_SCHEDULED') : '-',
-        formatText(interest.reviewComments) || '-',
-        interest.reviewedBy ? `${interest.reviewedBy.firstName || ''} ${interest.reviewedBy.lastName || ''}` : '-'
-      ]);
-
-      // Skapa ett XLSX arbetsboksobjekt
-      const wb = XLSX.utils.book_new();
-      
-      // Skapa ett arbetsblad med data
-      const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
-      
-      // Stil för rubrikraden
-      const headerRange = XLSX.utils.decode_range('A1:H1');
-      for (let col = headerRange.s.c; col <= headerRange.e.c; col++) {
-        const cellAddress = XLSX.utils.encode_cell({ r: 0, c: col });
-        if (!ws[cellAddress]) continue;
-        
-        // Skapa en cellstil med fet stil och bakgrundsfärg
-        ws[cellAddress].s = {
-          font: { bold: true },
-          fill: { fgColor: { rgb: "DDDDDD" } }
-        };
-      }
-      
-      // Lägg till arbetsbladet i arbetsboken
-      const today = new Date().toLocaleDateString('sv-SE').replace(/\//g, '-');
-      const sheetName = `${t('interests.reviewedTitle')}`;
-      XLSX.utils.book_append_sheet(wb, ws, sheetName);
-      
-      // Generera en filnamn med dagens datum
-      const fileName = `${t('interests.reviewedTitle')}_${today}.xlsx`;
-      
-      // Exportera arbetsboken till en binär sträng
-      XLSX.writeFile(wb, fileName);
-      
-      // Visa framgångsmeddelande
-      setSuccessMessage(t('interests.messages.exportSuccess'));
-      setTimeout(() => setSuccessMessage(''), 3000);
-      
-    } catch (err) {
-      console.error('Error exporting data:', err);
-      setError(t('interests.messages.exportError'));
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   // Funktion för att växla mellan vyer
   const toggleView = () => {
     setCurrentView(
@@ -479,26 +406,43 @@ const Interests = () => {
             title={currentView === INTEREST_VIEWS.UNREVIEWED 
               ? t('interests.showReviewed') 
               : t('interests.showUnreviewed')}
-            className="bg-blue-600 text-white px-3 py-1.5 text-sm rounded-md hover:bg-blue-700 flex items-center"
+            className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 flex items-center"
           >
-            <ArrowsUpDownIcon className="h-4 w-4 mr-1.5" />
+            <ArrowsUpDownIcon className="h-5 w-5 mr-2" />
             {currentView === INTEREST_VIEWS.UNREVIEWED 
               ? t('interests.showReviewed') 
               : t('interests.showUnreviewed')}
           </button>
 
-          {/* Exportera till Excel knapp (visas endast i granskade vyn) */}
-          {currentView === INTEREST_VIEWS.REVIEWED && (
-            <button
-              onClick={exportToExcel}
-              title={t('interests.actions.exportToExcel')}
-              className="bg-green-600 text-white px-3 py-1.5 text-sm rounded-md hover:bg-green-700 flex items-center"
-              disabled={isLoading}
-            >
-              <DocumentTextIcon className="h-4 w-4 mr-1.5" />
-              {t('interests.actions.exportToExcel')}
-            </button>
-          )}
+          <button
+            onClick={() => setShowFilters(!showFilters)}
+            title={t('common.filter')}
+            className="bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 flex items-center"
+          >
+            {showFilters ? <XMarkIcon className="h-5 w-5 mr-2" /> : <FunnelIcon className="h-5 w-5 mr-2" />}
+            {t('common.filter')}
+          </button>
+          
+          <button
+            onClick={async () => {
+              try {
+                setIsLoading(true);
+                await interestService.checkEmails();
+                fetchInterests(true);
+                fetchReviewedInterests(true);
+              } catch (err) {
+                console.error('Fel vid läsning av e-post:', err);
+                setError(t('interests.messages.emailCheckError'));
+              } finally {
+                setIsLoading(false);
+              }
+            }}
+            title={t('interests.actions.checkEmails')}
+            className="bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 flex items-center"
+          >
+            <EnvelopeIcon className="h-5 w-5 mr-2" />
+            {t('interests.actions.checkEmails')}
+          </button>
           
           <button
             onClick={() => {
@@ -506,9 +450,9 @@ const Interests = () => {
               fetchReviewedInterests(true);
             }}
             title={t('common.forceUpdate')}
-            className="bg-blue-500 text-white px-3 py-1.5 text-sm rounded-md hover:bg-blue-600 flex items-center"
+            className="bg-blue-500 text-white px-4 py-2 rounded-md hover:bg-blue-600 flex items-center"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
             {t('common.forceUpdate')}
@@ -523,6 +467,66 @@ const Interests = () => {
         </div>
       )}
       
+      {showFilters && (
+        <div className="bg-gray-50 dark:bg-gray-800 p-4 rounded-lg mb-6 border border-gray-200 dark:border-gray-700">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-medium text-gray-900 dark:text-white">{t('common.filters')}</h2>
+            <button 
+              onClick={clearFilters}
+              className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 flex items-center"
+            >
+              <XMarkIcon className="h-4 w-4 mr-1" />
+              {t('common.clear')}
+            </button>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                {t('interests.fields.status')}
+              </label>
+              <select
+                name="status"
+                value={filters.status}
+                onChange={handleFilterChange}
+                className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              >
+                <option value="">{t('common.all')}</option>
+                <option value="NEW">{t('interests.status.NEW')}</option>
+                <option value="REVIEWED">{t('interests.status.REVIEWED')}</option>
+                <option value="REJECTED">{t('interests.status.REJECTED')}</option>
+              </select>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                {t('interests.fields.apartment')}
+              </label>
+              <input
+                type="text"
+                name="apartment"
+                value={filters.apartment}
+                onChange={handleFilterChange}
+                placeholder={t('interests.fields.apartment')}
+                className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              />
+            </div>
+          </div>
+          
+          <div className="mt-4 flex items-center justify-between">
+            <div className="text-sm text-gray-500 dark:text-gray-400">
+              {getDisplayData().length} {t('interests.filteredResults', { count: getDisplayData().length })}
+            </div>
+            <button
+              onClick={applyFilters}
+              className="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md"
+            >
+              {t('common.apply')}
+            </button>
+          </div>
+        </div>
+      )}
+
       {isLoading ? (
         <div className="flex justify-center items-center h-64">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
