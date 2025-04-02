@@ -170,11 +170,7 @@ const Calendar = () => {
       
       // Om användaren har rollen USER, filtrera uppgifter till endast användarens egna
       if (currentUser && !hasRole(['ADMIN', 'SUPERADMIN'])) {
-        fetchedTasks = fetchedTasks.filter(task => 
-          task.assignedToUserId === currentUser.id || 
-          task.assignedUserId === currentUser.id
-        );
-        console.log(`Kalender: Filtrerade till ${fetchedTasks.length} uppgifter tilldelade till användaren`);
+        console.log(`Kalender: USER kan se alla uppgifter men bara redigera egna`);
       }
       
       // Verifiera att vi faktiskt får data
@@ -790,9 +786,9 @@ const Calendar = () => {
       });
       
       // Kontrollera om användaren kan redigera uppgiften eller bara visa den
+      // USER kan endast redigera uppgifter som är tilldelade dem själva
       const canEdit = hasRole(['ADMIN', 'SUPERADMIN']) || 
-                      task.assignedToUserId === currentUser.id || 
-                      task.assignedUserId === currentUser.id;
+                      updatedTask.assignedToUserId === currentUser.id;
       
       setSelectedTask({
         ...updatedTask,
