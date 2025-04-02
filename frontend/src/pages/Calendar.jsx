@@ -9,6 +9,7 @@ import { formatShortDate } from '../utils/formatters';
 import Autocomplete from '../components/Autocomplete';
 import { PaperAirplaneIcon } from '@heroicons/react/24/outline';
 import TaskMessages from '../components/TaskMessages';
+import { ChevronLeftIcon, ChevronRightIcon, InformationCircleIcon } from '@heroicons/react/24/outline';
 
 const Calendar = () => {
   const { t, currentLocale } = useLocale();
@@ -167,6 +168,15 @@ const Calendar = () => {
         console.log(`Kalender: Filtrerade fram ${fetchedTasks.length} uppgifter manuellt`);
       }
       
+      // Om användaren har rollen USER, filtrera uppgifter till endast användarens egna
+      if (currentUser && !hasRole(['ADMIN', 'SUPERADMIN'])) {
+        fetchedTasks = fetchedTasks.filter(task => 
+          task.assignedToUserId === currentUser.id || 
+          task.assignedUserId === currentUser.id
+        );
+        console.log(`Kalender: Filtrerade till ${fetchedTasks.length} uppgifter tilldelade till användaren`);
+      }
+      
       // Verifiera att vi faktiskt får data
       console.log(`Kalender: Mottog ${fetchedTasks.length} uppgifter för perioden`);
       console.log('Kalender: Dagar i aktuell månad:', getDaysInMonth(year, month));
@@ -241,16 +251,45 @@ const Calendar = () => {
       
       console.log('Kalender: Uppgifter per dag:', Object.keys(tasksByDay).map(day => `${day}: ${tasksByDay[day].length} uppgifter`));
       
-      setTasks(normalizedTasks);
+      // Normalisera showings och filtrera dem baserat på användarens roll
+      let normalizedShowings = [];
       
-      // Hämta också visningarna för kalendern
-      try {
-        const showingsData = await showingService.getShowingsByDateRange(startDate, endDate);
-        setShowings(showingsData);
-      } catch (err) {
-        console.error('Error fetching showings:', err);
-        // Fortsätt trots fel med visningar - det är inte kritiskt
+      // Endast ADMIN och SUPERADMIN kan se visningar
+      if (hasRole(['ADMIN', 'SUPERADMIN'])) {
+        try {
+          // Hämta visningar för kalendern endast för admin-roller
+          const showingsData = await showingService.getShowingsByDateRange(startDate, endDate);
+          
+          // Normalisera visningarna
+          normalizedShowings = showingsData.map(showing => {
+            let dateTime;
+            try {
+              // Parse the DateTime string
+              dateTime = showing.dateTime ? new Date(showing.dateTime) : null;
+            } catch (e) {
+              console.error(`Fel vid konvertering av visningstid för visning ${showing.id}:`, e);
+              dateTime = null;
+            }
+            
+            return {
+              ...showing,
+              _dateTimeObj: dateTime
+            };
+          });
+          
+          console.log(`Kalender: Hämtade ${normalizedShowings.length} visningar för ADMIN/SUPERADMIN-användare`);
+        } catch (err) {
+          console.error('Error fetching showings:', err);
+          // Fortsätt trots fel med visningar - det är inte kritiskt
+        }
+      } else {
+        console.log('Kalender: Användaren har USER-roll, visar inga visningar');
       }
+      
+      // Sätt state baserat på normaliserad data
+      setTasks(normalizedTasks);
+      setShowings(normalizedShowings);
+      setIsLoading(false);
       
       // Hämta användare för att fylla i dropdowns
       if (users.length === 0) {
@@ -281,10 +320,9 @@ const Calendar = () => {
           console.error('Error fetching tenants:', err);
         }
       }
-    } catch (err) {
-      console.error('Kalender: Fel vid hämtning av data:', err);
-      setError(err.message || t('common.error'));
-    } finally {
+    } catch (error) {
+      console.error('Fel vid hämtning av kalenderdata:', error);
+      setError(t('calendar.errors.fetchFailed'));
       setIsLoading(false);
     }
   };
@@ -625,108 +663,136 @@ const Calendar = () => {
 
   // Uppdatera renderCalendar-funktionen för att använda den nya filteringsfunktionen
   const renderCalendar = () => {
-    const days = [];
-    const year = currentDate.getFullYear();
-    const month = currentDate.getMonth();
-    
-    // Hämta antal dagar i månaden
-    const daysInMonth = getDaysInMonth(year, month);
-    
-    // Hämta första dagen i månaden (0 = söndag, 1 = måndag, ...)
-    let firstDay = getFirstDayOfMonth(year, month);
-    
-    // Justera så att veckan börjar på måndag (ISO-8601)
-    firstDay = firstDay === 0 ? 6 : firstDay - 1;
-    
-    // För att stämma överens med måndag som första dag i veckan
-    const weekdays = [1, 2, 3, 4, 5, 6, 0]; // Mån, tis, ons, tors, fre, lör, sön
-    
-    // Lägg till tomma celler för dagar från föregående månad
-    for (let i = 0; i < firstDay; i++) {
-      days.push(
-        <div 
-          key={`empty-${i}`} 
-          className="bg-gray-100 dark:bg-gray-800 border-b border-r border-gray-200 dark:border-gray-700"
-        />
-      );
-    }
-    
-    // Lägg till celler för alla dagar i månaden
-    for (let day = 1; day <= daysInMonth; day++) {
-      const date = new Date(year, month, day);
-      const isToday = isDateToday(date);
-      const isAdminOrSuperAdmin = hasRole(['ADMIN', 'SUPERADMIN']);
-      const isClickable = isAdminOrSuperAdmin;
+    if (viewType === 'month') {
+      const year = currentDate.getFullYear();
+      const month = currentDate.getMonth();
+      const daysInMonth = getDaysInMonth(year, month);
+      const firstDayOfMonth = getFirstDayOfMonth(year, month);
+      const days = [];
       
-      // Använd vår nya robusta filtreringsfunktion
-      const dayTasks = filterTasksByDate(tasks, year, month, day);
+      // Lägg till dagar från föregående månad för att fylla första veckan
+      const prevMonthDays = firstDayOfMonth === 0 ? 6 : firstDayOfMonth - 1;
+      const prevMonth = month === 0 ? 11 : month - 1;
+      const prevMonthYear = month === 0 ? year - 1 : year;
+      const daysInPrevMonth = getDaysInMonth(prevMonthYear, prevMonth);
       
-      // Logga för specifik dag (för felsökning)
-      const today = new Date();
-      if (day === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
-        console.log(`Uppgifter för idag (${day}/${month+1}/${year}):`, dayTasks);
-        console.log(`Antal uppgifter för idag: ${dayTasks.length}`);
+      for (let i = 0; i < prevMonthDays; i++) {
+        const day = daysInPrevMonth - prevMonthDays + i + 1;
+        const date = new Date(prevMonthYear, prevMonth, day);
+        const isToday = isDateToday(date);
+        
+        // Filtrera uppgifter för denna dag
+        const dayTasks = filterTasksByDate(tasks, prevMonthYear, prevMonth, day);
+        
+        // Filtrera visningar för denna dag om användaren har behörighet att se dem
+        let dayShowings = [];
+        if (hasRole(['ADMIN', 'SUPERADMIN'])) {
+          dayShowings = showings.filter(showing => {
+            if (!showing._dateTimeObj) return false;
+            const showingDate = showing._dateTimeObj;
+            return showingDate.getDate() === day && 
+                  showingDate.getMonth() === prevMonth && 
+                  showingDate.getFullYear() === prevMonthYear;
+          });
+        }
+        
+        days.push(
+          <div 
+            key={`prev-${day}`} 
+            className="bg-gray-50 dark:bg-gray-800 border-b border-r border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-600"
+          >
+            <div className="p-2 sticky top-0 bg-gray-50 dark:bg-gray-800 z-10">
+              <span className="text-sm font-medium">{day}</span>
+            </div>
+            <div className="px-2 pb-1">
+              {/* Visa visningar först om användaren har behörighet */}
+              {hasRole(['ADMIN', 'SUPERADMIN']) && dayShowings.length > 0 && 
+               dayShowings.map(showing => renderShowingItem(showing))}
+              
+              {/* Sedan visa uppgifter */}
+              {dayTasks.length > 0 && dayTasks.map(task => renderTaskItem(task))}
+            </div>
+          </div>
+        );
       }
       
-      // Filtrera visningar för denna dag (behåll befintlig filtreringslogik för visningar)
-      const dayShowings = showings.filter(showing => {
-        if (!showing.dateTime) return false;
+      // Lägg till celler för alla dagar i månaden
+      for (let day = 1; day <= daysInMonth; day++) {
+        const date = new Date(year, month, day);
+        const isToday = isDateToday(date);
+        const isAdminOrSuperAdmin = hasRole(['ADMIN', 'SUPERADMIN']);
+        const isClickable = isAdminOrSuperAdmin;
         
-        try {
-          // Använd _dateTimeObj om det finns tillgängligt
-          if (showing._dateTimeObj instanceof Date) {
-            const matches = showing._dateTimeObj.getDate() === day && 
-                           showing._dateTimeObj.getMonth() === month && 
-                           showing._dateTimeObj.getFullYear() === year;
-            return matches;
-          }
-          
-          // Fallback till manuell konvertering
-          const showingDate = new Date(showing.dateTime);
-          // Jämför endast år, månad och dag, ignorera tid
-          return showingDate.getDate() === day && 
-                 showingDate.getMonth() === month && 
-                 showingDate.getFullYear() === year;
-        } catch (e) {
-          console.error('Fel vid filtrering av visning:', e);
-          return false;
+        // Använd vår nya robusta filtreringsfunktion
+        const dayTasks = filterTasksByDate(tasks, year, month, day);
+        
+        // Logga för specifik dag (för felsökning)
+        const today = new Date();
+        if (day === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
+          console.log(`Uppgifter för idag (${day}/${month+1}/${year}):`, dayTasks);
+          console.log(`Antal uppgifter för idag: ${dayTasks.length}`);
         }
-      });
+        
+        // Filtrera visningar för denna dag (behåll befintlig filtreringslogik för visningar)
+        const dayShowings = showings.filter(showing => {
+          if (!showing.dateTime) return false;
+          
+          try {
+            // Använd _dateTimeObj om det finns tillgängligt
+            if (showing._dateTimeObj instanceof Date) {
+              const matches = showing._dateTimeObj.getDate() === day && 
+                             showing._dateTimeObj.getMonth() === month && 
+                             showing._dateTimeObj.getFullYear() === year;
+              return matches;
+            }
+            
+            // Fallback till manuell konvertering
+            const showingDate = new Date(showing.dateTime);
+            // Jämför endast år, månad och dag, ignorera tid
+            return showingDate.getDate() === day && 
+                   showingDate.getMonth() === month && 
+                   showingDate.getFullYear() === year;
+          } catch (e) {
+            console.error('Fel vid filtrering av visning:', e);
+            return false;
+          }
+        });
+        
+        days.push(
+          <div 
+            key={day} 
+            className={`bg-white dark:bg-gray-900 border-b border-r border-gray-200 dark:border-gray-700 overflow-y-auto ${
+              isToday ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+            } ${isClickable ? 'cursor-pointer' : ''}`}
+            onClick={() => isClickable && handleDayClick(date)}
+          >
+            <div className="p-2 sticky top-0 bg-white dark:bg-gray-900 z-10">
+              <span className={`text-sm font-medium ${
+                isToday ? 'text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'
+              }`}>
+                {day}
+              </span>
+            </div>
+            <div className="px-2 pb-1">
+              {/* Visa visningar först */}
+              {dayShowings.length > 0 && dayShowings.map(showing => renderShowingItem(showing))}
+              
+              {/* Sedan visa uppgifter */}
+              {dayTasks.length > 0 && dayTasks.map(task => renderTaskItem(task))}
+              
+              {/* Visa meddelande om inga händelser */}
+              {dayTasks.length === 0 && dayShowings.length === 0 && (
+                <div className="text-xs text-gray-400 dark:text-gray-600 p-1">
+                  {t('calendar.noEvents')}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      }
       
-      days.push(
-        <div 
-          key={day} 
-          className={`bg-white dark:bg-gray-900 border-b border-r border-gray-200 dark:border-gray-700 overflow-y-auto ${
-            isToday ? 'bg-blue-50 dark:bg-blue-900/20' : ''
-          } ${isClickable ? 'cursor-pointer' : ''}`}
-          onClick={() => isClickable && handleDayClick(date)}
-        >
-          <div className="p-2 sticky top-0 bg-white dark:bg-gray-900 z-10">
-            <span className={`text-sm font-medium ${
-              isToday ? 'text-blue-600 dark:text-blue-400' : 'text-gray-700 dark:text-gray-300'
-            }`}>
-              {day}
-            </span>
-          </div>
-          <div className="px-2 pb-1">
-            {/* Visa visningar först */}
-            {dayShowings.length > 0 && dayShowings.map(showing => renderShowingItem(showing))}
-            
-            {/* Sedan visa uppgifter */}
-            {dayTasks.length > 0 && dayTasks.map(task => renderTaskItem(task))}
-            
-            {/* Visa meddelande om inga händelser */}
-            {dayTasks.length === 0 && dayShowings.length === 0 && (
-              <div className="text-xs text-gray-400 dark:text-gray-600 p-1">
-                {t('calendar.noEvents')}
-              </div>
-            )}
-          </div>
-        </div>
-      );
+      return days;
     }
-    
-    return days;
   };
 
   // Funktion för att kontrollera om användaren är admin eller superadmin
@@ -747,72 +813,45 @@ const Calendar = () => {
   };
 
   const handleTaskClick = async (task) => {
+    // Kontrollera om användaren har tillåtelse att se och redigera uppgiften
+    if (!hasRole(['ADMIN', 'SUPERADMIN'])) {
+      // USER-roll kan bara se och redigera egna uppgifter
+      if (task.assignedToUserId !== currentUser.id && task.assignedUserId !== currentUser.id) {
+        console.log('Användaren har inte behörighet att redigera denna uppgift');
+        return;
+      }
+    }
+    
     try {
-      // Hämta fullständig uppgiftsinformation från API för att garantera att alla detaljer finns
-      const fullTaskData = await taskService.getTaskById(task.id);
-      setSelectedTask(fullTaskData);
+      const updatedTask = await taskService.getTaskById(task.id);
+      // Hämta meddelanden tillhörande uppgiften
+      const taskMessages = await taskMessageService.getMessagesByTaskId(task.id);
       
-      // Extrahera ID från objekt om det behövs
-      const assignedToUserId = fullTaskData.assignedToUserId || '';
-      
-      const apartmentId = fullTaskData.apartmentId ? 
-        (typeof fullTaskData.apartmentId === 'object' ? fullTaskData.apartmentId.id : fullTaskData.apartmentId) : '';
-      
-      const tenantId = fullTaskData.tenantId ? 
-        (typeof fullTaskData.tenantId === 'object' ? fullTaskData.tenantId.id : fullTaskData.tenantId) : '';
-      
-      // Uppdatera formData med värdena från den hämtade uppgiften
       setFormData({
-        title: fullTaskData.title || '',
-        description: fullTaskData.description || '',
-        dueDate: fullTaskData.dueDate ? new Date(fullTaskData.dueDate).toISOString().split('T')[0] : '',
-        priority: fullTaskData.priority || '',
-        status: fullTaskData.status || '',
-        assignedToUserId,
-        assignedByUserId: fullTaskData.assignedByUserId || '',
-        apartmentId,
-        tenantId,
-        comments: '',
-        isRecurring: fullTaskData.isRecurring || false,
-        recurringPattern: fullTaskData.recurringPattern || '',
-        descriptionLanguage: fullTaskData.descriptionLanguage || '',
-        phoneNumber: fullTaskData.phoneNumber || '',
+        id: updatedTask.id,
+        title: updatedTask.title || '',
+        description: updatedTask.description || '',
+        dueDate: formatShortDate(new Date(updatedTask.dueDate)) || '',
+        status: updatedTask.status || '',
+        priority: updatedTask.priority || '',
+        assignedToUserId: updatedTask.assignedToUserId || '',
+        apartmentId: updatedTask.apartmentId || '',
+        tenantId: updatedTask.tenantId || '',
+        comments: updatedTask.comments || '',
+        isRecurring: updatedTask.isRecurring || false,
+        recurringPattern: updatedTask.recurringPattern || '',
+        descriptionLanguage: updatedTask.descriptionLanguage || 'sv',
+        phoneNumber: updatedTask.phoneNumber || '',
       });
       
-      setIsTaskModalOpen(true);
-    } catch (err) {
-      console.error('Error fetching full task data:', err);
-      // Fallback till att använda uppgiften från listan om API-anropet misslyckas
-      setSelectedTask(task);
-      
-      // Extrahera ID från objekt om det behövs
-      const assignedToUserId = task.assignedToUserId || '';
-      
-      const apartmentId = task.apartmentId ? 
-        (typeof task.apartmentId === 'object' ? task.apartmentId.id : task.apartmentId) : '';
-      
-      const tenantId = task.tenantId ? 
-        (typeof task.tenantId === 'object' ? task.tenantId.id : task.tenantId) : '';
-      
-      // Uppdatera formData med värdena från uppgiften
-      setFormData({
-        title: task.title || '',
-        description: task.description || '',
-        dueDate: task.dueDate ? task.dueDate.split('T')[0] : '',
-        priority: task.priority || '',
-        status: task.status || '',
-        assignedToUserId,
-        assignedByUserId: task.assignedByUserId || '',
-        apartmentId,
-        tenantId,
-        comments: '',
-        isRecurring: task.isRecurring || false,
-        recurringPattern: task.recurringPattern || '',
-        descriptionLanguage: task.descriptionLanguage || '',
-        phoneNumber: task.phoneNumber || '',
+      setSelectedTask({
+        ...updatedTask,
+        messages: taskMessages || []
       });
-      
       setIsTaskModalOpen(true);
+    } catch (error) {
+      console.error('Error fetching task details:', error);
+      setError(t('tasks.messages.fetchError'));
     }
   };
 
@@ -847,10 +886,36 @@ const Calendar = () => {
     e.preventDefault();
     try {
       if (selectedTask) {
-        await taskService.updateTask(selectedTask.id, formData);
+        // För USER-rollen, kontrollera att användaren bara kan uppdatera sina egna uppgifter
+        if (!hasRole(['ADMIN', 'SUPERADMIN'])) {
+          if (selectedTask.assignedToUserId !== currentUser.id && selectedTask.assignedUserId !== currentUser.id) {
+            setError(t('tasks.messages.unauthorizedEdit'));
+            return;
+          }
+          
+          // USER kan bara ändra status, kommentarer och datum på sina egna uppgifter
+          const allowedUpdates = {
+            id: selectedTask.id,
+            status: formData.status,
+            comments: formData.comments,
+            dueDate: formData.dueDate
+          };
+          
+          await taskService.updateTask(selectedTask.id, allowedUpdates);
+        } else {
+          // ADMIN och SUPERADMIN kan uppdatera alla fält
+          await taskService.updateTask(selectedTask.id, formData);
+        }
       } else {
-        await taskService.createTask(formData);
+        // Endast ADMIN och SUPERADMIN kan skapa nya uppgifter
+        if (hasRole(['ADMIN', 'SUPERADMIN'])) {
+          await taskService.createTask(formData);
+        } else {
+          setError(t('tasks.messages.unauthorizedCreate'));
+          return;
+        }
       }
+      
       await fetchCalendarData();
       setIsTaskModalOpen(false);
       setSelectedTask(null);
@@ -869,6 +934,7 @@ const Calendar = () => {
   };
 
   const handleDayClick = (date) => {
+    // Endast ADMIN och SUPERADMIN kan lägga till nya uppgifter
     if (!hasRole(['ADMIN', 'SUPERADMIN'])) return;
     
     setCurrentDate(date);
@@ -938,104 +1004,88 @@ const Calendar = () => {
 
   return (
     <div className="h-screen flex flex-col lg:ml-60">
-      <div className="flex justify-between items-center p-4 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
-        <div className="flex items-center space-x-4">
-          <button
-            onClick={() => handleNavigationClick('previous')}
-            className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
-          >
-            <svg className="h-5 w-5 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
-          <h2 className="text-xl font-medium text-gray-900 dark:text-white">
-            {viewType === 'day' 
-              ? `${currentDate.getDate()} ${t(`calendar.months.${currentDate.getMonth()}`)} ${currentDate.getFullYear()}`
-              : viewType === 'week'
-              ? `${t(`calendar.months.${currentDate.getMonth()}`)} ${currentDate.getFullYear()}`
-              : `${t(`calendar.months.${currentDate.getMonth()}`)} ${currentDate.getFullYear()}`
-            }
-          </h2>
-          <button
-            onClick={() => handleNavigationClick('next')}
-            className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
-          >
-            <svg className="h-5 w-5 text-gray-600 dark:text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </button>
-          <button
-            onClick={goToToday}
-            className="px-3 py-1 bg-gray-200 dark:bg-gray-700 rounded text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
-          >
-            {t('calendar.today')}
-          </button>
+      <div className="p-4">
+        <div className="flex flex-col xl:flex-row justify-between mb-4 items-start xl:items-center">
+          <h1 className="text-2xl font-bold mb-2 xl:mb-0">{t('calendar.title')}</h1>
           
-          {/* Lägg till knappar för vyväxling */}
-          <div className="ml-4 flex rounded-md shadow-sm">
-            <button
-              onClick={() => setViewType('month')}
-              className={`px-4 py-2 text-sm font-medium rounded-l-md border ${
-                viewType === 'month'
-                  ? 'bg-blue-600 text-white border-blue-600'
-                  : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
-              }`}
-            >
-              {t('calendar.month')}
-            </button>
-            <button
-              onClick={() => setViewType('week')}
-              className={`px-4 py-2 text-sm font-medium border-t border-b ${
-                viewType === 'week'
-                  ? 'bg-blue-600 text-white border-blue-600'
-                  : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
-              }`}
-            >
-              {t('calendar.week')}
-            </button>
-            <button
-              onClick={() => setViewType('day')}
-              className={`px-4 py-2 text-sm font-medium rounded-r-md border ${
-                viewType === 'day'
-                  ? 'bg-blue-600 text-white border-blue-600'
-                  : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
-              }`}
-            >
-              {t('calendar.day')}
-            </button>
+          <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+            <div className="flex space-x-1">
+              <button
+                className="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                onClick={goToPreviousMonth}
+                aria-label={t('calendar.previousMonth')}
+              >
+                <ChevronLeftIcon className="h-5 w-5" />
+              </button>
+              <button
+                className="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                onClick={goToToday}
+              >
+                {t('calendar.today')}
+              </button>
+              <button
+                className="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                onClick={goToNextMonth}
+                aria-label={t('calendar.nextMonth')}
+              >
+                <ChevronRightIcon className="h-5 w-5" />
+              </button>
+            </div>
+            
+            <div className="flex space-x-1">
+              <button
+                className={`px-3 py-1 border ${viewType === 'month' ? 'bg-blue-100 dark:bg-blue-900 border-blue-300 dark:border-blue-700' : 'border-gray-300 dark:border-gray-600'} rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700`}
+                onClick={() => setViewType('month')}
+              >
+                {t('calendar.month')}
+              </button>
+              <button
+                className={`px-3 py-1 border ${viewType === 'week' ? 'bg-blue-100 dark:bg-blue-900 border-blue-300 dark:border-blue-700' : 'border-gray-300 dark:border-gray-600'} rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700`}
+                onClick={() => setViewType('week')}
+              >
+                {t('calendar.week')}
+              </button>
+              <button
+                className={`px-3 py-1 border ${viewType === 'day' ? 'bg-blue-100 dark:bg-blue-900 border-blue-300 dark:border-gray-700' : 'border-gray-300 dark:border-gray-600'} rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700`}
+                onClick={() => setViewType('day')}
+              >
+                {t('calendar.day')}
+              </button>
+            </div>
           </div>
         </div>
+        
+        {/* Information för USER-rollen */}
+        {!hasRole(['ADMIN', 'SUPERADMIN']) && (
+          <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md">
+            <div className="flex items-start">
+              <InformationCircleIcon className="h-5 w-5 text-blue-500 dark:text-blue-400 mr-2 mt-0.5" />
+              <div>
+                <p className="text-blue-800 dark:text-blue-200 text-sm">
+                  {t('calendar.viewOnly')}
+                </p>
+                <p className="text-blue-800 dark:text-blue-200 text-sm mt-1">
+                  {t('calendar.permissions.editOwn')}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* Felmeddelanden */}
+        {error && (
+          <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+            <p className="text-red-800 dark:text-red-200">{error}</p>
+          </div>
+        )}
+        
+        {/* Framgångsmeddelanden */}
+        {successMessage && (
+          <div className="mb-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-md">
+            <p className="text-green-800 dark:text-green-200">{successMessage}</p>
+          </div>
+        )}
       </div>
-
-      {error && (
-        <div className="bg-red-50 border-l-4 border-red-400 p-4">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-              </svg>
-            </div>
-            <div className="ml-3">
-              <p className="text-sm text-red-700">{error}</p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {successMessage && (
-        <div className="bg-green-50 border-l-4 border-green-400 p-4">
-          <div className="flex">
-            <div className="flex-shrink-0">
-              <svg className="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
-            </div>
-            <div className="ml-3">
-              <p className="text-sm text-green-700">{successMessage}</p>
-            </div>
-          </div>
-        </div>
-      )}
 
       <div className="flex-1 overflow-hidden">
         {viewType === 'month' && (
