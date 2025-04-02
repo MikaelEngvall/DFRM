@@ -396,6 +396,8 @@ const translations = {
     month: 'Місяць',
     week: 'Тиждень',
     day: 'День',
+    previousMonth: 'Попередній місяць',
+    nextMonth: 'Наступний місяць',
     noEvents: 'Немає подій',
     noTasks: 'Немає завдань',
     clickToAddTask: 'Натисніть на день, щоб додати нове завдання',
@@ -464,6 +466,10 @@ const translations = {
       sat: 'Сб',
       sun: 'Нд',
     },
+    viewOnly: 'Як USER ви бачите лише власні завдання в календарі',
+    permissions: {
+      editOwn: 'Як USER ви можете редагувати лише власні завдання'
+    }
   },
 
   staff: {

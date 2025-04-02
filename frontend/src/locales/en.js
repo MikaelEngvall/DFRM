@@ -405,6 +405,8 @@ export default {
     month: 'Month',
     week: 'Week',
     day: 'Day',
+    previousMonth: 'Previous month',
+    nextMonth: 'Next month',
     noEvents: 'No events',
     noTasks: 'No tasks',
     clickToAddTask: 'Click on a day to add a new task',
@@ -473,6 +475,11 @@ export default {
       sat: 'Sat',
       sun: 'Sun',
     },
+    viewOnly: 'As a USER you only see your own tasks in the calendar',
+    permissions: {
+      editOwn: 'As a USER you can only edit your own tasks',
+      admin: 'As an ADMIN/SUPERADMIN you can view and edit all tasks and showings'
+    }
   },
 
   staff: {
