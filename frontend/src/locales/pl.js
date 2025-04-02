@@ -469,7 +469,7 @@ export default {
       sat: 'So',
       sun: 'Nd',
     },
-    viewOnly: 'Jako USER widzisz tylko swoje zadania w kalendarzu',
+    viewOnly: 'Jako USER widzisz wszystkie zadania w kalendarzu, ale możesz edytować tylko swoje',
     permissions: {
       editOwn: 'Jako USER możesz edytować tylko swoje zadania'
     }

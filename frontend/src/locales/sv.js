@@ -428,7 +428,7 @@ export default {
       fetchFailed: 'Kunde inte hämta kalenderdata',
       permissionDenied: 'Du har inte behörighet att utföra denna åtgärd'
     },
-    viewOnly: 'Som USER ser du endast dina egna uppgifter i kalendern',
+    viewOnly: 'Som USER ser du alla uppgifter i kalendern men kan bara redigera dina egna',
     permissions: {
       editOwn: 'Som USER kan du bara redigera dina egna uppgifter',
       admin: 'Som ADMIN/SUPERADMIN kan du se och redigera alla uppgifter och visningar'

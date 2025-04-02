@@ -490,59 +490,13 @@ const Calendar = () => {
     );
   };
 
-  const filterTasksByDate = (tasks, targetYear, targetMonth, targetDay) => {
-    if (!tasks || tasks.length === 0) return [];
-    
-    const targetDateString = `${targetYear}-${String(targetMonth + 1).padStart(2, '0')}-${String(targetDay).padStart(2, '0')}`;
-    const today = new Date();
-    const isToday = targetDay === today.getDate() && 
-                    targetMonth === today.getMonth() && 
-                    targetYear === today.getFullYear();
-    
-    const exactDateMatches = tasks.filter(task => {
-      if (typeof task.dueDate === 'string' && task.dueDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
-        const [taskYear, taskMonth, taskDay] = task.dueDate.split('-').map(Number);
-        return taskDay === targetDay && 
-               (taskMonth - 1) === targetMonth && 
-               taskYear === targetYear;
-      }
-      return false;
-    });
-    
-    if (exactDateMatches.length > 0) return exactDateMatches;
-    
+  const filterTasksByDate = (tasks, year, month, day) => {
     return tasks.filter(task => {
       if (!task.dueDate) return false;
-      
-      try {
-        if (task._dueDateObj instanceof Date) {
-          return task._dueDateObj.getDate() === targetDay && 
-                 task._dueDateObj.getMonth() === targetMonth && 
-                 task._dueDateObj.getFullYear() === targetYear;
-        }
-        
-        let taskDate;
-        if (typeof task.dueDate === 'string') {
-          if (task.dueDate.includes('T')) {
-            taskDate = new Date(task.dueDate);
-            const offset = taskDate.getTimezoneOffset() * 60000;
-            taskDate = new Date(taskDate.getTime() + offset);
-          } else {
-            const [y, m, d] = task.dueDate.split('-').map(Number);
-            taskDate = new Date(y, m - 1, d);
-          }
-        } else if (task.dueDate instanceof Date) {
-          taskDate = task.dueDate;
-        } else {
-          return false;
-        }
-        
-        return taskDate.getDate() === targetDay && 
-               taskDate.getMonth() === targetMonth && 
-               taskDate.getFullYear() === targetYear;
-      } catch (e) {
-        return false;
-      }
+      const dueDate = new Date(task.dueDate);
+      return dueDate.getFullYear() === year &&
+             dueDate.getMonth() === month &&
+             dueDate.getDate() === day;
     });
   };
 
@@ -813,15 +767,6 @@ const Calendar = () => {
   };
 
   const handleTaskClick = async (task) => {
-    // Kontrollera om användaren har tillåtelse att se och redigera uppgiften
-    if (!hasRole(['ADMIN', 'SUPERADMIN'])) {
-      // USER-roll kan bara se och redigera egna uppgifter
-      if (task.assignedToUserId !== currentUser.id && task.assignedUserId !== currentUser.id) {
-        console.log('Användaren har inte behörighet att redigera denna uppgift');
-        return;
-      }
-    }
-    
     try {
       const updatedTask = await taskService.getTaskById(task.id);
       // Hämta meddelanden tillhörande uppgiften
@@ -844,14 +789,21 @@ const Calendar = () => {
         phoneNumber: updatedTask.phoneNumber || '',
       });
       
+      // Kontrollera om användaren kan redigera uppgiften eller bara visa den
+      const canEdit = hasRole(['ADMIN', 'SUPERADMIN']) || 
+                      task.assignedToUserId === currentUser.id || 
+                      task.assignedUserId === currentUser.id;
+      
       setSelectedTask({
         ...updatedTask,
-        messages: taskMessages || []
+        messages: taskMessages || [],
+        canEdit: canEdit
       });
+      
       setIsTaskModalOpen(true);
-    } catch (error) {
-      console.error('Error fetching task details:', error);
-      setError(t('tasks.messages.fetchError'));
+    } catch (err) {
+      console.error('Error fetching task details:', err);
+      setError(t('tasks.errors.fetchFailed'));
     }
   };
 
@@ -886,13 +838,14 @@ const Calendar = () => {
     e.preventDefault();
     try {
       if (selectedTask) {
-        // För USER-rollen, kontrollera att användaren bara kan uppdatera sina egna uppgifter
+        // Kontrollera om användaren kan redigera uppgiften
+        if (!selectedTask.canEdit) {
+          setError(t('calendar.errors.permissionDenied'));
+          return;
+        }
+        
+        // För USER-rollen, begränsa vilka fält som kan uppdateras
         if (!hasRole(['ADMIN', 'SUPERADMIN'])) {
-          if (selectedTask.assignedToUserId !== currentUser.id && selectedTask.assignedUserId !== currentUser.id) {
-            setError(t('tasks.messages.unauthorizedEdit'));
-            return;
-          }
-          
           // USER kan bara ändra status, kommentarer och datum på sina egna uppgifter
           const allowedUpdates = {
             id: selectedTask.id,
@@ -911,7 +864,7 @@ const Calendar = () => {
         if (hasRole(['ADMIN', 'SUPERADMIN'])) {
           await taskService.createTask(formData);
         } else {
-          setError(t('tasks.messages.unauthorizedCreate'));
+          setError(t('calendar.errors.permissionDenied'));
           return;
         }
       }
@@ -920,7 +873,7 @@ const Calendar = () => {
       setIsTaskModalOpen(false);
       setSelectedTask(null);
       resetForm();
-      setSuccessMessage(t(selectedTask ? 'tasks.messages.updateSuccess' : 'tasks.messages.createSuccess'));
+      setSuccessMessage(t(selectedTask ? 'tasks.messages.statusUpdateSuccess' : 'tasks.messages.saveSuccess'));
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err) {
       console.error('Error submitting task:', err);
@@ -1112,42 +1065,27 @@ const Calendar = () => {
           onClose={() => {
             setIsTaskModalOpen(false);
             setSelectedTask(null);
-            resetForm();
           }}
-          title={selectedTask ? t('tasks.edit') : t('tasks.add')}
+          title={selectedTask ? t('tasks.fields.details') : t('tasks.add')}
           onSubmit={handleSubmit}
-          submitButtonText={t('common.save')}
         >
           <div className="grid grid-cols-1 gap-4">
-            <FormInput
-              label={t('tasks.fields.title')}
-              name="title"
-              type="text"
-              value={formData.title}
-              onChange={handleInputChange}
-              required
-            />
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                {t('tasks.fields.title')}
+              </label>
+              <input
+                type="text"
+                name="title"
+                value={formData.title}
+                onChange={handleInputChange}
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                required
+                readOnly={selectedTask && !selectedTask.canEdit}
+              />
+            </div>
             
-            {formData.phoneNumber && (
-              <div className="mb-3">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  {t('tasks.fields.phoneNumber') || 'Telefonnummer'}
-                </label>
-                <div className="mt-1">
-                  <a 
-                    href={`tel:${formData.phoneNumber.replace(/[\s-]/g, '')}`}
-                    className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                      <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
-                    </svg>
-                    {formData.phoneNumber}
-                  </a>
-                </div>
-              </div>
-            )}
-            
-            <div className="mb-3">
+            <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
                 {t('tasks.fields.description')}
               </label>
@@ -1155,24 +1093,27 @@ const Calendar = () => {
                 name="description"
                 value={formData.description}
                 onChange={handleInputChange}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                rows="5"
-                placeholder={t('tasks.fields.descriptionPlaceholder')}
-                onFocus={() => {
-                  console.log('Textarean har fokus med beskrivning:', formData.description);
-                }}
-              />
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                rows="4"
+                readOnly={selectedTask && !selectedTask.canEdit}
+              ></textarea>
             </div>
-
+            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormInput
-                label={t('tasks.fields.dueDate')}
-                name="dueDate"
-                type="date"
-                value={formData.dueDate}
-                onChange={handleInputChange}
-                required
-              />
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {t('tasks.fields.dueDate')}
+                </label>
+                <input
+                  type="date"
+                  name="dueDate"
+                  value={formData.dueDate}
+                  onChange={handleInputChange}
+                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  required
+                  readOnly={selectedTask && !selectedTask.canEdit && !hasRole(['USER'])}
+                />
+              </div>
               
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -1184,6 +1125,7 @@ const Calendar = () => {
                   onChange={handleInputChange}
                   className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                   required
+                  disabled={selectedTask && !selectedTask.canEdit}
                 >
                   <option value="">{t('common.select')}</option>
                   <option value="LOW">{t('tasks.priorities.LOW')}</option>
@@ -1205,6 +1147,7 @@ const Calendar = () => {
                   onChange={handleInputChange}
                   className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                   required
+                  disabled={selectedTask && !selectedTask.canEdit}
                 >
                   <option value="">{t('common.select')}</option>
                   <option value="PENDING">{t('tasks.status.PENDING')}</option>
@@ -1222,6 +1165,7 @@ const Calendar = () => {
                   value={formData.assignedToUserId}
                   onChange={handleInputChange}
                   className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                  disabled={selectedTask && !selectedTask.canEdit}
                 >
                   <option value="">{t('common.select')}</option>
                   {users.map((user) => (
@@ -1231,17 +1175,6 @@ const Calendar = () => {
                   ))}
                 </select>
               </div>
-              
-              {selectedTask && formData.assignedByUserId && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    {t('tasks.fields.assignedBy')}
-                  </label>
-                  <div className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 sm:text-sm rounded-md bg-gray-100 dark:bg-gray-700">
-                    {users.find(user => user.id === formData.assignedByUserId)?.firstName || ''} {users.find(user => user.id === formData.assignedByUserId)?.lastName || ''} 
-                  </div>
-                </div>
-              )}
             </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

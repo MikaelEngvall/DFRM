@@ -475,7 +475,7 @@ export default {
       sat: 'Sat',
       sun: 'Sun',
     },
-    viewOnly: 'As a USER you only see your own tasks in the calendar',
+    viewOnly: 'As a USER you can see all tasks in the calendar but can only edit your own',
     permissions: {
       editOwn: 'As a USER you can only edit your own tasks',
       admin: 'As an ADMIN/SUPERADMIN you can view and edit all tasks and showings'
