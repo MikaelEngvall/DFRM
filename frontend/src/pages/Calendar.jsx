@@ -1021,7 +1021,7 @@ const Calendar = () => {
         
         {/* Information för USER-rollen */}
         {!hasRole(['ADMIN', 'SUPERADMIN']) && (
-          <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md">
+          <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md" style={{ display: 'none' }}>
             <div className="flex items-start">
               <InformationCircleIcon className="h-5 w-5 text-blue-500 dark:text-blue-400 mr-2 mt-0.5" />
               <div>
