@@ -1021,7 +1021,11 @@ const Calendar = () => {
         
         {/* Visa aktuell månad och år */}
         <div className="text-xl font-medium mb-4 text-center dark:text-white">
-          {new Intl.DateTimeFormat(currentLocale, { month: 'long', year: 'numeric' }).format(currentDate)}
+          {(() => {
+            const dateFormatter = new Intl.DateTimeFormat(currentLocale, { month: 'long', year: 'numeric' });
+            const formattedDate = dateFormatter.format(currentDate);
+            return formattedDate.charAt(0).toUpperCase() + formattedDate.slice(1);
+          })()}
         </div>
         
         {/* Information för USER-rollen */}
