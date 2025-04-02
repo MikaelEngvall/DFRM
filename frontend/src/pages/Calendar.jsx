@@ -5,7 +5,7 @@ import { useLocale } from '../contexts/LocaleContext';
 import { useAuth } from '../contexts/AuthContext';
 import Modal from '../components/Modal';
 import FormInput from '../components/FormInput';
-import { formatShortDate } from '../utils/formatters';
+import { formatShortDate, formatDateForInput } from '../utils/formatters';
 import Autocomplete from '../components/Autocomplete';
 import { PaperAirplaneIcon } from '@heroicons/react/24/outline';
 import TaskMessages from '../components/TaskMessages';
@@ -776,7 +776,7 @@ const Calendar = () => {
         id: updatedTask.id,
         title: updatedTask.title || '',
         description: updatedTask.description || '',
-        dueDate: formatShortDate(new Date(updatedTask.dueDate)) || '',
+        dueDate: formatDateForInput(new Date(updatedTask.dueDate)) || '',
         status: updatedTask.status || '',
         priority: updatedTask.priority || '',
         assignedToUserId: updatedTask.assignedToUserId || '',
@@ -893,7 +893,7 @@ const Calendar = () => {
     setCurrentDate(date);
     setFormData({
       ...formData,
-      dueDate: formatShortDate(date)
+      dueDate: formatDateForInput(date)
     });
     setIsTaskModalOpen(true);
   };
