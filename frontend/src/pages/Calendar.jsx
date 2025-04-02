@@ -1019,6 +1019,11 @@ const Calendar = () => {
           </div>
         </div>
         
+        {/* Visa aktuell månad och år */}
+        <div className="text-xl font-medium mb-4 text-center dark:text-white">
+          {new Intl.DateTimeFormat(currentLocale, { month: 'long', year: 'numeric' }).format(currentDate)}
+        </div>
+        
         {/* Information för USER-rollen */}
         {!hasRole(['ADMIN', 'SUPERADMIN']) && (
           <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md" style={{ display: 'none' }}>
