@@ -40,9 +40,10 @@ const Interests = () => {
   const [selectedAgent, setSelectedAgent] = useState('');
   const [users, setUsers] = useState([]);
   const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
-  const [pollingInterval, setPollingInterval] = useState(30000); // 30 sekunder
+  const [pollingInterval, setPollingInterval] = useState(300000); // 5 minuter istället för 30 sekunder
   const pollingRef = useRef(null);
   const [currentView, setCurrentView] = useState(INTEREST_VIEWS.UNREVIEWED);
+  const [pollingPaused, setPollingPaused] = useState(false);
 
   // Formatera datum till lokalt format
   const formatDate = (dateString) => {
@@ -157,9 +158,14 @@ const Interests = () => {
     const startPolling = () => {
       console.log('Startar polling för intresseanmälningar med intervall:', pollingInterval);
       pollingRef.current = setInterval(() => {
-        console.log('Polling: Hämtar intresseanmälningar...');
-        fetchInterests(true);
-        fetchReviewedInterests(true);
+        // Kontrollera om polling är pausad (t.ex. när e-postmodalen är öppen)
+        if (!pollingPaused) {
+          console.log('Polling: Hämtar intresseanmälningar...');
+          fetchInterests(true);
+          fetchReviewedInterests(true);
+        } else {
+          console.log('Polling pausad, hoppar över uppdatering');
+        }
       }, pollingInterval);
     };
 
@@ -173,7 +179,7 @@ const Interests = () => {
         clearInterval(pollingRef.current);
       }
     };
-  }, [pollingInterval]);
+  }, [pollingInterval, pollingPaused]);
 
   // Hämta data när komponenten laddas
   useEffect(() => {
@@ -356,14 +362,32 @@ const Interests = () => {
     }
   };
 
-  // Hantera e-postutskick
+  // Funktion för att öppna e-postmodalen
+  const openEmailModal = () => {
+    // Pausa polling när e-postmodalen öppnas
+    setPollingPaused(true);
+    setIsEmailModalOpen(true);
+  };
+
+  // Funktion för att stänga e-postmodalen
+  const closeEmailModal = () => {
+    setIsEmailModalOpen(false);
+    // Återuppta polling när e-postmodalen stängs
+    setTimeout(() => setPollingPaused(false), 1000);
+  };
+
+  // Funktion för att hantera e-post
   const handleSendEmail = async (subject, content, recipients) => {
     try {
+      // Polling är redan pausad här eftersom modalen är öppen
       const result = await emailService.sendBulkEmail(subject, content, recipients);
       return result;
     } catch (error) {
       console.error('Error sending email:', error);
       throw error;
+    } finally {
+      // Stäng modalen och återuppta polling
+      closeEmailModal();
     }
   };
 
@@ -649,15 +673,13 @@ const Interests = () => {
                       readOnly
                       className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-l-md shadow-sm text-gray-900 dark:text-white"
                     />
-                    {selectedInterest.email && (
-                      <button 
-                        onClick={() => setIsEmailModalOpen(true)}
-                        className="mt-1 inline-flex items-center px-3 py-2 border border-l-0 border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-white rounded-r-md hover:bg-gray-200 dark:hover:bg-gray-500"
-                        title={t('common.sendEmail')}
-                      >
-                        <EnvelopeIcon className="h-5 w-5" />
-                      </button>
-                    )}
+                    <button 
+                      onClick={openEmailModal}
+                      className="mt-1 inline-flex items-center px-3 py-2 border border-l-0 border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-white rounded-r-md hover:bg-gray-200 dark:hover:bg-gray-500"
+                      title={t('common.sendEmail')}
+                    >
+                      <EnvelopeIcon className="h-5 w-5" />
+                    </button>
                   </div>
                 </div>
                 
@@ -795,7 +817,7 @@ const Interests = () => {
                 <div className="flex justify-between items-center mb-2">
                   <h3 className="text-lg font-medium text-gray-900 dark:text-white">{t('interests.fields.contact')}</h3>
                   <button
-                    onClick={() => setIsEmailModalOpen(true)}
+                    onClick={openEmailModal}
                     className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
                     title={t('email.send')}
                   >
@@ -970,9 +992,9 @@ const Interests = () => {
       {selectedInterest && (
         <EmailModal
           isOpen={isEmailModalOpen}
-          onClose={() => setIsEmailModalOpen(false)}
-          onSend={handleSendEmail}
+          onClose={closeEmailModal}
           recipients={[selectedInterest.email]}
+          onSend={handleSendEmail}
         />
       )}
     </div>

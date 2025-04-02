@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import Modal from './Modal';
 import FormInput from './FormInput';
 import { useLocale } from '../contexts/LocaleContext';
@@ -14,17 +15,15 @@ import { useLocale } from '../contexts/LocaleContext';
  * @param {string} props.sender - Avsändarens e-postadress (endast för visning)
  */
 const EmailModal = ({ isOpen, onClose, onSend, recipients = [], sender = "info@duggalsfastigheter.se" }) => {
-  const { t } = useLocale();
+  const { t } = useTranslation();
   const [subject, setSubject] = useState('');
   const [content, setContent] = useState('');
+  const [recipientsVisible, setRecipientsVisible] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState(null);
-  // Lägg till en timer-referens för att hantera timeout
   const [timeoutTimer, setTimeoutTimer] = useState(null);
+  const [sendSuccess, setSendSuccess] = useState(false);
 
-
-  
-  // Rensa timern när komponenten avmonteras
   useEffect(() => {
     return () => {
       if (timeoutTimer) {
@@ -33,6 +32,19 @@ const EmailModal = ({ isOpen, onClose, onSend, recipients = [], sender = "info@d
     };
   }, [timeoutTimer]);
 
+  const handleClose = () => {
+    if (timeoutTimer) {
+      clearTimeout(timeoutTimer);
+      setTimeoutTimer(null);
+    }
+    setSending(false);
+    setError('');
+    setSendSuccess(false);
+    setContent('');
+    setSubject('');
+    onClose();
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -40,71 +52,49 @@ const EmailModal = ({ isOpen, onClose, onSend, recipients = [], sender = "info@d
       setError(t('email.errors.subjectRequired'));
       return;
     }
-    
+
     if (!content.trim()) {
       setError(t('email.errors.contentRequired'));
       return;
     }
-    
+
     if (recipients.length === 0) {
       setError(t('email.errors.noRecipients'));
       return;
     }
-    
+
     try {
       setSending(true);
-      setError(null);
+      setError('');
       
-      // Sätt en fallback-timer som avbryter sändningen om den tar för lång tid
-      // Detta är en extra säkerhet utöver timeout i API-anropet
       const timer = setTimeout(() => {
-        if (sending) {
-          setSending(false);
-          setError(t('email.errors.serverTimeout'));
-          console.error('E-post timeout i UI-lagret');
-        }
-      }, 60000); // 60 sekunder
+        setSending(false);
+        setError(t('email.errors.timeout'));
+        setTimeoutTimer(null);
+      }, 120000);
       
       setTimeoutTimer(timer);
       
-      const result = await onSend(subject, content, recipients);
+      await onSend(subject, content, recipients);
       
-      // Rensa timern eftersom sändningen lyckades
       clearTimeout(timer);
       setTimeoutTimer(null);
       
-      console.log('E-post schemalagd framgångsrikt', result);
+      setSendSuccess(true);
+      setSending(false);
       
-      // Visa meddelande om delvis framgång
-      if (result && result.partialSuccess) {
-        onClose();
-        // Visa informativt meddelande om delvis framgång
-        alert(`${result.message}`);
-      } else {
-        // Rensa formuläret efter framgångsrik sändning
-        setSubject('');
-        setContent('');
-        setSending(false);
-        onClose();
-      }
-    } catch (error) {
-      // Rensa timern vid fel
+      setTimeout(() => {
+        handleClose();
+      }, 1000);
+    } catch (err) {
       if (timeoutTimer) {
         clearTimeout(timeoutTimer);
         setTimeoutTimer(null);
       }
       
+      console.error('E-postsändning misslyckades:', err);
       setSending(false);
-      console.error('Error i handleSubmit:', error);
-      
-      // Sätt lämpligt felmeddelande
-      if (error.message && error.message.includes('bakgrunden')) {
-        // Specifikt meddelande för timeout som antyder att processen fortsätter i bakgrunden
-        setError(`${error.message}`);
-      } else {
-        // Generellt felmeddelande för andra fel
-        setError(t('email.errors.sendFailed') + ': ' + error.message);
-      }
+      setError(t('email.errors.sendFailed'));
     }
   };
 
@@ -113,27 +103,20 @@ const EmailModal = ({ isOpen, onClose, onSend, recipients = [], sender = "info@d
   return (
     <Modal
       isOpen={isOpen}
-      onClose={() => {
-        // Säkerställ att timern rensas om modalen stängs
-        if (timeoutTimer) {
-          clearTimeout(timeoutTimer);
-          setTimeoutTimer(null);
-        }
-        // Återställ formen innan stängning
-        if (!sending) {
-          setError(null);
-          setSubject('');
-          setContent('');
-          onClose();
-        }
-      }}
+      onClose={handleClose}
       title={t('email.title')}
       size="medium"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && (
           <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-md mb-4">
-            <p className="text-red-600 dark:text-red-400">{error}</p>
+            <p className="text-red-800 dark:text-red-200">{error}</p>
+          </div>
+        )}
+        
+        {sendSuccess && (
+          <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-md mb-4">
+            <p className="text-green-800 dark:text-green-200">{t('email.messages.sendSuccess')}</p>
           </div>
         )}
         
@@ -162,58 +145,64 @@ const EmailModal = ({ isOpen, onClose, onSend, recipients = [], sender = "info@d
           </div>
         </div>
         
-        {/* Knapp för att visa mottagarlistan */}
         {recipients.length > 0 && (
           <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-md">
-            <button 
+            <button
               type="button"
-              onClick={() => console.log('Mottagarlista:', recipients)}
-              className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+              onClick={() => setRecipientsVisible(!recipientsVisible)}
+              className="text-blue-600 dark:text-blue-400 hover:underline"
             >
-              {t('email.showRecipients')}
+              {recipientsVisible ? t('email.hideRecipients') : t('email.showRecipients')} ({recipients.length})
             </button>
-            <div className="mt-2 text-xs text-gray-600 dark:text-gray-400 overflow-auto max-h-20">
-              {recipients.join(', ')}
-            </div>
+            
+            {recipientsVisible && (
+              <div className="mt-2 max-h-40 overflow-y-auto p-2 border border-gray-200 dark:border-gray-700 rounded-md">
+                <ul className="list-disc pl-5">
+                  {recipients.map((email, index) => (
+                    <li key={index} className="text-sm text-gray-700 dark:text-gray-300">
+                      {email}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         )}
         
-        <FormInput
-          label={t('email.subject')}
-          name="subject"
-          type="text"
-          value={subject}
-          onChange={(e) => setSubject(e.target.value)}
-          required
-        />
+        <div>
+          <label htmlFor="subject" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            {t('email.fields.subject')}
+          </label>
+          <input
+            type="text"
+            id="subject"
+            value={subject}
+            onChange={(e) => setSubject(e.target.value)}
+            disabled={sending}
+            className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-gray-900 dark:text-white"
+            placeholder={t('email.placeholders.subject')}
+          />
+        </div>
         
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            {t('email.content')}
+          <label htmlFor="content" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            {t('email.fields.content')}
           </label>
           <textarea
+            id="content"
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 shadow-sm focus:border-primary focus:ring-primary dark:bg-gray-700 dark:text-white sm:text-sm"
+            disabled={sending}
             rows={10}
-            required
+            className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-gray-900 dark:text-white"
+            placeholder={t('email.placeholders.content')}
           />
         </div>
         
         <div className="flex justify-end space-x-3 mt-6">
           <button
             type="button"
-            onClick={() => {
-              // Säkerställ att timern rensas om modalen stängs
-              if (timeoutTimer) {
-                clearTimeout(timeoutTimer);
-                setTimeoutTimer(null);
-              }
-              setError(null);
-              setSubject('');
-              setContent('');
-              onClose();
-            }}
+            onClick={handleClose}
             disabled={sending}
             className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50"
           >
@@ -222,16 +211,16 @@ const EmailModal = ({ isOpen, onClose, onSend, recipients = [], sender = "info@d
           <button
             type="submit"
             disabled={sending}
-            className="px-4 py-2 bg-primary text-white rounded-md hover:bg-secondary dark:bg-primary dark:hover:bg-secondary disabled:opacity-50 flex items-center"
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
           >
             {sending ? (
-              <>
-                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <span className="flex items-center">
+                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
                 {t('email.sending')}
-              </>
+              </span>
             ) : t('email.send')}
           </button>
         </div>

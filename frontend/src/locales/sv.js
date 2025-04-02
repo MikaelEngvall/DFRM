@@ -556,7 +556,8 @@ export default {
       noRecipients: 'Inga mottagare valda',
       serverTimeout: 'E-postuppsändningen tar längre tid än väntat. Servern bearbetar fortfarande din förfrågan i bakgrunden. Du kan stänga detta fönster och kontrollera med mottagarna om några minuter.',
       networkError: 'Kunde inte ansluta till servern. Kontrollera din internetanslutning.',
-      serverError: 'Ett fel uppstod på servern. Försök igen senare.'
+      serverError: 'Ett fel uppstod på servern. Försök igen senare.',
+      timeout: 'Tidsgränsen överskreds. Försök att skicka e-post igen.'
     },
     bcc: 'Dold kopia',
     to: 'Till',
@@ -569,8 +570,20 @@ export default {
     title: 'Skicka e-postmeddelande',
     partialSuccess: '{{sent}} av {{total}} e-postmeddelanden skickades. Vissa mottagare fick inte meddelandet.',
     showRecipients: 'Visa alla mottagare',
+    hideRecipients: 'Dölj mottagarna',
     testSend: 'Skicka testmeddelande',
-    button: 'E-post'
+    button: 'E-post',
+    messages: {
+      sendSuccess: 'E-post skickades framgångsrikt'
+    },
+    fields: {
+      subject: 'Ämne',
+      content: 'Innehåll'
+    },
+    placeholders: {
+      subject: 'Ange ämne för e-postmeddelandet',
+      content: 'Skriv ditt meddelande här...'
+    }
   },
 
   interests: {

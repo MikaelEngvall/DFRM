@@ -262,13 +262,14 @@ public class EmailService {
             SimpleMailMessage message = new SimpleMailMessage();
             message.setFrom(interestEmail);
             message.setTo(to);
+            message.setCc(interestEmail);
             message.setSubject(subject);
             message.setText(text);
             
             // Skicka meddelandet
-            log.info("Försöker skicka intresse-e-post från {} till: {}", interestEmail, to);
+            log.info("Försöker skicka intresse-e-post från {} till: {} med kopia till sig själv", interestEmail, to);
             interestMailSender.send(message);
-            log.info("Intresse-e-post skickad till: {}", to);
+            log.info("Intresse-e-post skickad till: {} med kopia till avsändaren", to);
         } catch (Exception e) {
             log.error("Fel vid skickande av intresse-e-post till: {}: {}", to, e.getMessage(), e);
             // Vi kastar inte vidare exception för att inte störa programmets flöde om e-post misslyckas
@@ -405,6 +406,10 @@ public class EmailService {
             // Sätt huvudmottagaren (från-adressen får också meddelandet)
             log.info("Lägger till huvudmottagare: {}", fromEmail);
             helper.setTo(fromEmail);
+            
+            // Lägg till från-adressen som CC för att säkerställa att en kopia hamnar i Skickat-mappen
+            log.info("Lägger till CC-mottagare (för kopior i Skickat-mappen): {}", fromEmail);
+            helper.setCc(fromEmail);
             
             // Lista alla BCC-mottagare (för att dölja mottagarlistan)
             InternetAddress[] bccAddresses = new InternetAddress[toEmails.size()];
