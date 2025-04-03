@@ -87,7 +87,7 @@ const Interests = () => {
         const usersData = await userService.getAllUsers();
         setUsers(usersData);
       } catch (err) {
-        console.error('Error fetching users:', err);
+        logger.error('Error fetching users:', err);
         setError(t('common.error'));
       }
     };
@@ -135,21 +135,21 @@ const Interests = () => {
   const fetchReviewedInterests = async (bypassCache = false) => {
     try {
       setIsLoading(true);
-      console.log('Hämtar granskade intresseanmälningar, bypassCache:', bypassCache);
+      logger.info('Hämtar granskade intresseanmälningar, bypassCache:', bypassCache);
       // Alltid hämta färsk data från servern (bypassCache = true)
       const data = await interestService.getReviewed(true);
-      console.log('Hämtade granskade intresseanmälningar:', data);
+      logger.debug('Hämtade granskade intresseanmälningar:', data);
       if (data && Array.isArray(data)) {
         setReviewedInterests(data);
         if (data.length === 0) {
-          console.log('Inga granskade intresseanmälningar hittades');
+          logger.info('Inga granskade intresseanmälningar hittades');
         }
       } else {
-        console.warn('Oväntat svar från API:et:', data);
+        logger.warn('Oväntat svar från API:et:', data);
         setReviewedInterests([]);
       }
     } catch (err) {
-      console.error('Error fetching reviewed interests:', err);
+      logger.error('Error fetching reviewed interests:', err);
       setError(t('common.error'));
     } finally {
       setIsLoading(false);
@@ -160,15 +160,15 @@ const Interests = () => {
   useEffect(() => {
     // Starta polling
     const startPolling = () => {
-      console.log('Startar polling för intresseanmälningar med intervall:', pollingInterval);
+      logger.debug('Startar polling för intresseanmälningar med intervall:', pollingInterval);
       pollingRef.current = setInterval(() => {
         // Kontrollera om polling är pausad (t.ex. när e-postmodalen är öppen)
         if (!pollingPaused) {
-          console.log('Polling: Hämtar intresseanmälningar...');
+          logger.debug('Polling: Hämtar intresseanmälningar...');
           fetchInterests(true);
           fetchReviewedInterests(true);
         } else {
-          console.log('Polling pausad, hoppar över uppdatering');
+          logger.debug('Polling pausad, hoppar över uppdatering');
         }
       }, pollingInterval);
     };
@@ -178,7 +178,7 @@ const Interests = () => {
 
     // Rensa intervallet när komponenten avmonteras
     return () => {
-      console.log('Stoppar polling för intresseanmälningar');
+      logger.debug('Stoppar polling för intresseanmälningar');
       if (pollingRef.current) {
         clearInterval(pollingRef.current);
       }
@@ -215,7 +215,7 @@ const Interests = () => {
       setReviewComments('');
       setSelectedInterest(null);
     } catch (err) {
-      console.error('Error reviewing interest:', err);
+      logger.error('Error reviewing interest:', err);
       setError(t('interests.messages.reviewError'));
     } finally {
       setIsLoading(false);
@@ -240,7 +240,7 @@ const Interests = () => {
       setReviewComments('');
       setSelectedInterest(null);
     } catch (err) {
-      console.error('Error rejecting interest:', err);
+      logger.error('Error rejecting interest:', err);
       setError(t('interests.messages.rejectError'));
     } finally {
       setIsLoading(false);
@@ -359,7 +359,7 @@ const Interests = () => {
       setSelectedAgent('');
       setSelectedInterest(null);
     } catch (err) {
-      console.error('Error scheduling showing:', err);
+      logger.error('Error scheduling showing:', err);
       setError(err.response?.data?.message || err.message || t('interests.messages.showingScheduleError'));
     } finally {
       setIsLoading(false);
@@ -387,7 +387,7 @@ const Interests = () => {
       const result = await emailService.sendBulkEmail(subject, content, recipients);
       return result;
     } catch (error) {
-      console.error('Error sending email:', error);
+      logger.error('Error sending email:', error);
       throw error;
     } finally {
       // Stäng modalen och återuppta polling
@@ -469,7 +469,7 @@ const Interests = () => {
       setTimeout(() => setSuccessMessage(''), 3000);
       
     } catch (err) {
-      console.error('Error exporting data:', err);
+      logger.error('Error exporting data:', err);
       setError(t('interests.messages.exportError'));
     } finally {
       setIsLoading(false);

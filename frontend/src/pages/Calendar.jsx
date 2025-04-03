@@ -95,13 +95,13 @@ const Calendar = () => {
           const day = taskDate.getDate();
           tasksPerDay[day] = (tasksPerDay[day] || 0) + 1;
         } catch (e) {
-          console.error('Fel vid analys av uppgiftsdatum:', e);
+          logger.error('Fel vid analys av uppgiftsdatum:', e);
         }
       });
       
-      console.log('Uppgifter per dag i aktuell månad:', tasksPerDay);
-      console.log('Totalt antal uppgifter:', tasks.length);
-      console.log('Exempel på uppgifter:', tasks.slice(0, 3));
+      logger.debug('Uppgifter per dag i aktuell månad:', tasksPerDay);
+      logger.debug('Totalt antal uppgifter:', tasks.length);
+      logger.debug('Exempel på uppgifter:', tasks.slice(0, 3));
     };
     
     if (tasks.length > 0) {
@@ -166,7 +166,7 @@ const Calendar = () => {
             
             return taskLocalDate >= startLocalDate && taskLocalDate <= endLocalDate;
           } catch (e) {
-            console.error('Fel vid filtrering av uppgiftsdatum:', e);
+            logger.error('Fel vid filtrering av uppgiftsdatum:', e);
             return false;
           }
         });
@@ -234,7 +234,7 @@ const Calendar = () => {
             _dueDateObj: dueDateObj
           };
         } catch (e) {
-          console.error(`Kalender: Fel vid normalisering av datum för uppgift ${task.id}:`, e, task);
+          logger.error(`Kalender: Fel vid normalisering av datum för uppgift ${task.id}:`, e, task);
           return task;
         }
       });
@@ -269,7 +269,7 @@ const Calendar = () => {
               // Parse the DateTime string
               dateTime = showing.dateTime ? new Date(showing.dateTime) : null;
             } catch (e) {
-              console.error(`Fel vid konvertering av visningstid för visning ${showing.id}:`, e);
+              logger.error(`Fel vid konvertering av visningstid för visning ${showing.id}:`, e);
               dateTime = null;
             }
             
@@ -281,7 +281,7 @@ const Calendar = () => {
           
           logger.debug(`Kalender: Hämtade ${normalizedShowings.length} visningar för ADMIN/SUPERADMIN-användare`);
         } catch (err) {
-          console.error('Error fetching showings:', err);
+          logger.error('Error fetching showings:', err);
           // Fortsätt trots fel med visningar - det är inte kritiskt
         }
       } else {
@@ -299,7 +299,7 @@ const Calendar = () => {
           const usersData = await userService.getAllUsers();
           setUsers(usersData);
         } catch (err) {
-          console.error('Error fetching users:', err);
+          logger.error('Error fetching users:', err);
         }
       }
       
@@ -309,7 +309,7 @@ const Calendar = () => {
           const apartmentsData = await apartmentService.getAllApartments();
           setApartments(apartmentsData);
         } catch (err) {
-          console.error('Error fetching apartments:', err);
+          logger.error('Error fetching apartments:', err);
         }
       }
       
@@ -319,7 +319,7 @@ const Calendar = () => {
           const tenantsData = await tenantService.getAllTenants();
           setTenants(tenantsData);
         } catch (err) {
-          console.error('Error fetching tenants:', err);
+          logger.error('Error fetching tenants:', err);
         }
       }
     } catch (error) {
@@ -661,11 +661,9 @@ const Calendar = () => {
               <span className="text-sm font-medium">{day}</span>
             </div>
             <div className="px-2 pb-1">
-              {// Visa visningar först om användaren har behörighet
-              hasRole(['ADMIN', 'SUPERADMIN']) && dayShowings.length > 0 && 
-               dayShowings.map(showing => renderShowingItem(showing))}
+              {hasRole(['ADMIN', 'SUPERADMIN']) && dayShowings.length > 0 && 
+                dayShowings.map(showing => renderShowingItem(showing))}
               
-              // Sedan visa uppgifter
               {dayTasks.length > 0 && dayTasks.map(task => renderTaskItem(task))}
             </div>
           </div>
@@ -709,7 +707,7 @@ const Calendar = () => {
                    showingDate.getMonth() === month && 
                    showingDate.getFullYear() === year;
           } catch (e) {
-            console.error('Fel vid filtrering av visning:', e);
+            logger.error('Fel vid filtrering av visning:', e);
             return false;
           }
         });
@@ -730,13 +728,10 @@ const Calendar = () => {
               </span>
             </div>
             <div className="px-2 pb-1">
-              {// Visa visningar först
-              dayShowings.length > 0 && dayShowings.map(showing => renderShowingItem(showing))}
+              {dayShowings.length > 0 && dayShowings.map(showing => renderShowingItem(showing))}
               
-              // Sedan visa uppgifter
               {dayTasks.length > 0 && dayTasks.map(task => renderTaskItem(task))}
               
-              // Visa meddelande om inga händelser
               {dayTasks.length === 0 && dayShowings.length === 0 && (
                 <div className="text-xs text-gray-400 dark:text-gray-600 p-1">
                   {t('calendar.noEvents')}
@@ -763,7 +758,7 @@ const Calendar = () => {
       setSuccessMessage(t('showings.messages.assignSuccess'));
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err) {
-      console.error('Error assigning showing:', err);
+      logger.error('Error assigning showing:', err);
       throw err;
     }
   };
@@ -804,7 +799,7 @@ const Calendar = () => {
       
       setIsTaskModalOpen(true);
     } catch (err) {
-      console.error('Error fetching task details:', err);
+      logger.error('Error fetching task details:', err);
       setError(t('tasks.errors.fetchFailed'));
     }
   };
@@ -893,7 +888,7 @@ const Calendar = () => {
       setSuccessMessage(t(selectedTask ? 'tasks.messages.statusUpdateSuccess' : 'tasks.messages.saveSuccess'));
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err) {
-      console.error('Error submitting task:', err);
+      logger.error('Error submitting task:', err);
       setError(t('tasks.messages.error'));
     }
   };
@@ -952,7 +947,7 @@ const Calendar = () => {
       setSuccessMessage(t(selectedShowing ? 'showings.messages.updateSuccess' : 'showings.messages.createSuccess'));
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err) {
-      console.error('Error submitting showing:', err);
+      logger.error('Error submitting showing:', err);
       setError(t('showings.messages.error'));
     }
   };
@@ -1394,7 +1389,7 @@ const Calendar = () => {
                         assignedTo: e.target.value
                       });
                     } catch (err) {
-                      console.error('Error assigning showing:', err);
+                      logger.error('Error assigning showing:', err);
                       setError(t('showings.messages.assignError'));
                     }
                   }}
@@ -1424,7 +1419,7 @@ const Calendar = () => {
                         setSuccessMessage(t('showings.messages.updateSuccess'));
                         setTimeout(() => setSuccessMessage(''), 3000);
                       } catch (err) {
-                        console.error('Error completing showing:', err);
+                        logger.error('Error completing showing:', err);
                         setError(t('showings.messages.updateError'));
                       }
                     }}
@@ -1443,7 +1438,7 @@ const Calendar = () => {
                         setSuccessMessage(t('showings.messages.updateSuccess'));
                         setTimeout(() => setSuccessMessage(''), 3000);
                       } catch (err) {
-                        console.error('Error cancelling showing:', err);
+                        logger.error('Error cancelling showing:', err);
                         setError(t('showings.messages.updateError'));
                       }
                     }}
