@@ -475,26 +475,27 @@ const InterestGoogleDocsExport = () => {
               <tbody>
                 {reviewedInterests.map((interest) => (
                   <tr key={interest.id}>
-                    <td style={{ border: '1px solid #e5e7eb', padding: '10px', fontWeight: 'bold' }}>
+                    <td style={{ border: '1px solid #e5e7eb', padding: '10px', fontWeight: 'bold', color: '#000000' }}>
                       {formatName(interest)}
                     </td>
-                    <td style={{ border: '1px solid #e5e7eb', padding: '10px' }}>
+                    <td style={{ border: '1px solid #e5e7eb', padding: '10px', color: '#000000' }}>
                       {(interest.apartment 
                         ? `${interest.apartment.streetAddress || ''}`.trim() || 
                           (interest.showing?.apartmentAddress || 'Okänd lägenhet')
-                        : interest.showing?.apartmentAddress || 'Okänd lägenhet').substring(0, 25)}
+                        : interest.showing?.apartmentAddress || 'Okänd lägenhet').substring(0, 30)}
                     </td>
-                    <td style={{ border: '1px solid #e5e7eb', padding: '10px' }}>{interest.phone || interest.showing?.contactPhone || 'Saknas'}</td>
-                    <td style={{ border: '1px solid #e5e7eb', padding: '10px', color: '#ffffff' }}>
-                      {interest.showing?.dateTime ? formatDateTime(interest.showing.dateTime) : '-'}
+                    <td style={{ border: '1px solid #e5e7eb', padding: '10px', color: '#000000' }}>{interest.phone || interest.showing?.contactPhone || 'Saknas'}</td>
+                    <td style={{ border: '1px solid #e5e7eb', padding: '10px', color: '#000000' }}>
+                      {getShowingDateTime(interest)}
                     </td>
                     <td style={{ 
                       border: '1px solid #e5e7eb', 
                       padding: '10px',
+                      backgroundColor: getStatusColor(interest),
                       color: '#ffffff',
                       fontWeight: 'bold'
                     }}>
-                      {interest.showing ? formatShowingStatus({ status: interest.showing.status }) : formatShowingStatus(interest)}
+                      {interest.showing && interest.showing.status ? formatShowingStatus({ status: interest.showing.status }) : formatShowingStatus(interest)}
                     </td>
                   </tr>
                 ))}
@@ -527,16 +528,16 @@ const InterestGoogleDocsExport = () => {
               <tbody>
                 {unreviewedInterests.map((interest) => (
                   <tr key={interest.id}>
-                    <td style={{ border: '1px solid #e5e7eb', padding: '10px', fontWeight: 'bold' }}>
+                    <td style={{ border: '1px solid #e5e7eb', padding: '10px', fontWeight: 'bold', color: '#000000' }}>
                       {formatName(interest)}
                     </td>
-                    <td style={{ border: '1px solid #e5e7eb', padding: '10px' }}>
+                    <td style={{ border: '1px solid #e5e7eb', padding: '10px', color: '#000000' }}>
                       {(interest.apartment 
                         ? `${interest.apartment.streetAddress || ''}`.trim() || 
                           (interest.showing?.apartmentAddress || 'Okänd lägenhet')
-                        : interest.showing?.apartmentAddress || 'Okänd lägenhet').substring(0, 25)}
+                        : interest.showing?.apartmentAddress || 'Okänd lägenhet').substring(0, 30)}
                     </td>
-                    <td style={{ border: '1px solid #e5e7eb', padding: '10px' }}>{interest.phone || 'Saknas'}</td>
+                    <td style={{ border: '1px solid #e5e7eb', padding: '10px', color: '#000000' }}>{interest.phone || 'Saknas'}</td>
                   </tr>
                 ))}
               </tbody>
