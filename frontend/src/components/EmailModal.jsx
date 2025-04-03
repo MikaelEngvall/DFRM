@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
 import Modal from './Modal';
 import FormInput from './FormInput';
 import { useLocale } from '../contexts/LocaleContext';
@@ -15,7 +14,7 @@ import { useLocale } from '../contexts/LocaleContext';
  * @param {string} props.sender - Avsändarens e-postadress (endast för visning)
  */
 const EmailModal = ({ isOpen, onClose, onSend, recipients = [], sender = "info@duggalsfastigheter.se" }) => {
-  const { t } = useTranslation();
+  const { t } = useLocale();
   const [subject, setSubject] = useState('');
   const [content, setContent] = useState('');
   const [recipientsVisible, setRecipientsVisible] = useState(false);
