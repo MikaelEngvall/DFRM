@@ -51,6 +51,15 @@ public class EmailService {
     private String mailPassword;
     
     /**
+     * Returnerar från-e-postadressen konfigurerad i tjänsten
+     * 
+     * @return Avsändarens e-postadress
+     */
+    public String getFromEmail() {
+        return fromEmail;
+    }
+    
+    /**
      * Returnerar mailSender-objektet för att kunna inspektera konfigurationen
      */
     public JavaMailSender getMailSender() {

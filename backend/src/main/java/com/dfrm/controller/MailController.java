@@ -8,9 +8,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.dfrm.service.EmailRetryService;
 import com.dfrm.service.EmailService;
 
 import jakarta.mail.Session;
@@ -37,7 +35,7 @@ import lombok.extern.slf4j.Slf4j;
 public class MailController {
 
     private final EmailService emailService;
-    private final ScheduledExecutorService executorService = Executors.newScheduledThreadPool(5);
+    private final EmailRetryService emailRetryService;
     
     /**
      * Kontrollera att e-posttjänsten fungerar korrekt
@@ -173,6 +171,24 @@ public class MailController {
         }
     }
     
+    /**
+     * Visar statistik om återförsökskön för e-post
+     */
+    @GetMapping("/retry-queue")
+    public ResponseEntity<?> getRetryQueueStatistics() {
+        try {
+            Map<String, Object> stats = emailRetryService.getQueueStatistics();
+            return ResponseEntity.ok(stats);
+        } catch (Exception e) {
+            log.error("Fel vid hämtning av återförsöksstatistik: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
+                "success", false,
+                "message", "Kunde inte hämta återförsöksstatistik: " + e.getMessage(),
+                "errorType", e.getClass().getName()
+            ));
+        }
+    }
+    
     @PostMapping("/bulk")
     public ResponseEntity<?> sendBulkEmail(@RequestBody Map<String, Object> mailRequest) {
         try {
@@ -206,66 +222,52 @@ public class MailController {
             
             // Verifiera att e-postadresser är korrekta
             boolean allValid = true;
+            List<String> validRecipients = new ArrayList<>();
+            
             for (String email : recipients) {
-                if (!isValidEmail(email)) {
+                if (isValidEmail(email)) {
+                    validRecipients.add(email);
+                } else {
                     log.warn("Ogiltig e-postadress i mottagarlistan: {}", email);
                     allValid = false;
                 }
             }
             
             if (!allValid) {
-                log.warn("Mottagarlistan innehåller ogiltiga e-postadresser");
-                // Vi fortsätter ändå, men noterar problemet
+                log.warn("Mottagarlistan innehåller ogiltiga e-postadresser. {} valida, {} ogiltiga.",
+                        validRecipients.size(), recipients.size() - validRecipients.size());
+                
+                if (validRecipients.isEmpty()) {
+                    return ResponseEntity.badRequest().body(Map.of(
+                        "success", false,
+                        "message", "Inga giltiga e-postadresser i mottagarlistan"
+                    ));
+                }
+                
+                // Fortsätt med enbart de giltiga adresserna
+                recipients = validRecipients;
             }
             
-            // Starta en asynkron process för att skicka e-post utan att blockera HTTP-svaret
+            // Använd EmailRetryService för att schemalägga e-postutskick
+            String batchId = emailRetryService.scheduleEmailBatch(subject, content, recipients);
+            
+            // Starta omedelbart bearbetning av kön i en separat tråd
             CompletableFuture.runAsync(() -> {
                 try {
-                    log.info("Påbörjar asynkron e-postuppsändning...");
-                    
-                    // Dela upp mottagarlistan i mindre batchar för effektivare sändning
-                    // om antalet mottagare är stort
-                    if (recipients.size() > 25) {
-                        log.info("Delar upp {} mottagare i mindre batchar", recipients.size());
-                        int batchSize = 25;
-                        for (int i = 0; i < recipients.size(); i += batchSize) {
-                            final int startIndex = i;
-                            final int endIndex = Math.min(i + batchSize, recipients.size());
-                            final List<String> batch = recipients.subList(startIndex, endIndex);
-                            
-                            log.info("Skickar batch {} till {} (totalt {} mottagare)", startIndex, endIndex - 1, batch.size());
-                            
-                            // Schemalägg varje batch med en liten fördröjning mellan dem
-                            final int batchNumber = i / batchSize;
-                            executorService.schedule(() -> {
-                                try {
-                                    long batchStartTime = System.currentTimeMillis();
-                                    emailService.sendBulkEmail(subject, content, batch);
-                                    long batchEndTime = System.currentTimeMillis();
-                                    log.info("Batch {} slutförd på {} ms", batchNumber, (batchEndTime - batchStartTime));
-                                } catch (Exception e) {
-                                    log.error("Fel vid skickande av batch {}: {}", batchNumber, e.getMessage());
-                                }
-                            }, batchNumber * 3, TimeUnit.SECONDS); // 3 sekunders fördröjning mellan batcher
-                        }
-                    } else {
-                        // Skicka direkt om det är få mottagare
-                        log.info("Skickar direkt utan batching (få mottagare)");
-                    emailService.sendBulkEmail(subject, content, recipients);
-                    }
-                    
-                    log.info("Asynkron e-postuppsändning schemalagd");
+                    log.info("Startar bearbetning av e-postkön...");
+                    emailRetryService.processRetryQueue();
                 } catch (Exception e) {
-                    log.error("Fel vid asynkron e-postuppsändning: {}", e.getMessage(), e);
+                    log.error("Fel vid bearbetning av e-postkö: {}", e.getMessage(), e);
                 }
             });
             
             // Returnera ett omedelbart svar till klienten
             long responseTime = System.currentTimeMillis() - startTime;
             return ResponseEntity.accepted().body(Map.of(
-                    "success", true,
-                "message", "Email sending has been scheduled",
-                    "recipientCount", recipients.size(),
+                "success", true,
+                "message", "E-postutskick har schemalagts",
+                "batchId", batchId,
+                "recipientCount", recipients.size(),
                 "processingTimeMs", responseTime,
                 "timestamp", LocalDateTime.now().toString()
             ));

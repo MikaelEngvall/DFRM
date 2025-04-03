@@ -11,6 +11,7 @@ C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\model\KeyType.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\model\Showing.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\repository\SecurityTokenRepository.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\controller\TaskMessageController.java
+C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\service\EmailRetryService.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\controller\ApartmentController.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\DfrmApplication.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\model\Apartment.java
