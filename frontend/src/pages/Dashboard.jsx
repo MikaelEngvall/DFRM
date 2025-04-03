@@ -426,8 +426,8 @@ const Dashboard = () => {
       <div className="mt-8">
         <img 
           src={isDark
-            ? "/Transparent Logo White Text.png" 
-            : "/Transparent Logo Black Text.png"}
+            ? "./Transparent Logo White Text.png" 
+            : "./Transparent Logo Black Text.png"}
           alt="DFRM Logotype"
           className="w-full h-auto px-4 sm:px-6 lg:px-8"
         />
