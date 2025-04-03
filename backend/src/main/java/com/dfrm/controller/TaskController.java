@@ -23,10 +23,12 @@ import com.dfrm.model.Task;
 import com.dfrm.service.TaskService;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @RestController
 @RequestMapping("/api/tasks")
 @RequiredArgsConstructor
+@Slf4j
 public class TaskController {
 
     private final TaskService taskService;
@@ -37,8 +39,23 @@ public class TaskController {
             @RequestParam(required = false) String status,
             @RequestParam(required = false) String priority,
             @RequestParam(required = false) String tenantId,
-            @RequestParam(required = false) String apartmentId) {
-        return taskService.getAllTasks(status, priority, tenantId, apartmentId);
+            @RequestParam(required = false) String apartmentId,
+            @RequestParam(required = false) String assignedToUserId,
+            @RequestParam(required = false) String assignedByUserId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(required = false) Boolean isOverdue) {
+        
+        log.debug("Hämtar uppgifter med filtreringsparametrar: status={}, priority={}, tenantId={}, apartmentId={}, " +
+                "assignedToUserId={}, assignedByUserId={}, startDate={}, endDate={}, isOverdue={}",
+                status, priority, tenantId, apartmentId, assignedToUserId, assignedByUserId, startDate, endDate, isOverdue);
+        
+        // Använd den mer kraftfulla getFilteredTasks-metoden som stödjer alla parametrar
+        return taskService.getFilteredTasks(
+            status, priority, tenantId, apartmentId, 
+            assignedToUserId, assignedByUserId, 
+            startDate, endDate, isOverdue
+        );
     }
 
     @GetMapping("/{id}")
@@ -68,18 +85,18 @@ public class TaskController {
     @PatchMapping("/{id}")
     @PreAuthorize("hasAnyAuthority('ROLE_SUPERADMIN', 'ROLE_ADMIN', 'ROLE_USER', 'SUPERADMIN', 'ADMIN', 'USER')")
     public ResponseEntity<Task> patchTask(@PathVariable String id, @RequestBody Task patchTask) {
-        System.out.println("PATCH-anrop mottaget för task ID: " + id);
-        System.out.println("Data mottagen: " + patchTask);
+        log.debug("PATCH-anrop mottaget för task ID: {}", id);
+        log.debug("Data mottagen: {}", patchTask);
         
         Optional<Task> existingTaskOpt = taskService.getTaskById(id);
         
         if (existingTaskOpt.isEmpty()) {
-            System.out.println("Uppgift med ID " + id + " hittades inte");
+            log.debug("Uppgift med ID {} hittades inte", id);
             return ResponseEntity.notFound().build();
         }
         
         Task existingTask = existingTaskOpt.get();
-        System.out.println("Befintlig uppgift: " + existingTask);
+        log.debug("Befintlig uppgift: {}", existingTask);
         
         // Detta kunde ersättas med reflection eller en utility-metod
         // som applicerar ändringar från patchTask till existingTask
@@ -131,7 +148,7 @@ public class TaskController {
         existingTask.setRecurring(patchTask.isRecurring());
         
         Task savedTask = taskService.saveTask(existingTask);
-        System.out.println("Uppgift uppdaterad och sparad: " + savedTask);
+        log.debug("Uppgift uppdaterad och sparad: {}", savedTask);
         
         return ResponseEntity.ok(savedTask);
     }
@@ -163,6 +180,11 @@ public class TaskController {
                 .orElse(ResponseEntity.badRequest().build());
     }
 
+    /**
+     * De följande endpointen finns kvar för bakåtkompatibilitet, men 
+     * använder nu den centrala filtreringsmetoden internt
+     */
+    
     @GetMapping("/status/{status}")
     @PreAuthorize("isAuthenticated()")
     public List<Task> getTasksByStatus(@PathVariable String status) {
@@ -223,69 +245,10 @@ public class TaskController {
     @GetMapping("/date-range")
     @PreAuthorize("isAuthenticated()")
     public List<Task> getTasksByDateRange(
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
-            @PathVariable(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) Map<String, LocalDate> pathVars) {
+            @RequestParam(required = true) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(required = true) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
         
-        System.out.println("DEBUG: getTasksByDateRange anropad med startDate=" + startDate + ", endDate=" + endDate);
-        
-        // Om startDate och endDate är null, använd variabler från path
-        if (startDate == null && pathVars != null && pathVars.containsKey("startDate")) {
-            startDate = pathVars.get("startDate");
-            System.out.println("DEBUG: Använder startDate från pathVars: " + startDate);
-        }
-        
-        if (endDate == null && pathVars != null && pathVars.containsKey("endDate")) {
-            endDate = pathVars.get("endDate");
-            System.out.println("DEBUG: Använder endDate från pathVars: " + endDate);
-        }
-        
-        // Validera att båda datumen finns
-        if (startDate == null || endDate == null) {
-            System.out.println("DEBUG: Saknas datumvärden: startDate=" + startDate + ", endDate=" + endDate);
-            throw new IllegalArgumentException("Both startDate and endDate are required");
-        }
-        
-        // Logga de faktiska datumen som kommer att användas
-        System.out.println("DEBUG: Hämtar uppgifter mellan " + startDate + " och " + endDate);
-        
-        // Spara datumen i final-variabler för användning i lambda-uttryck
-        final LocalDate finalStartDate = startDate;
-        final LocalDate finalEndDate = endDate;
-        
-        // Hämta uppgifter från service
-        List<Task> tasks = taskService.getTasksByDateRange(finalStartDate, finalEndDate);
-        
-        // Logga antalet uppgifter som hittades
-        System.out.println("DEBUG: Hittade " + tasks.size() + " uppgifter för intervallet");
-        
-        // Om inga uppgifter hittades, försök hämta alla och filtrera manuellt
-        if (tasks.isEmpty()) {
-            System.out.println("DEBUG: Inga uppgifter hittades, försöker med alternativ metod");
-            List<Task> allTasks = taskService.getAllTasks(null, null, null, null);
-            
-            System.out.println("DEBUG: Totalt antal uppgifter i databasen: " + allTasks.size());
-            
-            // Filtrera uppgifter manuellt med final-variabler
-            List<Task> filteredTasks = allTasks.stream()
-                .filter(task -> {
-                    if (task.getDueDate() == null) {
-                        return false;
-                    }
-                    
-                    // Kontrollera om uppgiften ligger inom intervallet
-                    return !task.getDueDate().isBefore(finalStartDate) && !task.getDueDate().isAfter(finalEndDate);
-                })
-                .toList();
-            
-            System.out.println("DEBUG: Manuellt filtrerat fram " + filteredTasks.size() + " uppgifter");
-            
-            if (!filteredTasks.isEmpty()) {
-                System.out.println("DEBUG: Returnerar manuellt filtrerade uppgifter istället");
-                return filteredTasks;
-            }
-        }
-        
-        return tasks;
+        log.debug("Hämtar uppgifter för datumintervall: {} till {}", startDate, endDate);
+        return taskService.getTasksByDateRange(startDate, endDate);
     }
 } 

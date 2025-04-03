@@ -2,6 +2,7 @@ C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\service\UserDetailsServi
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\service\TaskService.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\repository\PendingTaskRepository.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\service\EmailListener.java
+C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\service\TaskFilterService.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\controller\KeyController.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\repository\TaskRepository.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\controller\TenantController.java

@@ -29,20 +29,80 @@ public class TaskService {
     private final UserRepository userRepository;
     private final TaskMessageService taskMessageService;
     private final GoogleTranslateClient translateClient;
+    private final TaskFilterService taskFilterService;
     
+    /**
+     * Hämtar alla uppgifter med valfria filtreringsparametrar
+     * 
+     * @param status Uppgiftsstatus att filtrera på (valfritt)
+     * @param priority Prioritet att filtrera på (valfritt)
+     * @param tenantId Hyresgäst-ID att filtrera på (valfritt)
+     * @param apartmentId Lägenhets-ID att filtrera på (valfritt)
+     * @return Lista med filtrerade uppgifter
+     */
     public List<Task> getAllTasks(String status, String priority, String tenantId, String apartmentId) {
-        // Använd specifika repository-metoder baserat på parametrarna
+        // Hämta alla uppgifter från databasen
+        List<Task> allTasks = taskRepository.findAll();
+        
+        // Använd filterservice för att filtrera uppgifterna
+        return taskFilterService.filterTasks(
+            allTasks, 
+            status, 
+            priority, 
+            tenantId, 
+            apartmentId,
+            null, // assignedToUserId
+            null, // assignedByUserId
+            null, // startDate
+            null, // endDate
+            null  // isOverdue
+        );
+    }
+    
+    /**
+     * En utökad version av getAllTasks som stödjer alla filtreringsparametrar
+     */
+    public List<Task> getFilteredTasks(
+            String status, 
+            String priority, 
+            String tenantId, 
+            String apartmentId,
+            String assignedToUserId,
+            String assignedByUserId,
+            LocalDate startDate,
+            LocalDate endDate,
+            Boolean isOverdue) {
+        
+        // Använd repository-metoder för att optimera databashämtning om möjligt
+        List<Task> initialTasks;
+        
         if (status != null && !status.isEmpty()) {
-            return taskRepository.findByStatus(status);
+            initialTasks = taskRepository.findByStatus(status);
         } else if (priority != null && !priority.isEmpty()) {
-            return taskRepository.findByPriority(priority);
+            initialTasks = taskRepository.findByPriority(priority);
         } else if (tenantId != null && !tenantId.isEmpty()) {
-            return taskRepository.findByTenantId(tenantId);
+            initialTasks = taskRepository.findByTenantId(tenantId);
         } else if (apartmentId != null && !apartmentId.isEmpty()) {
-            return taskRepository.findByApartmentId(apartmentId);
+            initialTasks = taskRepository.findByApartmentId(apartmentId);
+        } else if (startDate != null && endDate != null) {
+            initialTasks = taskRepository.findByDueDateBetween(startDate, endDate);
+        } else {
+            initialTasks = taskRepository.findAll();
         }
         
-        return taskRepository.findAll();
+        // Använd filterservice för att utföra resterande filtrering
+        return taskFilterService.filterTasks(
+            initialTasks, 
+            status, 
+            priority, 
+            tenantId, 
+            apartmentId,
+            assignedToUserId,
+            assignedByUserId,
+            startDate,
+            endDate,
+            isOverdue
+        );
     }
     
     public Optional<Task> getTaskById(String id) {
@@ -160,20 +220,16 @@ public class TaskService {
     }
     
     public List<Task> getTasksByAssignedUserId(String userId) {
-        return taskRepository.findByAssignedUserId(userId);
+        return getFilteredTasks(null, null, null, null, userId, null, null, null, null);
     }
     
     // Ny metod för att hämta uppgifter baserat på vem som tilldelade dem
     public List<Task> getTasksByAssignedByUserId(String userId) {
-        return taskRepository.findAll().stream()
-                .filter(task -> userId.equals(task.getAssignedByUserId()))
-                .toList();
+        return getFilteredTasks(null, null, null, null, null, userId, null, null, null);
     }
     
     public List<Task> getOverdueTasks() {
-        LocalDate today = LocalDate.now();
-        List<String> completedStatuses = List.of("COMPLETED", "APPROVED");
-        return taskRepository.findByDueDateBeforeAndStatusNotIn(today, completedStatuses);
+        return getFilteredTasks(null, null, null, null, null, null, null, null, true);
     }
     
     public Task createRecurringTask(Task task) {
@@ -194,6 +250,10 @@ public class TaskService {
     }
     
     public List<Task> getTasksByDateRange(LocalDate startDate, LocalDate endDate) {
-        return taskRepository.findByDueDateBetween(startDate, endDate);
+        if (startDate == null || endDate == null) {
+            throw new IllegalArgumentException("Both startDate and endDate are required");
+        }
+        
+        return getFilteredTasks(null, null, null, null, null, null, startDate, endDate, null);
     }
 } 
