@@ -485,13 +485,13 @@ const InterestGoogleDocsExport = () => {
                         : interest.showing?.apartmentAddress || 'Okänd lägenhet'}
                     </td>
                     <td style={{ border: '1px solid #e5e7eb', padding: '10px' }}>{interest.phone || interest.showing?.contactPhone || 'Saknas'}</td>
-                    <td style={{ border: '1px solid #e5e7eb', padding: '10px' }}>
+                    <td style={{ border: '1px solid #e5e7eb', padding: '10px', color: '#ffffff' }}>
                       {interest.showing?.dateTime ? formatDateTime(interest.showing.dateTime) : '-'}
                     </td>
                     <td style={{ 
                       border: '1px solid #e5e7eb', 
                       padding: '10px',
-                      color: interest.showing ? getStatusColor({ status: interest.showing.status }) : getStatusColor(interest),
+                      color: '#ffffff',
                       fontWeight: 'bold'
                     }}>
                       {interest.showing ? formatShowingStatus({ status: interest.showing.status }) : formatShowingStatus(interest)}
