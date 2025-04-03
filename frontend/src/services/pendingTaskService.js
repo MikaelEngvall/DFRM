@@ -1,29 +1,17 @@
 import api from './api';
-import { getFromCache, saveToCache, addToCache, updateInCache, removeFromCache, CACHE_KEYS } from '../utils/cacheManager';
+import { getFromCache, saveToCache, addToCache, updateInCache, removeFromCache, invalidateCache, CACHE_KEYS } from '../utils/cacheManager';
+import { fetchWithCache, filterUniqueById, cleanId } from '../utils/dataService';
 
 const pendingTaskService = {
   // Hämta alla väntande uppgifter
   getAllPendingTasks: async (bypassCache = false) => {
-    try {
-      // Kontrollera om data finns i cache och om vi inte explicit vill gå förbi cachen
-      if (!bypassCache) {
-        const cachedData = getFromCache(CACHE_KEYS.PENDING_TASKS);
-        if (cachedData) return cachedData;
-      }
-      
-      // Hämta data från API om det inte finns i cache eller om vi vill gå förbi cachen
-      const response = await api.get('/api/pending-tasks');
-      
-      // Spara den nya datan i cache endast om API-anropet lyckades
-      if (response.data) {
-        saveToCache(CACHE_KEYS.PENDING_TASKS, response.data);
-      }
-      
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching pending tasks:', error);
-      throw error;
-    }
+    return fetchWithCache(
+      '/api/pending-tasks',
+      CACHE_KEYS.PENDING_TASKS,
+      bypassCache,
+      'väntande uppgift',
+      api.get
+    );
   },
 
   // Hämta en specifik väntande uppgift
@@ -66,7 +54,8 @@ const pendingTaskService = {
   updatePendingTask: async (id, taskData) => {
     try {
       // Uppdatera i databasen först
-      const response = await api.patch(`/api/pending-tasks/${id}`, taskData);
+      const cleanedId = cleanId(id);
+      const response = await api.patch(`/api/pending-tasks/${cleanedId}`, taskData);
       
       // Om databasen uppdaterades framgångsrikt, uppdatera cachen
       if (response.data) {
@@ -84,7 +73,8 @@ const pendingTaskService = {
   deletePendingTask: async (id) => {
     try {
       // Ta bort från databasen först
-      await api.delete(`/api/pending-tasks/${id}`);
+      const cleanedId = cleanId(id);
+      await api.delete(`/api/pending-tasks/${cleanedId}`);
       
       // Om borttagningen lyckades, uppdatera cachen
       removeFromCache(CACHE_KEYS.PENDING_TASKS, id);
@@ -98,7 +88,8 @@ const pendingTaskService = {
   approvePendingTask: async (id, approvalData) => {
     try {
       // Uppdatera i databasen först
-      const response = await api.post(`/api/pending-tasks/${id}/approve`, approvalData);
+      const cleanedId = cleanId(id);
+      const response = await api.post(`/api/pending-tasks/${cleanedId}/approve`, approvalData);
       
       // Om databasen uppdaterades framgångsrikt, uppdatera båda cacherna
       if (response.data) {
@@ -117,7 +108,8 @@ const pendingTaskService = {
   rejectPendingTask: async (id, rejectionReason) => {
     try {
       // Uppdatera i databasen först
-      const response = await api.post(`/api/pending-tasks/${id}/reject`, { reason: rejectionReason });
+      const cleanedId = cleanId(id);
+      const response = await api.post(`/api/pending-tasks/${cleanedId}/reject`, { reason: rejectionReason });
       
       // Om databasen uppdaterades framgångsrikt, uppdatera cachen
       if (response.data) {
@@ -208,79 +200,50 @@ const pendingTaskService = {
 
   // Hämta alla obehandlade uppgifter
   getUnreviewedTasks: async (bypassCache = false) => {
-    try {
-      // Försök hitta i cachen först
-      const cachedTasks = getFromCache(CACHE_KEYS.PENDING_TASKS);
-      if (cachedTasks && !bypassCache) {
-        return cachedTasks.filter(task => !task.reviewedBy);
-      }
-      
-      const response = await api.get('/api/pending-tasks/for-review');
-      
-      // Säkerställ att vi inte har duplicerade uppgifter baserat på ID
-      if (response.data && Array.isArray(response.data)) {
-        const uniqueIds = new Set();
-        const uniqueTasks = response.data.filter(task => {
-          if (!task.id || uniqueIds.has(task.id)) {
-            console.warn("Filtrerar bort duplicerad/ogiltig uppgift:", task);
-            return false;
-          }
-          uniqueIds.add(task.id);
-          return true;
-        });
-        
-        // Logga om vi filtrerade bort något
-        if (uniqueTasks.length !== response.data.length) {
-          console.warn(`Filtrerade bort ${response.data.length - uniqueTasks.length} duplicerade uppgifter`);
-        }
-        
-        // Spara unika uppgifter i cachen
-        saveToCache(CACHE_KEYS.PENDING_TASKS, uniqueTasks);
-        
-        return uniqueTasks;
-      }
-      
-      saveToCache(CACHE_KEYS.PENDING_TASKS, response.data);
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching unreviewed tasks:', error);
-      throw error;
-    }
+    return fetchWithCache(
+      '/api/pending-tasks/for-review',
+      CACHE_KEYS.PENDING_TASKS,
+      bypassCache,
+      'obehandlad uppgift',
+      api.get
+    );
   },
 
   getForReview: async () => {
-    try {
-      const response = await api.get('/api/pending-tasks/for-review');
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching pending tasks for review:', error);
-      throw error;
-    }
+    return fetchWithCache(
+      '/api/pending-tasks/for-review',
+      CACHE_KEYS.PENDING_TASKS_FOR_REVIEW,
+      false,
+      'uppgift för granskning',
+      api.get
+    );
   },
   
   getApproved: async () => {
-    try {
-      const response = await api.get('/api/pending-tasks/approved');
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching approved pending tasks:', error);
-      throw error;
-    }
+    return fetchWithCache(
+      '/api/pending-tasks/approved', 
+      CACHE_KEYS.PENDING_TASKS_APPROVED,
+      false,
+      'godkänd uppgift',
+      api.get
+    );
   },
   
   getEmailReports: async () => {
-    try {
-      const response = await api.get('/api/pending-tasks/email-reports');
-      return response.data;
-    } catch (error) {
-      console.error('Error fetching email reports:', error);
-      throw error;
-    }
+    return fetchWithCache(
+      '/api/pending-tasks/email-reports',
+      CACHE_KEYS.EMAIL_REPORTS,
+      false,
+      'e-postrapport',
+      api.get
+    );
   },
   
   checkEmails: async () => {
     try {
       const response = await api.post('/api/pending-tasks/check-emails');
+      // Invalidera cache för e-postrapporter vid manuell kontroll
+      invalidateCache(CACHE_KEYS.EMAIL_REPORTS);
       return response.data;
     } catch (error) {
       console.error('Error checking email reports:', error);

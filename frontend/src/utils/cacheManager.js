@@ -18,8 +18,11 @@ export const CACHE_KEYS = {
   SHOWINGS: 'showings',
   KEYS: 'cached_keys',
   PENDING_TASKS: 'cached_pending_tasks',
+  PENDING_TASKS_FOR_REVIEW: 'cached_pending_tasks_for_review',
+  PENDING_TASKS_APPROVED: 'cached_pending_tasks_approved',
   UNREVIEWED_COUNT: 'cached_unreviewed_count',
   INTERESTS_FOR_REVIEW: 'interests_for_review',
+  EMAIL_REPORTS: 'cached_email_reports',
 };
 
 // Standardtid innan cache anses vara för gammal (i millisekunder)

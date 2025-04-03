@@ -6,6 +6,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -18,6 +20,8 @@ import io.jsonwebtoken.security.Keys;
 
 @Service
 public class JwtService {
+
+    private static final Logger log = LoggerFactory.getLogger(JwtService.class);
 
     @Value("${jwt.secret}")
     private String secretKey;
@@ -72,16 +76,31 @@ public class JwtService {
     }
 
     public String extractUsername(String token) {
-        return extractClaim(token, Claims::getSubject);
+        try {
+            return extractClaim(token, Claims::getSubject);
+        } catch (Exception e) {
+            log.error("Fel vid extrahering av användarnamn från token: {}", e.getMessage());
+            return null;
+        }
     }
 
     public Date extractExpiration(String token) {
-        return extractClaim(token, Claims::getExpiration);
+        try {
+            return extractClaim(token, Claims::getExpiration);
+        } catch (Exception e) {
+            log.error("Fel vid extrahering av utgångsdatum från token: {}", e.getMessage());
+            return null;
+        }
     }
 
     public <T> T extractClaim(String token, Function<Claims, T> claimsResolver) {
-        final Claims claims = extractAllClaims(token);
-        return claimsResolver.apply(claims);
+        try {
+            final Claims claims = extractAllClaims(token);
+            return claimsResolver.apply(claims);
+        } catch (Exception e) {
+            log.error("Fel vid extrahering av anspråk från token: {}", e.getMessage());
+            throw e;
+        }
     }
 
     public Claims extractAllClaims(String token) {
@@ -91,17 +110,38 @@ public class JwtService {
                     .build()
                     .parseClaimsJws(token)
                     .getBody();
+        } catch (io.jsonwebtoken.security.SignatureException e) {
+            log.error("Ogiltig JWT-signatur: {}", e.getMessage());
+            throw new SecurityException("Ogiltig tokensignatur", e);
+        } catch (io.jsonwebtoken.ExpiredJwtException e) {
+            log.error("JWT-token har gått ut: {}", e.getMessage());
+            throw new SecurityException("Token har gått ut", e);
+        } catch (io.jsonwebtoken.MalformedJwtException e) {
+            log.error("Felaktigt formaterad JWT-token: {}", e.getMessage());
+            throw new SecurityException("Felaktig token", e);
         } catch (Exception e) {
-            throw new RuntimeException("Invalid JWT token", e);
+            log.error("Fel vid validering av JWT-token: {}", e.getMessage());
+            throw new SecurityException("Ogiltig token", e);
         }
     }
 
     public Boolean isTokenExpired(String token) {
-        return extractExpiration(token).before(new Date());
+        try {
+            Date expiration = extractExpiration(token);
+            return expiration != null && expiration.before(new Date());
+        } catch (Exception e) {
+            log.error("Fel vid kontroll av tokenutgång: {}", e.getMessage());
+            return true; // Anta att token är utgången om vi inte kan verifiera
+        }
     }
 
     public Boolean validateToken(String token, String username) {
-        final String extractedUsername = extractUsername(token);
-        return (extractedUsername.equals(username) && !isTokenExpired(token));
+        try {
+            final String extractedUsername = extractUsername(token);
+            return (extractedUsername != null && extractedUsername.equals(username) && !isTokenExpired(token));
+        } catch (Exception e) {
+            log.error("Fel vid validering av token: {}", e.getMessage());
+            return false;
+        }
     }
 } 

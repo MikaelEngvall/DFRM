@@ -3,15 +3,13 @@ package com.dfrm.filter;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.env.Environment;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -20,7 +18,6 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-import com.dfrm.model.User;
 import com.dfrm.repository.UserRepository;
 import com.dfrm.service.JwtService;
 import com.dfrm.service.TokenDecryptionService;
@@ -64,157 +61,109 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
-        final String token = authHeader.substring(7);
-        
-        // Kontrollera om token är krypterad
-        if (tokenDecryptionService.isEncryptedToken(token)) {
-            String decryptedToken = tokenDecryptionService.decryptToken(token);
+        try {
+            final String token = authHeader.substring(7);
             
-            if (decryptedToken != null) {
-                processJwtToken(request, decryptedToken);
-            } else {
-                log.warn("Dekryptering misslyckades - försöker med alternativ metod");
-                handleEncryptedToken(request, response, filterChain, token);
+            if (token == null || token.trim().isEmpty()) {
+                log.warn("Tom token detekterad");
+                sendUnauthorizedResponse(response, "Ogiltig token");
+                return;
             }
-        } else {
-            // Originallogik för okrypterad token
-            processJwtToken(request, token);
+            
+            // Kontrollera om token är krypterad
+            if (tokenDecryptionService.isEncryptedToken(token)) {
+                processEncryptedToken(request, response, token);
+            } else {
+                // Originallogik för okrypterad token
+                processJwtToken(request, response, token);
+            }
+        } catch (Exception e) {
+            log.error("Oväntat fel vid tokenhantering", e);
+            sendUnauthorizedResponse(response, "Autentiseringsfel");
+            return;
         }
 
         filterChain.doFilter(request, response);
     }
     
-    private void processJwtToken(HttpServletRequest request, String token) {
-        String userEmail = null;
-        try {
-            userEmail = jwtService.extractUsername(token);
-        } catch (Exception e) {
-            log.warn("Kunde inte extrahera användarnamn från token: {}", e.getMessage());
-            return;
-        }
-
-        if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
-            
-            if (jwtService.validateToken(token, userDetails.getUsername())) {
-                Collection<SimpleGrantedAuthority> authorities = extractAuthorities(token);
-                
-                if (authorities.isEmpty()) {
-                    log.warn("Inga behörigheter hittades i JWT-token. Använder behörigheter från UserDetails.");
-                    authorities = userDetails.getAuthorities().stream()
-                        .map(auth -> new SimpleGrantedAuthority(auth.getAuthority()))
-                        .collect(Collectors.toList());
-                }
-                
-                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                    userDetails,
-                    null,
-                    authorities
-                );
-                
-                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                SecurityContextHolder.getContext().setAuthentication(authToken);
-            }
+    private void processEncryptedToken(HttpServletRequest request, HttpServletResponse response, String token) throws IOException {
+        String decryptedToken = tokenDecryptionService.decryptToken(token);
+        
+        if (decryptedToken != null && !decryptedToken.trim().isEmpty()) {
+            // Använd dekrypterad token för autentisering
+            processJwtToken(request, response, decryptedToken);
+        } else {
+            // Dekryptering misslyckades, token är ogiltig
+            log.warn("Dekryptering av token misslyckades");
+            sendUnauthorizedResponse(response, "Ogiltig token");
         }
     }
     
-    private void handleEncryptedToken(
-            HttpServletRequest request, 
-            HttpServletResponse response, 
-            FilterChain filterChain,
-            String encryptedToken) throws ServletException, IOException {
-        
+    private void processJwtToken(HttpServletRequest request, HttpServletResponse response, String token) throws IOException {
         try {
-            // Försök hitta email från request eller cookies
-            String userEmail = extractUserEmailFromRequest(request);
+            String userEmail = jwtService.extractUsername(token);
             
-            if (userEmail == null || userEmail.isEmpty()) {
-                log.warn("Kunde inte extrahera användarens email från request");
+            if (userEmail == null || userEmail.trim().isEmpty()) {
+                log.warn("Ingen användare i token");
+                sendUnauthorizedResponse(response, "Ogiltig token");
                 return;
             }
             
-            // Hämta användaren direkt från repository för att få roll
-            Optional<User> userOpt = userRepository.findByEmail(userEmail);
-            
-            if (userOpt.isEmpty()) {
-                log.warn("Kunde inte hitta användare med email: {}", userEmail);
+            // Validera att användaren existerar
+            if (!userRepository.existsByEmail(userEmail)) {
+                log.warn("Användare hittades inte: {}", userEmail);
+                sendUnauthorizedResponse(response, "Okänd användare");
                 return;
             }
             
-            User user = userOpt.get();
-            
-            // Använd UserDetailsService för att få UserDetails
-            UserDetails userDetails = userDetailsService.loadUserByUsername(userEmail);
-            
-            // Skapa manuellt authorities baserat på användarens roll
-            List<SimpleGrantedAuthority> authorities = List.of(
-                new SimpleGrantedAuthority(user.getRole()),
-                new SimpleGrantedAuthority(user.getRole().startsWith("ROLE_") ? 
-                    user.getRole() : "ROLE_" + user.getRole())
-            );
-            
-            // Skapa authentication token
-            UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
-                userDetails,
-                null,
-                authorities
-            );
-            
-            authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-            SecurityContextHolder.getContext().setAuthentication(authToken);
-            
+            if (SecurityContextHolder.getContext().getAuthentication() == null) {
+                UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
+                
+                if (jwtService.validateToken(token, userDetails.getUsername())) {
+                    // Extrahera behörigheter från token
+                    Collection<SimpleGrantedAuthority> authorities = extractAuthorities(token);
+                    
+                    if (authorities.isEmpty()) {
+                        // Använd behörigheter från UserDetails som en fallback
+                        authorities = userDetails.getAuthorities().stream()
+                            .map(auth -> new SimpleGrantedAuthority(auth.getAuthority()))
+                            .collect(Collectors.toList());
+                        
+                        // Om fortfarande inga behörigheter, detta är ett säkerhetsproblem
+                        if (authorities.isEmpty()) {
+                            log.error("Användare utan behörigheter: {}", userEmail);
+                            sendUnauthorizedResponse(response, "Otillräckliga behörigheter");
+                            return;
+                        }
+                    }
+                    
+                    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                        userDetails,
+                        null,
+                        authorities
+                    );
+                    
+                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    SecurityContextHolder.getContext().setAuthentication(authToken);
+                    log.debug("Autentisering lyckades för användare: {}", userEmail);
+                } else {
+                    log.warn("Token validering misslyckades för användare: {}", userEmail);
+                    sendUnauthorizedResponse(response, "Ogiltig token");
+                }
+            }
         } catch (Exception e) {
-            log.error("Fel vid hantering av krypterad token: {}", e.getMessage(), e);
+            log.error("Fel vid bearbetning av JWT-token: {}", e.getMessage());
+            sendUnauthorizedResponse(response, "Autentiseringsfel");
         }
     }
     
-    private String extractUserEmailFromRequest(HttpServletRequest request) {
-        // 1. Försök med request parameter
-        String userEmail = request.getParameter("userEmail");
-        if (userEmail != null && !userEmail.isEmpty()) {
-            return userEmail;
-        }
-        
-        // 2. Försök med cookies
-        jakarta.servlet.http.Cookie[] cookies = request.getCookies();
-        if (cookies != null) {
-            for (jakarta.servlet.http.Cookie cookie : cookies) {
-                if ("userEmail".equals(cookie.getName())) {
-                    return cookie.getValue();
-                }
-            }
-        }
-        
-        // 3. Försök extrahera email från URL mönster om det finns med
-        String requestURI = request.getRequestURI();
-        String[] segments = requestURI.split("/");
-        for (String segment : segments) {
-            if (segment.contains("@")) {
-                return segment;
-            }
-        }
-        
-        // 4. Kolla om någon tidigare authentication finns
-        Authentication existingAuth = SecurityContextHolder.getContext().getAuthentication();
-        if (existingAuth != null && existingAuth.getPrincipal() instanceof UserDetails) {
-            return ((UserDetails) existingAuth.getPrincipal()).getUsername();
-        }
-        
-        // 5. Som en sista utväg, extrahera från en parameter med annat namn?
-        for (String paramName : Collections.list(request.getParameterNames())) {
-            String value = request.getParameter(paramName);
-            if (value != null && value.contains("@")) {
-                return value;
-            }
-        }
-        
-        // 6. Kolla begäranuppsättningen
-        Object userAttr = request.getAttribute("user");
-        if (userAttr instanceof String && ((String) userAttr).contains("@")) {
-            return (String) userAttr;
-        }
-        
-        return null;
+    /**
+     * Skickar en 401 Unauthorized-respons med meddelande
+     */
+    private void sendUnauthorizedResponse(HttpServletResponse response, String message) throws IOException {
+        response.setStatus(HttpStatus.UNAUTHORIZED.value());
+        response.setContentType("application/json");
+        response.getWriter().write("{\"error\":\"" + message + "\"}");
     }
     
     private Collection<SimpleGrantedAuthority> extractAuthorities(String token) {
@@ -241,7 +190,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 log.warn("Ingen roll hittades i JWT-token");
             }
         } catch (Exception e) {
-                log.warn("Kunde inte extrahera roller från token", e);
+            log.warn("Kunde inte extrahera roller från token: {}", e.getMessage());
         }
         
         return Collections.emptyList();
