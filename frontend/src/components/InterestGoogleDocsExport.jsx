@@ -479,10 +479,10 @@ const InterestGoogleDocsExport = () => {
                       {formatName(interest)}
                     </td>
                     <td style={{ border: '1px solid #e5e7eb', padding: '10px' }}>
-                      {interest.apartment 
+                      {(interest.apartment 
                         ? `${interest.apartment.streetAddress || ''}`.trim() || 
                           (interest.showing?.apartmentAddress || 'Okänd lägenhet')
-                        : interest.showing?.apartmentAddress || 'Okänd lägenhet'}
+                        : interest.showing?.apartmentAddress || 'Okänd lägenhet').substring(0, 25)}
                     </td>
                     <td style={{ border: '1px solid #e5e7eb', padding: '10px' }}>{interest.phone || interest.showing?.contactPhone || 'Saknas'}</td>
                     <td style={{ border: '1px solid #e5e7eb', padding: '10px', color: '#ffffff' }}>
@@ -531,10 +531,10 @@ const InterestGoogleDocsExport = () => {
                       {formatName(interest)}
                     </td>
                     <td style={{ border: '1px solid #e5e7eb', padding: '10px' }}>
-                      {interest.apartment 
+                      {(interest.apartment 
                         ? `${interest.apartment.streetAddress || ''}`.trim() || 
                           (interest.showing?.apartmentAddress || 'Okänd lägenhet')
-                        : interest.showing?.apartmentAddress || 'Okänd lägenhet'}
+                        : interest.showing?.apartmentAddress || 'Okänd lägenhet').substring(0, 25)}
                     </td>
                     <td style={{ border: '1px solid #e5e7eb', padding: '10px' }}>{interest.phone || 'Saknas'}</td>
                   </tr>
