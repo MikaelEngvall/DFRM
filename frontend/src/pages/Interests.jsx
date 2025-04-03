@@ -11,6 +11,7 @@ import EmailModal from '../components/EmailModal';
 import { useNavigate } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 import { createLogger } from '../utils/logger';
+import InterestGoogleDocsExport from '../components/InterestGoogleDocsExport';
 
 // Skapa en logger för denna komponent
 const logger = createLogger('Interests');
@@ -20,7 +21,7 @@ const INTEREST_VIEWS = {
   REVIEWED: 'reviewed'
 };
 
-const Interests = () => {
+const Interests = ({ view = 'list' }) => {
   const { t } = useLocale();
   const navigate = useNavigate();
   const { user: currentUser } = useAuth();
@@ -485,6 +486,16 @@ const Interests = () => {
     );
   };
 
+  // Om vi visar export-vyn, visa Google Docs-exportkomponenten
+  if (view === 'export-to-google-docs') {
+    return <InterestGoogleDocsExport />;
+  }
+
+  // Lägg till en knapp för Google Docs-export
+  const exportToGoogleDocs = () => {
+    navigate('/interests/export-to-google-docs');
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-full">
@@ -495,51 +506,40 @@ const Interests = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 min-h-screen">
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
         <Title level="h1">
           {currentView === INTEREST_VIEWS.UNREVIEWED 
             ? t('interests.title')
             : t('interests.reviewedTitle')}
         </Title>
-        <div className="flex space-x-2">
-          <button
-            onClick={toggleView}
-            title={currentView === INTEREST_VIEWS.UNREVIEWED 
-              ? t('interests.showReviewed') 
-              : t('interests.showUnreviewed')}
-            className="bg-blue-600 text-white px-3 py-1.5 text-sm rounded-md hover:bg-blue-700 flex items-center"
+        <div className="flex space-x-3 mt-3 md:mt-0">
+          <button 
+            className="flex items-center px-3 py-2 text-sm font-medium rounded-md text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700 dark:hover:bg-gray-700"
+            onClick={exportToExcel}
           >
-            <ArrowsUpDownIcon className="h-4 w-4 mr-1.5" />
-            {currentView === INTEREST_VIEWS.UNREVIEWED 
-              ? t('interests.showReviewed') 
-              : t('interests.showUnreviewed')}
+            <DocumentTextIcon className="h-5 w-5 mr-2" />
+            {t('export')}
           </button>
-
-          {/* Exportera till Excel knapp (visas endast i granskade vyn) */}
-          {currentView === INTEREST_VIEWS.REVIEWED && (
-            <button
-              onClick={exportToExcel}
-              title={t('interests.actions.exportToExcel')}
-              className="bg-green-600 text-white px-3 py-1.5 text-sm rounded-md hover:bg-green-700 flex items-center"
-              disabled={isLoading}
-            >
-              <DocumentTextIcon className="h-4 w-4 mr-1.5" />
-              {t('interests.actions.exportToExcel')}
-            </button>
-          )}
-          
-          <button
-            onClick={() => {
-              fetchInterests(true);
-              fetchReviewedInterests(true);
-            }}
-            title={t('common.forceUpdate')}
-            className="bg-blue-500 text-white px-3 py-1.5 text-sm rounded-md hover:bg-blue-600 flex items-center"
+          <button 
+            className="flex items-center px-3 py-2 text-sm font-medium rounded-md text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700 dark:hover:bg-gray-700"
+            onClick={exportToGoogleDocs}
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-            {t('common.forceUpdate')}
+            <DocumentTextIcon className="h-5 w-5 mr-2" />
+            Till Google Docs
+          </button>
+          <button 
+            className="flex items-center px-3 py-2 text-sm font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-900 dark:text-indigo-200 dark:hover:bg-indigo-800"
+            onClick={toggleView}
+          >
+            <ArrowsUpDownIcon className="h-5 w-5 mr-2" />
+            {currentView === INTEREST_VIEWS.UNREVIEWED ? t('interests.showReviewed') : t('interests.showUnreviewed')}
+          </button>
+          <button 
+            className="flex items-center px-3 py-2 text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800"
+            onClick={() => openEmailModal()}
+          >
+            <EnvelopeIcon className="h-5 w-5 mr-2" />
+            {t('send')}
           </button>
         </div>
       </div>

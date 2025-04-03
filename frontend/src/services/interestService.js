@@ -323,6 +323,20 @@ export const interestService = {
       console.error('Fel vid hämtning av intresseanmälningar för granskning:', error);
       throw error;
     }
+  },
+  
+  getDetailedShowings: async () => {
+    try {
+      console.log('Hämtar detaljerade visningsuppgifter från API');
+      const timestamp = new Date().getTime();
+      const response = await api.get(`/api/showings?t=${timestamp}`);
+      
+      console.log(`Hämtade ${response.data.length} visningar`);
+      return response.data;
+    } catch (error) {
+      console.error('Fel vid hämtning av visningsdetaljer:', error);
+      throw error;
+    }
   }
 };
 

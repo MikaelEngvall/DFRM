@@ -138,6 +138,14 @@ const App = () => {
                     </PrivateRoute>
                   } />
                   
+                  <Route path="/interests/export-to-google-docs" element={
+                    <PrivateRoute requiredRoles={['ADMIN', 'SUPERADMIN']}>
+                      <NavigationWrapper>
+                        <Interests view="export-to-google-docs" />
+                      </NavigationWrapper>
+                    </PrivateRoute>
+                  } />
+                  
                   <Route path="/calendar" element={
                     <PrivateRoute>
                       <NavigationWrapper>

@@ -1,0 +1,68 @@
+"interests": {
+    "title": "Intresseanmälningar",
+    "searchPlaceholder": "Sök efter namn, e-post eller adress...",
+    "noInterests": "Inga intresseanmälningar hittades",
+    "addNew": "Lägg till ny intresseanmälan",
+    "filter": "Filtrera",
+    "showAll": "Visa alla",
+    "showReviewed": "Visa granskade",
+    "showUnreviewed": "Visa ogranskade",
+    "thisWeek": "Denna vecka",
+    "completed": "Slutförda",
+    "status": {
+        "NEW": "Ny",
+        "REVIEWED": "Granskad",
+        "REJECTED": "Avvisad",
+        "SHOWING_SCHEDULED": "Visning bokad"
+    },
+    "fields": {
+        "apartment": "Lägenhet",
+        "firstName": "Förnamn",
+        "lastName": "Efternamn",
+        "email": "E-post",
+        "phone": "Telefon",
+        "received": "Mottagen",
+        "status": "Status",
+        "notes": "Anteckningar",
+        "showingScheduled": "Visningstid"
+    },
+    "modal": {
+        "title": "Intresseanmälan",
+        "titleEdit": "Redigera intresseanmälan",
+        "save": "Spara",
+        "cancel": "Avbryt",
+        "delete": "Ta bort",
+        "review": "Granska",
+        "reject": "Avvisa",
+        "schedule": "Boka visning",
+        "close": "Stäng",
+        "deleteConfirm": "Är du säker på att du vill ta bort denna intresseanmälan?",
+        "deleteSuccess": "Intresseanmälan har tagits bort",
+        "deleteError": "Fel vid borttagning av intresseanmälan",
+        "saveSuccess": "Intresseanmälan har sparats",
+        "saveError": "Fel vid sparande av intresseanmälan"
+    },
+    "actions": {
+        "view": "Visa",
+        "edit": "Redigera",
+        "delete": "Ta bort",
+        "add": "Lägg till",
+        "checkEmails": "Läs e-post"
+    },
+    "errors": {
+        "fetchFailed": "Kunde inte hämta intresseanmälningar",
+        "saveFailed": "Kunde inte spara intresseanmälan",
+        "deleteFailed": "Kunde inte ta bort intresseanmälan"
+    },
+    "messages": {
+        "emailCheckSuccess": "E-post har lästs framgångsrikt",
+        "emailCheckError": "Fel vid läsning av e-post"
+    },
+    "export": {
+        "title": "Exportera intresseanmälningar till Google Docs",
+        "instructions": "Tabellerna nedan innehåller alla intresseanmälningar formaterade för Google Docs. Klicka på knappen för att kopiera tabellerna till urklipp. Öppna sedan ett nytt Google Docs-dokument och klistra in med Ctrl+V.",
+        "copyButton": "Kopiera till urklipp",
+        "copySuccess": "Data kopierad! Öppna ett nytt Google Docs-dokument och klistra in (Ctrl+V) för att se dina tabeller.",
+        "gdocsInstructions": "Tabellerna är formaterade med kolumnbredd och stilar. Efter inklistring kan du behöva justera bredden genom att markera tabellen och använda Tabell > Tabell-egenskaper i Google Docs."
+    }
+} 
