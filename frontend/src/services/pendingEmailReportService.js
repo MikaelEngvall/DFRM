@@ -1,6 +1,10 @@
 import api from './api';
 import { invalidateCache, CACHE_KEYS } from '../utils/cacheManager';
 import { fetchWithCache, cleanId } from '../utils/dataService';
+import { createLogger } from '../utils/logger';
+
+// Skapa en logger för denna service
+const logger = createLogger('PendingEmailReportService');
 
 const pendingEmailReportService = {
   /**
@@ -27,10 +31,10 @@ const pendingEmailReportService = {
   convertToTask: async (id, taskData) => {
     try {
       const cleanedId = cleanId(id);
-      console.log(`Försöker konvertera e-postrapport med rensat ID: ${cleanedId}`);
+      logger.debug(`Försöker konvertera e-postrapport med rensat ID: ${cleanedId}`);
       
       const endpoint = `/api/pending-tasks/${cleanedId}/convert-to-task`;
-      console.log(`Använder endpoint: ${endpoint}`);
+      logger.debug(`Använder endpoint: ${endpoint}`);
       
       const response = await api.post(endpoint, taskData);
       
@@ -39,7 +43,7 @@ const pendingEmailReportService = {
       
       return response.data;
     } catch (error) {
-      console.error('Fel vid konvertering av e-postrapport till uppgift:', error);
+      logger.error('Fel vid konvertering av e-postrapport till uppgift:', error);
       throw error;
     }
   },
@@ -54,10 +58,10 @@ const pendingEmailReportService = {
   rejectEmailReport: async (id, reviewedById, reason) => {
     try {
       const cleanedId = cleanId(id);
-      console.log(`Avvisar e-postrapport med rensat ID: ${cleanedId}`);
+      logger.debug(`Avvisar e-postrapport med rensat ID: ${cleanedId}`);
       
       const endpoint = `/api/pending-tasks/${cleanedId}/reject-email`;
-      console.log(`Använder endpoint för avvisning: ${endpoint}`);
+      logger.debug(`Använder endpoint för avvisning: ${endpoint}`);
       
       const response = await api.post(endpoint, {
         reviewedById,
@@ -69,7 +73,7 @@ const pendingEmailReportService = {
       
       return response.data;
     } catch (error) {
-      console.error('Fel vid avvisning av e-postrapport:', error);
+      logger.error('Fel vid avvisning av e-postrapport:', error);
       throw error;
     }
   }

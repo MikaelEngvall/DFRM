@@ -10,6 +10,10 @@ import { EnvelopeIcon, CalendarIcon, ClockIcon, ArrowsUpDownIcon, DocumentTextIc
 import EmailModal from '../components/EmailModal';
 import { useNavigate } from 'react-router-dom';
 import * as XLSX from 'xlsx';
+import { createLogger } from '../utils/logger';
+
+// Skapa en logger för denna komponent
+const logger = createLogger('Interests');
 
 const INTEREST_VIEWS = {
   UNREVIEWED: 'unreviewed',
@@ -95,32 +99,32 @@ const Interests = () => {
   const fetchInterests = async (bypassCache = false) => {
     try {
       setIsLoading(true);
-      console.log('Hämtar intresseanmälningar och kontrollerar e-post för nya intresseanmälningar');
+      logger.info('Hämtar intresseanmälningar och kontrollerar e-post för nya intresseanmälningar');
       
       // Först kontrollera e-post för nya intresseanmälningar
       try {
         await interestService.checkEmails();
-        console.log('E-postkontroll för intresseanmälningar slutförd');
+        logger.debug('E-postkontroll för intresseanmälningar slutförd');
       } catch (emailError) {
-        console.error('Fel vid kontroll av intresse-e-post:', emailError);
+        logger.error('Fel vid kontroll av intresse-e-post:', emailError);
         // Fortsätt ändå med att hämta befintliga intresseanmälningar
       }
       
       // Sedan hämta alla intresseanmälningar (inklusive de som precis processades)
       const data = await interestService.getForReview(true);
       
-      console.log('Hämtade intresseanmälningar:', data);
+      logger.debug('Hämtade intresseanmälningar:', data);
       if (data && Array.isArray(data)) {
         setInterests(data);
         if (data.length === 0) {
-          console.log('Inga intresseanmälningar hittades för granskning');
+          logger.info('Inga intresseanmälningar hittades för granskning');
         }
       } else {
-        console.warn('Oväntat svar från API:et:', data);
+        logger.warn('Oväntat svar från API:et:', data);
         setInterests([]);
       }
     } catch (err) {
-      console.error('Error fetching interests:', err);
+      logger.error('Error fetching interests:', err);
       setError(t('common.error'));
     } finally {
       setIsLoading(false);

@@ -10,6 +10,10 @@ import Autocomplete from '../components/Autocomplete';
 import { PaperAirplaneIcon } from '@heroicons/react/24/outline';
 import TaskMessages from '../components/TaskMessages';
 import { ChevronLeftIcon, ChevronRightIcon, InformationCircleIcon } from '@heroicons/react/24/outline';
+import { createLogger } from '../utils/logger';
+
+// Skapa en logger för denna komponent
+const logger = createLogger('Calendar');
 
 const Calendar = () => {
   const { t, currentLocale } = useLocale();
@@ -63,6 +67,8 @@ const Calendar = () => {
     fetchCalendarData();
     
     // Lägg till en loggning för att se vilka dagar i månaden som har uppgifter
+    logger.debug('Kalendervy uppdaterad med datum:', currentDate);
+    
     const checkTasksDistribution = () => {
       const tasksPerDay = {};
       tasks.forEach(task => {
@@ -126,22 +132,22 @@ const Calendar = () => {
       const startDate = formatDateToLocalString(firstDay);
       const endDate = formatDateToLocalString(lastDay);
       
-      console.log(`Kalender: Hämtar uppgifter för perioden: ${startDate} till ${endDate}`);
+      logger.debug(`Kalender: Hämtar uppgifter för perioden: ${startDate} till ${endDate}`);
       
       // Hämta alla uppgifter för månaden, tvinga hämtning från API genom att sätta bypassCache till true
-      console.log('Kalender: Anropar taskService.getTasksByDateRange...');
+      logger.debug('Kalender: Anropar taskService.getTasksByDateRange...');
       
       // Försök flera gånger om det behövs, med escalation till mer direkta metoder
       let fetchedTasks = [];
       try {
         // Först försöker vi med vanligt API-anrop
         fetchedTasks = await taskService.getTasksByDateRange(startDate, endDate, true);
-        console.log(`Kalender: Mottog ${fetchedTasks.length} uppgifter för perioden via API`);
+        logger.debug(`Kalender: Mottog ${fetchedTasks.length} uppgifter för perioden via API`);
       } catch (error) {
-        console.error('Kalender: Kunde inte hämta uppgifter via API:', error);
+        logger.error('Kalender: Kunde inte hämta uppgifter via API:', error);
         
         // Om API misslyckas, försök hämta alla uppgifter och filtrera manuellt
-        console.log('Kalender: Försöker med direkt hämtning av alla uppgifter...');
+        logger.debug('Kalender: Försöker med direkt hämtning av alla uppgifter...');
         const allTasks = await taskService.getAllTasks(true);
         
         // Filtrera manuellt baserat på datum
@@ -165,23 +171,23 @@ const Calendar = () => {
           }
         });
         
-        console.log(`Kalender: Filtrerade fram ${fetchedTasks.length} uppgifter manuellt`);
+        logger.debug(`Kalender: Filtrerade fram ${fetchedTasks.length} uppgifter manuellt`);
       }
       
       // Om användaren har rollen USER, filtrera uppgifter till endast användarens egna
       if (currentUser && !hasRole(['ADMIN', 'SUPERADMIN'])) {
-        console.log(`Kalender: USER kan se alla uppgifter men bara redigera egna`);
+        logger.debug(`Kalender: USER kan se alla uppgifter men bara redigera egna`);
       }
       
       // Verifiera att vi faktiskt får data
-      console.log(`Kalender: Mottog ${fetchedTasks.length} uppgifter för perioden`);
-      console.log('Kalender: Dagar i aktuell månad:', getDaysInMonth(year, month));
+      logger.debug(`Kalender: Mottog ${fetchedTasks.length} uppgifter för perioden`);
+      logger.debug('Kalender: Dagar i aktuell månad:', getDaysInMonth(year, month));
       
       if (fetchedTasks.length === 0) {
-        console.warn('Kalender: Varning - Inga uppgifter hämtades för den aktuella perioden');
-        console.warn('Kalender: Kontrollerar direkt i databasen/API om det verkligen finns uppgifter...');
+        logger.warn('Kalender: Varning - Inga uppgifter hämtades för den aktuella perioden');
+        logger.warn('Kalender: Kontrollerar direkt i databasen/API om det verkligen finns uppgifter...');
       } else {
-        console.log('Kalender: Exempel på hämtade uppgifter:', 
+        logger.debug('Kalender: Exempel på hämtade uppgifter:', 
           fetchedTasks.slice(0, 3).map(task => ({
             id: task.id,
             title: task.title,
@@ -191,10 +197,10 @@ const Calendar = () => {
       }
       
       // Normalisera datumsformatet för alla uppgifter
-      console.log('Kalender: Normaliserar datumformat för uppgifter...');
+      logger.debug('Kalender: Normaliserar datumformat för uppgifter...');
       const normalizedTasks = fetchedTasks.map(task => {
         if (!task.dueDate) {
-          console.log(`Kalender: Uppgift saknar förfallodatum:`, {id: task.id, title: task.title});
+          logger.debug(`Kalender: Uppgift saknar förfallodatum:`, {id: task.id, title: task.title});
           return task;
         }
         
@@ -206,15 +212,15 @@ const Calendar = () => {
               // ISO-format med tid
               const date = new Date(task.dueDate);
               normalizedDate = formatDateToLocalString(date);
-              console.log(`Kalender: Normaliserat ISO-datumformat för uppgift ${task.id}: ${task.dueDate} -> ${normalizedDate}`);
+              logger.debug(`Kalender: Normaliserat ISO-datumformat för uppgift ${task.id}: ${task.dueDate} -> ${normalizedDate}`);
             } else {
               // Redan i rätt format
               normalizedDate = task.dueDate;
-              console.log(`Kalender: Uppgift ${task.id} har redan korrekt datumformat: ${normalizedDate}`);
+              logger.debug(`Kalender: Uppgift ${task.id} har redan korrekt datumformat: ${normalizedDate}`);
             }
           } else if (task.dueDate instanceof Date) {
             normalizedDate = formatDateToLocalString(task.dueDate);
-            console.log(`Kalender: Normaliserat Date-objekt för uppgift ${task.id}: ${task.dueDate} -> ${normalizedDate}`);
+            logger.debug(`Kalender: Normaliserat Date-objekt för uppgift ${task.id}: ${task.dueDate} -> ${normalizedDate}`);
           }
           
           // Skapa ett Date-objekt för _dueDateObj för att underlätta filtrering
@@ -233,7 +239,7 @@ const Calendar = () => {
         }
       });
       
-      console.log(`Kalender: Uppgifter efter normalisering: ${normalizedTasks.length}`);
+      logger.debug(`Kalender: Uppgifter efter normalisering: ${normalizedTasks.length}`);
       
       // Gruppera uppgifter per dag för loggning
       const tasksByDay = {};
@@ -245,7 +251,7 @@ const Calendar = () => {
         }
       });
       
-      console.log('Kalender: Uppgifter per dag:', Object.keys(tasksByDay).map(day => `${day}: ${tasksByDay[day].length} uppgifter`));
+      logger.debug('Kalender: Uppgifter per dag:', Object.keys(tasksByDay).map(day => `${day}: ${tasksByDay[day].length} uppgifter`));
       
       // Normalisera showings och filtrera dem baserat på användarens roll
       let normalizedShowings = [];
@@ -273,13 +279,13 @@ const Calendar = () => {
             };
           });
           
-          console.log(`Kalender: Hämtade ${normalizedShowings.length} visningar för ADMIN/SUPERADMIN-användare`);
+          logger.debug(`Kalender: Hämtade ${normalizedShowings.length} visningar för ADMIN/SUPERADMIN-användare`);
         } catch (err) {
           console.error('Error fetching showings:', err);
           // Fortsätt trots fel med visningar - det är inte kritiskt
         }
       } else {
-        console.log('Kalender: Användaren har USER-roll, visar inga visningar');
+        logger.debug('Kalender: Användaren har USER-roll, visar inga visningar');
       }
       
       // Sätt state baserat på normaliserad data
@@ -317,7 +323,7 @@ const Calendar = () => {
         }
       }
     } catch (error) {
-      console.error('Fel vid hämtning av kalenderdata:', error);
+      logger.error('Fel vid hämtning av kalenderdata:', error);
       setError(t('calendar.errors.fetchFailed'));
       setIsLoading(false);
     }
@@ -655,11 +661,11 @@ const Calendar = () => {
               <span className="text-sm font-medium">{day}</span>
             </div>
             <div className="px-2 pb-1">
-              {/* Visa visningar först om användaren har behörighet */}
-              {hasRole(['ADMIN', 'SUPERADMIN']) && dayShowings.length > 0 && 
+              {// Visa visningar först om användaren har behörighet
+              hasRole(['ADMIN', 'SUPERADMIN']) && dayShowings.length > 0 && 
                dayShowings.map(showing => renderShowingItem(showing))}
               
-              {/* Sedan visa uppgifter */}
+              // Sedan visa uppgifter
               {dayTasks.length > 0 && dayTasks.map(task => renderTaskItem(task))}
             </div>
           </div>
@@ -679,8 +685,8 @@ const Calendar = () => {
         // Logga för specifik dag (för felsökning)
         const today = new Date();
         if (day === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
-          console.log(`Uppgifter för idag (${day}/${month+1}/${year}):`, dayTasks);
-          console.log(`Antal uppgifter för idag: ${dayTasks.length}`);
+          logger.info(`Uppgifter för idag (${day}/${month+1}/${year}):`, dayTasks);
+          logger.info(`Antal uppgifter för idag: ${dayTasks.length}`);
         }
         
         // Filtrera visningar för denna dag (behåll befintlig filtreringslogik för visningar)
@@ -724,13 +730,13 @@ const Calendar = () => {
               </span>
             </div>
             <div className="px-2 pb-1">
-              {/* Visa visningar först */}
-              {dayShowings.length > 0 && dayShowings.map(showing => renderShowingItem(showing))}
+              {// Visa visningar först
+              dayShowings.length > 0 && dayShowings.map(showing => renderShowingItem(showing))}
               
-              {/* Sedan visa uppgifter */}
+              // Sedan visa uppgifter
               {dayTasks.length > 0 && dayTasks.map(task => renderTaskItem(task))}
               
-              {/* Visa meddelande om inga händelser */}
+              // Visa meddelande om inga händelser
               {dayTasks.length === 0 && dayShowings.length === 0 && (
                 <div className="text-xs text-gray-400 dark:text-gray-600 p-1">
                   {t('calendar.noEvents')}
@@ -922,8 +928,10 @@ const Calendar = () => {
     try {
       if (selectedShowing) {
         await showingService.update(selectedShowing.id, showingFormData);
+        logger.info('Visning uppdaterad:', selectedShowing.id);
       } else {
-        await showingService.create(showingFormData);
+        const result = await showingService.create(showingFormData);
+        logger.info('Ny visning skapad:', result.id);
       }
       await fetchCalendarData();
       setIsShowingEditModalOpen(false);

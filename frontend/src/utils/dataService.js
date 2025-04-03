@@ -1,4 +1,8 @@
 import { getFromCache, saveToCache, CACHE_KEYS } from './cacheManager';
+import { createLogger } from './logger';
+
+// Skapa en logger för denna utility
+const logger = createLogger('DataService');
 
 /**
  * Validerar och filtrerar data för att säkerställa unika ID:n
@@ -8,14 +12,14 @@ import { getFromCache, saveToCache, CACHE_KEYS } from './cacheManager';
  */
 export const filterUniqueById = (data, entityName) => {
   if (!Array.isArray(data)) {
-    console.warn(`Ogiltig data för ${entityName} - inte en array`);
+    logger.warn(`Ogiltig data för ${entityName} - inte en array`);
     return [];
   }
 
   const uniqueIds = new Set();
   const uniqueItems = data.filter(item => {
     if (!item.id || uniqueIds.has(item.id)) {
-      console.warn(`Filtrerar bort duplicerat/ogiltigt ${entityName}:`, item);
+      logger.warn(`Filtrerar bort duplicerat/ogiltigt ${entityName}:`, item);
       return false;
     }
     uniqueIds.add(item.id);
@@ -24,7 +28,7 @@ export const filterUniqueById = (data, entityName) => {
 
   // Logga om vi filtrerade bort objekt
   if (uniqueItems.length !== data.length) {
-    console.warn(`Filtrerade bort ${data.length - uniqueItems.length} duplicerade ${entityName}`);
+    logger.warn(`Filtrerade bort ${data.length - uniqueItems.length} duplicerade ${entityName}`);
   }
 
   return uniqueItems;
@@ -59,32 +63,40 @@ export const fetchWithCache = async (
     // Kontrollera om data finns i cache och vi inte explicit vill gå förbi cachen
     if (!bypassCache) {
       const cachedData = getFromCache(cacheKey);
-      if (cachedData) return cachedData;
+      if (cachedData) {
+        logger.debug(`Använder cachad data för ${entityName} (${cachedData.length} objekt)`);
+        return cachedData;
+      }
     }
 
+    logger.info(`Hämtar ${entityName} från API: ${endpoint}`);
+    
     // Anropa API
     const response = await apiCall(endpoint);
     
     if (!response.data) {
-      console.warn(`Inget svar från API för ${entityName}`);
+      logger.warn(`Inget svar från API för ${entityName}`);
       return [];
     }
 
     // Validera och filtrera data
     if (Array.isArray(response.data)) {
+      logger.debug(`Mottog ${response.data.length} ${entityName} från API`);
       const uniqueItems = filterUniqueById(response.data, entityName);
       
       // Spara den filtrerade datan i cache
       saveToCache(cacheKey, uniqueItems);
+      logger.debug(`Sparade ${uniqueItems.length} ${entityName} i cache med nyckel ${cacheKey}`);
       
       return uniqueItems;
     }
     
     // Om vi fick något annat än en array
+    logger.debug(`Mottog enskilt ${entityName}-objekt från API`);
     saveToCache(cacheKey, response.data);
     return response.data;
   } catch (error) {
-    console.error(`Fel vid hämtning av ${entityName}:`, error);
+    logger.error(`Fel vid hämtning av ${entityName}:`, error);
     return [];
   }
 }; 

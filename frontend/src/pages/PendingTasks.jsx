@@ -9,6 +9,10 @@ import { useLocale } from '../contexts/LocaleContext';
 import { useAuth } from '../contexts/AuthContext';
 import { PaperAirplaneIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
 import TaskMessages from '../components/TaskMessages';
+import { createLogger } from '../utils/logger';
+
+// Skapa en logger för denna komponent
+const logger = createLogger('PendingTasks');
 
 const PendingTasks = () => {
   const { t, currentLocale } = useLocale();
@@ -98,7 +102,7 @@ const PendingTasks = () => {
       key: 'taskTitle',
       label: t('pendingTasks.fields.task'),
       render: (_, pendingTask) => {
-        console.log('Task data for row:', pendingTask);
+        logger.debug('Task data for row:', pendingTask);
         return pendingTask.task?.title || 
               (pendingTask.description || '-');
       }
@@ -203,7 +207,7 @@ const PendingTasks = () => {
       setApartments(apartmentsData);
       setTenants(tenantsData);
     } catch (err) {
-      console.error('Error fetching reference data:', err);
+      logger.error('Error fetching reference data:', err);
     }
   };
 
@@ -316,8 +320,8 @@ const PendingTasks = () => {
       // Filtrera också bort intresseanmälningar från e-postrapporter
       const filteredEmailReports = emailReportsData.filter(report => !isInterestRelated(report));
       
-      console.log(`Filtrerade bort ${pendingData.length - filteredPendingData.length} intresseanmälningar från ${pendingData.length} väntande uppgifter`);
-      console.log(`Filtrerade bort ${emailReportsData.length - filteredEmailReports.length} intresseanmälningar från ${emailReportsData.length} e-postrapporter`);
+      logger.debug(`Filtrerade bort ${pendingData.length - filteredPendingData.length} intresseanmälningar från ${pendingData.length} väntande uppgifter`);
+      logger.debug(`Filtrerade bort ${emailReportsData.length - filteredEmailReports.length} intresseanmälningar från ${emailReportsData.length} e-postrapporter`);
       
       setPendingTasks(filteredPendingData);
       setEmailReports(filteredEmailReports);
@@ -329,7 +333,7 @@ const PendingTasks = () => {
       setError(null);
     } catch (err) {
       setError(t('common.error'));
-      console.error('Error fetching pending tasks:', err);
+      logger.error('Error fetching pending tasks:', err);
     } finally {
       setLoading(false);
     }
@@ -341,16 +345,17 @@ const PendingTasks = () => {
       const approvedData = await pendingTaskService.getApproved();
       
       // Logga data för felsökning
-      console.log("Mottagna godkända uppgifter:", approvedData);
+      logger.debug("Mottagna godkända uppgifter:", approvedData);
       
       // Skriver mer detaljerad debug-info
       if (approvedData && Array.isArray(approvedData)) {
-        console.log(`Fick ${approvedData.length} godkända uppgifter:`);
+        logger.trace(`Fick ${approvedData.length} godkända uppgifter:`);
         approvedData.forEach((task, index) => {
-          console.log(`Uppgift ${index+1}:`);
-          console.log(`  ID: ${task.id}`);
-          console.log(`  ReviewedBy: ${task.reviewedBy ? (typeof task.reviewedBy === 'object' ? task.reviewedBy.firstName : task.reviewedBy) : 'ingen'}`);
-          console.log(`  Task: ${task.task ? task.task.title : 'ingen uppgift'}`);
+          logger.trace(`Uppgift ${index+1}:`, {
+            id: task.id,
+            reviewedBy: task.reviewedBy ? (typeof task.reviewedBy === 'object' ? task.reviewedBy.firstName : task.reviewedBy) : 'ingen',
+            task: task.task ? task.task.title : 'ingen uppgift'
+          });
         });
       }
       
@@ -369,7 +374,7 @@ const PendingTasks = () => {
                 };
               }
             } catch (err) {
-              console.error(`Kunde inte hämta användarinformation för ${task.reviewedBy}:`, err);
+              logger.error(`Kunde inte hämta användarinformation för ${task.reviewedBy}:`, err);
             }
           }
           return task;
@@ -380,7 +385,7 @@ const PendingTasks = () => {
       setApprovedTasks(enrichedApprovedTasks);
       return true;
     } catch (err) {
-      console.error('Error fetching approved tasks:', err);
+      logger.error('Error fetching approved tasks:', err);
       // FALLBACK: Om vi får 403 Forbidden, simulera tomma godkända uppgifter
       // Detta låter UI fungera även om backend inte är konfigurerad
       setApprovedTasks([]);
@@ -404,7 +409,7 @@ const PendingTasks = () => {
 
   const handleRowClick = (item) => {
     // Logga hela objektet för diagnostik
-    console.log("Klickad uppgift:", item);
+    logger.debug("Klickad uppgift:", item);
     
     setSelectedTask(item);
     
@@ -431,7 +436,7 @@ const PendingTasks = () => {
       const task = item.task || {};
       
       // Utskrift för debugging
-      console.log("Task-objekt som används för formulär:", task);
+      logger.debug("Task-objekt som används för formulär:", task);
       
       setFormData({
         title: task.title || item.description || '',
@@ -449,7 +454,7 @@ const PendingTasks = () => {
       });
       
       // Logga det populerade formuläret för felsökning
-      console.log("Populerat formulär:", formData);
+      logger.debug("Populerat formulär:", formData);
     }
     
     setOpenModal(true);
@@ -478,7 +483,7 @@ const PendingTasks = () => {
       
       // Skapa en kopia av formulärdatan och logga för felsökning
       let taskData = { ...formData };
-      console.log('Formulärdata före godkännande:', taskData);
+      logger.debug('Formulärdata före godkännande:', taskData);
       
       // Säkerställ att tenantId och apartmentId är strängar, inte objekt
       if (taskData.tenantId && typeof taskData.tenantId === 'object') {
@@ -505,34 +510,34 @@ const PendingTasks = () => {
           const isoDate = localDate.toISOString().split('T')[0] + 'T12:00:00.000Z';
           taskData.dueDate = isoDate;
           
-          console.log(`Origianl dueDate: ${taskData.dueDate}`);
-          console.log(`Korrigerat dueDate: ${isoDate}, dag: ${localDate.getDate()}`);
+          logger.debug(`Origianl dueDate: ${taskData.dueDate}`);
+          logger.debug(`Korrigerat dueDate: ${isoDate}, dag: ${localDate.getDate()}`);
         }
       }
 
       if (isEmailReport) {
         // Ta bort eventuellt prefix från ID:t
         const cleanId = selectedTask.id.replace('email-', '');
-        console.log('Konverterar e-postrapport med ID:', cleanId);
+        logger.debug('Konverterar e-postrapport med ID:', cleanId);
         
         // För felsökning
-        console.log('Fullständigt e-postrapport-objekt:', selectedTask);
+        logger.debug('Fullständigt e-postrapport-objekt:', selectedTask);
         
         try {
           // För e-postrapporter, konvertera till en uppgift med pendingEmailReportService
           const newTask = await pendingEmailReportService.convertToTask(cleanId, taskData);
-          console.log('Konverterad e-postrapport till uppgift:', newTask);
+          logger.debug('Konverterad e-postrapport till uppgift:', newTask);
         } catch (error) {
-          console.error('Fel vid konvertering av e-postrapport:', error);
+          logger.error('Fel vid konvertering av e-postrapport:', error);
           
           // Om vi får ett 404-fel, kan det vara för att ID:t fortfarande har fel format
           if (error.response && error.response.status === 404) {
             // Försök med ett annat ID-format: ta bort "task-" prefixet om det finns
             const alternativeId = cleanId.replace('task-', '');
-            console.log('Försöker med alternativt ID-format:', alternativeId);
+            logger.debug('Försöker med alternativt ID-format:', alternativeId);
             
             const newTask = await pendingEmailReportService.convertToTask(alternativeId, taskData);
-            console.log('Konverterad e-postrapport till uppgift med alternativt ID:', newTask);
+            logger.debug('Konverterad e-postrapport till uppgift med alternativt ID:', newTask);
           } else {
             // Återkasta felet om det inte var ett 404-fel
             throw error;
@@ -561,7 +566,7 @@ const PendingTasks = () => {
       setReviewComments('');
       resetForm();
     } catch (err) {
-      console.error('Error approving task:', err);
+      logger.error('Error approving task:', err);
       setError(t('pendingTasks.messages.approveError'));
     }
   };
@@ -572,7 +577,7 @@ const PendingTasks = () => {
       
       // Skapa en kopia av formulärdatan och logga för felsökning
       let taskData = { ...formData };
-      console.log('Formulärdata före avvisning:', taskData);
+      logger.debug('Formulärdata före avvisning:', taskData);
       
       // Säkerställ att tenantId och apartmentId är strängar, inte objekt
       if (taskData.tenantId && typeof taskData.tenantId === 'object') {
@@ -598,7 +603,7 @@ const PendingTasks = () => {
           const isoDate = localDate.toISOString().split('T')[0] + 'T12:00:00.000Z';
           taskData.dueDate = isoDate;
           
-          console.log(`Korrigerat dueDate för avvisning: ${isoDate}, dag: ${localDate.getDate()}`);
+          logger.debug(`Korrigerat dueDate för avvisning: ${isoDate}, dag: ${localDate.getDate()}`);
         }
       }
       
@@ -610,7 +615,7 @@ const PendingTasks = () => {
           reviewComments
         );
       } else {
-        console.log('Skickar avvisad uppgiftsdata till servern:', taskData);
+        logger.debug('Skickar avvisad uppgiftsdata till servern:', taskData);
         
         await taskService.updateTask(selectedTask.task.id, taskData);
         
@@ -633,7 +638,7 @@ const PendingTasks = () => {
       resetForm();
     } catch (err) {
       setError(t('pendingTasks.messages.rejectError'));
-      console.error('Error rejecting task:', err);
+      logger.error('Error rejecting task:', err);
     }
   };
   
@@ -661,11 +666,11 @@ const PendingTasks = () => {
     if (showApproved) {
       // När vi visar godkända uppgifter, visa bara de godkända
       if (approvedTasks && approvedTasks.length > 0) {
-        console.log(`Lägger till ${approvedTasks.length} godkända uppgifter till vyn`);
+        logger.debug(`Lägger till ${approvedTasks.length} godkända uppgifter till vyn`);
         approvedTasks.forEach(task => {
           if (task && task.id) {
             // Logga för debugging
-            console.log("Lägger till godkänd uppgift:", task.id, task);
+            logger.trace("Lägger till godkänd uppgift:", task);
             
             // Se till att task-objektet är meningsfullt och att reviewedBy-fältet finns
             const enhancedTask = {
@@ -723,7 +728,7 @@ const PendingTasks = () => {
     const finalData = Array.from(uniqueDataMap.values());
     
     // Logga för felsökning
-    console.log(`Visar ${finalData.length} unika objekt, varav ${finalData.filter(item => item.approved).length} godkända`);
+    logger.debug(`Visar ${finalData.length} unika objekt, varav ${finalData.filter(item => item.approved).length} godkända`);
     
     return finalData;
   };
@@ -783,7 +788,7 @@ const PendingTasks = () => {
                 await pendingTaskService.checkEmails();
                 fetchData();
               } catch (err) {
-                console.error('Fel vid läsning av felanmälnings-e-post:', err);
+                logger.error('Fel vid läsning av felanmälnings-e-post:', err);
                 setError(t('pendingTasks.messages.emailCheckError'));
               } finally {
                 setLoading(false);

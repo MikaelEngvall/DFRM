@@ -1,6 +1,10 @@
 import api from './api';
 import { getFromCache, saveToCache, addToCache, updateInCache, removeFromCache, invalidateCache, CACHE_KEYS } from '../utils/cacheManager';
 import { fetchWithCache, filterUniqueById, cleanId } from '../utils/dataService';
+import { createLogger } from '../utils/logger';
+
+// Skapa en logger för denna service
+const logger = createLogger('PendingTaskService');
 
 const pendingTaskService = {
   // Hämta alla väntande uppgifter
@@ -27,7 +31,7 @@ const pendingTaskService = {
       const response = await api.get(`/api/pending-tasks/${id}`);
       return response.data;
     } catch (error) {
-      console.error(`Error fetching pending task ${id}:`, error);
+      logger.error(`Error fetching pending task ${id}:`, error);
       throw error;
     }
   },
@@ -45,7 +49,7 @@ const pendingTaskService = {
       
       return response.data;
     } catch (error) {
-      console.error('Error creating pending task:', error);
+      logger.error('Error creating pending task:', error);
       throw error;
     }
   },
@@ -64,7 +68,7 @@ const pendingTaskService = {
       
       return response.data;
     } catch (error) {
-      console.error(`Error updating pending task ${id}:`, error);
+      logger.error(`Error updating pending task ${id}:`, error);
       throw error;
     }
   },
@@ -79,7 +83,7 @@ const pendingTaskService = {
       // Om borttagningen lyckades, uppdatera cachen
       removeFromCache(CACHE_KEYS.PENDING_TASKS, id);
     } catch (error) {
-      console.error(`Error deleting pending task ${id}:`, error);
+      logger.error(`Error deleting pending task ${id}:`, error);
       throw error;
     }
   },
@@ -99,7 +103,7 @@ const pendingTaskService = {
       
       return response.data;
     } catch (error) {
-      console.error(`Error approving pending task ${id}:`, error);
+      logger.error(`Error approving pending task ${id}:`, error);
       throw error;
     }
   },
@@ -118,7 +122,7 @@ const pendingTaskService = {
       
       return response.data;
     } catch (error) {
-      console.error(`Error rejecting pending task ${id}:`, error);
+      logger.error(`Error rejecting pending task ${id}:`, error);
       throw error;
     }
   },
@@ -135,7 +139,7 @@ const pendingTaskService = {
       const response = await api.get(`/api/pending-tasks/apartment/${apartmentId}`);
       return response.data;
     } catch (error) {
-      console.error(`Error fetching pending tasks for apartment ${apartmentId}:`, error);
+      logger.error(`Error fetching pending tasks for apartment ${apartmentId}:`, error);
       throw error;
     }
   },
@@ -152,7 +156,7 @@ const pendingTaskService = {
       const response = await api.get(`/api/pending-tasks/user/${userId}`);
       return response.data;
     } catch (error) {
-      console.error(`Error fetching pending tasks for user ${userId}:`, error);
+      logger.error(`Error fetching pending tasks for user ${userId}:`, error);
       throw error;
     }
   },
@@ -169,7 +173,7 @@ const pendingTaskService = {
       const response = await api.get(`/api/pending-tasks/status/${status}`);
       return response.data;
     } catch (error) {
-      console.error(`Error fetching pending tasks with status ${status}:`, error);
+      logger.error(`Error fetching pending tasks with status ${status}:`, error);
       throw error;
     }
   },
@@ -192,7 +196,7 @@ const pendingTaskService = {
       
       return count;
     } catch (error) {
-      console.error('Error calculating unreviewed count:', error);
+      logger.error('Error calculating unreviewed count:', error);
       // Om något går fel, returnera 0 istället för att kasta fel
       return 0;
     }
@@ -246,7 +250,7 @@ const pendingTaskService = {
       invalidateCache(CACHE_KEYS.EMAIL_REPORTS);
       return response.data;
     } catch (error) {
-      console.error('Error checking email reports:', error);
+      logger.error('Error checking email reports:', error);
       throw error;
     }
   }
