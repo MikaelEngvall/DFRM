@@ -1,5 +1,9 @@
 import axios from 'axios';
 import { getAuthToken, removeAuthToken } from '../utils/tokenStorage';
+import { validateJwtToken, handleAuthStatusError } from '../utils/errorHandler';
+import { createLogger } from '../utils/logger';
+
+const logger = createLogger('API');
 
 const api = axios.create({
   baseURL: 'http://localhost:8080',
@@ -14,19 +18,21 @@ api.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
     
-    try {
-      // Försök tolka JWT-token (base64-delen)
-      const base64Url = token.split('.')[1];
-      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-      const payload = JSON.parse(window.atob(base64));
+    // Använd valideringsfunktionen från errorHandler för att validera token
+    const validation = validateJwtToken(token);
+    
+    // Logga endast om token är ogiltig eller nära att löpa ut
+    if (!validation.valid) {
+      logger.warn('Ogiltigt token används i request:', validation.error);
+    } else if (validation.expiry) {
+      const now = new Date();
+      const diff = validation.expiry.getTime() - now.getTime();
+      const minutesRemaining = Math.floor(diff / 60000);
       
-      // Kontrollera utgångstid om den finns (utan att logga)
-      if (payload.exp) {
-        const expDate = new Date(payload.exp * 1000);
-        // Token validering utförs men loggas inte
+      // Varna om token löper ut inom 5 minuter
+      if (minutesRemaining < 5) {
+        logger.warn(`Token löper ut snart (${minutesRemaining} minuter kvar)`);
       }
-    } catch (e) {
-      // Fel vid avkodning, men fortsätt ändå
     }
   }
   return config;
@@ -41,60 +47,12 @@ api.interceptors.response.use(
     if (error.response) {
       const { status, config } = error.response;
       
-      // Hantera specifika felkoder
-      switch (status) {
-        case 401:
-          // Unauthorized - Rensa token och omdirigera
-          console.error('401 Unauthorized - Token ogiltig eller saknas');
-          removeAuthToken();
-          window.location.href = '/login';
-          break;
-        case 403:
-          console.error('403 Forbidden - Användaren saknar behörighet', config.url);
-          console.error('Request method:', config.method);
-          console.error('Request headers:', config.headers);
-          console.error('Request data:', config.data);
-          
-          // Kontrollera om token finns och är valid
-          const token = getAuthToken();
-          if (token) {
-            try {
-              // Parse JWT token
-              const base64Url = token.split('.')[1];
-              const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-              const payload = JSON.parse(window.atob(base64));
-              
-              // Check token expiration
-              if (payload.exp) {
-                const expDate = new Date(payload.exp * 1000);
-                const now = new Date();
-                if (expDate < now) {
-                  console.error('Token har gått ut, omdirigerar till login');
-                  removeAuthToken();
-                  window.location.href = '/login';
-                } else {
-                  console.error('Token är giltig men användaren saknar behörighet för denna åtgärd');
-                }
-              }
-            } catch (e) {
-              console.error('Fel vid avkodning av token:', e);
-            }
-          } else {
-            console.error('Ingen token hittades');
-            window.location.href = '/login';
-          }
-          break;
-        case 404:
-          console.error('404 Not Found - Resursen finns inte', config.url);
-          break;
-        default:
-          console.error(`API Error (${status}):`, config.method.toUpperCase(), config.url);
-          break;
-      }
+      // Använd den centrala metoden för att hantera autentiseringsfel
+      handleAuthStatusError(status, config);
     } else if (error.request) {
-      console.error('Nätverksfel - Ingen respons från servern:', error.message);
+      logger.error('Nätverksfel - Ingen respons från servern:', error.message);
     } else {
-      console.error('Fel vid request setup:', error.message);
+      logger.error('Fel vid request setup:', error.message);
     }
     return Promise.reject(error);
   }
