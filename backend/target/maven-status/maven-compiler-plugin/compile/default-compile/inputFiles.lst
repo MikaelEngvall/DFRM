@@ -32,6 +32,7 @@ C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\service\ImportService.ja
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\service\JwtService.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\config\KeyTypeDeserializer.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\model\User.java
+C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\service\EntityReferenceService.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\service\PendingTaskService.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\service\UserService.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\service\SecurityTokenService.java

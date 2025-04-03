@@ -21,6 +21,7 @@ public class ApartmentService {
     private final ApartmentRepository apartmentRepository;
     private final TenantRepository tenantRepository;
     private final KeyRepository keyRepository;
+    private final EntityReferenceService entityReferenceService;
     
     public List<Apartment> getAllApartments() {
         return apartmentRepository.findAll();
@@ -76,38 +77,9 @@ public class ApartmentService {
         return apartmentRepository.findById(apartmentId)
                 .flatMap(apartment -> tenantRepository.findById(tenantId)
                         .map(tenant -> {
-                            // Ta bort hyresgästen från tidigare lägenhet om den finns
-                            if (tenant.getApartment() != null) {
-                                Apartment oldApartment = tenant.getApartment();
-                                oldApartment.getTenants().remove(tenant);
-                                apartmentRepository.save(oldApartment);
-                            }
-
-                            // Lägg till hyresgästen i den nya lägenheten - säkerställ att vi inte får dubbletter
-                            if (apartment.getTenants() == null) {
-                                apartment.setTenants(new ArrayList<>());
-                            }
-                            
-                            // Först ta bort hyresgästen om den redan finns för att undvika duplicering
-                            // Detta är en extra säkerhetsåtgärd utöver kontroll av dubbletter
-                            apartment.getTenants().removeIf(t -> t.getId().equals(tenant.getId()));
-                            
-                            // Kontrollera om hyresgästen (med samma ID) redan finns i lägenheten (undvik dubbletter)
-                            boolean alreadyExists = apartment.getTenants().stream()
-                                .anyMatch(t -> t.getId().equals(tenant.getId()));
-                                
-                            if (!alreadyExists) {
-                                apartment.getTenants().add(tenant);
-                            } else {
-                                // Logga varning om dubbletter upptäcks
-                                System.out.println("VARNING: Försök att lägga till hyresgäst " + tenant.getId() + 
-                                    " i lägenhet " + apartment.getId() + " misslyckades eftersom hyresgästen redan finns.");
-                            }
-                            
-                            tenant.setApartment(apartment);
-
-                            tenantRepository.save(tenant);
-                            return apartmentRepository.save(apartment);
+                            // Använd EntityReferenceService för att hantera relationen
+                            Apartment updatedApartment = entityReferenceService.assignTenantToApartment(apartment, tenant);
+                            return apartmentRepository.save(updatedApartment);
                         }));
     }
 
@@ -115,30 +87,9 @@ public class ApartmentService {
         return apartmentRepository.findById(apartmentId)
                 .flatMap(apartment -> keyRepository.findById(keyId)
                         .map(key -> {
-                            // Ta bort nyckeln från tidigare lägenhet om den finns
-                            if (key.getApartment() != null) {
-                                Apartment oldApartment = key.getApartment();
-                                oldApartment.getKeys().remove(key);
-                                apartmentRepository.save(oldApartment);
-                            }
-
-                            // Lägg till nyckeln i den nya lägenheten - säkerställ att vi inte får dubbletter
-                            if (apartment.getKeys() == null) {
-                                apartment.setKeys(new ArrayList<>());
-                            }
-                            
-                            // Kontrollera om nyckeln redan finns i lägenheten (undvik dubbletter)
-                            boolean alreadyExists = apartment.getKeys().stream()
-                                .anyMatch(k -> k.getId().equals(key.getId()));
-                                
-                            if (!alreadyExists) {
-                                apartment.getKeys().add(key);
-                            }
-                            
-                            key.setApartment(apartment);
-
-                            keyRepository.save(key);
-                            return apartmentRepository.save(apartment);
+                            // Använd EntityReferenceService för att hantera relationen
+                            Apartment updatedApartment = entityReferenceService.assignKeyToApartment(apartment, key);
+                            return apartmentRepository.save(updatedApartment);
                         }));
     }
 
@@ -146,10 +97,9 @@ public class ApartmentService {
         return apartmentRepository.findById(apartmentId)
                 .flatMap(apartment -> tenantRepository.findById(tenantId)
                         .map(tenant -> {
-                            apartment.getTenants().remove(tenant);
-                            tenant.setApartment(null);
-                            tenantRepository.save(tenant);
-                            return apartmentRepository.save(apartment);
+                            // Använd EntityReferenceService för att hantera relationen
+                            Apartment updatedApartment = entityReferenceService.removeTenantFromApartment(apartment, tenant);
+                            return apartmentRepository.save(updatedApartment);
                         }));
     }
 
@@ -157,10 +107,9 @@ public class ApartmentService {
         return apartmentRepository.findById(apartmentId)
                 .flatMap(apartment -> keyRepository.findById(keyId)
                         .map(key -> {
-                            apartment.getKeys().remove(key);
-                            key.setApartment(null);
-                            keyRepository.save(key);
-                            return apartmentRepository.save(apartment);
+                            // Använd EntityReferenceService för att hantera relationen
+                            Apartment updatedApartment = entityReferenceService.removeKeyFromApartment(apartment, key);
+                            return apartmentRepository.save(updatedApartment);
                         }));
     }
 

@@ -18,6 +18,7 @@ com\dfrm\DfrmApplication.class
 com\dfrm\service\SecurityTokenService.class
 com\dfrm\model\Key.class
 com\dfrm\config\KeyTypeDeserializer.class
+com\dfrm\service\EntityReferenceService.class
 com\dfrm\service\EmailService$3.class
 com\dfrm\controller\TenantController.class
 com\dfrm\service\EmailService$1.class
