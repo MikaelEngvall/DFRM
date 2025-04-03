@@ -25,6 +25,7 @@ com\dfrm\model\TaskMessage$TaskMessageBuilder.class
 com\dfrm\controller\MailController.class
 com\dfrm\model\Task.class
 com\dfrm\service\InterestEmailListener.class
+com\dfrm\service\TaskFilterService.class
 com\dfrm\config\DotenvConfig.class
 com\dfrm\config\JacksonConfig.class
 com\dfrm\config\MailConfiguration.class
@@ -32,6 +33,9 @@ com\dfrm\config\DataInitializer.class
 com\dfrm\filter\JwtAuthenticationFilter.class
 com\dfrm\model\TaskStatus.class
 com\dfrm\model\TaskMessage.class
+com\dfrm\service\InterestEmailHashGenerator.class
+com\dfrm\service\EmailRetryService$EmailBatch.class
+com\dfrm\service\EmailRetryService.class
 com\dfrm\model\Task$TaskBuilder.class
 com\dfrm\service\JwtService.class
 com\dfrm\repository\InterestRepository.class

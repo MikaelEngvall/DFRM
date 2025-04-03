@@ -42,6 +42,7 @@ C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\repository\UserRepositor
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\controller\UserController.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\model\Key.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\repository\InterestRepository.java
+C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\service\InterestEmailHashGenerator.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\service\TenantService.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\repository\ApartmentRepository.java
 C:\Users\mikae\Code\DFRM\backend\src\main\java\com\dfrm\service\ApartmentService.java

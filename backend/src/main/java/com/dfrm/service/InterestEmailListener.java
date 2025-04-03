@@ -1,7 +1,6 @@
 package com.dfrm.service;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -38,6 +37,7 @@ public class InterestEmailListener {
     private final Environment environment;
     private final TranslationService translationService;
     private final GoogleTranslateClient googleTranslateClient;
+    private final InterestEmailHashGenerator hashGenerator;
     
     private static final String TARGET_RECIPIENT = "intresse@duggalsfastigheter.se";
     private static final String TARGET_SENDER = "intresse@duggalsfastigheter.se";
@@ -198,82 +198,49 @@ public class InterestEmailListener {
             
             log.info("Kontrollerar om intresseanmälan redan finns för e-post: {}", email);
             
-            // Kontrollera befintliga intresseanmälningar med samma e-post
-            List<Interest> existingInterests = interestRepository.findByEmail(email);
-            
-            if (!existingInterests.isEmpty()) {
-                log.info("Hittade {} tidigare intresseanmälningar från samma e-post: {}", existingInterests.size(), email);
-                
-                // Extrahera lägenhetsinformation från innehållet för jämförelse
-                String currentApartment = extractApartment(content, subject);
-                
-                for (Interest existing : existingInterests) {
-                    // Rensa både gamla och nya meddelanden för jämförelse (ta bort whitespace och gör lowercase)
-                    String cleanExistingMessage = (existing.getMessage() != null) 
-                                                ? existing.getMessage().replaceAll("\\s+", "").toLowerCase() 
-                                                : "";
-                    String cleanNewMessage = content.replaceAll("\\s+", "").toLowerCase();
-                    
-                    log.debug("Jämför nytt meddelande (längd: {}) med befintligt meddelande (längd: {})", 
-                              cleanNewMessage.length(), cleanExistingMessage.length());
-                    
-                    // Om de är exakt samma lägenhet, hoppa över oavsett innehåll
-                    if (existing.getApartment() != null && currentApartment != null && 
-                        existing.getApartment().equalsIgnoreCase(currentApartment)) {
-                        log.warn("Samma lägenhet ({}) har redan registrerats för e-post: {} - hoppar över", 
-                                currentApartment, email);
-                        return;
-                    }
-                    
-                    // Om de är identiska meddelanden, hoppa över
-                    if (!cleanExistingMessage.isEmpty() && !cleanNewMessage.isEmpty() && 
-                        cleanExistingMessage.equals(cleanNewMessage)) {
-                        log.warn("Identiskt meddelandeinnehåll - hoppar över dubblett från: {}", email);
-                        return;
-                    }
-                    
-                    // Kolla om de är väldigt lika
-                    if (cleanExistingMessage.length() > 30 && cleanNewMessage.length() > 30) {
-                        // Om meddelandena är långa, kolla om de överlappar betydligt
-                        int minLength = Math.min(cleanExistingMessage.length(), cleanNewMessage.length());
-                        int compareLength = (int)(minLength * 0.7); // 70% av det kortare meddelandet
-                        
-                        String existingSubstring = cleanExistingMessage.substring(0, compareLength);
-                        String newSubstring = cleanNewMessage.substring(0, compareLength);
-                        
-                        // Om första 70% av innehållet är identiskt
-                        if (existingSubstring.equals(newSubstring)) {
-                            log.warn("Mycket liknande innehåll (första 70% är identiskt) - hoppar över möjlig dubblett från: {}", email);
-                            return;
-                        }
-                        
-                        // Kontrollera om ett meddelande innehåller mer än 80% av det andra
-                        if (cleanExistingMessage.contains(newSubstring) || 
-                            cleanNewMessage.contains(existingSubstring)) {
-                            log.warn("Överlappande innehåll - hoppar över möjlig dubblett från: {}", email);
-                            return;
-                        }
-                    }
-                    
-                    // Kontrollera tidsskillnad - om anmälan är från senaste timmen, är det sannolikt dubblett
-                    if (existing.getReceived() != null) {
-                        LocalDateTime now = LocalDateTime.now();
-                        LocalDateTime existingTime = existing.getReceived();
-                        long minutesBetween = java.time.Duration.between(existingTime, now).toMinutes();
-                        
-                        if (minutesBetween < 60) { // Inom en timme
-                            log.warn("Ny anmälan från samma e-post inom 60 minuter - hoppar över trolig dubblett från: {}", email);
-                            return;
-                        }
-                    }
-                }
-            }
-            
-            // Extrahera namn, lägenhet och telefon från innehållet
+            // Extrahera andra fält för hashberäkning
             String name = extractName(content, email);
             String apartment = extractApartment(content, subject);
             String phone = extractPhone(content);
             String extractedMessage = extractMessage(content);
+            
+            // Generera primär hash baserad på e-post och lägenhet
+            String primaryHash = hashGenerator.generatePrimaryHash(email, apartment);
+            
+            // Generera sekundär hash om den primära saknar lägenhetsinformation
+            String secondaryHash = hashGenerator.generateSecondaryHash(email, phone, name);
+            
+            // Generera innehållshash för att kontrollera om exakt samma innehåll skickades
+            String contentHash = hashGenerator.generateContentHash(email, extractedMessage);
+            
+            log.info("Genererade hash-värden för dubblettkontroll:");
+            log.info(" - Primär hash: {}", primaryHash);
+            log.info(" - Sekundär hash: {}", secondaryHash);
+            log.info(" - Innehålls-hash: {}", contentHash);
+            
+            // Kontrollera dubbletter baserat på hashar
+            if (primaryHash != null) {
+                if (interestRepository.existsByHashId(primaryHash)) {
+                    log.warn("Dubblett detekterad med primär hash - hoppar över: {}", primaryHash);
+                    return;
+                }
+            }
+            
+            // Om ingen primär hash-match hittades, kontrollera sekundär hash
+            if (secondaryHash != null) {
+                if (interestRepository.existsByHashId(secondaryHash)) {
+                    log.warn("Dubblett detekterad med sekundär hash - hoppar över: {}", secondaryHash);
+                    return;
+                }
+            }
+            
+            // Om ingen hash-match hittades alls, gör en sista kontroll på innehållshashen
+            if (contentHash != null) {
+                if (interestRepository.existsByHashId(contentHash)) {
+                    log.warn("Dubblett detekterad med innehålls-hash - hoppar över: {}", contentHash);
+                    return;
+                }
+            }
             
             // Logga extraherade fält på debug-nivå utan färgkodning
             log.debug("Extraherade fält från intresseanmälan:");
@@ -290,6 +257,15 @@ public class InterestEmailListener {
                 log.warn("Inget meddelande hittades. Intresseanmälan sparas ändå.");
             }
             
+            // Välj hash att spara (prioritera i ordning: primär, sekundär, innehåll)
+            String hashToSave = primaryHash;
+            if (hashToSave == null) {
+                hashToSave = secondaryHash;
+                if (hashToSave == null) {
+                    hashToSave = contentHash;
+                }
+            }
+            
             // Skapa och spara ny intresseanmälan med endast det extraherade meddelandet
             Interest interest = Interest.builder()
                     .name(name)
@@ -299,9 +275,11 @@ public class InterestEmailListener {
                     .received(LocalDateTime.now())
                     .status("NEW")
                     .apartment(apartment)
+                    .hashId(hashToSave) // Spara vald hash-ID för dubblettkontroll
                     .build();
         
-            log.info("Sparar ny intresseanmälan från: {} för lägenhet: {}", interest.getEmail(), interest.getApartment());
+            log.info("Sparar ny intresseanmälan från: {} för lägenhet: {} med hashId: {}", 
+                  interest.getEmail(), interest.getApartment(), interest.getHashId());
             Interest savedInterest = interestRepository.save(interest);
             log.info("Sparad intresseanmälan med ID: {}", savedInterest.getId());
         } catch (Exception e) {

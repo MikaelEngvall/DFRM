@@ -1,6 +1,7 @@
 package com.dfrm.repository;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
@@ -20,4 +21,8 @@ public interface InterestRepository extends MongoRepository<Interest, String> {
     
     // Metod för att hitta intresseanmälningar baserat på e-postadress
     List<Interest> findByEmail(String email);
+    
+    // Metod för att hitta intresseanmälningar baserat på hashId (för dubblettdetektering)
+    Optional<Interest> findByHashId(String hashId);
+    boolean existsByHashId(String hashId);
 } 
