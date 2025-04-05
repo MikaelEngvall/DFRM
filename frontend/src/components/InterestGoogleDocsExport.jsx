@@ -170,15 +170,7 @@ const InterestGoogleDocsExport = () => {
 
         // För alla granskade intresseanmälningar, tilldela en fallback-adress om det saknas
         const reviewedWithAddresses = reviewed.map(interest => {
-          // Om det inte finns någon lägenhetsinformation, lägg till en fallback
-          if (!interest.apartment && !interest.showing?.apartmentAddress) {
-            return {
-              ...interest,
-              apartment: {
-                streetAddress: 'Landbrogatan 31A lgh 1101'
-              }
-            };
-          }
+          // Behöver inte lägga till fallback längre, getApartmentAddress hanterar detta
           return interest;
         });
 
@@ -457,8 +449,24 @@ const InterestGoogleDocsExport = () => {
       return interest.apartment.streetAddress;
     }
     
-    // Fallback-värde
-    return 'Landbrogatan 31A lgh 1101';
+    // Om vi hittar lägenhetsinformation i ämnet (för epost)
+    if (interest.subject && interest.subject.includes('lgh')) {
+      return interest.subject;
+    }
+    
+    // Fallback-värde endast om inget annat hittas
+    logger.warn(`Ingen lägenhetsadress hittad för intresseanmälan ${interest.id}, använder fallback`);
+    return 'Adress saknas';
+  };
+
+  // Förbättra funktion för att hämta och visa information om nuvarande hyresgäst
+  const getTenantInfo = (interest) => {
+    if (!interest) return 'Ingen boende';
+    
+    const tenant = findCurrentTenant(getApartmentAddress(interest), apartmentsMap, tenantsMap);
+    if (!tenant) return 'Ingen boende';
+    
+    return `${tenant.phone || 'Inget tel'} (${tenant.firstName || ''} ${tenant.lastName || ''})`.trim();
   };
 
   if (loading) {
@@ -508,98 +516,50 @@ const InterestGoogleDocsExport = () => {
 
       <div className="mt-6">
         <div className="mb-8">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-            Granskade intresseanmälningar ({reviewedInterests.length})
-          </h2>
-          <p className="text-gray-600 dark:text-gray-400 mb-4">
-            Visar alla granskade intresseanmälningar i en enda tabell (lägenhetsgruppering saknas)
-          </p>
+          <h1 style={{ fontSize: '2rem', fontWeight: 'bold', marginBottom: '2rem', color: 'white', textTransform: 'uppercase' }}>
+            Intresseanmälningar
+          </h1>
 
-          <div id="export-table-container" className={isDarkMode ? 'dark-mode-export' : ''}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px', border: '1px solid #e5e7eb' }}>
+          <div id="export-table-container">
+            <table style={{ width: '100%', borderCollapse: 'collapse', backgroundColor: '#1e293b', color: 'white' }}>
               <thead>
-                <tr style={{ backgroundColor: '#f3f4f6' }}>
-                  <th style={{ border: '1px solid #e5e7eb', padding: '10px', textAlign: 'left', fontWeight: 'bold' }}>Namn</th>
-                  <th style={{ border: '1px solid #e5e7eb', padding: '10px', textAlign: 'left', fontWeight: 'bold' }}>Lägenhet</th>
-                  <th style={{ border: '1px solid #e5e7eb', padding: '10px', textAlign: 'left', fontWeight: 'bold' }}>Telefon</th>
-                  <th style={{ border: '1px solid #e5e7eb', padding: '10px', textAlign: 'left', fontWeight: 'bold' }}>Nuvarande hyresgäst</th>
-                  <th style={{ border: '1px solid #e5e7eb', padding: '10px', textAlign: 'left', fontWeight: 'bold' }}>Visningstid</th>
-                  <th style={{ border: '1px solid #e5e7eb', padding: '10px', textAlign: 'left', fontWeight: 'bold' }}>Visningsstatus</th>
-                </tr>
-              </thead>
-              <tbody>
-                {reviewedInterests.map((interest) => (
-                  <tr key={interest.id}>
-                    <td style={{ border: '1px solid #e5e7eb', padding: '10px', fontWeight: 'bold', color: isDarkMode ? '#ffffff' : 'inherit' }}>
-                      {formatName(interest)}
-                    </td>
-                    <td style={{ border: '1px solid #e5e7eb', padding: '10px', color: isDarkMode ? '#ffffff' : 'inherit' }}>
-                      {getApartmentAddress(interest)}
-                    </td>
-                    <td style={{ border: '1px solid #e5e7eb', padding: '10px', color: isDarkMode ? '#ffffff' : 'inherit' }}>{interest.phone || interest.showing?.contactPhone || 'Saknas'}</td>
-                    <td style={{ border: '1px solid #e5e7eb', padding: '10px', color: isDarkMode ? '#ffffff' : 'inherit' }}>
-                      {findCurrentTenant(getApartmentAddress(interest), apartmentsMap, tenantsMap) 
-                        ? `${findCurrentTenant(getApartmentAddress(interest), apartmentsMap, tenantsMap).phone || ''} (${findCurrentTenant(getApartmentAddress(interest), apartmentsMap, tenantsMap).firstName || ''} ${findCurrentTenant(getApartmentAddress(interest), apartmentsMap, tenantsMap).lastName || ''})`
-                        : 'Ingen boende'}
-                    </td>
-                    <td style={{ border: '1px solid #e5e7eb', padding: '10px', color: isDarkMode ? '#ffffff' : 'inherit' }}>
-                      {getShowingDateTime(interest)}
-                    </td>
-                    <td style={{ 
-                      border: '1px solid #e5e7eb', 
-                      padding: '10px',
-                      backgroundColor: getStatusColor(interest),
-                      color: '#ffffff',
-                      fontWeight: 'bold'
-                    }}>
-                      {interest.showing && interest.showing.status ? formatShowingStatus({ status: interest.showing.status }) : formatShowingStatus(interest)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-
-            <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginTop: '2rem', marginBottom: '1rem' }}>
-              Obehandlade intresseanmälningar ({unreviewedInterests.length})
-            </h2>
-            
-            <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px', border: '1px solid #e5e7eb' }}>
-              <thead>
-                <tr style={{ backgroundColor: '#f3f4f6' }}>
-                  <th style={{ border: '1px solid #e5e7eb', padding: '10px', textAlign: 'left', fontWeight: 'bold' }}>Namn</th>
-                  <th style={{ border: '1px solid #e5e7eb', padding: '10px', textAlign: 'left', fontWeight: 'bold' }}>Lägenhet</th>
-                  <th style={{ border: '1px solid #e5e7eb', padding: '10px', textAlign: 'left', fontWeight: 'bold' }}>Telefon</th>
-                  <th style={{ border: '1px solid #e5e7eb', padding: '10px', textAlign: 'left', fontWeight: 'bold' }}>Nuvarande hyresgäst</th>
-                  <th style={{ border: '1px solid #e5e7eb', padding: '10px', textAlign: 'left', fontWeight: 'bold' }}>Mottaget</th>
-                  <th style={{ border: '1px solid #e5e7eb', padding: '10px', textAlign: 'left', fontWeight: 'bold' }}>Status</th>
+                <tr style={{ backgroundColor: '#1e293b', color: 'white' }}>
+                  <th style={{ border: '1px solid #334155', padding: '10px', textAlign: 'left', fontWeight: 'bold' }}>NAMN</th>
+                  <th style={{ border: '1px solid #334155', padding: '10px', textAlign: 'left', fontWeight: 'bold' }}>KONTAKTINFO</th>
+                  <th style={{ border: '1px solid #334155', padding: '10px', textAlign: 'left', fontWeight: 'bold' }}>LÄGENHET</th>
+                  <th style={{ border: '1px solid #334155', padding: '10px', textAlign: 'left', fontWeight: 'bold' }}>NUVARANDE HYRESGÄST</th>
+                  <th style={{ border: '1px solid #334155', padding: '10px', textAlign: 'left', fontWeight: 'bold' }}>MOTTAGEN</th>
+                  <th style={{ border: '1px solid #334155', padding: '10px', textAlign: 'left', fontWeight: 'bold' }}>STATUS</th>
                 </tr>
               </thead>
               <tbody>
                 {unreviewedInterests.map((interest) => (
-                  <tr key={interest.id}>
-                    <td style={{ border: '1px solid #e5e7eb', padding: '10px', fontWeight: 'bold', color: isDarkMode ? '#ffffff' : '#000000' }}>
+                  <tr key={interest.id} style={{ backgroundColor: '#1e293b', borderBottom: '1px solid #334155' }}>
+                    <td style={{ border: '1px solid #334155', padding: '10px', fontWeight: 'bold' }}>
                       {formatName(interest)}
                     </td>
-                    <td style={{ border: '1px solid #e5e7eb', padding: '10px', color: isDarkMode ? '#ffffff' : '#000000' }}>
-                      {getApartmentAddress(interest)}
+                    <td style={{ border: '1px solid #334155', padding: '10px' }}>
+                      {interest.email}<br />
+                      {interest.phone || '-'}
                     </td>
-                    <td style={{ border: '1px solid #e5e7eb', padding: '10px', color: isDarkMode ? '#ffffff' : '#000000' }}>{interest.phone || interest.showing?.contactPhone || 'Saknas'}</td>
-                    <td style={{ border: '1px solid #e5e7eb', padding: '10px', color: isDarkMode ? '#ffffff' : '#000000' }}>
-                      {findCurrentTenant(getApartmentAddress(interest), apartmentsMap, tenantsMap) 
-                        ? `${findCurrentTenant(getApartmentAddress(interest), apartmentsMap, tenantsMap).phone || ''} (${findCurrentTenant(getApartmentAddress(interest), apartmentsMap, tenantsMap).firstName || ''} ${findCurrentTenant(getApartmentAddress(interest), apartmentsMap, tenantsMap).lastName || ''})`
-                        : 'Ingen boende'}
+                    <td style={{ border: '1px solid #334155', padding: '10px' }}>
+                      Adress saknas
                     </td>
-                    <td style={{ border: '1px solid #e5e7eb', padding: '10px', color: isDarkMode ? '#ffffff' : '#000000' }}>
+                    <td style={{ border: '1px solid #334155', padding: '10px' }}>
+                      Ingen boende
+                    </td>
+                    <td style={{ border: '1px solid #334155', padding: '10px' }}>
                       {formatDate(interest.received)}
                     </td>
-                    <td style={{ 
-                      border: '1px solid #e5e7eb', 
-                      padding: '10px',
-                      backgroundColor: '#6B7280', // gray-500
-                      color: '#ffffff',
-                      fontWeight: 'bold'
-                    }}>
-                      {formatShowingStatus(interest)}
+                    <td style={{ border: '1px solid #334155', padding: '10px', textAlign: 'center' }}>
+                      <span style={{ 
+                        backgroundColor: '#6B7280', 
+                        color: 'white', 
+                        padding: '2px 8px', 
+                        borderRadius: '4px',
+                        fontSize: '0.875rem', 
+                        fontWeight: 'medium'
+                      }}>Ny</span>
                     </td>
                   </tr>
                 ))}
