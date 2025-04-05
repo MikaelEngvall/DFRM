@@ -781,12 +781,14 @@ const Interests = ({ view = 'list' }) => {
                 </span>
               )
             },
-            {
-              key: 'reviewedBy',
-              label: t('interests.fields.reviewedBy'),
-              render: (_, interest) => interest.reviewedBy ? 
-                `${interest.reviewedBy.firstName || ''} ${interest.reviewedBy.lastName || ''}` : ''
-            }
+            ...(currentView === INTEREST_VIEWS.REVIEWED ? [
+              {
+                key: 'reviewedBy',
+                label: t('interests.fields.reviewedBy'),
+                render: (_, interest) => interest.reviewedBy ? 
+                  `${interest.reviewedBy.firstName || ''} ${interest.reviewedBy.lastName || ''}` : ''
+              }
+            ] : [])
           ]}
           data={getDisplayData()}
           onRowClick={handleRowClick}
