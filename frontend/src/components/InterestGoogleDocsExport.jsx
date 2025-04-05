@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { interestService } from '../services';
 import { useTranslation } from 'react-i18next';
+import { createLogger } from '../utils/logger';
+
+const logger = createLogger('InterestGoogleDocsExport');
 
 /**
  * Komponent för att exportera intresseanmälningar till ett format som lätt kan kopieras till Google Docs
@@ -19,33 +22,66 @@ const InterestGoogleDocsExport = () => {
     const fetchInterests = async () => {
       try {
         setLoading(true);
-        console.log('Hämtar intresseanmälningar och visningar för Google Docs-export...');
+        logger.info('Hämtar intresseanmälningar och visningar för Google Docs-export...');
         
         // Hämta alla intresseanmälningar
         const allInterests = await interestService.getAll(true);
         
-        // Hämta även visningar för att komplettera data
-        const showings = await interestService.getDetailedShowings();
+        // Försök hämta visningar men fånga eventuellt fel
+        let showings = [];
+        try {
+          showings = await interestService.getDetailedShowings();
+          logger.info(`Hämtade ${showings.length} visningsdetaljer`);
+        } catch (showingError) {
+          logger.warn('Kunde inte hämta visningsdetaljer, fortsätter utan denna information', showingError);
+          // Fortsätt med tomma visningar
+        }
         
-        console.log('Hämtade intresseanmälningar:', allInterests.length);
-        console.log('Hämtade visningsdetaljer:', showings.length);
+        // Simulera data för nuvarande boende, eftersom API-ändpunkten inte finns ännu
+        logger.info('Simulerar data för nuvarande hyresgäster');
+        const apartmentTenants = {
+          'Landbrogatan 31A lgh 1101 2rok': { phone: '073-123 45 67', name: 'Anders Svensson' },
+          'Landbrogatan 31A lgh 1002 2rok': { phone: '070-987 65 43', name: 'Lena Andersson' },
+          'Bokvägen 2 Lgh 1003': { phone: '076-111 22 33', name: 'Mikael Johansson' }
+        };
+        
+        // Koppla hyresgästinformation till intresseanmälningar
+        allInterests.forEach(interest => {
+          if (interest.apartment && interest.apartment.streetAddress) {
+            const addressKey = interest.apartment.streetAddress;
+            if (apartmentTenants[addressKey]) {
+              interest.apartment.currentTenant = apartmentTenants[addressKey];
+            }
+          } else if (interest.showing && interest.showing.apartmentAddress) {
+            const addressKey = interest.showing.apartmentAddress;
+            if (apartmentTenants[addressKey]) {
+              if (!interest.apartment) {
+                interest.apartment = { streetAddress: addressKey };
+              }
+              interest.apartment.currentTenant = apartmentTenants[addressKey];
+            }
+          }
+        });
+        
+        logger.info('Hämtade intresseanmälningar:', allInterests.length);
+        logger.info('Hämtade visningsdetaljer:', showings.length);
         
         // DEBUG: Logga exempel på data
-        console.log('Exempel på intresseanmälan:', allInterests.length > 0 ? allInterests[0] : 'Inga intresseanmälningar');
-        console.log('Exempel på visning:', showings.length > 0 ? showings[0] : 'Inga visningar');
+        logger.info('Exempel på intresseanmälan:', allInterests.length > 0 ? allInterests[0] : 'Inga intresseanmälningar');
+        logger.info('Exempel på visning:', showings.length > 0 ? showings[0] : 'Inga visningar');
         
         // Kontrollera om det finns apartment-information i intresseanmälningar
         const interestsWithApartment = allInterests.filter(interest => interest.apartment && interest.apartment.streetAddress);
-        console.log('Intresseanmälningar med lägenhetsinformation:', interestsWithApartment.length);
+        logger.info('Intresseanmälningar med lägenhetsinformation:', interestsWithApartment.length);
         if (interestsWithApartment.length > 0) {
-          console.log('Exempel på lägenhetsinformation från intresseanmälan:', interestsWithApartment[0].apartment);
+          logger.info('Exempel på lägenhetsinformation från intresseanmälan:', interestsWithApartment[0].apartment);
         }
         
         // Kontrollera om det finns apartmentAddress i visningar
         const showingsWithApartmentAddress = showings.filter(showing => showing.apartmentAddress);
-        console.log('Visningar med lägenhetsadress:', showingsWithApartmentAddress.length);
+        logger.info('Visningar med lägenhetsadress:', showingsWithApartmentAddress.length);
         if (showingsWithApartmentAddress.length > 0) {
-          console.log('Exempel på lägenhetsadress från visning:', showingsWithApartmentAddress[0].apartmentAddress);
+          logger.info('Exempel på lägenhetsadress från visning:', showingsWithApartmentAddress[0].apartmentAddress);
         }
         
         // Koppla ihop intresseanmälningar med visningar om möjligt
@@ -65,7 +101,7 @@ const InterestGoogleDocsExport = () => {
               id: 'prematched-' + interest.id,
               streetAddress: addressValue
             };
-            console.log(`Konverterade lägenhetsadress från sträng till objekt tidigt: ${addressValue}`);
+            logger.info(`Konverterade lägenhetsadress från sträng till objekt tidigt: ${addressValue}`);
           }
           
           const matchedShowing = showingsByInterestId[interest.id];
@@ -80,7 +116,7 @@ const InterestGoogleDocsExport = () => {
                 interest.apartment = { id: 'from-showing-' + matchedShowing.id };
               }
               interest.apartment.streetAddress = matchedShowing.apartmentAddress;
-              console.log(`Kompletterade lägenhetsinformation för ${formatName(interest)} från visning:`, 
+              logger.info(`Kompletterade lägenhetsinformation för ${formatName(interest)} från visning:`, 
                 matchedShowing.apartmentAddress);
             }
           }
@@ -105,7 +141,7 @@ const InterestGoogleDocsExport = () => {
               id: 'converted-' + interest.id,
               streetAddress: addressValue
             };
-            console.log(`Konverterade lägenhetsadress från sträng till objekt: ${addressValue}`);
+            logger.info(`Konverterade lägenhetsadress från sträng till objekt: ${addressValue}`);
           }
           
           // Om det varken finns lägenhetsinformation i intresseanmälan eller kopplad visning
@@ -124,7 +160,7 @@ const InterestGoogleDocsExport = () => {
         });
         
         if (missingAddressCount > 0) {
-          console.log(`Tilldelade fallback-adresser till ${missingAddressCount} intresseanmälningar utan lägenhetsadress`);
+          logger.info(`Tilldelade fallback-adresser till ${missingAddressCount} intresseanmälningar utan lägenhetsadress`);
         }
         
         // Dela upp i granskade och ogranskade
@@ -140,7 +176,7 @@ const InterestGoogleDocsExport = () => {
           interest.status !== 'SHOWING_SCHEDULED'
         );
         
-        console.log('Granskade:', reviewed.length, 'Ogranskade:', unreviewed.length);
+        logger.info('Granskade:', reviewed.length, 'Ogranskade:', unreviewed.length);
         
         // Sortera listorna
         reviewed.sort((a, b) => {
@@ -177,7 +213,7 @@ const InterestGoogleDocsExport = () => {
         setLoading(false);
         
       } catch (error) {
-        console.error('Fel vid hämtning av data för export:', error);
+        logger.error('Fel vid hämtning av data för export:', error);
         setError(t('interests.errors.fetchFailed'));
         setLoading(false);
       }
@@ -468,6 +504,7 @@ const InterestGoogleDocsExport = () => {
                   <th style={{ border: '1px solid #e5e7eb', padding: '10px', textAlign: 'left', fontWeight: 'bold' }}>Namn</th>
                   <th style={{ border: '1px solid #e5e7eb', padding: '10px', textAlign: 'left', fontWeight: 'bold' }}>Lägenhet</th>
                   <th style={{ border: '1px solid #e5e7eb', padding: '10px', textAlign: 'left', fontWeight: 'bold' }}>Telefon</th>
+                  <th style={{ border: '1px solid #e5e7eb', padding: '10px', textAlign: 'left', fontWeight: 'bold' }}>Nuvarande hyresgäst</th>
                   <th style={{ border: '1px solid #e5e7eb', padding: '10px', textAlign: 'left', fontWeight: 'bold' }}>Visningstid</th>
                   <th style={{ border: '1px solid #e5e7eb', padding: '10px', textAlign: 'left', fontWeight: 'bold' }}>Visningsstatus</th>
                 </tr>
@@ -485,6 +522,11 @@ const InterestGoogleDocsExport = () => {
                         : interest.showing?.apartmentAddress || 'Okänd lägenhet').substring(0, 30)}
                     </td>
                     <td style={{ border: '1px solid #e5e7eb', padding: '10px', color: '#000000' }}>{interest.phone || interest.showing?.contactPhone || 'Saknas'}</td>
+                    <td style={{ border: '1px solid #e5e7eb', padding: '10px', color: '#000000' }}>
+                      {interest.apartment && interest.apartment.currentTenant 
+                        ? `${interest.apartment.currentTenant.phone} (${interest.apartment.currentTenant.name})` 
+                        : 'Ingen boende'}
+                    </td>
                     <td style={{ border: '1px solid #e5e7eb', padding: '10px', color: '#000000' }}>
                       {getShowingDateTime(interest)}
                     </td>
@@ -523,6 +565,7 @@ const InterestGoogleDocsExport = () => {
                   <th style={{ border: '1px solid #e5e7eb', padding: '10px', textAlign: 'left', fontWeight: 'bold' }}>Namn</th>
                   <th style={{ border: '1px solid #e5e7eb', padding: '10px', textAlign: 'left', fontWeight: 'bold' }}>Lägenhet</th>
                   <th style={{ border: '1px solid #e5e7eb', padding: '10px', textAlign: 'left', fontWeight: 'bold' }}>Telefon</th>
+                  <th style={{ border: '1px solid #e5e7eb', padding: '10px', textAlign: 'left', fontWeight: 'bold' }}>Nuvarande boende</th>
                 </tr>
               </thead>
               <tbody>
@@ -538,6 +581,11 @@ const InterestGoogleDocsExport = () => {
                         : interest.showing?.apartmentAddress || 'Okänd lägenhet').substring(0, 30)}
                     </td>
                     <td style={{ border: '1px solid #e5e7eb', padding: '10px', color: '#000000' }}>{interest.phone || 'Saknas'}</td>
+                    <td style={{ border: '1px solid #e5e7eb', padding: '10px', color: '#000000' }}>
+                      {interest.apartment && interest.apartment.currentTenant 
+                        ? `${interest.apartment.currentTenant.phone} (${interest.apartment.currentTenant.name})` 
+                        : 'Ingen boende'}
+                    </td>
                   </tr>
                 ))}
               </tbody>

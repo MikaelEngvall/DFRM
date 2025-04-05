@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocale } from '../contexts/LocaleContext';
 import { useAuth } from '../contexts/AuthContext';
 import Modal from '../components/Modal';
 import AlertModal from '../components/AlertModal';
 import Title from '../components/Title';
 import DataTable from '../components/DataTable';
-import { interestService, taskService, userService, emailService } from '../services';
+import { interestService, taskService, userService, emailService, apartmentService, tenantService } from '../services';
 import { EnvelopeIcon, CalendarIcon, ClockIcon, ArrowsUpDownIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
 import EmailModal from '../components/EmailModal';
 import { useNavigate } from 'react-router-dom';
@@ -49,6 +49,8 @@ const Interests = ({ view = 'list' }) => {
   const pollingRef = useRef(null);
   const [currentView, setCurrentView] = useState(INTEREST_VIEWS.UNREVIEWED);
   const [pollingPaused, setPollingPaused] = useState(false);
+  const [tenantsMap, setTenantsMap] = useState({});
+  const [apartmentsMap, setApartmentsMap] = useState({});
 
   // Formatera datum till lokalt format
   const formatDate = (dateString) => {
@@ -95,6 +97,164 @@ const Interests = ({ view = 'list' }) => {
 
     fetchUsers();
   }, []);
+
+  // Funktion för att hämta alla lägenheter och lagra dem för snabb sökning
+  const fetchApartments = useCallback(async () => {
+    try {
+      const response = await apartmentService.getAll();
+      const apartmentsMapObj = {};
+      
+      // Skapa en map för snabb sökning
+      response.forEach(apartment => {
+        const key = `${apartment.street}-${apartment.number}-${apartment.apartmentNumber}`.toLowerCase();
+        apartmentsMapObj[key] = apartment;
+      });
+      
+      setApartmentsMap(apartmentsMapObj);
+      logger.debug('Hämtade lägenheter och skapade sökkarta:', Object.keys(apartmentsMapObj).length);
+      
+      // Logga några exempel på lägenheter
+      Object.keys(apartmentsMapObj).slice(0, 5).forEach(key => {
+        const apt = apartmentsMapObj[key];
+        logger.debug(`Exempel på lägenhet: ${key} => ${apt.id}, ${apt.street} ${apt.number}, ${apt.apartmentNumber}`);
+      });
+    } catch (error) {
+      logger.error('Fel vid hämtning av lägenheter:', error);
+    }
+  }, []);
+  
+  // Funktion för att hämta alla hyresgäster och lagra dem för snabb sökning
+  const fetchTenants = useCallback(async () => {
+    try {
+      const response = await tenantService.getAll();
+      const tenantsMapObj = {};
+      
+      // Skapa en map för snabb sökning på id
+      response.forEach(tenant => {
+        tenantsMapObj[tenant.id] = tenant;
+      });
+      
+      setTenantsMap(tenantsMapObj);
+      logger.debug('Hämtade hyresgäster och skapade sökkarta:', Object.keys(tenantsMapObj).length);
+      
+      // Logga några exempel på hyresgäster
+      Object.keys(tenantsMapObj).slice(0, 5).forEach(id => {
+        const tenant = tenantsMapObj[id];
+        logger.debug(`Exempel på hyresgäst: ${id} => ${tenant.firstName} ${tenant.lastName}, ${tenant.phone}`);
+      });
+    } catch (error) {
+      logger.error('Fel vid hämtning av hyresgäster:', error);
+    }
+  }, []);
+  
+  // Hjälpfunktion för att extrahera lägenhetsinfo från adresssträng
+  const extractApartmentInfo = (apartmentString) => {
+    if (!apartmentString) return null;
+    
+    try {
+      // Hantera specialfall som "Re: Bekräftelse av visningstid"
+      if (apartmentString.startsWith("Re:") || !apartmentString.includes("lgh")) {
+        logger.debug(`Ignorerar adress: "${apartmentString}" (inte en lägenhet)`);
+        return null;
+      }
+      
+      const parts = apartmentString.split(' ');
+      if (parts.length < 4) return null;
+      
+      // Hantera olika format
+      // Format 1: "Chapmansgatan 6 lgh 1001 1rok"
+      // Format 2: "Valhallavägen 10C lgh 1202 3ro" 
+      // Format 3: "Utridarevägen 3B lgh 1101 1rok"
+      
+      let street = parts[0];
+      let number = parts[1];
+      let apartmentNumber = null;
+      let houseLetter = '';
+      
+      // Extrahera eventuell bokstav från husnumret (t.ex. 10C -> 10)
+      if (number && /^\d+[A-Z]$/i.test(number)) {
+        houseLetter = number.slice(-1);
+        number = number.slice(0, -1);
+      }
+      
+      // Hitta lägenhetsnnummret efter "lgh"
+      for (let i = 0; i < parts.length; i++) {
+        if (parts[i].toLowerCase() === 'lgh' && i + 1 < parts.length) {
+          apartmentNumber = parts[i + 1];
+          break;
+        }
+      }
+      
+      // Speciell hantering för Valhallavägen
+      if (street === "Valhallavägen") {
+        street = "Valhallav.";
+        
+        // Om vi har ett lägenhetnummer och en husbokstav, omforma till korrekt format
+        if (apartmentNumber && houseLetter) {
+          apartmentNumber = `${apartmentNumber}${houseLetter}`;
+        }
+      } 
+      // Annan speciell hantering
+      else if (street === "Utridarevägen") {
+        street = "Utridare";
+      }
+      
+      logger.debug(`Extraherad lägenhetsinfo: "${apartmentString}" => ${street}, ${number}, ${apartmentNumber}`);
+      return { street, number, apartmentNumber };
+    } catch (error) {
+      logger.error('Fel vid extrahering av lägenhetsinfo:', error);
+      return null;
+    }
+  };
+  
+  // Funktion för att hitta nuvarande hyresgäst baserat på lägenhetsadress
+  const findCurrentTenant = useCallback((apartmentString) => {
+    if (!apartmentString) return null;
+    
+    try {
+      const apartmentInfo = extractApartmentInfo(apartmentString);
+      if (!apartmentInfo || !apartmentInfo.street || !apartmentInfo.number || !apartmentInfo.apartmentNumber) {
+        return null;
+      }
+      
+      // Skapa söknyckeln
+      const searchKey = `${apartmentInfo.street}-${apartmentInfo.number}-${apartmentInfo.apartmentNumber}`.toLowerCase();
+      logger.debug(`Söker efter lägenhet med nyckel: "${searchKey}" från adress: "${apartmentString}"`);
+      
+      const apartment = apartmentsMap[searchKey];
+      
+      if (!apartment) {
+        logger.debug(`Hittade ingen lägenhet för nyckel: "${searchKey}"`);
+        return null;
+      }
+      
+      if (!apartment.tenants || apartment.tenants.length === 0) {
+        logger.debug(`Hittade lägenhet ${apartment.id} men den har inga hyresgäster`);
+        return null;
+      }
+      
+      // Hämta första hyresgästen
+      const tenantId = apartment.tenants[0];
+      const tenant = tenantsMap[tenantId];
+      
+      if (tenant) {
+        logger.debug(`Hittade hyresgäst: ${tenant.firstName} ${tenant.lastName} (${tenant.phone}) för lägenhet: ${searchKey}`);
+      } else {
+        logger.debug(`Hittade tenantId ${tenantId} men ingen motsvarande hyresgäst i tenantsMap`);
+      }
+      
+      return tenant;
+    } catch (error) {
+      logger.error('Fel vid sökning av hyresgäst:', error);
+      return null;
+    }
+  }, [apartmentsMap, tenantsMap]);
+  
+  // Ladda lägenheter och hyresgäster när komponenten laddas
+  useEffect(() => {
+    fetchApartments();
+    fetchTenants();
+  }, [fetchApartments, fetchTenants]);
 
   // Hämta intresseanmälningar från API och kontrollera e-post samtidigt
   const fetchInterests = async (bypassCache = false) => {
@@ -580,7 +740,25 @@ const Interests = ({ view = 'list' }) => {
             {
               key: 'apartment',
               label: t('interests.fields.apartment'),
-              render: (apartment) => formatText(apartment) || '-'
+              render: (apartment) => formatText(apartment)?.substring(0, 30) || '-'
+            },
+            {
+              key: 'currentTenant',
+              label: 'Nuvarande hyresgäst',
+              render: (_, interest) => {
+                const tenant = findCurrentTenant(interest.apartment);
+                if (tenant) {
+                  return (
+                    <div>
+                      <div>{tenant.phone || '-'}</div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400">
+                        {tenant.firstName} {tenant.lastName}
+                      </div>
+                    </div>
+                  );
+                }
+                return 'Ingen boende';
+              }
             },
             {
               key: 'received',

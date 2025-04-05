@@ -1,9 +1,12 @@
 import api from './api';
 import { getFromCache, saveToCache, removeFromCache, CACHE_KEYS } from '../utils/cacheManager';
 import axios from 'axios';
+import { createLogger } from '../utils/logger';
+
+const logger = createLogger('InterestService');
 
 export const interestService = {
-  getAll: async (bypassCache = false) => {
+  getAll: async (bypassCache = false, includeApartmentData = false) => {
     try {
       // Använd cache om det finns
       if (!bypassCache) {
@@ -16,13 +19,15 @@ export const interestService = {
       
       console.log('Fetching all interests from API');
       const timestamp = new Date().getTime(); // Lägg till timestamp för att förhindra caching
-      const response = await api.get(`/api/interests?t=${timestamp}`);
+      const response = await api.get('/api/interests', {
+        params: { includeApartmentData }
+      });
       
       // Spara datan i cache
       saveToCache(CACHE_KEYS.INTERESTS, response.data);
       return response.data;
     } catch (error) {
-      console.error('Error fetching interests:', error);
+      logger.error('Fel vid hämtning av intresseanmälningar:', error);
       // Om API-anrop misslyckas, försök använda cache även om bypassCache är true
       const cachedData = getFromCache(CACHE_KEYS.INTERESTS);
       if (cachedData) {
@@ -325,16 +330,35 @@ export const interestService = {
     }
   },
   
+  /**
+   * Hämtar detaljerad information om visningar
+   * @returns {Promise<Array>} Lista med visningsdetaljer
+   */
   getDetailedShowings: async () => {
     try {
-      console.log('Hämtar detaljerade visningsuppgifter från API');
-      const timestamp = new Date().getTime();
-      const response = await api.get(`/api/showings?t=${timestamp}`);
-      
-      console.log(`Hämtade ${response.data.length} visningar`);
+      // Använd /api/showings istället för /api/showings/detailed
+      const response = await api.get('/api/showings');
+      logger.info(`Hämtade ${response.data.length} visningsdetaljer`);
       return response.data;
     } catch (error) {
-      console.error('Fel vid hämtning av visningsdetaljer:', error);
+      logger.error('Fel vid hämtning av visningsdetaljer:', error);
+      throw error;
+    }
+  },
+  
+  /**
+   * Hämtar lägenheter med information om nuvarande hyresgäster
+   * @returns {Promise<Array>} Lista med lägenheter inklusive hyresgästinformation
+   */
+  getApartmentsWithTenants: async () => {
+    try {
+      const response = await api.get('/api/apartments', {
+        params: { includeTenants: true }
+      });
+      logger.info(`Hämtade ${response.data.length} lägenheter med hyresgästinformation`);
+      return response.data;
+    } catch (error) {
+      logger.error('Fel vid hämtning av lägenheter med hyresgäster:', error);
       throw error;
     }
   }
