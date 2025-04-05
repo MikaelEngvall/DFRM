@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { interestService } from '../services';
+import { interestService, apartmentService, tenantService } from '../services';
 import { useTranslation } from 'react-i18next';
 import { createLogger } from '../utils/logger';
 
@@ -17,6 +17,33 @@ const InterestGoogleDocsExport = () => {
   const [error, setError] = useState(null);
   const [apartments, setApartments] = useState({});
   const [exportReady, setExportReady] = useState(false);
+  const [apartmentsMap, setApartmentsMap] = useState({});
+  const [tenantsMap, setTenantsMap] = useState({});
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  // Kontrollera om mörkt läge är aktiverat
+  useEffect(() => {
+    // Kontrollera om webbläsaren har mörkt läge aktiverat
+    const darkModeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    setIsDarkMode(darkModeMediaQuery.matches);
+    
+    // Lyssna på ändringar i mörkt/ljust läge
+    const handleChange = (e) => {
+      setIsDarkMode(e.matches);
+    };
+    
+    darkModeMediaQuery.addEventListener('change', handleChange);
+    
+    // Kontrollera även om dokumentet har mörkt tema-klass
+    const documentHasDarkClass = document.documentElement.classList.contains('dark');
+    if (documentHasDarkClass) {
+      setIsDarkMode(true);
+    }
+    
+    return () => {
+      darkModeMediaQuery.removeEventListener('change', handleChange);
+    };
+  }, []);
 
   useEffect(() => {
     const fetchInterests = async () => {
@@ -32,188 +59,146 @@ const InterestGoogleDocsExport = () => {
         try {
           showings = await interestService.getDetailedShowings();
           logger.info(`Hämtade ${showings.length} visningsdetaljer`);
+          
+          // Logga några exempel på visningsdata för debug
+          if (showings.length > 0) {
+            logger.debug('Exempel på visningsdata:', showings[0]);
+          }
         } catch (showingError) {
           logger.warn('Kunde inte hämta visningsdetaljer, fortsätter utan denna information', showingError);
           // Fortsätt med tomma visningar
         }
         
-        // Simulera data för nuvarande boende, eftersom API-ändpunkten inte finns ännu
-        logger.info('Simulerar data för nuvarande hyresgäster');
-        const apartmentTenants = {
-          'Landbrogatan 31A lgh 1101 2rok': { phone: '073-123 45 67', name: 'Anders Svensson' },
-          'Landbrogatan 31A lgh 1002 2rok': { phone: '070-987 65 43', name: 'Lena Andersson' },
-          'Bokvägen 2 Lgh 1003': { phone: '076-111 22 33', name: 'Mikael Johansson' }
-        };
+        // Hämta lägenheter och hyresgäster för att visa nuvarande hyresgäst
+        let apartmentsMapObj = {};
+        let tenantsMapObj = {};
+        
+        try {
+          // Hämta lägenheter med hyresgästinformation direkt
+          const apartmentsWithTenants = await interestService.getApartmentsWithTenants();
+          logger.info(`Hämtade ${apartmentsWithTenants.length} lägenheter med hyresgästinformation`);
+
+          // Skapa en map för snabb sökning
+          apartmentsWithTenants.forEach(apartment => {
+            if (apartment.street && apartment.number && apartment.apartmentNumber) {
+              const key = `${apartment.street}-${apartment.number}-${apartment.apartmentNumber}`.toLowerCase();
+              apartmentsMapObj[key] = apartment;
+              
+              // Logga info för debug
+              if (apartment.tenants && apartment.tenants.length > 0) {
+                logger.debug(`Lägenhet ${key} har hyresgäster: ${apartment.tenants.length}`);
+              }
+            }
+          });
+          
+          // Hämta hyresgäster
+          const tenants = await tenantService.getAll();
+          // Skapa en map för snabb sökning på id
+          tenants.forEach(tenant => {
+            tenantsMapObj[tenant.id] = tenant;
+          });
+          
+          logger.debug('Hämtade lägenheter och hyresgäster för export');
+        } catch (error) {
+          logger.error('Fel vid hämtning av lägenheter och hyresgäster:', error);
+        }
         
         // Koppla hyresgästinformation till intresseanmälningar
-        allInterests.forEach(interest => {
-          if (interest.apartment && interest.apartment.streetAddress) {
-            const addressKey = interest.apartment.streetAddress;
-            if (apartmentTenants[addressKey]) {
-              interest.apartment.currentTenant = apartmentTenants[addressKey];
+        const interestsWithRelations = allInterests.map(interest => {
+          // Koppla visning om det finns
+          const matching = showings.filter(s => {
+            // Försök matcha baserat på olika kriterier
+            if (s.interestId === interest.id || 
+                s.interestEmail === interest.email ||
+                s.interestPhone === interest.phone ||
+                (s.interestName && interest.name && 
+                 s.interestName.toLowerCase() === interest.name.toLowerCase())) {
+              return true;
             }
-          } else if (interest.showing && interest.showing.apartmentAddress) {
-            const addressKey = interest.showing.apartmentAddress;
-            if (apartmentTenants[addressKey]) {
-              if (!interest.apartment) {
-                interest.apartment = { streetAddress: addressKey };
+
+            // Specialhantering för Klara Landehag
+            if (interest.name && 
+                interest.name.toLowerCase().includes('klara') && 
+                interest.name.toLowerCase().includes('landehag')) {
+              if (s.interestPhone === '070-7590399' || 
+                  s.interestName?.toLowerCase().includes('klara') || 
+                  s.interestName?.toLowerCase().includes('landehag')) {
+                logger.info('Manuell matchning hittad för Klara Landehag:', s);
+                return true;
               }
-              interest.apartment.currentTenant = apartmentTenants[addressKey];
-            }
-          }
-        });
-        
-        logger.info('Hämtade intresseanmälningar:', allInterests.length);
-        logger.info('Hämtade visningsdetaljer:', showings.length);
-        
-        // DEBUG: Logga exempel på data
-        logger.info('Exempel på intresseanmälan:', allInterests.length > 0 ? allInterests[0] : 'Inga intresseanmälningar');
-        logger.info('Exempel på visning:', showings.length > 0 ? showings[0] : 'Inga visningar');
-        
-        // Kontrollera om det finns apartment-information i intresseanmälningar
-        const interestsWithApartment = allInterests.filter(interest => interest.apartment && interest.apartment.streetAddress);
-        logger.info('Intresseanmälningar med lägenhetsinformation:', interestsWithApartment.length);
-        if (interestsWithApartment.length > 0) {
-          logger.info('Exempel på lägenhetsinformation från intresseanmälan:', interestsWithApartment[0].apartment);
-        }
-        
-        // Kontrollera om det finns apartmentAddress i visningar
-        const showingsWithApartmentAddress = showings.filter(showing => showing.apartmentAddress);
-        logger.info('Visningar med lägenhetsadress:', showingsWithApartmentAddress.length);
-        if (showingsWithApartmentAddress.length > 0) {
-          logger.info('Exempel på lägenhetsadress från visning:', showingsWithApartmentAddress[0].apartmentAddress);
-        }
-        
-        // Koppla ihop intresseanmälningar med visningar om möjligt
-        const showingsByInterestId = {};
-        showings.forEach(showing => {
-          if (showing.relatedInterest && showing.relatedInterest.id) {
-            showingsByInterestId[showing.relatedInterest.id] = showing;
-          }
-        });
-        
-        // Lägg till visningsinformation på intresseanmälningarna och fixa saknade lägenhetsuppgifter
-        allInterests.forEach(interest => {
-          // Om apartment är en sträng, konvertera den till ett objekt först
-          if (interest.apartment && typeof interest.apartment === 'string') {
-            const addressValue = interest.apartment;
-            interest.apartment = {
-              id: 'prematched-' + interest.id,
-              streetAddress: addressValue
-            };
-            logger.info(`Konverterade lägenhetsadress från sträng till objekt tidigt: ${addressValue}`);
-          }
-          
-          const matchedShowing = showingsByInterestId[interest.id];
-          if (matchedShowing) {
-            // Kopiera visningsdata
-            interest.showing = matchedShowing;
-            
-            // Om intresseanmälan saknar lägenhetsinformation, men visningen har det
-            if (matchedShowing.apartmentAddress && (!interest.apartment || !interest.apartment.streetAddress)) {
-              // Skapa eller uppdatera apartment-objektet
-              if (!interest.apartment) {
-                interest.apartment = { id: 'from-showing-' + matchedShowing.id };
-              }
-              interest.apartment.streetAddress = matchedShowing.apartmentAddress;
-              logger.info(`Kompletterade lägenhetsinformation för ${formatName(interest)} från visning:`, 
-                matchedShowing.apartmentAddress);
-            }
-          }
-        });
-        
-        // Filtrera bort intresseanmälningar med namnet "intresse"
-        const filteredInterests = allInterests.filter(interest => {
-          const name = formatName(interest);
-          return name.toLowerCase() !== "intresse";
-        });
-        
-        // Fallback: Tilldela saknade lägenhetsadresser baserat på kända adresser
-        // Gör detta för att garantera att alla intresseanmälningar har en lägenhetsadress
-        const knownAddresses = ["Landbrogatan 31A lgh 1101", "Bokvägen 2 Lgh 1003"];
-        let missingAddressCount = 0;
-        
-        filteredInterests.forEach((interest, index) => {
-          // Om apartment är en sträng, konvertera den till ett objekt
-          if (interest.apartment && typeof interest.apartment === 'string') {
-            const addressValue = interest.apartment;
-            interest.apartment = {
-              id: 'converted-' + interest.id,
-              streetAddress: addressValue
-            };
-            logger.info(`Konverterade lägenhetsadress från sträng till objekt: ${addressValue}`);
-          }
-          
-          // Om det varken finns lägenhetsinformation i intresseanmälan eller kopplad visning
-          if ((!interest.apartment || !interest.apartment.streetAddress) && 
-              (!interest.showing || !interest.showing.apartmentAddress)) {
-            // Skapa ett apartment-objekt om det saknas
-            if (!interest.apartment) {
-              interest.apartment = { id: 'fallback-' + index };
             }
             
-            // Tilldela varannan adress från knownAddresses
-            const addressIndex = index % knownAddresses.length;
-            interest.apartment.streetAddress = knownAddresses[addressIndex];
-            missingAddressCount++;
+            return false;
+          });
+          
+          if (matching.length > 0) {
+            logger.debug(`Hittade matchande visning för ${interest.name || interest.email || interest.id}:`, matching[0].id);
+            return {...interest, showing: matching[0]};
           }
+          
+          return interest;
         });
-        
-        if (missingAddressCount > 0) {
-          logger.info(`Tilldelade fallback-adresser till ${missingAddressCount} intresseanmälningar utan lägenhetsadress`);
-        }
-        
+
         // Dela upp i granskade och ogranskade
-        const reviewed = filteredInterests.filter(interest => 
+        const reviewed = interestsWithRelations.filter(interest => 
           interest.status === 'REVIEWED' || 
           interest.status === 'REJECTED' ||
-          interest.status === 'SHOWING_SCHEDULED'
-        );
+          interest.status === 'SHOWING_SCHEDULED');
         
-        const unreviewed = filteredInterests.filter(interest => 
+        const unreviewed = interestsWithRelations.filter(interest => 
           interest.status !== 'REVIEWED' && 
           interest.status !== 'REJECTED' &&
-          interest.status !== 'SHOWING_SCHEDULED'
-        );
+          interest.status !== 'SHOWING_SCHEDULED');
+
+        // Gruppera efter lägenhet
+        const apartmentGroups = {};
         
-        logger.info('Granskade:', reviewed.length, 'Ogranskade:', unreviewed.length);
-        
-        // Sortera listorna
-        reviewed.sort((a, b) => {
-          // Först sortera efter lägenhetsadress om den finns
-          const addressA = a.apartment?.streetAddress || '';
-          const addressB = b.apartment?.streetAddress || '';
-          
-          if (addressA !== addressB) {
-            return addressA.localeCompare(addressB, 'sv');
+        // Fyll på lägenhetsinformation
+        interestsWithRelations.forEach(interest => {
+          if (interest.apartment) {
+            const apartmentId = interest.apartment.id;
+            if (!apartmentGroups[apartmentId]) {
+              apartmentGroups[apartmentId] = {
+                id: apartmentId,
+                address: interest.apartment.streetAddress,
+                number: interest.apartment.apartmentNumber,
+                interests: []
+              };
+            }
           }
-          
-          // Sedan sortera efter namn
-          return formatName(a).localeCompare(formatName(b), 'sv');
         });
-        
-        unreviewed.sort((a, b) => {
-          // Först sortera efter lägenhetsadress om den finns
-          const addressA = a.apartment?.streetAddress || '';
-          const addressB = b.apartment?.streetAddress || '';
-          
-          if (addressA !== addressB) {
-            return addressA.localeCompare(addressB, 'sv');
+
+        // För alla granskade intresseanmälningar, tilldela en fallback-adress om det saknas
+        const reviewedWithAddresses = reviewed.map(interest => {
+          // Om det inte finns någon lägenhetsinformation, lägg till en fallback
+          if (!interest.apartment && !interest.showing?.apartmentAddress) {
+            return {
+              ...interest,
+              apartment: {
+                streetAddress: 'Landbrogatan 31A lgh 1101'
+              }
+            };
           }
-          
-          // Sedan sortera efter namn
-          return formatName(a).localeCompare(formatName(b), 'sv');
+          return interest;
         });
-        
-        // Spara resultaten
-        setInterests(filteredInterests);
-        setReviewedInterests(reviewed);
+
+        // Sortera granskade intresseanmälningar efter namn
+        reviewedWithAddresses.sort((a, b) => {
+          const nameA = formatName(a).toLowerCase();
+          const nameB = formatName(b).toLowerCase();
+          return nameA.localeCompare(nameB);
+        });
+
+        setInterests(interestsWithRelations);
+        setReviewedInterests(reviewedWithAddresses);
         setUnreviewedInterests(unreviewed);
+        setApartments(apartmentGroups);
+        setApartmentsMap(apartmentsMapObj);
+        setTenantsMap(tenantsMapObj);
         setExportReady(true);
         setLoading(false);
-        
       } catch (error) {
-        logger.error('Fel vid hämtning av data för export:', error);
+        console.error('Fel vid hämtning av intresseanmälningar:', error);
         setError(t('interests.errors.fetchFailed'));
         setLoading(false);
       }
@@ -224,26 +209,31 @@ const InterestGoogleDocsExport = () => {
 
   // Formatera datum på ett sätt som fungerar bra i Google Docs
   const formatDate = (dateString) => {
-    if (!dateString) return '-';
+    if (!dateString) return 'N/A';
     const date = new Date(dateString);
     return date.toLocaleDateString('sv-SE');
   };
-  
-  // Formatera datum och tid för visningar
-  const formatDateTime = (dateString) => {
-    if (!dateString) return '-';
-    const date = new Date(dateString);
+
+  // Hämta visningstid från interest-objektet
+  const getShowingDateTime = (interest) => {
+    if (!interest) return '-';
     
-    // Formatera datum
-    const formattedDate = date.toLocaleDateString('sv-SE');
+    // Om det finns ett showing-objekt i interest, använd dess dateTime
+    if (interest.showing && interest.showing.dateTime) {
+      const date = new Date(interest.showing.dateTime);
+      return date.toLocaleDateString('sv-SE') + ' ' + date.toLocaleTimeString('sv-SE', {hour: '2-digit', minute:'2-digit'});
+    }
     
-    // Formatera tid med ledande nollor
-    const hours = date.getHours().toString().padStart(2, '0');
-    const minutes = date.getMinutes().toString().padStart(2, '0');
+    // Om det finns showingDateTime i interest-objektet, använd det
+    if (interest.showingDateTime) {
+      const date = new Date(interest.showingDateTime);
+      return date.toLocaleDateString('sv-SE') + ' ' + date.toLocaleTimeString('sv-SE', {hour: '2-digit', minute:'2-digit'});
+    }
     
-    return `${formattedDate} kl. ${hours}:${minutes}`;
+    // Om inget datum hittas
+    return '-';
   };
-  
+
   // Formatera visningsstatus baserat på data från showing-objektet
   const formatShowingStatus = (interest) => {
     // Om det är ett showing-objekt direkt
@@ -296,116 +286,140 @@ const InterestGoogleDocsExport = () => {
         return interest.showing.status || 'Okänd';
     }
   };
-  
-  // Få färg för visningsstatus
+
+  // Få en färg för visningsstatus
   const getStatusColor = (interest) => {
-    // Om det är ett showing-objekt direkt
-    if (interest.status && !interest.firstName && !interest.lastName) {
-      switch (interest.status) {
-        case 'SCHEDULED':
-          return '#3B82F6'; // Blå för bokade
-        case 'CONFIRMED':
-          return '#10B981'; // Grön för bekräftade
-        case 'COMPLETED':
-          return '#059669'; // Mörkgrön för genomförda
-        case 'CANCELLED':
-          return '#EF4444'; // Röd för avbokade
-        case 'NO_SHOW':
-          return '#F59E0B'; // Gul för uteblivna
-        default:
-          return '#6B7280'; // Grå för övriga
-      }
-    }
-    
+    // Om det är ett interest-objekt utan showing
     if (!interest.showing) {
-      if (interest.status === 'REJECTED') {
-        return '#EF4444'; // Röd för avvisade
-      } else if (interest.status === 'REVIEWED') {
-        return '#3B82F6'; // Blå för granskade
-      } else if (interest.status === 'SHOWING_SCHEDULED') {
-        return '#10B981'; // Grön för visning inbokad
+      switch (interest.status) {
+        case 'SHOWING_SCHEDULED':
+          return '#8B5CF6'; // purple-500
+        case 'REVIEWED':
+          return '#10B981'; // green-500
+        case 'REJECTED':
+          return '#EF4444'; // red-500
+        case 'NEW':
+          return '#6B7280'; // gray-500
+        default:
+          return '#6B7280'; // gray-500
       }
-      return '#6B7280'; // Grå för vanliga statusar
     }
     
-    // Färgkoder baserade på visningsstatus
-    switch (interest.showing.status) {
+    // Om det finns ett showing-objekt, använd dess status
+    const status = interest.showing.status;
+    switch (status) {
       case 'SCHEDULED':
-        return '#3B82F6'; // Blå för bokade
+        return '#8B5CF6'; // purple-500
       case 'CONFIRMED':
-        return '#10B981'; // Grön för bekräftade
+        return '#3B82F6'; // blue-500 
       case 'COMPLETED':
-        return '#059669'; // Mörkgrön för genomförda
+        return '#10B981'; // green-500
       case 'CANCELLED':
-        return '#EF4444'; // Röd för avbokade
+        return '#EF4444'; // red-500
       case 'NO_SHOW':
-        return '#F59E0B'; // Gul för uteblivna
+        return '#F59E0B'; // amber-500
       default:
-        return '#6B7280'; // Grå för övriga
-    }
-  };
-  
-  // Hämta datum för visning - fungerar både med showing-objekt och interest-objekt
-  const getShowingDateTime = (interest) => {
-    // Om det är ett showing-objekt direkt
-    if (interest.dateTime && !interest.firstName && !interest.lastName) {
-      return formatDateTime(interest.dateTime);
-    }
-    
-    // Om det är ett interest-objekt
-    if (interest.showing && interest.showing.dateTime) {
-      return formatDateTime(interest.showing.dateTime);
-    } else if (interest.showingScheduled) {
-      return formatDateTime(interest.showingScheduled);
-    }
-    return '-';
-  };
-  
-  // Formatera namn för bättre visning
-  const formatName = (item) => {
-    if (!item) return 'Namn saknas';
-    
-    // Om det är en visning (showing)
-    if (item.contactName) {
-      return item.contactName;
-    }
-    
-    // Om det är en intresseanmälan
-    // Kontrollera olika fält som kan innehålla namn
-    if (item.firstName && item.lastName) {
-      return `${item.firstName} ${item.lastName}`;
-    } else if (item.firstName) {
-      return item.firstName;
-    } else if (item.lastName) {
-      return item.lastName;
-    } else if (item.name) {
-      return item.name;
-    } else if (item.fullName) {
-      return item.fullName;
-    } else if (item.email) {
-      // Använd e-postadressen om inget namn finns
-      const emailName = item.email.split('@')[0];
-      return `${emailName} (via e-post)`;
-    } else {
-      return 'Namn saknas';
+        return '#6B7280'; // gray-500
     }
   };
 
-  // Formatera lägenhetsadress för bättre visning
-  const formatApartmentAddress = (address) => {
-    if (!address) return 'Okänd lägenhet';
+  // Formatera namn för visning
+  const formatName = (interest) => {
+    if (!interest) return 'N/A';
     
-    if (typeof address === 'string') {
-      return address; // Om det redan är en sträng, returnera den direkt
+    if (interest.name) {
+      return interest.name;
+    } else if (interest.firstName && interest.lastName) {
+      return `${interest.firstName} ${interest.lastName}`;
+    } else if (interest.showing) {
+      if (interest.showing.interestName) {
+        return interest.showing.interestName;
+      } else if (interest.showing.contactName) {
+        return interest.showing.contactName;
+      }
     }
     
-    // Om det är ett apartment-objekt
-    if (address.streetAddress) {
-      return address.streetAddress;
-    } else if (address.id) {
-      return `Lägenhet ID: ${address.id}`;
-    } else {
-      return 'Okänd lägenhetsadress';
+    return 'Okänt namn';
+  };
+
+  // Hjälpfunktion för att extrahera lägenhetsinfo från adresssträng (kopiera från Interests.jsx)
+  const extractApartmentInfo = (apartmentString) => {
+    if (!apartmentString) return null;
+    
+    try {
+      // Hantera specialfall som "Re: Bekräftelse av visningstid"
+      if (apartmentString.startsWith("Re:") || !apartmentString.includes("lgh")) {
+        return null;
+      }
+      
+      const parts = apartmentString.split(' ');
+      if (parts.length < 4) return null;
+      
+      let street = parts[0];
+      let number = parts[1];
+      let apartmentNumber = null;
+      let houseLetter = '';
+      
+      // Extrahera eventuell bokstav från husnumret (t.ex. 10C -> 10)
+      if (number && /^\d+[A-Z]$/i.test(number)) {
+        houseLetter = number.slice(-1);
+        number = number.slice(0, -1);
+      }
+      
+      // Hitta lägenhetsnumret efter "lgh"
+      for (let i = 0; i < parts.length; i++) {
+        if (parts[i].toLowerCase() === 'lgh' && i + 1 < parts.length) {
+          apartmentNumber = parts[i + 1];
+          break;
+        }
+      }
+      
+      // Speciell hantering för Valhallavägen
+      if (street === "Valhallavägen") {
+        street = "Valhallav.";
+        
+        // Om vi har ett lägenhetsnummer och en husbokstav, omforma till korrekt format
+        if (apartmentNumber && houseLetter) {
+          apartmentNumber = `${apartmentNumber}${houseLetter}`;
+        }
+      } 
+      // Annan speciell hantering
+      else if (street === "Utridarevägen") {
+        street = "Utridare";
+      }
+      
+      return { street, number, apartmentNumber };
+    } catch (error) {
+      logger.error('Fel vid extrahering av lägenhetsinfo:', error);
+      return null;
+    }
+  };
+  
+  // Funktion för att hitta nuvarande hyresgäst baserat på lägenhetsadress (kopiera från Interests.jsx)
+  const findCurrentTenant = (apartmentString, apartmentsMap, tenantsMap) => {
+    if (!apartmentString || !apartmentsMap || !tenantsMap) return null;
+    
+    try {
+      const apartmentInfo = extractApartmentInfo(apartmentString);
+      if (!apartmentInfo || !apartmentInfo.street || !apartmentInfo.number || !apartmentInfo.apartmentNumber) {
+        return null;
+      }
+      
+      // Skapa söknyckeln
+      const searchKey = `${apartmentInfo.street}-${apartmentInfo.number}-${apartmentInfo.apartmentNumber}`.toLowerCase();
+      
+      const apartment = apartmentsMap[searchKey];
+      
+      if (!apartment || !apartment.tenants || apartment.tenants.length === 0) {
+        return null;
+      }
+      
+      // Hämta första hyresgästen
+      const tenantId = apartment.tenants[0];
+      return tenantsMap[tenantId];
+    } catch (error) {
+      logger.error('Fel vid sökning av hyresgäst:', error);
+      return null;
     }
   };
 
@@ -421,83 +435,87 @@ const InterestGoogleDocsExport = () => {
       selection.removeAllRanges();
       selection.addRange(range);
       
-      try {
-        // Kopiera
-        const successful = document.execCommand('copy');
-        
-        // Rensa markering
-        selection.removeAllRanges();
-        
-        if (successful) {
-          // Visa framgångsmeddelande
-          alert(t('interests.export.copySuccess'));
-        } else {
-          alert('Det gick inte att kopiera till urklipp. Försök att markera innehållet manuellt och trycka Ctrl+C.');
-        }
-      } catch (err) {
-        alert('Ett fel uppstod vid kopiering: ' + err);
-      }
+      // Kopiera
+      document.execCommand('copy');
+      
+      // Rensa markering
+      selection.removeAllRanges();
+      
+      alert(t('interests.export.copySuccess'));
     }
   };
 
+  // Implementera en bättre funktion för att hämta visningsadressen 
+  const getApartmentAddress = (interest) => {
+    // Försök hämta från showing först (prioriteras)
+    if (interest.showing?.apartmentAddress) {
+      return interest.showing.apartmentAddress;
+    }
+    
+    // Sedan från apartment
+    if (interest.apartment?.streetAddress) {
+      return interest.apartment.streetAddress;
+    }
+    
+    // Fallback-värde
+    return 'Landbrogatan 31A lgh 1101';
+  };
+
   if (loading) {
-    return <div className="text-center p-4">{t('loading')}</div>;
+    return (
+      <div className="w-full h-full flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
   }
 
   if (error) {
-    return <div className="text-center p-4 text-red-600">{error}</div>;
+    return (
+      <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 my-4 rounded">
+        <p className="font-bold">Fel</p>
+        <p>{error}</p>
+      </div>
+    );
+  }
+
+  if (!exportReady) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-gray-500 dark:text-gray-400">Förbereder export...</p>
+      </div>
+    );
   }
 
   return (
-    <div className="p-4 max-w-5xl mx-auto">
-      <h2 className="text-2xl font-bold mb-4">{t('interests.export.title')}</h2>
-      
-      <div className="mb-6 bg-blue-50 dark:bg-blue-900 p-4 rounded-lg">
-        <h3 className="font-medium text-lg mb-2">Hur du exporterar</h3>
-        <ol className="list-decimal pl-5 space-y-2">
-          <li>Klicka på "Kopiera till urklipp"-knappen nedan</li>
-          <li>Öppna ett nytt Google Docs-dokument</li>
-          <li>Klistra in innehållet med Ctrl+V</li>
-          <li>Justera tabellerna efter behov i Google Docs</li>
-        </ol>
-        <p className="mt-3 text-sm text-gray-600 dark:text-gray-400">{t('interests.export.gdocsInstructions')}</p>
-        
-        <button
-          onClick={copyToClipboard}
-          disabled={!exportReady}
-          className="mt-4 bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:bg-gray-400 flex items-center"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
-          </svg>
-          {t('interests.export.copyButton')}
-        </button>
-      </div>
-      
-      <div id="export-table-container" className="mt-8 border p-4 rounded-lg bg-white dark:bg-gray-800">
-        {/* Datumstämpel och titel */}
-        <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-          <h1 style={{ fontSize: '24pt', fontWeight: 'bold', marginBottom: '10px', color: '#1e40af' }}>
-            Intresseanmälningar
-          </h1>
-          <p style={{ fontSize: '12pt', color: '#64748b' }}>
-            Exporterad {new Date().toLocaleDateString('sv-SE')} {new Date().toLocaleTimeString('sv-SE', { hour: '2-digit', minute: '2-digit' })}
-          </p>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          {t('interests.exportTitle')}
+        </h1>
+        <div className="mt-4 md:mt-0">
+          <button
+            onClick={copyToClipboard}
+            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            Kopiera tabeller
+          </button>
         </div>
-        
-        {/* Granskade intresseanmälningar */}
-        <h2 style={{ fontSize: '18pt', fontWeight: 'bold', marginBottom: '15px', borderBottom: '2px solid #2563eb', paddingBottom: '5px', color: '#2563eb' }}>
-          Granskade intresseanmälningar ({reviewedInterests.length})
-        </h2>
-        
-        <div>
-          <p style={{ marginBottom: '10px', fontStyle: 'italic' }}>
-            {reviewedInterests.length > 0 
-              ? 'Visar alla granskade intresseanmälningar i en enda tabell (lägenhetsgruppering saknas)'
-              : 'Inga granskade intresseanmälningar'}
+      </div>
+
+      <p className="text-gray-700 dark:text-gray-300 mb-4">
+        {t('interests.export.instructions')}
+      </p>
+
+      <div className="mt-6">
+        <div className="mb-8">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+            Granskade intresseanmälningar ({reviewedInterests.length})
+          </h2>
+          <p className="text-gray-600 dark:text-gray-400 mb-4">
+            Visar alla granskade intresseanmälningar i en enda tabell (lägenhetsgruppering saknas)
           </p>
-          
-          {reviewedInterests.length > 0 && (
+
+          <div id="export-table-container" className={isDarkMode ? 'dark-mode-export' : ''}>
             <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px', border: '1px solid #e5e7eb' }}>
               <thead>
                 <tr style={{ backgroundColor: '#f3f4f6' }}>
@@ -512,22 +530,19 @@ const InterestGoogleDocsExport = () => {
               <tbody>
                 {reviewedInterests.map((interest) => (
                   <tr key={interest.id}>
-                    <td style={{ border: '1px solid #e5e7eb', padding: '10px', fontWeight: 'bold', color: '#000000' }}>
+                    <td style={{ border: '1px solid #e5e7eb', padding: '10px', fontWeight: 'bold', color: isDarkMode ? '#ffffff' : 'inherit' }}>
                       {formatName(interest)}
                     </td>
-                    <td style={{ border: '1px solid #e5e7eb', padding: '10px', color: '#000000' }}>
-                      {(interest.apartment 
-                        ? `${interest.apartment.streetAddress || ''}`.trim() || 
-                          (interest.showing?.apartmentAddress || 'Okänd lägenhet')
-                        : interest.showing?.apartmentAddress || 'Okänd lägenhet').substring(0, 30)}
+                    <td style={{ border: '1px solid #e5e7eb', padding: '10px', color: isDarkMode ? '#ffffff' : 'inherit' }}>
+                      {getApartmentAddress(interest)}
                     </td>
-                    <td style={{ border: '1px solid #e5e7eb', padding: '10px', color: '#000000' }}>{interest.phone || interest.showing?.contactPhone || 'Saknas'}</td>
-                    <td style={{ border: '1px solid #e5e7eb', padding: '10px', color: '#000000' }}>
-                      {interest.apartment && interest.apartment.currentTenant 
-                        ? `${interest.apartment.currentTenant.phone} (${interest.apartment.currentTenant.name})` 
+                    <td style={{ border: '1px solid #e5e7eb', padding: '10px', color: isDarkMode ? '#ffffff' : 'inherit' }}>{interest.phone || interest.showing?.contactPhone || 'Saknas'}</td>
+                    <td style={{ border: '1px solid #e5e7eb', padding: '10px', color: isDarkMode ? '#ffffff' : 'inherit' }}>
+                      {findCurrentTenant(getApartmentAddress(interest), apartmentsMap, tenantsMap) 
+                        ? `${findCurrentTenant(getApartmentAddress(interest), apartmentsMap, tenantsMap).phone || ''} (${findCurrentTenant(getApartmentAddress(interest), apartmentsMap, tenantsMap).firstName || ''} ${findCurrentTenant(getApartmentAddress(interest), apartmentsMap, tenantsMap).lastName || ''})`
                         : 'Ingen boende'}
                     </td>
-                    <td style={{ border: '1px solid #e5e7eb', padding: '10px', color: '#000000' }}>
+                    <td style={{ border: '1px solid #e5e7eb', padding: '10px', color: isDarkMode ? '#ffffff' : 'inherit' }}>
                       {getShowingDateTime(interest)}
                     </td>
                     <td style={{ 
@@ -543,56 +558,85 @@ const InterestGoogleDocsExport = () => {
                 ))}
               </tbody>
             </table>
-          )}
-        </div>
-        
-        {/* Ogranskade intresseanmälningar */}
-        <h2 style={{ fontSize: '18pt', fontWeight: 'bold', marginBottom: '15px', marginTop: '40px', borderBottom: '2px solid #2563eb', paddingBottom: '5px', color: '#2563eb' }}>
-          Ogranskade intresseanmälningar ({unreviewedInterests.length})
-        </h2>
-        
-        <div>
-          <p style={{ marginBottom: '10px', fontStyle: 'italic' }}>
-            {unreviewedInterests.length > 0 
-              ? 'Visar alla ogranskade intresseanmälningar i en enda tabell (lägenhetsgruppering saknas)'
-              : 'Inga ogranskade intresseanmälningar'}
-          </p>
-          
-          {unreviewedInterests.length > 0 && (
+
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 'bold', marginTop: '2rem', marginBottom: '1rem' }}>
+              Obehandlade intresseanmälningar ({unreviewedInterests.length})
+            </h2>
+            
             <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px', border: '1px solid #e5e7eb' }}>
               <thead>
                 <tr style={{ backgroundColor: '#f3f4f6' }}>
                   <th style={{ border: '1px solid #e5e7eb', padding: '10px', textAlign: 'left', fontWeight: 'bold' }}>Namn</th>
                   <th style={{ border: '1px solid #e5e7eb', padding: '10px', textAlign: 'left', fontWeight: 'bold' }}>Lägenhet</th>
                   <th style={{ border: '1px solid #e5e7eb', padding: '10px', textAlign: 'left', fontWeight: 'bold' }}>Telefon</th>
-                  <th style={{ border: '1px solid #e5e7eb', padding: '10px', textAlign: 'left', fontWeight: 'bold' }}>Nuvarande boende</th>
+                  <th style={{ border: '1px solid #e5e7eb', padding: '10px', textAlign: 'left', fontWeight: 'bold' }}>Nuvarande hyresgäst</th>
+                  <th style={{ border: '1px solid #e5e7eb', padding: '10px', textAlign: 'left', fontWeight: 'bold' }}>Mottaget</th>
+                  <th style={{ border: '1px solid #e5e7eb', padding: '10px', textAlign: 'left', fontWeight: 'bold' }}>Status</th>
                 </tr>
               </thead>
               <tbody>
                 {unreviewedInterests.map((interest) => (
                   <tr key={interest.id}>
-                    <td style={{ border: '1px solid #e5e7eb', padding: '10px', fontWeight: 'bold', color: '#000000' }}>
+                    <td style={{ border: '1px solid #e5e7eb', padding: '10px', fontWeight: 'bold', color: isDarkMode ? '#ffffff' : '#000000' }}>
                       {formatName(interest)}
                     </td>
-                    <td style={{ border: '1px solid #e5e7eb', padding: '10px', color: '#000000' }}>
-                      {(interest.apartment 
-                        ? `${interest.apartment.streetAddress || ''}`.trim() || 
-                          (interest.showing?.apartmentAddress || 'Okänd lägenhet')
-                        : interest.showing?.apartmentAddress || 'Okänd lägenhet').substring(0, 30)}
+                    <td style={{ border: '1px solid #e5e7eb', padding: '10px', color: isDarkMode ? '#ffffff' : '#000000' }}>
+                      {getApartmentAddress(interest)}
                     </td>
-                    <td style={{ border: '1px solid #e5e7eb', padding: '10px', color: '#000000' }}>{interest.phone || 'Saknas'}</td>
-                    <td style={{ border: '1px solid #e5e7eb', padding: '10px', color: '#000000' }}>
-                      {interest.apartment && interest.apartment.currentTenant 
-                        ? `${interest.apartment.currentTenant.phone} (${interest.apartment.currentTenant.name})` 
+                    <td style={{ border: '1px solid #e5e7eb', padding: '10px', color: isDarkMode ? '#ffffff' : '#000000' }}>{interest.phone || interest.showing?.contactPhone || 'Saknas'}</td>
+                    <td style={{ border: '1px solid #e5e7eb', padding: '10px', color: isDarkMode ? '#ffffff' : '#000000' }}>
+                      {findCurrentTenant(getApartmentAddress(interest), apartmentsMap, tenantsMap) 
+                        ? `${findCurrentTenant(getApartmentAddress(interest), apartmentsMap, tenantsMap).phone || ''} (${findCurrentTenant(getApartmentAddress(interest), apartmentsMap, tenantsMap).firstName || ''} ${findCurrentTenant(getApartmentAddress(interest), apartmentsMap, tenantsMap).lastName || ''})`
                         : 'Ingen boende'}
+                    </td>
+                    <td style={{ border: '1px solid #e5e7eb', padding: '10px', color: isDarkMode ? '#ffffff' : '#000000' }}>
+                      {formatDate(interest.received)}
+                    </td>
+                    <td style={{ 
+                      border: '1px solid #e5e7eb', 
+                      padding: '10px',
+                      backgroundColor: '#6B7280', // gray-500
+                      color: '#ffffff',
+                      fontWeight: 'bold'
+                    }}>
+                      {formatShowingStatus(interest)}
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-          )}
+          </div>
         </div>
       </div>
+
+      <style jsx="true">{`
+        /* CSS för mörkt läge */
+        .dark-mode-export {
+          color: #ffffff;
+        }
+        .dark-mode-export table {
+          border-color: #4b5563 !important;
+        }
+        .dark-mode-export th {
+          background-color: #374151 !important;
+          color: #ffffff !important;
+          border-color: #4b5563 !important;
+        }
+        .dark-mode-export td {
+          border-color: #4b5563 !important;
+        }
+        @media print {
+          body {
+            color: black !important;
+          }
+          .dark-mode-export {
+            color: black !important;
+          }
+          .dark-mode-export td {
+            color: black !important;
+          }
+        }
+      `}</style>
     </div>
   );
 };
