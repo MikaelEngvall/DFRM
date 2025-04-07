@@ -678,7 +678,7 @@ const Interests = ({ view = 'list' }) => {
             onClick={exportToExcel}
           >
             <DocumentTextIcon className="h-5 w-5 mr-2" />
-            {t('export')}
+            {t('common.export')}
           </button>
           <button 
             className="flex items-center px-3 py-2 text-sm font-medium rounded-md text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700 dark:hover:bg-gray-700"
@@ -699,7 +699,7 @@ const Interests = ({ view = 'list' }) => {
             onClick={() => openEmailModal()}
           >
             <EnvelopeIcon className="h-5 w-5 mr-2" />
-            {t('send')}
+            {t('common.send')}
           </button>
         </div>
       </div>

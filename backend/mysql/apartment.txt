@@ -1,0 +1,1578 @@
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Gångbrogatan',
+    '13',
+    'Lgh 1202',
+    '12',
+    '37237',
+    'Ronneby'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Västra Prinsgatan',
+    '44',
+    'Lgh 1101',
+    '3',
+    '37116',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Utridarevägen',
+    '3B',
+    'Lgh 1303',
+    '15',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Fortifikationsgatan',
+    '10',
+    'Lgh 1102',
+    '5',
+    '37136',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Valhallavägen',
+    '10B',
+    'Lgh 1102',
+    '112',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Landbrogatan',
+    '31A',
+    'Lgh 1001',
+    '120',
+    '37134',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Utridarevägen',
+    '3B',
+    'Lgh 1002',
+    '23',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Utridarevägen',
+    '3B',
+    'Lgh 1103',
+    '05',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Västra Vittusgatan',
+    '2',
+    'Lgh 1002',
+    '106',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Landbrogatan',
+    '31A',
+    'Lgh 1102',
+    '113',
+    '37134',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Styrmansgatan',
+    '38',
+    'Lgh 1001',
+    '3',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Hagagatan',
+    '5',
+    'Lgh 1001',
+    '2',
+    '37236',
+    'Ronneby'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Styrmansgatan',
+    '38',
+    'Lgh 1001',
+    '1',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Valhallavägen',
+    '10B',
+    'Lgh 1101',
+    '113',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Chapmansgatan',
+    '6',
+    'Lgh 1102',
+    '4',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Södra Smedjegatan',
+    '3',
+    'Lgh 1001',
+    '1',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Utridarevägen',
+    '3B',
+    'Lgh 1203',
+    '11',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Hagagatan',
+    '5',
+    'Lgh 1102',
+    '5',
+    '37236',
+    'Ronneby'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Valhallavägen',
+    '10B',
+    'Lgh 1202',
+    '120',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Gångbrogatan',
+    '13',
+    'Lgh 1104',
+    '10',
+    '37237',
+    'Ronneby'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Utridarevägen',
+    '3B',
+    'Lgh 1401',
+    '18',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Landbrogatan',
+    '31B',
+    'Lgh 1102',
+    '121',
+    '37134',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Södra Smedjegatan',
+    '3',
+    'Lgh 1201',
+    '2',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Landbrogatan',
+    '31A',
+    'Lgh 1201',
+    '116',
+    '37134',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Valhallavägen',
+    '10B',
+    'Lgh 1301',
+    '121',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Valhallavägen',
+    '10C',
+    'Lgh 1103',
+    '109',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Valhallavägen',
+    '10A',
+    'Lgh 1001',
+    '105',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Södra Smedjegatan',
+    '3',
+    'Lgh 1201',
+    '4',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Västra Prinsgatan',
+    '44',
+    'Lgh 1202',
+    '7',
+    '37116',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Västra Vittusgatan',
+    '2',
+    'Lgh 1101',
+    '109',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Utridarevägen',
+    '3B',
+    'Lgh 1301',
+    '13',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Fortifikationsgatan',
+    '10',
+    'Lgh 1103',
+    '6',
+    '37136',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Chapmansgatan',
+    '6',
+    'Lgh 1001',
+    '1',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Landbrogatan',
+    '31A',
+    'Lgh 1202',
+    '115',
+    '37134',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Utridarevägen',
+    '3B',
+    'Lgh 1202',
+    '10',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Kyrkogatan',
+    '15',
+    'Lgh 1101',
+    '1',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Kyrkogatan',
+    '15',
+    'Lgh 1301',
+    '4',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Tingsgatan',
+    '9',
+    'Lgh 1101',
+    '4',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Utridarevägen',
+    '3B',
+    'Lgh 1101',
+    '1',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Västra Prinsgatan',
+    '44',
+    'Lgh 1002',
+    '2',
+    '37116',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Fortifikationsgatan',
+    '10',
+    'Lgh 1001',
+    '1',
+    '37136',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Utridarevägen',
+    '3B',
+    'Lgh 1101',
+    '3',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Valhallavägen',
+    '10C',
+    'Lgh 1203',
+    '117',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Valhallavägen',
+    '10A',
+    'Lgh 1002',
+    '102',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Valhallavägen',
+    '10C',
+    'Lgh 902',
+    '126',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Chapmansgatan',
+    '6',
+    'Lgh 1202',
+    '6',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Landbrogatan',
+    '31A',
+    'Lgh 1302',
+    '117',
+    '37134',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Västra Vittusgatan',
+    '2',
+    'Lgh 1001',
+    '105',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Tingsgatan',
+    '9',
+    'Lgh 1002',
+    '1',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Västra Vittusgatan',
+    '2',
+    'Lgh 1202',
+    '110',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Västra Prinsgatan',
+    '44',
+    'Lgh 1301',
+    '9',
+    '37116',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Utridarevägen',
+    '3B',
+    'Lgh 1001',
+    '24',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Utridarevägen',
+    '3B',
+    'Lgh 1001',
+    '25',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Landbrogatan',
+    '31B',
+    'Lgh 1301',
+    '125',
+    '37134',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Valhallavägen',
+    '10A',
+    'Lgh 1002',
+    '107',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Västra Prinsgatan',
+    '44',
+    'Lgh 1303',
+    '11',
+    '37116',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Landbrogatan',
+    '31B',
+    'Lgh 1002',
+    '119',
+    '37134',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Västra Prinsgatan',
+    '44',
+    'Lgh 1203',
+    '8',
+    '37116',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Utridarevägen',
+    '3B',
+    'Lgh 1403',
+    '16',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Fortifikationsgatan',
+    '1',
+    'Lgh 1207',
+    '7',
+    '37136',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Landbrogatan',
+    '31B',
+    'Lgh 1302',
+    '124',
+    '37134',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Valhallavägen',
+    '10C',
+    'Lgh 1101',
+    '111',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Chapmansgatan',
+    '6',
+    'Lgh 1002',
+    '2',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Valhallavägen',
+    '10A',
+    'Lgh 1001',
+    '108',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Fortifikationsgatan',
+    '10',
+    'Lgh 1104',
+    '7',
+    '37136',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Valhallavägen',
+    '10C',
+    'Lgh 1201',
+    '119',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Landbrogatan',
+    '31B',
+    'Lokal',
+    '37134',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Södra Smedjegatan',
+    '3',
+    'Lgh 1101',
+    '3',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Västra Prinsgatan',
+    '44',
+    'Lgh 1103',
+    '5',
+    '37116',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Kyrkogatan',
+    '15',
+    'Lgh 1102',
+    '2',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Fortifikationsgatan',
+    '10',
+    'Lgh 1002',
+    '2',
+    '37136',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Utridarevägen',
+    '3B',
+    'Lgh 1402',
+    '17',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Västra Prinsgatan',
+    '44',
+    'Lgh 1001',
+    '1',
+    '37116',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Valhallavägen',
+    '10A',
+    'Lgh 1203',
+    '122',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Landbrogatan',
+    '31A',
+    'Lgh 1101',
+    '114',
+    '37134',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Valhallavägen',
+    '10B',
+    'Lgh 1102',
+    '115',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Gångbrogatan',
+    '13',
+    'Lgh 1203',
+    '13',
+    '37237',
+    'Ronneby'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Utridarevägen',
+    '3B',
+    'Lgh 1202',
+    '8',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Valhallavägen',
+    '10B',
+    'Lgh 1202',
+    '123',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Utridarevägen',
+    '3B',
+    'Lgh 1302',
+    '14',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Tingsgatan',
+    '9',
+    'Lgh 1001',
+    '3',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Västra Vittusgatan',
+    '2',
+    'Lgh 1102',
+    '108',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Landbrogatan',
+    '31B',
+    'Lgh 1101',
+    '122',
+    '37134',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Valhallavägen',
+    '10C',
+    'Lgh 903',
+    '127',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Valhallavägen',
+    '10A',
+    'Lgh 1001',
+    '103',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Södra Smedjegatan',
+    '3',
+    'Lgh 1301',
+    '5',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Chapmansgatan',
+    '6',
+    'Lgh 1201',
+    '5',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Valhallavägen',
+    '10B',
+    'Lgh 1103',
+    '114',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Utridarevägen',
+    '3B',
+    'Lgh 1104',
+    '6',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Utridarevägen',
+    '3B',
+    'Lgh 1204',
+    '12',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Gångbrogatan',
+    '13',
+    'Lgh 1301',
+    '14',
+    '37237',
+    'Ronneby'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Valhallavägen',
+    '10C',
+    'Lgh 1202',
+    '118',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Utridarevägen',
+    '3B',
+    'Lgh 1402',
+    '20',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Valhallavägen',
+    '10B',
+    'Lgh 1202',
+    '110',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Utridarevägen',
+    '3B',
+    'Lgh 1201',
+    '9',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Utridarevägen',
+    '3B',
+    'Lgh 1201',
+    '7',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Tingsgatan',
+    '9',
+    'Lgh 1201',
+    '6',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Fortifikationsgatan',
+    '10',
+    'Lgh 1101',
+    '4',
+    '37136',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Valhallavägen',
+    '10C',
+    'Lgh 1003',
+    '101',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Västra Prinsgatan',
+    '44',
+    'Lgh 1102',
+    '4',
+    '37116',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Utridarevägen',
+    '3B',
+    'Lgh 1501',
+    '22',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Valhallavägen',
+    '10A',
+    'Lgh 1201',
+    '124',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Utridarevägen',
+    '3B',
+    'Lgh 1404',
+    '19',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Gångbrogatan',
+    '13',
+    'Lgh 1103',
+    '9',
+    '37237',
+    'Ronneby'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Landbrogatan',
+    '31A',
+    'Lgh 1301',
+    '118',
+    '37134',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Fortifikationsgatan',
+    '1',
+    'Lgh 1001',
+    '1',
+    '37136',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Fortifikationsgatan',
+    '10',
+    'Lgh 1003',
+    '3',
+    '37136',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Västra Prinsgatan',
+    '44',
+    'Lgh 1302',
+    '10',
+    '37116',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Valhallavägen',
+    '10A',
+    'Lgh 1003',
+    '106',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Utridarevägen',
+    '3B',
+    'Lgh 1401',
+    '21',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Västra Vittusgatan',
+    '2',
+    'Lgh 1103',
+    '107',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Kyrkogatan',
+    '15',
+    'Lokal 2',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Styrmansgatan',
+    '38',
+    'Lokal 2',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Chapmansgatan',
+    '6',
+    'Lgh 1101',
+    '3',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Styrmansgatan',
+    '38',
+    'Lokal 3',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Hagagatan',
+    '5',
+    'Lgh 1002',
+    '3',
+    '37236',
+    'Ronneby'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Kyrkogatan',
+    '15',
+    'Lokal 1',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Kyrkogatan',
+    '15',
+    'Lgh 1201',
+    '3',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Gångbrogatan',
+    '13',
+    'Lgh 1201',
+    '11',
+    '37237',
+    'Ronneby'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Valhallavägen',
+    '10B',
+    'Lgh 1101',
+    '116',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Valhallavägen',
+    '10A',
+    'Lgh 1002',
+    '104',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Styrmansgatan',
+    '38',
+    'Lgh 1101',
+    '4',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Hagagatan',
+    '5',
+    'Lgh 1101',
+    '1',
+    '37236',
+    'Ronneby'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Landbrogatan',
+    '31B',
+    'Lgh 1202',
+    '123',
+    '37134',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Hagagatan',
+    '5',
+    'Lgh 1101',
+    '4',
+    '37236',
+    'Ronneby'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Styrmansgatan',
+    '38',
+    'Lgh 1101',
+    '2',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Utridarevägen',
+    '3B',
+    'Lgh 1102',
+    '4',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Utridarevägen',
+    '3B',
+    'Lgh 1102',
+    '2',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Valhallavägen',
+    '10C',
+    'Lgh 901',
+    '125',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Västra Prinsgatan',
+    '44',
+    'Lgh 1201',
+    '6',
+    '37116',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Västra Vittusgatan',
+    '2',
+    'Lgh 1201',
+    '111',
+    '37140',
+    'Karlskrona'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);
+
+INSERT INTO apartments (street, number, apartment_number, old, postal_code, city) VALUES (
+    'Gångbrogatan',
+    '13',
+    'Lgh 1001',
+    '8',
+    '37237',
+    'Ronneby'
+) ON DUPLICATE KEY UPDATE
+    street = VALUES(street),
+    number = VALUES(number),
+    old = VALUES(old);

@@ -37,6 +37,8 @@ const translations = {
     notSpecified: 'Не вказано',
     at: 'о',
     forceUpdate: 'Примусове оновлення',
+    export: 'Експортувати',
+    send: 'Надіслати'
   },
 
   languages: {

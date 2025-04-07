@@ -36,7 +36,9 @@ export default {
     unauthorized: 'Nie masz uprawnień do wykonania tej akcji',
     notSpecified: 'Nie określono',
     at: 'o',
-    forceUpdate: 'Wymuś aktualizację'
+    forceUpdate: 'Wymuś aktualizację',
+    export: 'Eksportuj',
+    send: 'Wyślij'
   },
 
   languages: {

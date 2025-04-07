@@ -40,6 +40,7 @@ export default {
     openLink: 'Öppna länk',
     at: 'kl.',
     forceUpdate: 'Tvinga uppdatering',
+    export: 'Exportera',
   },
 
   languages: {
