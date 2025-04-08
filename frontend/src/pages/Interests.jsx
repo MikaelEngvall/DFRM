@@ -9,7 +9,6 @@ import { interestService, taskService, userService, emailService, apartmentServi
 import { EnvelopeIcon, CalendarIcon, ClockIcon, ArrowsUpDownIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
 import EmailModal from '../components/EmailModal';
 import { useNavigate } from 'react-router-dom';
-import * as XLSX from 'xlsx';
 import { createLogger } from '../utils/logger';
 import InterestGoogleDocsExport from '../components/InterestGoogleDocsExport';
 import { Button } from '../components/ui/button';
@@ -567,87 +566,6 @@ const Interests = ({ view = 'list' }) => {
     }
   };
 
-  // Funktion för att exportera till Excel
-  const exportToExcel = async () => {
-    try {
-      setIsLoading(true);
-      
-      // Hämta enbart granskade/behandlade intresseanmälningar
-      const data = reviewedInterests;
-      
-      if (!data || data.length === 0) {
-        setError(t('interests.messages.noDataToExport'));
-        setIsLoading(false);
-        return;
-      }
-      
-      // Förbered data för Excel export
-      const headers = [
-        t('interests.fields.name'),
-        t('interests.fields.email'),
-        t('interests.fields.phone'),
-        t('interests.fields.apartment'),
-        t('interests.fields.received'),
-        t('interests.fields.status'),
-        t('interests.fields.reviewComments'),
-        t('interests.fields.reviewedBy')
-      ];
-
-      const rows = data.map(interest => [
-        formatText(interest.name) || '-',
-        formatText(interest.email) || '-',
-        formatText(interest.phone) || '-',
-        formatText(interest.apartment) || '-',
-        formatDate(interest.received) || '-',
-        interest.status === 'REVIEWED' ? t('interests.status.REVIEWED') :
-          interest.status === 'REJECTED' ? t('interests.status.REJECTED') :
-          interest.status === 'SHOWING_SCHEDULED' ? t('interests.status.SHOWING_SCHEDULED') : '-',
-        formatText(interest.reviewComments) || '-',
-        interest.reviewedBy ? `${interest.reviewedBy.firstName || ''} ${interest.reviewedBy.lastName || ''}` : '-'
-      ]);
-
-      // Skapa ett XLSX arbetsboksobjekt
-      const wb = XLSX.utils.book_new();
-      
-      // Skapa ett arbetsblad med data
-      const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
-      
-      // Stil för rubrikraden
-      const headerRange = XLSX.utils.decode_range('A1:H1');
-      for (let col = headerRange.s.c; col <= headerRange.e.c; col++) {
-        const cellAddress = XLSX.utils.encode_cell({ r: 0, c: col });
-        if (!ws[cellAddress]) continue;
-        
-        // Skapa en cellstil med fet stil och bakgrundsfärg
-        ws[cellAddress].s = {
-          font: { bold: true },
-          fill: { fgColor: { rgb: "DDDDDD" } }
-        };
-      }
-      
-      // Lägg till arbetsbladet i arbetsboken
-      const today = new Date().toLocaleDateString('sv-SE').replace(/\//g, '-');
-      const sheetName = `${t('interests.reviewedTitle')}`;
-      XLSX.utils.book_append_sheet(wb, ws, sheetName);
-      
-      // Generera en filnamn med dagens datum
-      const fileName = `${t('interests.reviewedTitle')}_${today}.xlsx`;
-      
-      // Exportera arbetsboken till en binär sträng
-      XLSX.writeFile(wb, fileName);
-      
-      // Visa framgångsmeddelande
-      setSuccessMessage(t('interests.messages.exportSuccess'));
-      setTimeout(() => setSuccessMessage(''), 3000);
-      
-    } catch (err) {
-      logger.error('Error exporting data:', err);
-      setError(t('interests.messages.exportError'));
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   // Funktion för att exportera till SQL
   const exportToSql = async () => {
     try {
@@ -950,11 +868,6 @@ const Interests = ({ view = 'list' }) => {
     return <InterestGoogleDocsExport />;
   }
 
-  // Lägg till en knapp för Google Docs-export
-  const exportToGoogleDocs = () => {
-    navigate('/interests/export-to-google-docs');
-  };
-
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-full">
@@ -974,10 +887,10 @@ const Interests = ({ view = 'list' }) => {
         <div className="flex space-x-3 mt-3 md:mt-0">
           <button
             className="flex items-center px-3 py-2 text-sm font-medium rounded-md text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700 dark:hover:bg-gray-700"
-            onClick={exportToExcel}
+            onClick={exportToHtml}
           >
             <DocumentTextIcon className="h-5 w-5 mr-2" />
-            Excel
+            HTML
           </button>
           <button
             className="flex items-center px-3 py-2 text-sm font-medium rounded-md text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700 dark:hover:bg-gray-700"
@@ -986,20 +899,6 @@ const Interests = ({ view = 'list' }) => {
             <DocumentTextIcon className="h-5 w-5 mr-2" />
             SQL
           </button>
-          <button
-            className="flex items-center px-3 py-2 text-sm font-medium rounded-md text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700 dark:hover:bg-gray-700"
-            onClick={exportToHtml}
-          >
-            <DocumentTextIcon className="h-5 w-5 mr-2" />
-            HTML
-          </button>
-          <Button
-            variant="outline"
-            onClick={() => navigate('/interests/export-to-google-docs')}
-            className="mr-2"
-          >
-            {t('common.export')}
-          </Button>
           <button
             className="flex items-center px-3 py-2 text-sm font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-900 dark:text-indigo-200 dark:hover:bg-indigo-800"
             onClick={toggleView}
