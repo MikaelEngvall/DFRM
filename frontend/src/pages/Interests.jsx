@@ -327,6 +327,23 @@ const Interests = ({ view = 'list' }) => {
     }
   };
 
+  // Nu kan vi säkert använda useEffect eftersom funktionerna är deklarerade
+  // Uppdatera hyresgäst- och lägenhetsdata när currentView ändras
+  useEffect(() => {
+    // Hämta hyresgäst och lägenhetsdata när vyn ändras
+    fetchApartments();
+    fetchTenants();
+    
+    // Hämta rätt intresseanmälningar baserat på vyn
+    if (currentView === INTEREST_VIEWS.REVIEWED) {
+      fetchReviewedInterests(true);
+      logger.debug('Växlade till granskade intresseanmälningar');
+    } else {
+      fetchInterests(true);
+      logger.debug('Växlade till ogranskade intresseanmälningar');
+    }
+  }, [currentView, fetchApartments, fetchTenants]);
+
   // Starta/stoppa polling för automatisk uppdatering
   useEffect(() => {
     // Starta polling
@@ -585,7 +602,7 @@ const Interests = ({ view = 'list' }) => {
     try {
       setIsLoading(true);
       
-      // Hämta data som ska exporteras
+      // Hämta rätt data baserat på vilken vy som visas
       const data = getDisplayData();
       if (!data || data.length === 0) {
         setError(t('interests.messages.noDataToExport'));
@@ -856,10 +873,21 @@ const Interests = ({ view = 'list' }) => {
 
   // Funktion för att växla mellan vyer
   const toggleView = () => {
+    // Visa laddningsskärm först
+    setIsLoading(true);
+    
+    // Ändra vy 
     setCurrentView(
       currentView === INTEREST_VIEWS.UNREVIEWED 
       ? INTEREST_VIEWS.REVIEWED 
       : INTEREST_VIEWS.UNREVIEWED
+    );
+    
+    // Meddelande om vilken vy som laddas
+    setSuccessMessage(
+      currentView === INTEREST_VIEWS.UNREVIEWED 
+      ? t('interests.messages.loadingReviewed') 
+      : t('interests.messages.loadingUnreviewed')
     );
   };
 
