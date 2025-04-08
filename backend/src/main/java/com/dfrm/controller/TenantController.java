@@ -167,16 +167,13 @@ public class TenantController {
         
         // Skapa INSERT-satser för varje hyresgäst
         for (Tenant tenant : tenants) {
-            sql.append("INSERT INTO tenants (id, firstName, lastName, personnummer, email, phone, street, postalCode, city, movedInDate, resiliationDate, comment, isTemporary, apartmentId) VALUES (\n");
+            sql.append("INSERT INTO tenants (id, firstName, lastName, personnummer, email, phone, movedInDate, resiliationDate, comment, isTemporary, apartmentId) VALUES (\n");
             sql.append("    '").append(tenant.getId()).append("',\n");
             sql.append("    '").append(escapeSql(tenant.getFirstName())).append("',\n");
             sql.append("    '").append(escapeSql(tenant.getLastName())).append("',\n");
             sql.append("    '").append(escapeSql(tenant.getPersonnummer())).append("',\n");
             sql.append("    '").append(escapeSql(tenant.getEmail())).append("',\n");
             sql.append("    '").append(escapeSql(tenant.getPhone())).append("',\n");
-            sql.append("    '").append(escapeSql(tenant.getStreet())).append("',\n");
-            sql.append("    '").append(escapeSql(tenant.getPostalCode())).append("',\n");
-            sql.append("    '").append(escapeSql(tenant.getCity())).append("',\n");
             
             // Hantera datum-fält som kan vara null
             if (tenant.getMovedInDate() != null) {

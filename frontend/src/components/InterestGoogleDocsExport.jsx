@@ -228,55 +228,43 @@ const InterestGoogleDocsExport = () => {
 
   // Formatera visningsstatus baserat på data från showing-objektet
   const formatShowingStatus = (interest) => {
-    // Om det är ett showing-objekt direkt
-    if (interest.status && !interest.firstName && !interest.lastName) {
-      switch (interest.status) {
-        case 'SCHEDULED':
-          return 'Bokad';
-        case 'CONFIRMED':
-          return 'Bekräftad';
-        case 'COMPLETED':
-          return 'Genomförd';
-        case 'CANCELLED':
-          return 'Avbokad';
-        case 'NO_SHOW':
-          return 'Uteblev';
-        default:
-          return interest.status || 'Okänd';
-      }
+    if (!interest.showingDate) {
+      return 'Ingen visning';
     }
     
-    // Om det är ett interest-objekt
-    if (!interest.showing) {
-      // Om det inte finns ett showing-objekt, visa intresseanmälans status
-      if (interest.status === 'SHOWING_SCHEDULED') {
-        return 'Visning inbokad';
-      } else if (interest.status === 'REVIEWED') {
-        return 'Granskad';
-      } else if (interest.status === 'REJECTED') {
-        return 'Avvisad';
-      } else if (interest.status === 'NEW') {
-        return 'Ny';
-      } else {
-        return interest.status || 'Okänd';
-      }
+    if (interest.processedDate) {
+      return 'Processad';
     }
     
-    // Om det finns ett showing-objekt, visa dess status
-    switch (interest.showing.status) {
-      case 'SCHEDULED':
-        return 'Bokad';
-      case 'CONFIRMED':
-        return 'Bekräftad';
-      case 'COMPLETED':
-        return 'Genomförd';
-      case 'CANCELLED':
-        return 'Avbokad';
-      case 'NO_SHOW':
-        return 'Uteblev';
-      default:
-        return interest.showing.status || 'Okänd';
+    if (interest.acceptedDate) {
+      return 'Bekräftad';
     }
+    
+    if (interest.showingDate) {
+      return 'Bokad';
+    }
+    
+    return 'Okänd';
+  };
+
+  const getShowingStatus = (interest) => {
+    if (!interest.showingDate) {
+      return 'Ingen visning';
+    }
+    
+    if (interest.processedDate) {
+      return 'Processad';
+    }
+    
+    if (interest.acceptedDate) {
+      return 'Bekräftad';
+    }
+    
+    if (interest.showingDate) {
+      return 'Bokad';
+    }
+    
+    return 'Okänd';
   };
 
   // Få en färg för visningsstatus
@@ -358,14 +346,6 @@ const InterestGoogleDocsExport = () => {
       let street = parts[0];
       let number = parts[1];
       let apartmentNumber = null;
-      let houseLetter = '';
-      
-      // Extrahera eventuell bokstav från husnumret (t.ex. 10C -> 10)
-      if (number && /^\d+[A-Z]$/i.test(number)) {
-        houseLetter = number.slice(-1);
-        number = number.slice(0, -1);
-        logger.debug(`Extraherade husbokstav ${houseLetter} från nummer ${number}`);
-      }
       
       // Hitta lägenhetsnumret efter "lgh"
       for (let i = 0; i < parts.length; i++) {
@@ -376,23 +356,18 @@ const InterestGoogleDocsExport = () => {
         }
       }
       
-      // Speciell hantering för Valhallavägen
-      if (street === "Valhallavägen") {
-        // Ta bort konvertering från Valhallavägen till Valhallav.
-        
-        // Om vi har ett lägenhetsnummer och en husbokstav, omforma till korrekt format
-        if (apartmentNumber && houseLetter) {
-          apartmentNumber = `${apartmentNumber}${houseLetter}`;
-          logger.debug(`Specialhantering för Valhallavägen: ${street}, ${number}, ${apartmentNumber}`);
-        }
-      } 
-      // Annan speciell hantering
+      // Fixa special hanteringen eftersom vi nu inte extraherar husbokstaven
+      if (street === "Valhallavägen" || street === "Landbrogatan") {
+        // Vi behöver inte flytta bokstaven från husnummer till lägenhetsnummer 
+        // eftersom vi nu behåller husnumret intakt (t.ex. "31A")
+        logger.debug(`Specialhantering för ${street}: behåller husnummer ${number} intakt`);
+      }
       else if (street === "Utridarevägen") {
         street = "Utridare";
         logger.debug(`Specialhantering för Utridarevägen: ${street}`);
       }
       
-      logger.debug(`Extraherad lägenhetsinfo: ${street}, ${number}, ${apartmentNumber}`);
+      logger.debug(`RESULTAT: Extraherad lägenhetsinfo: ${street}, ${number}, ${apartmentNumber}`);
       return { street, number, apartmentNumber };
     } catch (error) {
       logger.error('Fel vid extrahering av lägenhetsinfo:', error);
@@ -433,31 +408,37 @@ const InterestGoogleDocsExport = () => {
       
       // Skapa söknyckeln
       const searchKey = `${apartmentInfo.street}-${apartmentInfo.number}-${apartmentInfo.apartmentNumber}`.toLowerCase();
-      logger.debug('Söker lägenhet med nyckel:', searchKey);
+      logger.debug(`FELSÖKNING: Söker lägenhet med nyckel: "${searchKey}" från adress: "${apartmentString}"`);
+      logger.debug(`FELSÖKNING: Extraherad info - street: "${apartmentInfo.street}", number: "${apartmentInfo.number}", apartmentNumber: "${apartmentInfo.apartmentNumber}"`);
+      
+      // Visa alla tillgängliga lägenhetsnycklar för felsökning
+      logger.debug('FELSÖKNING: Tillgängliga lägenhetsnycklar:', Object.keys(apartmentsMap).filter(key => 
+        key.includes(apartmentInfo.street.toLowerCase())
+      ));
       
       const apartment = apartmentsMap[searchKey];
       
       if (!apartment) {
-        logger.debug('Ingen lägenhet hittad med nyckeln:', searchKey);
+        logger.debug(`FELSÖKNING: Ingen lägenhet hittad med nyckeln: "${searchKey}"`);
         return null;
       }
       
       if (!apartment.tenants || apartment.tenants.length === 0) {
-        logger.debug('Lägenheten har inga hyresgäster:', apartment.id);
+        logger.debug(`Hittade lägenhet ${apartment.id} men den har inga hyresgäster`);
         return null;
       }
       
       // Hämta första hyresgästen
       const tenantId = apartment.tenants[0];
-      logger.debug('Första hyresgäst-ID:', tenantId);
+      logger.debug(`FELSÖKNING: Hittade lägenhet, första hyresgäst-ID: "${tenantId}"`);
       
       const tenant = tenantsMap[tenantId];
       if (!tenant) {
-        logger.debug('Ingen hyresgäst hittad med ID:', tenantId);
+        logger.debug(`Ingen hyresgäst hittad med ID: "${tenantId}"`);
         return null;
       }
       
-      logger.debug('Hyresgäst hittad:', tenant);
+      logger.debug(`FELSÖKNING: Hittade hyresgäst ${tenant.firstName} ${tenant.lastName} (${tenant.phone})`);
       return tenant;
     } catch (error) {
       logger.error('Fel vid sökning av hyresgäst:', error);
@@ -645,7 +626,7 @@ const InterestGoogleDocsExport = () => {
                           borderRadius: '4px',
                           fontSize: '0.875rem', 
                           fontWeight: 'medium'
-                        }}>{formatShowingStatus(interest)}</span>
+                        }}>{getShowingStatus(interest)}</span>
                       </td>
                     </tr>
                   );

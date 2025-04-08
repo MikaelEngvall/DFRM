@@ -168,15 +168,11 @@ const Interests = ({ view = 'list' }) => {
       // Format 3: "Utridarevägen 3B lgh 1101 1rok"
       
       let street = parts[0];
-      let number = parts[1];
+      let number = parts[1]; // Behåll husnumret som det är (t.ex. "31A")
       let apartmentNumber = null;
-      let houseLetter = '';
       
-      // Extrahera eventuell bokstav från husnumret (t.ex. 10C -> 10)
-      if (number && /^\d+[A-Z]$/i.test(number)) {
-        houseLetter = number.slice(-1);
-        number = number.slice(0, -1);
-      }
+      // VIKTIGT: Ta bort uppdelningen av husnummer och bokstav
+      // Vi behåller hela husnumret som det är (t.ex. "31A")
       
       // Hitta lägenhetsnnummret efter "lgh"
       for (let i = 0; i < parts.length; i++) {
@@ -186,15 +182,8 @@ const Interests = ({ view = 'list' }) => {
         }
       }
       
-      // Speciell hantering för Valhallavägen
-      if (street === "Valhallavägen") {
-        // Om vi har ett lägenhetnummer och en husbokstav, omforma till korrekt format
-        if (apartmentNumber && houseLetter) {
-          apartmentNumber = `${apartmentNumber}${houseLetter}`;
-        }
-      } 
-      // Annan speciell hantering
-      else if (street === "Utridarevägen") {
+      // Specialhanteing för Utridarevägen
+      if (street === "Utridarevägen") {
         street = "Utridare";
       }
       

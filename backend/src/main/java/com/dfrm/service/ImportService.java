@@ -1,15 +1,5 @@
 package com.dfrm.service;
 
-import com.dfrm.model.Apartment;
-import com.dfrm.model.Tenant;
-import com.dfrm.repository.ApartmentRepository;
-import com.dfrm.repository.TenantRepository;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.poi.ss.usermodel.*;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
-import org.springframework.stereotype.Service;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -19,6 +9,22 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+
+import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.DateUtil;
+import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
+import org.apache.poi.ss.usermodel.Workbook;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.springframework.stereotype.Service;
+
+import com.dfrm.model.Apartment;
+import com.dfrm.model.Tenant;
+import com.dfrm.repository.ApartmentRepository;
+import com.dfrm.repository.TenantRepository;
+
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
@@ -209,7 +215,6 @@ public class ImportService {
             tenant.setEmail(email);
             tenant.setPhone(phone);
             tenant.setMovedInDate(moveInDate);
-            tenant.setCity("Karlskrona");
             tenant.setApartment(apartment);
             tenant.setKeys(new ArrayList<>());
             
