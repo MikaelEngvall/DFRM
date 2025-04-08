@@ -12,6 +12,7 @@ import { useNavigate } from 'react-router-dom';
 import * as XLSX from 'xlsx';
 import { createLogger } from '../utils/logger';
 import InterestGoogleDocsExport from '../components/InterestGoogleDocsExport';
+import { Button } from '../components/ui/button';
 
 // Skapa en logger för denna komponent
 const logger = createLogger('Interests');
@@ -701,13 +702,13 @@ const Interests = ({ view = 'list' }) => {
             <DocumentTextIcon className="h-5 w-5 mr-2" />
             SQL
           </button>
-          <button 
-            className="flex items-center px-3 py-2 text-sm font-medium rounded-md text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700 dark:hover:bg-gray-700"
-            onClick={exportToGoogleDocs}
+          <Button
+            variant="outline"
+            onClick={() => navigate('/interests/export-to-google-docs')}
+            className="mr-2"
           >
-            <DocumentTextIcon className="h-5 w-5 mr-2" />
-            Google Docs
-          </button>
+            {t('common.export')}
+          </Button>
           <button 
             className="flex items-center px-3 py-2 text-sm font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-900 dark:text-indigo-200 dark:hover:bg-indigo-800"
             onClick={toggleView}

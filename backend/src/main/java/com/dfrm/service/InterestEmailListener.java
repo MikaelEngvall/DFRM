@@ -39,8 +39,8 @@ public class InterestEmailListener {
     private final GoogleTranslateClient googleTranslateClient;
     private final InterestEmailHashGenerator hashGenerator;
     
-    private static final String TARGET_RECIPIENT = "intresse@duggalsfastigheter.se";
-    private static final String TARGET_SENDER = "intresse@duggalsfastigheter.se";
+    private static final String TARGET_RECIPIENT = "info@duggalsfastigheter.se";
+    private static final String TARGET_SENDER = "info@duggalsfastigheter.se";
     private static final String TARGET_REPLY_TO = "mikael.engvall.me@gmail.com";
 
     private boolean isDevEnvironment() {

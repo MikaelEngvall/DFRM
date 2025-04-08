@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.dfrm.model.Interest;
+import com.dfrm.model.SecurityToken;
 import com.dfrm.model.User;
 import com.dfrm.repository.InterestRepository;
 import com.dfrm.repository.TaskRepository;
@@ -25,6 +26,7 @@ public class InterestService {
     private final TaskRepository taskRepository;
     private final EmailService emailService;
     private final UserService userService;
+    private final SecurityTokenService securityTokenService;
     
     @Autowired
     private ShowingService showingService;
@@ -35,12 +37,14 @@ public class InterestService {
             InterestEmailListener interestEmailListener,
             TaskRepository taskRepository,
             EmailService emailService,
-            UserService userService) {
+            UserService userService,
+            SecurityTokenService securityTokenService) {
         this.interestRepository = interestRepository;
         this.interestEmailListener = interestEmailListener;
         this.taskRepository = taskRepository;
         this.emailService = emailService;
         this.userService = userService;
+        this.securityTokenService = securityTokenService;
     }
     
     public List<Interest> getAllInterests() {

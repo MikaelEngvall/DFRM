@@ -38,7 +38,7 @@ public class EmailService {
     @Value("${spring.mail.username}")
     private String fromEmail;
     
-    @Value("${mail.interest.username:intresse@duggalsfastigheter.se}")
+    @Value("${mail.interest.username:info@duggalsfastigheter.se}")
     private String interestEmail;
     
     @Value("${mail.interest.password:${EMAIL_PASSWORD_INTEREST:}}")

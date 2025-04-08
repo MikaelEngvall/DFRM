@@ -1,6 +1,7 @@
 package com.dfrm.service;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -14,9 +15,11 @@ import com.dfrm.repository.SecurityTokenRepository;
 import com.dfrm.repository.UserRepository;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class SecurityTokenService {
 
     private final SecurityTokenRepository securityTokenRepository;
