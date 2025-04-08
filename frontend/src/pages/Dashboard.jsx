@@ -35,8 +35,9 @@ const Dashboard = () => {
   });
   const [interestStats, setInterestStats] = useState({
     new: 0,
-    thisWeek: 0,
-    completed: 0
+    booked: 0,
+    completed: 0,
+    cancelled: 0
   });
   const [successMessage, setSuccessMessage] = useState('');
 
@@ -101,34 +102,38 @@ const Dashboard = () => {
 
   const fetchInterestStats = async () => {
     try {
-      // Hämta antal nya intresseanmälningar
-      const newInterests = await interestService.getInterestsForReview(true);
-      
       // Hämta alla intresseanmälningar för att filtrera
       const allInterests = await interestService.getAll(true);
       
-      // Beräkna antal från denna vecka
-      const today = new Date();
-      const startOfWeek = new Date(today.getFullYear(), today.getMonth(), today.getDate() - today.getDay());
+      // Hämta antal nya intresseanmälningar (obehandlade)
+      const newInterests = allInterests.filter(interest => 
+        interest.status === 'NEW'
+      );
       
-      const thisWeekInterests = allInterests.filter(interest => {
-        if (!interest.received) return false;
-        const receivedDate = new Date(interest.received);
-        // Filtrera också bort visningbokade intresseanmälningar från denna veckas statistik
-        return receivedDate >= startOfWeek && interest.status !== 'SHOWING_SCHEDULED';
-      });
+      // Hämta antal bokade visningar (SHOWING_SCHEDULED)
+      const bookedInterests = allInterests.filter(interest => 
+        interest.status === 'SHOWING_SCHEDULED'
+      );
       
-      // Hämta antal avslutade (reviewed/rejected) intresseanmälningar
-      // Exkludera SHOWING_SCHEDULED från avslutade för att hålla konsekvens med intressetabellen
+      // Leta efter genomförda visningar (completed showings)
       const completedInterests = allInterests.filter(interest => 
-        (interest.status === 'REVIEWED' || interest.status === 'REJECTED') 
-        && interest.status !== 'SHOWING_SCHEDULED'
+        interest.status === 'SHOWING_SCHEDULED' && 
+        interest.showing && 
+        interest.showing.status === 'COMPLETED'
+      );
+      
+      // Leta efter avbokade visningar (cancelled showings)
+      const cancelledInterests = allInterests.filter(interest => 
+        interest.status === 'SHOWING_SCHEDULED' && 
+        interest.showing && 
+        interest.showing.status === 'CANCELLED'
       );
       
       setInterestStats({
         new: newInterests?.length || 0,
-        thisWeek: thisWeekInterests?.length || 0,
-        completed: completedInterests?.length || 0
+        booked: bookedInterests?.length || 0,
+        completed: completedInterests?.length || 0,
+        cancelled: cancelledInterests?.length || 0
       });
     } catch (err) {
       console.error('Error fetching interest stats:', err);
@@ -350,16 +355,23 @@ const Dashboard = () => {
               </div>
               
               <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-md">
-                <span className="text-sm font-medium">{t('interests.thisWeek')}</span>
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${interestStats.thisWeek > 0 ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'}`}>
-                  {interestStats.thisWeek > 0 ? interestStats.thisWeek : t('common.none')}
+                <span className="text-sm font-medium">{t('interests.status.SHOWING_SCHEDULED')}</span>
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${interestStats.booked > 0 ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'}`}>
+                  {interestStats.booked > 0 ? interestStats.booked : t('common.none')}
                 </span>
               </div>
               
               <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-md">
-                <span className="text-sm font-medium">{t('interests.completed')}</span>
+                <span className="text-sm font-medium">{t('showings.statusTypes.COMPLETED')}</span>
                 <span className={`px-2 py-1 rounded-full text-xs font-medium ${interestStats.completed > 0 ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'}`}>
                   {interestStats.completed > 0 ? interestStats.completed : t('common.none')}
+                </span>
+              </div>
+              
+              <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-md">
+                <span className="text-sm font-medium">{t('showings.statusTypes.CANCELLED')}</span>
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${interestStats.cancelled > 0 ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'}`}>
+                  {interestStats.cancelled > 0 ? interestStats.cancelled : t('common.none')}
                 </span>
               </div>
             </div>

@@ -55,7 +55,7 @@ public class JavaMailProperties {
     @Value("${mail.interest.port:587}")
     private int interestPort;
     
-    @Value("${mail.interest.username:intresse@duggalsfastigheter.se}")
+    @Value("${mail.interest.username:info@duggalsfastigheter.se}")
     private String interestUsername;
     
     @Value("${mail.interest.password:}")

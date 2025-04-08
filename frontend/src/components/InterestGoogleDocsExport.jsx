@@ -378,7 +378,7 @@ const InterestGoogleDocsExport = () => {
       
       // Speciell hantering för Valhallavägen
       if (street === "Valhallavägen") {
-        street = "Valhallav.";
+        // Ta bort konvertering från Valhallavägen till Valhallav.
         
         // Om vi har ett lägenhetsnummer och en husbokstav, omforma till korrekt format
         if (apartmentNumber && houseLetter) {
@@ -483,7 +483,7 @@ const InterestGoogleDocsExport = () => {
       // Rensa markering
       selection.removeAllRanges();
       
-      alert(t('interests.export.copySuccess'));
+      alert('Tabellen har kopierats till urklipp!');
     }
   };
 
@@ -579,7 +579,7 @@ const InterestGoogleDocsExport = () => {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-          {t('interests.exportTitle')}
+          Exportera intresseanmälningar
         </h1>
         <div className="mt-4 md:mt-0">
           <button
@@ -592,7 +592,7 @@ const InterestGoogleDocsExport = () => {
       </div>
 
       <p className="text-gray-700 dark:text-gray-300 mb-4">
-        {t('interests.export.instructions')}
+        Kopiera tabellen nedan och klistra in i Google Docs. Formatering kommer att bevaras.
       </p>
 
       <div className="mt-6">
@@ -615,9 +615,9 @@ const InterestGoogleDocsExport = () => {
               </thead>
               <tbody>
                 {unreviewedInterests.map((interest) => {
-                  // Skapa testadress för dessa demo-poster i tabellen
-                  const testAddress = `Testgatan 12 lgh 1001`;
-                  const testTenant = '070-123 45 67 (Test Hyresgäst)';
+                  // Använd verkliga data istället för testdata
+                  const apartmentAddress = getApartmentAddress(interest);
+                  const tenantInfo = getTenantInfo(interest);
                   
                   return (
                     <tr key={interest.id} style={{ backgroundColor: '#1e293b', borderBottom: '1px solid #334155' }}>
@@ -629,23 +629,23 @@ const InterestGoogleDocsExport = () => {
                         {interest.phone || '-'}
                       </td>
                       <td style={{ border: '1px solid #334155', padding: '10px' }}>
-                        {testAddress}
+                        {apartmentAddress}
                       </td>
                       <td style={{ border: '1px solid #334155', padding: '10px' }}>
-                        {testTenant}
+                        {tenantInfo}
                       </td>
                       <td style={{ border: '1px solid #334155', padding: '10px' }}>
                         {formatDate(interest.received)}
                       </td>
                       <td style={{ border: '1px solid #334155', padding: '10px', textAlign: 'center' }}>
                         <span style={{ 
-                          backgroundColor: '#6B7280', 
+                          backgroundColor: getStatusColor(interest), 
                           color: 'white', 
                           padding: '2px 8px', 
                           borderRadius: '4px',
                           fontSize: '0.875rem', 
                           fontWeight: 'medium'
-                        }}>Ny</span>
+                        }}>{formatShowingStatus(interest)}</span>
                       </td>
                     </tr>
                   );

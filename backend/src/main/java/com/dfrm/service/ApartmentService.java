@@ -14,6 +14,9 @@ import com.dfrm.repository.KeyRepository;
 import com.dfrm.repository.TenantRepository;
 
 import lombok.RequiredArgsConstructor;
+import jakarta.annotation.PostConstruct;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 @RequiredArgsConstructor
@@ -22,6 +25,7 @@ public class ApartmentService {
     private final TenantRepository tenantRepository;
     private final KeyRepository keyRepository;
     private final EntityReferenceService entityReferenceService;
+    private static final Logger log = LoggerFactory.getLogger(ApartmentService.class);
     
     public List<Apartment> getAllApartments() {
         return apartmentRepository.findAll();
@@ -154,5 +158,40 @@ public class ApartmentService {
 
     public Optional<Apartment> findByStreetAddressAndApartmentNumber(String streetAddress, String apartmentNumber) {
         return apartmentRepository.findByStreetAddressAndApartmentNumber(streetAddress, apartmentNumber);
+    }
+
+    /**
+     * Migrerar alla lägenheter som har 'Valhallav.' som gatadress till 'Valhallavägen'
+     *
+     * @return Antal uppdaterade lägenheter
+     */
+    public int migrateValhallavagen() {
+        // Hitta alla lägenheter med 'Valhallav.' som gatuadress
+        List<Apartment> apartments = apartmentRepository.findAll()
+                .stream()
+                .filter(apt -> apt.getStreet() != null && apt.getStreet().equals("Valhallav."))
+                .toList();
+        
+        // Uppdatera varje lägenhet
+        for (Apartment apartment : apartments) {
+            apartment.setStreet("Valhallavägen");
+            apartmentRepository.save(apartment);
+        }
+        
+        return apartments.size();
+    }
+
+    /**
+     * Körs vid uppstart för att säkerställa att alla Valhallav. uppdateras till Valhallavägen
+     */
+    @PostConstruct
+    public void initMigration() {
+        log.info("Kontrollerar och migrerar Valhallav. till Valhallavägen vid uppstart");
+        int count = migrateValhallavagen();
+        if (count > 0) {
+            log.info("Migrerade {} lägenheter från Valhallav. till Valhallavägen", count);
+        } else {
+            log.info("Inga lägenheter behövde migreras från Valhallav. till Valhallavägen");
+        }
     }
 } 

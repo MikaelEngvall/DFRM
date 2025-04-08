@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Map;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.MediaType;
@@ -160,7 +161,7 @@ public class ApartmentController {
         // Skapa INSERT-satser för varje lägenhet
         for (Apartment apartment : apartments) {
             sql.append("INSERT INTO apartments (id, street, number, apartmentNumber, postalCode, city, rooms, area, price, electricity, storage, internet, isTemporary) VALUES (\n");
-            sql.append("    '").append(apartment.getId()).append("',\n");
+            sql.append("    '").append(escapeSql(apartment.getId())).append("',\n");
             sql.append("    '").append(escapeSql(apartment.getStreet())).append("',\n");
             sql.append("    '").append(escapeSql(apartment.getNumber())).append("',\n");
             sql.append("    '").append(escapeSql(apartment.getApartmentNumber())).append("',\n");
@@ -189,5 +190,18 @@ public class ApartmentController {
             return "";
         }
         return input.replace("'", "''");
+    }
+
+    /**
+     * Migrerar alla lägenheter som har adressen "Valhallav." till "Valhallavägen"
+     */
+    @PutMapping("/migration/valhallavagen")
+    public ResponseEntity<Map<String, Object>> migrateValhallavagen() {
+        int updatedCount = apartmentService.migrateValhallavagen();
+        Map<String, Object> response = new HashMap<>();
+        response.put("success", true);
+        response.put("message", "Migrering slutförd");
+        response.put("updatedCount", updatedCount);
+        return ResponseEntity.ok(response);
     }
 } 

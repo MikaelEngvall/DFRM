@@ -188,8 +188,6 @@ const Interests = ({ view = 'list' }) => {
       
       // Speciell hantering för Valhallavägen
       if (street === "Valhallavägen") {
-        street = "Valhallav.";
-        
         // Om vi har ett lägenhetnummer och en husbokstav, omforma till korrekt format
         if (apartmentNumber && houseLetter) {
           apartmentNumber = `${apartmentNumber}${houseLetter}`;
@@ -688,14 +686,14 @@ const Interests = ({ view = 'list' }) => {
             : t('interests.reviewedTitle')}
         </Title>
         <div className="flex space-x-3 mt-3 md:mt-0">
-          <button 
+          <button
             className="flex items-center px-3 py-2 text-sm font-medium rounded-md text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700 dark:hover:bg-gray-700"
             onClick={exportToExcel}
           >
             <DocumentTextIcon className="h-5 w-5 mr-2" />
             Excel
           </button>
-          <button 
+          <button
             className="flex items-center px-3 py-2 text-sm font-medium rounded-md text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700 dark:hover:bg-gray-700"
             onClick={exportToSql}
           >
@@ -709,7 +707,7 @@ const Interests = ({ view = 'list' }) => {
           >
             {t('common.export')}
           </Button>
-          <button 
+          <button
             className="flex items-center px-3 py-2 text-sm font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-900 dark:text-indigo-200 dark:hover:bg-indigo-800"
             onClick={toggleView}
           >
@@ -732,7 +730,7 @@ const Interests = ({ view = 'list' }) => {
           {error}
         </div>
       )}
-      
+
       {isLoading ? (
         <div className="flex justify-center items-center h-64">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
@@ -804,12 +802,12 @@ const Interests = ({ view = 'list' }) => {
               )
             },
             ...(currentView === INTEREST_VIEWS.REVIEWED ? [
-              {
-                key: 'reviewedBy',
-                label: t('interests.fields.reviewedBy'),
-                render: (_, interest) => interest.reviewedBy ? 
-                  `${interest.reviewedBy.firstName || ''} ${interest.reviewedBy.lastName || ''}` : ''
-              }
+            {
+              key: 'reviewedBy',
+              label: t('interests.fields.reviewedBy'),
+              render: (_, interest) => interest.reviewedBy ? 
+                `${interest.reviewedBy.firstName || ''} ${interest.reviewedBy.lastName || ''}` : ''
+            }
             ] : [])
           ]}
           data={getDisplayData()}
@@ -879,13 +877,13 @@ const Interests = ({ view = 'list' }) => {
                       readOnly
                       className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-l-md shadow-sm text-gray-900 dark:text-white"
                     />
-                    <button 
+                      <button 
                       onClick={openEmailModal}
-                      className="mt-1 inline-flex items-center px-3 py-2 border border-l-0 border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-white rounded-r-md hover:bg-gray-200 dark:hover:bg-gray-500"
-                      title={t('common.sendEmail')}
-                    >
-                      <EnvelopeIcon className="h-5 w-5" />
-                    </button>
+                        className="mt-1 inline-flex items-center px-3 py-2 border border-l-0 border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-white rounded-r-md hover:bg-gray-200 dark:hover:bg-gray-500"
+                        title={t('common.sendEmail')}
+                      >
+                        <EnvelopeIcon className="h-5 w-5" />
+                      </button>
                   </div>
                 </div>
                 
