@@ -25,9 +25,6 @@ public class Tenant {
     private String personnummer;
     private String email;
     private String phone;
-    private String street;
-    private String postalCode;
-    private String city;
     private LocalDate movedInDate;
     private LocalDate resiliationDate;
     private String comment;

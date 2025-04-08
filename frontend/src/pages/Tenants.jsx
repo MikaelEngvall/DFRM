@@ -288,55 +288,40 @@ const Tenants = () => {
   };
   
   const applyFilters = () => {
-    let result = [...tenants];
+    let filtered = [...tenants];
     
-    // Filtrera baserat på förnamn
+    // Filtrering baserat på city, street och number
+    if (filters.city || filters.street || filters.number) {
+      filtered = filtered.filter(tenant => {
+        if (!tenant.apartment) return false;
+        
+        const apartmentId = typeof tenant.apartment === 'object' ? tenant.apartment.id : tenant.apartment;
+        const apartment = apartments.find(a => a.id === apartmentId);
+        
+        if (!apartment) return false;
+        
+        if (filters.city && apartment.city !== filters.city) return false;
+        if (filters.street && apartment.street !== filters.street) return false;
+        if (filters.number && apartment.number !== filters.number) return false;
+        
+        return true;
+      });
+    }
+    
+    // Filtrering baserat på förnamn och efternamn
     if (filters.firstName) {
-      result = result.filter(tenant => tenant.firstName === filters.firstName);
+      filtered = filtered.filter(tenant => 
+        tenant.firstName.toLowerCase().includes(filters.firstName.toLowerCase())
+      );
     }
     
-    // Filtrera baserat på efternamn
     if (filters.lastName) {
-      result = result.filter(tenant => tenant.lastName === filters.lastName);
+      filtered = filtered.filter(tenant => 
+        tenant.lastName.toLowerCase().includes(filters.lastName.toLowerCase())
+      );
     }
     
-    // Filtrera baserat på stad
-    if (filters.city) {
-      result = result.filter(tenant => {
-        if (!tenant.apartment) return false;
-        
-        const apartmentId = typeof tenant.apartment === 'object' ? tenant.apartment.id : tenant.apartment;
-        const apartment = apartments.find(a => a.id === apartmentId);
-        
-        return apartment && apartment.city === filters.city;
-      });
-    }
-    
-    // Filtrera baserat på gata
-    if (filters.street) {
-      result = result.filter(tenant => {
-        if (!tenant.apartment) return false;
-        
-        const apartmentId = typeof tenant.apartment === 'object' ? tenant.apartment.id : tenant.apartment;
-        const apartment = apartments.find(a => a.id === apartmentId);
-        
-        return apartment && apartment.street === filters.street;
-      });
-    }
-    
-    // Filtrera baserat på nummer
-    if (filters.number) {
-      result = result.filter(tenant => {
-        if (!tenant.apartment) return false;
-        
-        const apartmentId = typeof tenant.apartment === 'object' ? tenant.apartment.id : tenant.apartment;
-        const apartment = apartments.find(a => a.id === apartmentId);
-        
-        return apartment && apartment.number === filters.number;
-      });
-    }
-    
-    setFilteredTenants(result);
+    setFilteredTenants(filtered);
   };
   
   const clearFilters = () => {

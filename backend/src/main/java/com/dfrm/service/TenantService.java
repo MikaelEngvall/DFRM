@@ -18,6 +18,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import lombok.RequiredArgsConstructor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Service
 @RequiredArgsConstructor
@@ -25,6 +27,8 @@ public class TenantService {
     private final TenantRepository tenantRepository;
     private final ApartmentRepository apartmentRepository;
     private final KeyRepository keyRepository;
+    
+    private static final Logger log = LoggerFactory.getLogger(TenantService.class);
     
     public List<Tenant> getAllTenants() {
         return tenantRepository.findAll();
@@ -200,27 +204,28 @@ public class TenantService {
                         // Konvertera existerande hyresgäst till Map
                         Map<String, Object> tenantMap = objectMapper.convertValue(existingTenant, Map.class);
                         
-                        // Applicera endast de fält som skickats in
-                        for (Map.Entry<String, Object> entry : updates.entrySet()) {
-                            // Ignorera ID-fältet och relationsfält
-                            if (!entry.getKey().equals("id") && !entry.getKey().equals("apartment") && !entry.getKey().equals("key")) {
-                                tenantMap.put(entry.getKey(), entry.getValue());
+                        // Applicera uppdateringarna - men hoppa över specifika fält
+                        updates.forEach((key, value) -> {
+                            // Hoppa över relations-fält och fält som inte finns i modellen
+                            if (!key.equals("apartment") && !key.equals("keys") && 
+                                !key.equals("id") && !key.equals("_id") && 
+                                // Hoppa över adressfält som inte längre finns i modellen
+                                !key.equals("street") && !key.equals("postalCode") && !key.equals("city") && 
+                                tenantMap.containsKey(key)) {
+                                tenantMap.put(key, value);
                             }
-                        }
+                        });
                         
-                        // Konvertera tillbaka till Tenant-objekt med uppdaterade fält
+                        // Konvertera tillbaka till Tenant-objekt men behåll relationer
                         Tenant updatedTenant = objectMapper.convertValue(tenantMap, Tenant.class);
-                        
-                        // Behåll original-ID och relationer
-                        updatedTenant.setId(id);
+                        updatedTenant.setId(existingTenant.getId());
                         updatedTenant.setApartment(existingTenant.getApartment());
                         updatedTenant.setKeys(existingTenant.getKeys());
                         
-                        // Spara och returnera uppdaterad hyresgäst
                         return tenantRepository.save(updatedTenant);
                     } catch (Exception e) {
-                        e.printStackTrace();
-                        return existingTenant; // Vid fel, returnera originalet
+                        log.error("Fel vid uppdatering av hyresgäst: {}", e.getMessage());
+                        throw new RuntimeException("Fel vid uppdatering av hyresgäst", e);
                     }
                 });
     }
