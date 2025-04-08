@@ -467,6 +467,156 @@ const InterestGoogleDocsExport = () => {
       alert('Tabellen har kopierats till urklipp!');
     }
   };
+  
+  // Funktion för att exportera till HTML-fil
+  const downloadAsHtml = () => {
+    const element = document.getElementById('export-table-container');
+    if (!element) return;
+    
+    try {
+      // Skapa stilmallen
+      const styles = `
+      <style>
+        body {
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+          line-height: 1.5;
+          color: #f9fafb;
+          background-color: #1e293b;
+          padding: 2rem;
+        }
+        .light-mode {
+          color: #1f2937;
+          background-color: #f9fafb;
+        }
+        h1 {
+          font-size: 2rem;
+          font-weight: 700;
+          margin-bottom: 2rem;
+          text-transform: uppercase;
+        }
+        table {
+          width: 100%;
+          border-collapse: collapse;
+          margin-top: 1rem;
+        }
+        th {
+          background-color: #1e293b;
+          color: #ffffff;
+          padding: 10px;
+          text-align: left;
+          font-weight: 700;
+          border: 1px solid #334155;
+        }
+        .light-mode th {
+          background-color: #f3f4f6;
+          color: #1f2937;
+          border: 1px solid #d1d5db;
+        }
+        td {
+          padding: 10px;
+          border: 1px solid #334155;
+          vertical-align: top;
+        }
+        .light-mode td {
+          border: 1px solid #d1d5db;
+        }
+        tr {
+          background-color: #1e293b;
+          border-bottom: 1px solid #334155;
+        }
+        .light-mode tr {
+          background-color: #ffffff;
+          border-bottom: 1px solid #d1d5db;
+        }
+        .status-pill {
+          display: inline-block;
+          padding: 2px 8px;
+          border-radius: 4px;
+          font-size: 0.875rem;
+          font-weight: 500;
+          color: white;
+        }
+        @media print {
+          body {
+            color: black !important;
+            background-color: white !important;
+          }
+          table, th, td {
+            color: black !important;
+            background-color: white !important;
+            border-color: #d1d5db !important;
+          }
+        }
+      </style>`;
+      
+      // Skapa HTML-innehållet
+      const title = 'Intresseanmälningar';
+      const today = new Date().toLocaleDateString('sv-SE').replace(/\//g, '-');
+      
+      // Kopiera HTML-innehållet från tabellen
+      const tableHtml = element.innerHTML;
+      
+      const html = `
+      <!DOCTYPE html>
+      <html lang="sv">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>${title} ${today}</title>
+        ${styles}
+      </head>
+      <body>
+        <h1>${title}</h1>
+        <p>Exporterad: ${new Date().toLocaleString('sv-SE')}</p>
+        <div>
+          ${tableHtml}
+        </div>
+        <script>
+          // Lyssna efter klick för att växla mellan ljust/mörkt läge
+          document.addEventListener('DOMContentLoaded', function() {
+            const toggleLightMode = () => {
+              document.body.classList.toggle('light-mode');
+            };
+            
+            // Lägg till knapp för att växla mellan ljust/mörkt läge
+            const toggleBtn = document.createElement('button');
+            toggleBtn.textContent = 'Växla ljust/mörkt läge';
+            toggleBtn.style.position = 'fixed';
+            toggleBtn.style.bottom = '20px';
+            toggleBtn.style.right = '20px';
+            toggleBtn.style.padding = '8px 16px';
+            toggleBtn.style.backgroundColor = '#3b82f6';
+            toggleBtn.style.color = '#ffffff';
+            toggleBtn.style.border = 'none';
+            toggleBtn.style.borderRadius = '4px';
+            toggleBtn.style.cursor = 'pointer';
+            toggleBtn.onclick = toggleLightMode;
+            document.body.appendChild(toggleBtn);
+          });
+        </script>
+      </body>
+      </html>`;
+      
+      // Skapa Blob och URL
+      const blob = new Blob([html], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      
+      // Skapa en länk och klicka på den för att ladda ned filen
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${title}_${today}.html`;
+      document.body.appendChild(a);
+      a.click();
+      
+      // Städa upp
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+    } catch (error) {
+      logger.error('Fel vid export till HTML:', error);
+      alert('Ett fel uppstod vid export till HTML');
+    }
+  };
 
   // Implementera en bättre funktion för att hämta visningsadressen 
   const getApartmentAddress = (interest) => {
@@ -565,9 +715,15 @@ const InterestGoogleDocsExport = () => {
         <div className="mt-4 md:mt-0">
           <button
             onClick={copyToClipboard}
-            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 mr-2"
           >
             Kopiera tabeller
+          </button>
+          <button
+            onClick={downloadAsHtml}
+            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+          >
+            Ladda ned HTML
           </button>
         </div>
       </div>

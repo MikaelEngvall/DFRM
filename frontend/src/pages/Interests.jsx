@@ -31,8 +31,8 @@ const Interests = ({ view = 'list' }) => {
   const [showReviewed, setShowReviewed] = useState(false);
   const [selectedInterest, setSelectedInterest] = useState(null);
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
   const [reviewComments, setReviewComments] = useState('');
   const [showingDate, setShowingDate] = useState('');
   const [showingTime, setShowingTime] = useState('');
@@ -50,8 +50,31 @@ const Interests = ({ view = 'list' }) => {
   const pollingRef = useRef(null);
   const [currentView, setCurrentView] = useState(INTEREST_VIEWS.UNREVIEWED);
   const [pollingPaused, setPollingPaused] = useState(false);
-  const [tenantsMap, setTenantsMap] = useState({});
   const [apartmentsMap, setApartmentsMap] = useState({});
+  const [tenantsMap, setTenantsMap] = useState({});
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  // Detektera mörkt läge vid komponentladdning
+  useEffect(() => {
+    // Kontrollera om användaren har mörkt läge aktiverat
+    const prefersDarkMode = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    
+    // Kontrollera om webbplatsen har mörkt läge aktiverat
+    const htmlElement = document.documentElement;
+    const hasDarkClass = htmlElement.classList.contains('dark');
+    
+    // Uppdatera tillståndet baserat på dessa kontroller
+    setIsDarkMode(prefersDarkMode || hasDarkClass);
+    
+    // Lyssna efter ändringar i systemets färgläge
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleChange = (e) => {
+      setIsDarkMode(e.matches || htmlElement.classList.contains('dark'));
+    };
+    
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, []);
 
   // Formatera datum till lokalt format
   const formatDate = (dateString) => {
@@ -639,6 +662,280 @@ const Interests = ({ view = 'list' }) => {
     }
   };
 
+  // Funktion för att exportera till HTML
+  const exportToHtml = () => {
+    try {
+      setIsLoading(true);
+      
+      // Hämta data som ska exporteras
+      const data = getDisplayData();
+      if (!data || data.length === 0) {
+        setError(t('interests.messages.noDataToExport'));
+        return;
+      }
+      
+      // Skapa stilmall som matchar appens utseende
+      const styles = `
+      <style>
+        body {
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+          line-height: 1.5;
+          color: #1f2937;
+          background-color: #f9fafb;
+          padding: 2rem;
+        }
+        .dark-mode {
+          color: #f9fafb;
+          background-color: #1f2937;
+        }
+        h1 {
+          font-size: 1.875rem;
+          font-weight: 600;
+          margin-bottom: 1rem;
+        }
+        table {
+          width: 100%;
+          border-collapse: separate;
+          border-spacing: 0;
+          margin-top: 1rem;
+          border-radius: 0.5rem;
+          overflow: hidden;
+          box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+        }
+        th {
+          background-color: #f3f4f6;
+          padding: 0.75rem 1rem;
+          text-align: left;
+          font-weight: 600;
+          border-bottom: 1px solid #e5e7eb;
+        }
+        .dark-mode th {
+          background-color: #374151;
+          color: #f9fafb;
+          border-bottom: 1px solid #4b5563;
+        }
+        td {
+          padding: 0.75rem 1rem;
+          border-bottom: 1px solid #e5e7eb;
+          vertical-align: top;
+        }
+        .dark-mode td {
+          border-bottom: 1px solid #4b5563;
+        }
+        tr:nth-child(even) {
+          background-color: #f9fafb;
+        }
+        .dark-mode tr:nth-child(even) {
+          background-color: #1f2937;
+        }
+        .dark-mode tr:nth-child(odd) {
+          background-color: #111827;
+        }
+        .status {
+          display: inline-block;
+          padding: 0.25rem 0.5rem;
+          font-size: 0.75rem;
+          font-weight: 600;
+          border-radius: 9999px;
+        }
+        .status-NEW {
+          background-color: #e5e7eb;
+          color: #4b5563;
+        }
+        .status-REVIEWED {
+          background-color: #d1fae5;
+          color: #065f46;
+        }
+        .status-SHOWING_SCHEDULED {
+          background-color: #a855f7;
+          color: #ffffff;
+        }
+        .status-REJECTED {
+          background-color: #fee2e2;
+          color: #b91c1c;
+        }
+        .dark-mode .status-NEW {
+          background-color: #6b7280;
+          color: #f3f4f6;
+        }
+        .dark-mode .status-REVIEWED {
+          background-color: #10b981;
+          color: #ecfdf5;
+        }
+        .dark-mode .status-REJECTED {
+          background-color: #ef4444;
+          color: #fef2f2;
+        }
+        .secondary-text {
+          color: #6b7280;
+          font-size: 0.875rem;
+        }
+        .dark-mode .secondary-text {
+          color: #9ca3af;
+        }
+        @media print {
+          body {
+            background-color: white;
+            color: black;
+          }
+          table {
+            box-shadow: none;
+          }
+          th, td {
+            background-color: white !important;
+            color: black !important;
+            border-bottom: 1px solid #e5e7eb !important;
+          }
+          .status {
+            border: 1px solid #e5e7eb;
+          }
+        }
+      </style>`;
+      
+      // Funktion för att skapa HTML-tabell
+      const createTableHtml = () => {
+        let tableHtml = '<table>';
+        
+        // Tabellhuvud
+        tableHtml += '<thead><tr>';
+        tableHtml += `<th>${t('interests.fields.name')}</th>`;
+        tableHtml += `<th>${t('interests.fields.contact')}</th>`;
+        tableHtml += `<th>${t('interests.fields.apartment')}</th>`;
+        tableHtml += `<th>Nuvarande hyresgäst</th>`;
+        tableHtml += `<th>${t('interests.fields.received')}</th>`;
+        tableHtml += `<th>${t('interests.fields.status')}</th>`;
+        if (currentView === INTEREST_VIEWS.REVIEWED) {
+          tableHtml += `<th>${t('interests.fields.reviewedBy')}</th>`;
+        }
+        tableHtml += '</tr></thead>';
+        
+        // Tabellkropp
+        tableHtml += '<tbody>';
+        data.forEach(interest => {
+          tableHtml += '<tr>';
+          
+          // Namn
+          tableHtml += `<td>${formatText(interest.name) || '-'}</td>`;
+          
+          // Kontaktinfo
+          tableHtml += '<td>';
+          tableHtml += `<div>${formatText(interest.email) || '-'}</div>`;
+          tableHtml += `<div class="secondary-text">${formatText(interest.phone) || '-'}</div>`;
+          tableHtml += '</td>';
+          
+          // Lägenhet
+          tableHtml += `<td>${formatText(interest.apartment)?.substring(0, 30) || '-'}</td>`;
+          
+          // Nuvarande hyresgäst
+          const tenant = findCurrentTenant(interest.apartment);
+          tableHtml += '<td>';
+          if (tenant) {
+            tableHtml += `<div>${tenant.phone || '-'}</div>`;
+            tableHtml += `<div class="secondary-text">${tenant.firstName} ${tenant.lastName}</div>`;
+          } else {
+            tableHtml += 'Ingen boende';
+          }
+          tableHtml += '</td>';
+          
+          // Mottagen
+          tableHtml += `<td>${formatDate(interest.received)}</td>`;
+          
+          // Status
+          tableHtml += '<td>';
+          const statusClass = `status status-${interest.status}`;
+          const statusText = interest.status === 'NEW' ? t('interests.status.NEW') : 
+                            interest.status === 'REVIEWED' ? t('interests.status.REVIEWED') : 
+                            interest.status === 'SHOWING_SCHEDULED' ? t('interests.status.SHOWING_SCHEDULED') :
+                            t('interests.status.REJECTED');
+                            
+          tableHtml += `<span class="${statusClass}">${statusText}</span>`;
+          tableHtml += '</td>';
+          
+          // Granskad av (endast för granskade intresseanmälningar)
+          if (currentView === INTEREST_VIEWS.REVIEWED) {
+            tableHtml += '<td>';
+            if (interest.reviewedBy) {
+              tableHtml += `${interest.reviewedBy.firstName || ''} ${interest.reviewedBy.lastName || ''}`;
+            }
+            tableHtml += '</td>';
+          }
+          
+          tableHtml += '</tr>';
+        });
+        tableHtml += '</tbody></table>';
+        
+        return tableHtml;
+      };
+      
+      // Skapa fullständig HTML
+      const today = new Date().toLocaleDateString('sv-SE').replace(/\//g, '-');
+      const title = currentView === INTEREST_VIEWS.UNREVIEWED ? t('interests.title') : t('interests.reviewedTitle');
+      const html = `
+      <!DOCTYPE html>
+      <html lang="sv">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>${title} ${today}</title>
+        ${styles}
+      </head>
+      <body class="${isDarkMode ? 'dark-mode' : ''}">
+        <h1>${title}</h1>
+        <p>Exporterad: ${new Date().toLocaleString('sv-SE')}</p>
+        ${createTableHtml()}
+        <script>
+          // Lyssna efter klick för att växla mellan ljust/mörkt läge
+          document.addEventListener('DOMContentLoaded', function() {
+            const toggleDarkMode = () => {
+              document.body.classList.toggle('dark-mode');
+            };
+            
+            // Lägg till knapp för att växla mellan ljust/mörkt läge
+            const toggleBtn = document.createElement('button');
+            toggleBtn.textContent = 'Växla ljust/mörkt läge';
+            toggleBtn.style.position = 'fixed';
+            toggleBtn.style.bottom = '20px';
+            toggleBtn.style.right = '20px';
+            toggleBtn.style.padding = '8px 16px';
+            toggleBtn.style.backgroundColor = '#3b82f6';
+            toggleBtn.style.color = '#ffffff';
+            toggleBtn.style.border = 'none';
+            toggleBtn.style.borderRadius = '4px';
+            toggleBtn.style.cursor = 'pointer';
+            toggleBtn.onclick = toggleDarkMode;
+            document.body.appendChild(toggleBtn);
+          });
+        </script>
+      </body>
+      </html>`;
+      
+      // Skapa Blob och URL
+      const blob = new Blob([html], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      
+      // Skapa en länk och klicka på den för att ladda ned filen
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${title}_${today}.html`;
+      document.body.appendChild(a);
+      a.click();
+      
+      // Städa upp
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      // Visa framgångsmeddelande
+      setSuccessMessage(t('interests.messages.exportSuccess'));
+      setTimeout(() => setSuccessMessage(''), 3000);
+      
+    } catch (err) {
+      logger.error('Error exporting to HTML:', err);
+      setError(t('interests.messages.exportError'));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Funktion för att växla mellan vyer
   const toggleView = () => {
     setCurrentView(
@@ -688,6 +985,13 @@ const Interests = ({ view = 'list' }) => {
           >
             <DocumentTextIcon className="h-5 w-5 mr-2" />
             SQL
+          </button>
+          <button
+            className="flex items-center px-3 py-2 text-sm font-medium rounded-md text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700 dark:hover:bg-gray-700"
+            onClick={exportToHtml}
+          >
+            <DocumentTextIcon className="h-5 w-5 mr-2" />
+            HTML
           </button>
           <Button
             variant="outline"
