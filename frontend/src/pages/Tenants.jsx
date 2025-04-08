@@ -2,10 +2,11 @@ import React, { useState, useEffect, useMemo } from 'react';
 import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
 import AlertModal from '../components/AlertModal';
+import EmailModal from '../components/EmailModal';
 import FormInput from '../components/FormInput';
 import Title from '../components/Title';
-import { PlusIcon, FunnelIcon, XMarkIcon } from '@heroicons/react/24/outline';
-import { tenantService, apartmentService, keyService } from '../services';
+import { PlusIcon, FunnelIcon, XMarkIcon, EnvelopeIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline';
+import { tenantService, apartmentService, keyService, emailService } from '../services';
 import { formatShortDate, formatDateForInput } from '../utils/formatters';
 import { useLocale } from '../contexts/LocaleContext';
 import RelatedTasks from '../components/RelatedTasks';
@@ -224,6 +225,8 @@ const Tenants = () => {
     },
   ];
 
+  const [isExporting, setIsExporting] = useState(false);
+  
   useEffect(() => {
     fetchInitialData();
   }, []);
@@ -581,6 +584,19 @@ const Tenants = () => {
       : tenantList.filter(t => !hasTenantApartment(t));
   };
 
+  // Hantera export till SQL
+  const handleExportToSql = async () => {
+    try {
+      setIsExporting(true);
+      await tenantService.exportToSql();
+    } catch (error) {
+      console.error('Fel vid export till SQL:', error);
+      setError(`${t('tenants.messages.exportError')}: ${error.message}`);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-full">
@@ -596,6 +612,14 @@ const Tenants = () => {
           {t('tenants.title')}
         </Title>
         <div className="flex space-x-2">
+          <button
+            onClick={handleExportToSql}
+            disabled={isExporting}
+            className="flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800 disabled:opacity-50"
+          >
+            <ArrowDownTrayIcon className="h-5 w-5 mr-2" />
+            {isExporting ? t('common.exporting') : t('common.export')}
+          </button>
           <button
             onClick={() => setShowFilters(!showFilters)}
             className="flex items-center px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"

@@ -574,10 +574,16 @@ export default {
     },
     messages: {
       reviewSuccess: 'Interest inquiry has been reviewed',
-      reviewError: 'An error occurred while reviewing the interest inquiry',
+      reviewError: 'An error occurred while reviewing the interest',
       rejectSuccess: 'Interest inquiry has been rejected',
-      rejectError: 'An error occurred while rejecting the interest inquiry',
-      emailCheckError: 'An error occurred while checking emails'
+      rejectError: 'An error occurred while rejecting the interest',
+      emailCheckError: 'An error occurred while checking emails',
+      showingScheduled: 'Showing scheduled and email sent',
+      showingError: 'An error occurred while scheduling the showing',
+      fieldsRequired: 'All fields are required',
+      emailCheckSuccess: 'Emails have been loaded successfully',
+      exportSuccess: 'Interests have been exported to SQL',
+      exportError: 'An error occurred while exporting interests'
     },
     noInterests: 'No interest inquiries',
     reviewRequest: 'Review Interest Inquiry',

@@ -2,8 +2,11 @@ package com.dfrm.controller;
 
 import java.util.List;
 import java.util.Map;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -144,5 +147,47 @@ public class ApartmentController {
         return apartmentService.partialUpdate(id, updates)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/export-sql")
+    public ResponseEntity<String> exportToSql() {
+        List<Apartment> apartments = apartmentService.getAllApartments();
+        StringBuilder sql = new StringBuilder();
+        
+        sql.append("-- SQL export av lägenheter från DFRM\n");
+        sql.append("-- Genererat: ").append(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))).append("\n\n");
+        
+        // Skapa INSERT-satser för varje lägenhet
+        for (Apartment apartment : apartments) {
+            sql.append("INSERT INTO apartments (id, street, number, apartmentNumber, postalCode, city, rooms, area, price, electricity, storage, internet, isTemporary) VALUES (\n");
+            sql.append("    '").append(apartment.getId()).append("',\n");
+            sql.append("    '").append(escapeSql(apartment.getStreet())).append("',\n");
+            sql.append("    '").append(escapeSql(apartment.getNumber())).append("',\n");
+            sql.append("    '").append(escapeSql(apartment.getApartmentNumber())).append("',\n");
+            sql.append("    '").append(escapeSql(apartment.getPostalCode())).append("',\n");
+            sql.append("    '").append(escapeSql(apartment.getCity())).append("',\n");
+            sql.append("    ").append(apartment.getRooms()).append(",\n");
+            sql.append("    ").append(apartment.getArea()).append(",\n");
+            sql.append("    ").append(apartment.getPrice()).append(",\n");
+            sql.append("    ").append(apartment.getElectricity() != null ? apartment.getElectricity() : false).append(",\n");
+            sql.append("    ").append(apartment.getStorage() != null ? apartment.getStorage() : false).append(",\n");
+            sql.append("    ").append(apartment.getInternet() != null ? apartment.getInternet() : false).append(",\n");
+            sql.append("    ").append(apartment.getIsTemporary()).append("\n");
+            sql.append(");\n\n");
+        }
+        
+        return ResponseEntity
+            .ok()
+            .header("Content-Disposition", "attachment; filename=apartments_export.sql")
+            .contentType(MediaType.TEXT_PLAIN)
+            .body(sql.toString());
+    }
+    
+    // Hjälpmetod för att escapa SQL-strängar
+    private String escapeSql(String input) {
+        if (input == null) {
+            return "";
+        }
+        return input.replace("'", "''");
     }
 } 

@@ -1,11 +1,14 @@
 package com.dfrm.controller;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -161,5 +164,90 @@ public class InterestController {
             log.error("Fel vid manuell läsning av intresse-e-post: {}", e.getMessage());
             return ResponseEntity.status(500).body("Fel vid läsning av e-post: " + e.getMessage());
         }
+    }
+
+    @GetMapping("/export-sql")
+    public ResponseEntity<String> exportToSql() {
+        List<Interest> interests = interestService.getAllInterests();
+        StringBuilder sql = new StringBuilder();
+        
+        sql.append("-- SQL export av intresseanmälningar från DFRM\n");
+        sql.append("-- Genererat: ").append(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))).append("\n\n");
+        
+        // Skapa INSERT-satser för varje intresseanmälan
+        for (Interest interest : interests) {
+            sql.append("INSERT INTO interests (id, hashId, name, email, phone, message, apartment, pageUrl, messageLanguage, received, status, showingDateTime, responseMessage, reviewedById, reviewedAt, reviewComments) VALUES (\n");
+            sql.append("    '").append(interest.getId()).append("',\n");
+            
+            // Hantera hashId som kan vara null
+            if (interest.getHashId() != null) {
+                sql.append("    '").append(interest.getHashId()).append("',\n");
+            } else {
+                sql.append("    NULL,\n");
+            }
+            
+            sql.append("    '").append(escapeSql(interest.getName())).append("',\n");
+            sql.append("    '").append(escapeSql(interest.getEmail())).append("',\n");
+            sql.append("    '").append(escapeSql(interest.getPhone())).append("',\n");
+            sql.append("    '").append(escapeSql(interest.getMessage())).append("',\n");
+            sql.append("    '").append(escapeSql(interest.getApartment())).append("',\n");
+            sql.append("    '").append(escapeSql(interest.getPageUrl())).append("',\n");
+            
+            // Hantera messageLanguage som kan vara null
+            if (interest.getMessageLanguage() != null) {
+                sql.append("    '").append(interest.getMessageLanguage()).append("',\n");
+            } else {
+                sql.append("    NULL,\n");
+            }
+            
+            // Hantera received datum
+            if (interest.getReceived() != null) {
+                sql.append("    '").append(interest.getReceived()).append("',\n");
+            } else {
+                sql.append("    NULL,\n");
+            }
+            
+            sql.append("    '").append(interest.getStatus()).append("',\n");
+            
+            // Hantera showingDateTime som kan vara null
+            if (interest.getShowingDateTime() != null) {
+                sql.append("    '").append(interest.getShowingDateTime()).append("',\n");
+            } else {
+                sql.append("    NULL,\n");
+            }
+            
+            sql.append("    '").append(escapeSql(interest.getResponseMessage())).append("',\n");
+            
+            // Hantera reviewedBy som kan vara null
+            if (interest.getReviewedBy() != null) {
+                sql.append("    '").append(interest.getReviewedBy().getId()).append("',\n");
+            } else {
+                sql.append("    NULL,\n");
+            }
+            
+            // Hantera reviewedAt som kan vara null
+            if (interest.getReviewedAt() != null) {
+                sql.append("    '").append(interest.getReviewedAt()).append("',\n");
+            } else {
+                sql.append("    NULL,\n");
+            }
+            
+            sql.append("    '").append(escapeSql(interest.getReviewComments())).append("'\n");
+            sql.append(");\n\n");
+        }
+        
+        return ResponseEntity
+            .ok()
+            .header("Content-Disposition", "attachment; filename=interests_export.sql")
+            .contentType(MediaType.TEXT_PLAIN)
+            .body(sql.toString());
+    }
+    
+    // Hjälpmetod för att escapa SQL-strängar
+    private String escapeSql(String input) {
+        if (input == null) {
+            return "";
+        }
+        return input.replace("'", "''");
     }
 } 

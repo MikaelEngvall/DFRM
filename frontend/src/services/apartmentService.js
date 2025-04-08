@@ -232,6 +232,29 @@ const apartmentService = {
     }
   },
   
+  // Exportera lägenheter som SQL
+  exportToSql: async () => {
+    try {
+      const response = await api.get('/api/apartments/export-sql', {
+        responseType: 'blob'
+      });
+      
+      // Skapa en URL för blob och ladda ner filen
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'apartments_export.sql');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      return true;
+    } catch (error) {
+      console.error('Error exporting apartments to SQL:', error);
+      throw error;
+    }
+  },
+  
   // Alias för bakåtkompatibilitet
   getAll: async (bypassCache = false) => {
     return apartmentService.getAllApartments(bypassCache);

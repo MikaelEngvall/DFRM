@@ -41,6 +41,7 @@ export default {
     at: 'kl.',
     forceUpdate: 'Tvinga uppdatering',
     export: 'Exportera',
+    exporting: 'Exporterar...',
   },
 
   languages: {
@@ -149,6 +150,8 @@ export default {
       saveError: 'Ett fel uppstod när lägenheten skulle sparas',
       deleteSuccess: 'Lägenheten har tagits bort',
       deleteError: 'Ett fel uppstod när lägenheten skulle tas bort',
+      exportSuccess: 'Lägenheter har exporterats till SQL',
+      exportError: 'Ett fel uppstod när lägenheterna skulle exporteras',
     },
     buttons: {
       add: 'Lägg till lägenhet',
@@ -188,6 +191,8 @@ export default {
       deleteSuccess: 'Hyresgästen har tagits bort',
       deleteError: 'Ett fel uppstod när hyresgästen skulle tas bort',
       movedInDateRequired: 'Inflyttningsdatum krävs när en lägenhet tilldelas',
+      exportSuccess: 'Hyresgäster har exporterats till SQL',
+      exportError: 'Ett fel uppstod när hyresgästerna skulle exporteras',
     },
     buttons: {
       add: 'Lägg till hyresgäst',
@@ -230,6 +235,8 @@ export default {
       saveError: 'Ett fel uppstod när nyckeln skulle sparas',
       deleteSuccess: 'Nyckeln har tagits bort',
       deleteError: 'Ett fel uppstod när nyckeln skulle tas bort',
+      exportSuccess: 'Nycklar har exporterats till SQL',
+      exportError: 'Ett fel uppstod när nycklarna skulle exporteras',
     },
     confirmDelete: 'Är du säker på att du vill ta bort denna nyckel?',
     deleteMessage: 'Detta kommer att ta bort nyckeln och alla kopplingar till hyresgäster och lägenheter.',
@@ -358,6 +365,8 @@ export default {
       },
       delete: 'Ta bort',
       unknownUser: 'Okänd användare',
+      exportSuccess: 'Uppgifter har exporterats till SQL',
+      exportError: 'Ett fel uppstod när uppgifterna skulle exporteras',
     },
     confirmDelete: 'Är du säker på att du vill ta bort uppgiften?',
     noPendingTasks: 'Det finns inga väntande uppgifter',
@@ -450,7 +459,9 @@ export default {
       createSuccess: 'Förfrågan har skapats',
       createError: 'Ett fel uppstod när förfrågan skulle skapas',
       approvedTasksError: 'Ett fel uppstod när godkända uppgifter skulle hämtas',
-      emailCheckError: 'Ett fel uppstod vid läsning av e-post'
+      emailCheckError: 'Ett fel uppstod vid läsning av e-post',
+      exportSuccess: 'Väntande uppgifter har exporterats till SQL',
+      exportError: 'Ett fel uppstod när väntande uppgifter skulle exporteras',
     },
     noDescription: 'Ingen beskrivning',
     reviewRequest: 'Granska förfrågan',
@@ -674,7 +685,9 @@ export default {
       showingScheduled: 'Visningstid bokad och e-post skickat',
       showingError: 'Ett fel uppstod vid bokning av visning',
       fieldsRequired: 'Alla fält måste fyllas i',
-      emailCheckSuccess: 'E-post har lästs in utan problem'
+      emailCheckSuccess: 'E-post har lästs in utan problem',
+      exportSuccess: 'Intresseanmälningar har exporterats till SQL',
+      exportError: 'Ett fel uppstod när intresseanmälningarna skulle exporteras'
     }
   },
 

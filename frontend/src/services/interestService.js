@@ -5,6 +5,26 @@ import { createLogger } from '../utils/logger';
 
 const logger = createLogger('InterestService');
 
+// Cachehantering för intresseanmälningar
+let interestsCache = {
+  unreviewed: null,
+  reviewed: null,
+  lastUpdated: null
+};
+
+const clearInterestCache = () => {
+  interestsCache = {
+    unreviewed: null,
+    reviewed: null,
+    lastUpdated: null
+  };
+  
+  // Rensa även cache-nycklar
+  removeFromCache(CACHE_KEYS.INTERESTS);
+  removeFromCache(CACHE_KEYS.INTERESTS_FOR_REVIEW);
+  removeFromCache(CACHE_KEYS.REVIEWED_INTERESTS);
+};
+
 export const interestService = {
   getAll: async (bypassCache = false, includeApartmentData = false) => {
     try {
@@ -233,141 +253,44 @@ export const interestService = {
       console.log("Status:", response.status);
       console.log("Data:", response.data);
       
+      // Rensa cache efter ändring
+      clearInterestCache();
+      
       return response.data;
     } catch (error) {
-      console.error("=== FEL VID API-ANROP ===");
-      
+      console.error("=== ERROR DETAILS ===");
       if (error.response) {
-        // Server svarade med felkod
         console.error("Status:", error.response.status);
-        console.error("Statustext:", error.response.statusText);
-        console.error("URL som användes:", error.config.url);
-        console.error("Svarsdata:", error.response.data);
+        console.error("Data:", error.response.data);
         console.error("Headers:", error.response.headers);
-      } else if (error.request) {
-        // Ingen respons mottogs
-        console.error("Ingen respons från servern:", error.request);
       } else {
-        // Något annat fel inträffade
-        console.error("Fel:", error.message);
+        console.error("Error object:", error);
       }
       
       throw error;
     }
   },
   
-  scheduleShowingV3: async (id, data) => {
+  // Exportera intresseanmälningar som SQL
+  exportToSql: async () => {
     try {
-      console.log("=== FETCH API ANROP ===");
-      
-      // Bygg URL manuellt
-      const fullUrl = `http://localhost:8080/api/interests/${id}/schedule-showing`;
-      console.log(`Anropar URL: ${fullUrl}`);
-      console.log("Data som skickas:", JSON.stringify(data, null, 2));
-      
-      // Hämta token från local storage
-      const token = localStorage.getItem('auth_auth_token');
-      console.log("Token finns:", token ? "JA" : "NEJ");
-      
-      // Skapa fetch options
-      const options = {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': token ? `Bearer ${token}` : ''
-        },
-        body: JSON.stringify(data)
-      };
-      
-      // Gör anropet med fetch
-      const response = await fetch(fullUrl, options);
-      console.log("Status:", response.status);
-      console.log("StatusText:", response.statusText);
-      
-      // Om responsen inte är OK, kasta ett fel
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error("Svarsdata vid fel:", errorData);
-        throw new Error(`Server svarade med status ${response.status}: ${errorData.message || response.statusText}`);
-      }
-      
-      // Om allt gick bra, returnera svarsdata
-      const responseData = await response.json();
-      console.log("Svarsdata:", responseData);
-      return responseData;
-    } catch (error) {
-      console.error("=== FETCH API FEL ===");
-      console.error(error.message || "Okänt fel");
-      throw error;
-    }
-  },
-  
-  clearCache: () => {
-    console.log("Manuellt rensar alla intresseanmälningscache");
-    clearInterestCache();
-    return true;
-  },
-  
-  getInterestsForReview: async () => {
-    try {
-      // Först hämta intresseanmälningar från servern
-      console.log('Hämtar och kontrollerar nya intresseanmälningar');
-      
-      // Kör check-emails för att säkerställa att alla olästa e-postmeddelanden har processats
-      await interestService.checkEmails();
-      
-      // Hämta de uppdaterade intresseanmälningarna
-      const timestamp = new Date().getTime();
-      const response = await api.get(`/api/interests/for-review?t=${timestamp}`);
-      
-      // Uppdatera cachen
-      saveToCache(CACHE_KEYS.INTERESTS_FOR_REVIEW, response.data);
-      
-      return response.data;
-    } catch (error) {
-      console.error('Fel vid hämtning av intresseanmälningar för granskning:', error);
-      throw error;
-    }
-  },
-  
-  /**
-   * Hämtar detaljerad information om visningar
-   * @returns {Promise<Array>} Lista med visningsdetaljer
-   */
-  getDetailedShowings: async () => {
-    try {
-      // Använd /api/showings istället för /api/showings/detailed
-      const response = await api.get('/api/showings');
-      logger.info(`Hämtade ${response.data.length} visningsdetaljer`);
-      return response.data;
-    } catch (error) {
-      logger.error('Fel vid hämtning av visningsdetaljer:', error);
-      throw error;
-    }
-  },
-  
-  /**
-   * Hämtar lägenheter med information om nuvarande hyresgäster
-   * @returns {Promise<Array>} Lista med lägenheter inklusive hyresgästinformation
-   */
-  getApartmentsWithTenants: async () => {
-    try {
-      const response = await api.get('/api/apartments', {
-        params: { includeTenants: true }
+      const response = await api.get('/api/interests/export-sql', {
+        responseType: 'blob'
       });
-      logger.info(`Hämtade ${response.data.length} lägenheter med hyresgästinformation`);
-      return response.data;
+      
+      // Skapa en URL för blob och ladda ner filen
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'interests_export.sql');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      return true;
     } catch (error) {
-      logger.error('Fel vid hämtning av lägenheter med hyresgäster:', error);
+      console.error('Error exporting interests to SQL:', error);
       throw error;
     }
   }
-};
-
-// Hjälpfunktion för att rensa cache
-function clearInterestCache() {
-  console.log("Rensar cache för intresseanmälningar");
-  removeFromCache(CACHE_KEYS.INTERESTS);
-  removeFromCache(CACHE_KEYS.INTERESTS_FOR_REVIEW);
-  removeFromCache(CACHE_KEYS.REVIEWED_INTERESTS);
-} 
+}; 

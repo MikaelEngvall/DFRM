@@ -1,6 +1,8 @@
 package com.dfrm.controller;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -8,6 +10,7 @@ import java.util.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -471,5 +474,96 @@ public class PendingTaskController {
         } catch (Exception e) {
             return ResponseEntity.badRequest().build();
         }
+    }
+
+    @GetMapping("/export-sql")
+    public ResponseEntity<String> exportToSql() {
+        List<PendingTask> pendingTasks = pendingTaskService.getAllPendingTasks();
+        StringBuilder sql = new StringBuilder();
+        
+        sql.append("-- SQL export av väntande uppgifter från DFRM\n");
+        sql.append("-- Genererat: ").append(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))).append("\n\n");
+        
+        // Skapa INSERT-satser för varje väntande uppgift
+        for (PendingTask pendingTask : pendingTasks) {
+            sql.append("INSERT INTO pending_tasks (id, taskId, requestedByTenantId, requestedByApartmentId, requestedAt, requestComments, reviewedByUserId, reviewedAt, reviewComments, name, email, phone, address, apartment, description, descriptionLanguage, status) VALUES (\n");
+            sql.append("    '").append(pendingTask.getId()).append("',\n");
+            
+            // Hantera taskId som kan vara null
+            if (pendingTask.getTask() != null) {
+                sql.append("    '").append(pendingTask.getTask().getId()).append("',\n");
+            } else {
+                sql.append("    NULL,\n");
+            }
+            
+            // Hantera requestedByTenantId som kan vara null
+            if (pendingTask.getRequestedByTenant() != null) {
+                sql.append("    '").append(pendingTask.getRequestedByTenant().getId()).append("',\n");
+            } else {
+                sql.append("    NULL,\n");
+            }
+            
+            // Hantera requestedByApartmentId som kan vara null
+            if (pendingTask.getRequestedByApartment() != null) {
+                sql.append("    '").append(pendingTask.getRequestedByApartment().getId()).append("',\n");
+            } else {
+                sql.append("    NULL,\n");
+            }
+            
+            // Hantera requestedAt
+            if (pendingTask.getRequestedAt() != null) {
+                sql.append("    '").append(pendingTask.getRequestedAt()).append("',\n");
+            } else {
+                sql.append("    NULL,\n");
+            }
+            
+            sql.append("    '").append(escapeSql(pendingTask.getRequestComments())).append("',\n");
+            
+            // Hantera reviewedByUserId som kan vara null
+            if (pendingTask.getReviewedBy() != null) {
+                sql.append("    '").append(pendingTask.getReviewedBy().getId()).append("',\n");
+            } else {
+                sql.append("    NULL,\n");
+            }
+            
+            // Hantera reviewedAt
+            if (pendingTask.getReviewedAt() != null) {
+                sql.append("    '").append(pendingTask.getReviewedAt()).append("',\n");
+            } else {
+                sql.append("    NULL,\n");
+            }
+            
+            sql.append("    '").append(escapeSql(pendingTask.getReviewComments())).append("',\n");
+            sql.append("    '").append(escapeSql(pendingTask.getName())).append("',\n");
+            sql.append("    '").append(escapeSql(pendingTask.getEmail())).append("',\n");
+            sql.append("    '").append(escapeSql(pendingTask.getPhone())).append("',\n");
+            sql.append("    '").append(escapeSql(pendingTask.getAddress())).append("',\n");
+            sql.append("    '").append(escapeSql(pendingTask.getApartment())).append("',\n");
+            sql.append("    '").append(escapeSql(pendingTask.getDescription())).append("',\n");
+            
+            // Hantera descriptionLanguage
+            if (pendingTask.getDescriptionLanguage() != null) {
+                sql.append("    '").append(pendingTask.getDescriptionLanguage()).append("',\n");
+            } else {
+                sql.append("    NULL,\n");
+            }
+            
+            sql.append("    '").append(pendingTask.getStatus()).append("'\n");
+            sql.append(");\n\n");
+        }
+        
+        return ResponseEntity
+            .ok()
+            .header("Content-Disposition", "attachment; filename=pending_tasks_export.sql")
+            .contentType(MediaType.TEXT_PLAIN)
+            .body(sql.toString());
+    }
+    
+    // Hjälpmetod för att escapa SQL-strängar
+    private String escapeSql(String input) {
+        if (input == null) {
+            return "";
+        }
+        return input.replace("'", "''");
     }
 } 

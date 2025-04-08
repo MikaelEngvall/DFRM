@@ -638,10 +638,16 @@ export default {
     },
     messages: {
       reviewSuccess: 'Zapytanie zostało rozpatrzone',
-      reviewError: 'Wystąpił błąd podczas rozpatrywania zapytania',
+      reviewError: 'Wystąpił błąd podczas przeglądania zgłoszenia zainteresowania',
       rejectSuccess: 'Zapytanie zostało odrzucone',
-      rejectError: 'Wystąpił błąd podczas odrzucania zapytania',
-      emailCheckError: 'Wystąpił błąd podczas sprawdzania poczty'
+      rejectError: 'Wystąpił błąd podczas odrzucania zgłoszenia zainteresowania',
+      emailCheckError: 'Wystąpił błąd podczas sprawdzania e-maili',
+      showingScheduled: 'Zaplanowano pokaz i wysłano e-mail',
+      showingError: 'Wystąpił błąd podczas planowania pokazu',
+      fieldsRequired: 'Wszystkie pola są wymagane',
+      emailCheckSuccess: 'E-maile zostały pomyślnie załadowane',
+      exportSuccess: 'Zgłoszenia zainteresowania zostały wyeksportowane do SQL',
+      exportError: 'Wystąpił błąd podczas eksportowania zgłoszeń zainteresowania'
     },
     noInterests: 'Brak zapytań o mieszkania',
     reviewRequest: 'Rozpatrz zapytanie',

@@ -637,6 +637,20 @@ const Interests = ({ view = 'list' }) => {
     }
   };
 
+  // Funktion för att exportera till SQL
+  const exportToSql = async () => {
+    try {
+      setIsLoading(true);
+      await interestService.exportToSql();
+      setSuccessMessage(t('interests.messages.exportSuccess'));
+    } catch (err) {
+      logger.error('Error exporting to SQL:', err);
+      setError(t('interests.messages.exportError'));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Funktion för att växla mellan vyer
   const toggleView = () => {
     setCurrentView(
@@ -678,14 +692,21 @@ const Interests = ({ view = 'list' }) => {
             onClick={exportToExcel}
           >
             <DocumentTextIcon className="h-5 w-5 mr-2" />
-            {t('common.export')}
+            Excel
+          </button>
+          <button 
+            className="flex items-center px-3 py-2 text-sm font-medium rounded-md text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700 dark:hover:bg-gray-700"
+            onClick={exportToSql}
+          >
+            <DocumentTextIcon className="h-5 w-5 mr-2" />
+            SQL
           </button>
           <button 
             className="flex items-center px-3 py-2 text-sm font-medium rounded-md text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 dark:bg-gray-800 dark:text-gray-200 dark:border-gray-700 dark:hover:bg-gray-700"
             onClick={exportToGoogleDocs}
           >
             <DocumentTextIcon className="h-5 w-5 mr-2" />
-            Till Google Docs
+            Google Docs
           </button>
           <button 
             className="flex items-center px-3 py-2 text-sm font-medium rounded-md text-indigo-700 bg-indigo-100 hover:bg-indigo-200 dark:bg-indigo-900 dark:text-indigo-200 dark:hover:bg-indigo-800"

@@ -5,7 +5,7 @@ import AlertModal from '../components/AlertModal';
 import EmailModal from '../components/EmailModal';
 import FormInput from '../components/FormInput';
 import Title from '../components/Title';
-import { PlusIcon, FunnelIcon, XMarkIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, FunnelIcon, XMarkIcon, EnvelopeIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline';
 import { apartmentService, tenantService, keyService, emailService } from '../services';
 import { useLocation } from 'react-router-dom';
 import { useLocale } from '../contexts/LocaleContext';
@@ -322,6 +322,8 @@ const Apartments = () => {
       }
     },
   ];
+
+  const [isExporting, setIsExporting] = useState(false);
 
   useEffect(() => {
     fetchInitialData();
@@ -810,6 +812,19 @@ const Apartments = () => {
     return cleanedApartment;
   };
 
+  // Hantera export till SQL
+  const handleExportToSql = async () => {
+    try {
+      setIsExporting(true);
+      await apartmentService.exportToSql();
+    } catch (error) {
+      console.error('Fel vid export till SQL:', error);
+      setError(`${t('apartments.exportError')}: ${error.message}`);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-full">
@@ -825,6 +840,15 @@ const Apartments = () => {
           {activeTab === 'vacant' ? t('apartments.vacant') : t('apartments.title')}
         </Title>
         <div className="flex space-x-2">
+          <button
+            onClick={handleExportToSql}
+            disabled={isExporting}
+            className="flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800 disabled:opacity-50"
+          >
+            <ArrowDownTrayIcon className="h-5 w-5 mr-2" />
+            {isExporting ? t('common.exporting') : t('common.export')}
+          </button>
+          
           {filteredTenantEmails.length > 0 && (
             <button
               onClick={() => setIsEmailModalOpen(true)}

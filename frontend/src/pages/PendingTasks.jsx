@@ -1,13 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import DataTable from '../components/DataTable';
 import Modal from '../components/Modal';
 import AlertModal from '../components/AlertModal';
 import FormInput from '../components/FormInput';
 import Title from '../components/Title';
-import { pendingTaskService, pendingEmailReportService, taskService, apartmentService, tenantService, userService, taskMessageService } from '../services';
+import { pendingTaskService, pendingEmailReportService, taskService, apartmentService, tenantService, userService, taskMessageService, emailService } from '../services';
 import { useLocale } from '../contexts/LocaleContext';
 import { useAuth } from '../contexts/AuthContext';
-import { PaperAirplaneIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
+import { PaperAirplaneIcon, EnvelopeIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline';
 import TaskMessages from '../components/TaskMessages';
 import { createLogger } from '../utils/logger';
 
@@ -43,6 +43,7 @@ const PendingTasks = () => {
     isRecurring: false,
     recurringPattern: '',
   });
+  const [isExporting, setIsExporting] = useState(false);
 
   // Kolumner för väntande uppgifter från email-rapporter
   const emailReportColumns = [
@@ -751,6 +752,19 @@ const PendingTasks = () => {
     return classes.join(" ");
   };
 
+  // Hantera export till SQL
+  const handleExportToSql = async () => {
+    try {
+      setIsExporting(true);
+      await pendingTaskService.exportToSql();
+    } catch (error) {
+      console.error('Fel vid export till SQL:', error);
+      setError(`${t('pendingTasks.messages.exportError')}: ${error.message}`);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-full">
@@ -782,6 +796,14 @@ const PendingTasks = () => {
             </label>
           </div>
           <button
+            onClick={handleExportToSql}
+            disabled={isExporting}
+            className="flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800 disabled:opacity-50"
+          >
+            <ArrowDownTrayIcon className="h-5 w-5 mr-2" />
+            {isExporting ? t('common.exporting') : t('common.export')}
+          </button>
+          <button
             onClick={async () => {
               try {
                 setLoading(true);
@@ -797,9 +819,7 @@ const PendingTasks = () => {
             title={t('pendingTasks.actions.checkEmails')}
             className="bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 flex items-center"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
+            <EnvelopeIcon className="h-5 w-5 mr-2" />
             {t('pendingTasks.actions.checkEmails')}
           </button>
         </div>

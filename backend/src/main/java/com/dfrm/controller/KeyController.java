@@ -2,8 +2,11 @@ package com.dfrm.controller;
 
 import java.util.List;
 import java.util.Map;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -141,5 +144,56 @@ public class KeyController {
         return keyService.partialUpdate(id, updates)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
+    }
+    
+    @GetMapping("/export-sql")
+    public ResponseEntity<String> exportToSql() {
+        List<Key> keys = keyService.getAllKeys();
+        StringBuilder sql = new StringBuilder();
+        
+        sql.append("-- SQL export av nycklar från DFRM\n");
+        sql.append("-- Genererat: ").append(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))).append("\n\n");
+        
+        // Skapa INSERT-satser för varje nyckel
+        for (Key key : keys) {
+            sql.append("INSERT INTO `keys` (id, serie, number, copyNumber, type, description, isAvailable, apartmentId, tenantId) VALUES (\n");
+            sql.append("    '").append(key.getId()).append("',\n");
+            sql.append("    '").append(escapeSql(key.getSerie())).append("',\n");
+            sql.append("    '").append(escapeSql(key.getNumber())).append("',\n");
+            sql.append("    '").append(escapeSql(key.getCopyNumber())).append("',\n");
+            sql.append("    '").append(key.getType()).append("',\n");
+            sql.append("    '").append(escapeSql(key.getDescription())).append("',\n");
+            sql.append("    ").append(key.getIsAvailable() != null ? key.getIsAvailable() : true).append(",\n");
+            
+            // Hantera apartmentId som kan vara null
+            if (key.getApartment() != null) {
+                sql.append("    '").append(key.getApartment().getId()).append("',\n");
+            } else {
+                sql.append("    NULL,\n");
+            }
+            
+            // Hantera tenantId som kan vara null
+            if (key.getTenant() != null) {
+                sql.append("    '").append(key.getTenant().getId()).append("'\n");
+            } else {
+                sql.append("    NULL\n");
+            }
+            
+            sql.append(");\n\n");
+        }
+        
+        return ResponseEntity
+            .ok()
+            .header("Content-Disposition", "attachment; filename=keys_export.sql")
+            .contentType(MediaType.TEXT_PLAIN)
+            .body(sql.toString());
+    }
+    
+    // Hjälpmetod för att escapa SQL-strängar
+    private String escapeSql(String input) {
+        if (input == null) {
+            return "";
+        }
+        return input.replace("'", "''");
     }
 } 

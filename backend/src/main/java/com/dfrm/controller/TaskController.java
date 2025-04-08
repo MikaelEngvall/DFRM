@@ -1,11 +1,14 @@
 package com.dfrm.controller;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -250,5 +253,86 @@ public class TaskController {
         
         log.debug("Hämtar uppgifter för datumintervall: {} till {}", startDate, endDate);
         return taskService.getTasksByDateRange(startDate, endDate);
+    }
+
+    @GetMapping("/export-sql")
+    public ResponseEntity<String> exportToSql() {
+        // Hämta alla uppgifter med tomma filtreringsparametrar (motsvarar alla uppgifter)
+        List<Task> tasks = taskService.getAllTasks(null, null, null, null);
+        StringBuilder sql = new StringBuilder();
+        
+        sql.append("-- SQL export av uppgifter från DFRM\n");
+        sql.append("-- Genererat: ").append(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))).append("\n\n");
+        
+        // Skapa INSERT-satser för varje uppgift
+        for (Task task : tasks) {
+            sql.append("INSERT INTO tasks (id, title, description, dueDate, completedDate, status, priority, comments, isRecurring, recurringPattern, assignedToUserId, assignedByUserId, apartmentId, tenantId) VALUES (\n");
+            sql.append("    '").append(task.getId()).append("',\n");
+            sql.append("    '").append(escapeSql(task.getTitle())).append("',\n");
+            sql.append("    '").append(escapeSql(task.getDescription())).append("',\n");
+            
+            // Hantera datum-fält som kan vara null
+            if (task.getDueDate() != null) {
+                sql.append("    '").append(task.getDueDate()).append("',\n");
+            } else {
+                sql.append("    NULL,\n");
+            }
+            
+            if (task.getCompletedDate() != null) {
+                sql.append("    '").append(task.getCompletedDate()).append("',\n");
+            } else {
+                sql.append("    NULL,\n");
+            }
+            
+            sql.append("    '").append(task.getStatus()).append("',\n");
+            sql.append("    '").append(task.getPriority()).append("',\n");
+            sql.append("    '").append(escapeSql(task.getComments())).append("',\n");
+            sql.append("    ").append(task.isRecurring()).append(",\n");
+            sql.append("    '").append(escapeSql(task.getRecurringPattern())).append("',\n");
+            
+            // Hantera assignedToUserId som kan vara null
+            if (task.getAssignedToUserId() != null) {
+                sql.append("    '").append(task.getAssignedToUserId()).append("',\n");
+            } else {
+                sql.append("    NULL,\n");
+            }
+            
+            // Hantera assignedByUserId som kan vara null
+            if (task.getAssignedByUserId() != null) {
+                sql.append("    '").append(task.getAssignedByUserId()).append("',\n");
+            } else {
+                sql.append("    NULL,\n");
+            }
+            
+            // Hantera apartmentId som kan vara null
+            if (task.getApartmentId() != null) {
+                sql.append("    '").append(task.getApartmentId()).append("',\n");
+            } else {
+                sql.append("    NULL,\n");
+            }
+            
+            // Hantera tenantId som kan vara null
+            if (task.getTenantId() != null) {
+                sql.append("    '").append(task.getTenantId()).append("'\n");
+            } else {
+                sql.append("    NULL\n");
+            }
+            
+            sql.append(");\n\n");
+        }
+        
+        return ResponseEntity
+            .ok()
+            .header("Content-Disposition", "attachment; filename=tasks_export.sql")
+            .contentType(MediaType.TEXT_PLAIN)
+            .body(sql.toString());
+    }
+    
+    // Hjälpmetod för att escapa SQL-strängar
+    private String escapeSql(String input) {
+        if (input == null) {
+            return "";
+        }
+        return input.replace("'", "''");
     }
 } 

@@ -5,7 +5,7 @@ import AlertModal from '../components/AlertModal';
 import FormInput from '../components/FormInput';
 import Autocomplete from '../components/Autocomplete';
 import Title from '../components/Title';
-import { PlusIcon, PaperAirplaneIcon, FunnelIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, PaperAirplaneIcon, FunnelIcon, XMarkIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline';
 import { taskService, apartmentService, tenantService, userService, taskMessageService } from '../services';
 import { useLocale } from '../contexts/LocaleContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -51,6 +51,7 @@ const Tasks = () => {
     priority: queryParams.get('priority') || '',
   });
   const [showFilters, setShowFilters] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   const initialDataProcessedRef = useRef(false);
   const initialLoadRef = useRef(false);
@@ -583,6 +584,19 @@ const Tasks = () => {
     }
   };
 
+  // Hantera export till SQL
+  const handleExportToSql = async () => {
+    try {
+      setIsExporting(true);
+      await taskService.exportToSql();
+    } catch (error) {
+      console.error('Fel vid export till SQL:', error);
+      setError(`${t('tasks.messages.exportError')}: ${error.message}`);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-full">
@@ -598,6 +612,14 @@ const Tasks = () => {
           {t('tasks.title')}
         </Title>
         <div className="flex space-x-2">
+          <button
+            onClick={handleExportToSql}
+            disabled={isExporting}
+            className="flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800 disabled:opacity-50"
+          >
+            <ArrowDownTrayIcon className="h-5 w-5 mr-2" />
+            {isExporting ? t('common.exporting') : t('common.export')}
+          </button>
           <button
             onClick={() => setShowFilters(!showFilters)}
             className="flex items-center px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"

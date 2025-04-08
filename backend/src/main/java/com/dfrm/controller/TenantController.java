@@ -1,10 +1,13 @@
 package com.dfrm.controller;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -152,5 +155,67 @@ public class TenantController {
         return tenantService.partialUpdate(id, updates)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
+    }
+    
+    @GetMapping("/export-sql")
+    public ResponseEntity<String> exportToSql() {
+        List<Tenant> tenants = tenantService.getAllTenants();
+        StringBuilder sql = new StringBuilder();
+        
+        sql.append("-- SQL export av hyresgäster från DFRM\n");
+        sql.append("-- Genererat: ").append(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))).append("\n\n");
+        
+        // Skapa INSERT-satser för varje hyresgäst
+        for (Tenant tenant : tenants) {
+            sql.append("INSERT INTO tenants (id, firstName, lastName, personnummer, email, phone, street, postalCode, city, movedInDate, resiliationDate, comment, isTemporary, apartmentId) VALUES (\n");
+            sql.append("    '").append(tenant.getId()).append("',\n");
+            sql.append("    '").append(escapeSql(tenant.getFirstName())).append("',\n");
+            sql.append("    '").append(escapeSql(tenant.getLastName())).append("',\n");
+            sql.append("    '").append(escapeSql(tenant.getPersonnummer())).append("',\n");
+            sql.append("    '").append(escapeSql(tenant.getEmail())).append("',\n");
+            sql.append("    '").append(escapeSql(tenant.getPhone())).append("',\n");
+            sql.append("    '").append(escapeSql(tenant.getStreet())).append("',\n");
+            sql.append("    '").append(escapeSql(tenant.getPostalCode())).append("',\n");
+            sql.append("    '").append(escapeSql(tenant.getCity())).append("',\n");
+            
+            // Hantera datum-fält som kan vara null
+            if (tenant.getMovedInDate() != null) {
+                sql.append("    '").append(tenant.getMovedInDate()).append("',\n");
+            } else {
+                sql.append("    NULL,\n");
+            }
+            
+            if (tenant.getResiliationDate() != null) {
+                sql.append("    '").append(tenant.getResiliationDate()).append("',\n");
+            } else {
+                sql.append("    NULL,\n");
+            }
+            
+            sql.append("    '").append(escapeSql(tenant.getComment())).append("',\n");
+            sql.append("    ").append(tenant.getIsTemporary()).append(",\n");
+            
+            // Hantera apartmentId som kan vara null
+            if (tenant.getApartment() != null) {
+                sql.append("    '").append(tenant.getApartment().getId()).append("'\n");
+            } else {
+                sql.append("    NULL\n");
+            }
+            
+            sql.append(");\n\n");
+        }
+        
+        return ResponseEntity
+            .ok()
+            .header("Content-Disposition", "attachment; filename=tenants_export.sql")
+            .contentType(MediaType.TEXT_PLAIN)
+            .body(sql.toString());
+    }
+    
+    // Hjälpmetod för att escapa SQL-strängar
+    private String escapeSql(String input) {
+        if (input == null) {
+            return "";
+        }
+        return input.replace("'", "''");
     }
 } 
