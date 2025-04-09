@@ -1,12 +1,26 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useLocale } from '../contexts/LocaleContext';
 import { useAuth } from '../contexts/AuthContext';
+import { useTranslation } from 'react-i18next';
 import Modal from '../components/Modal';
-import AlertModal from '../components/AlertModal';
 import Title from '../components/Title';
 import DataTable from '../components/DataTable';
-import { interestService, taskService, userService, emailService, apartmentService, tenantService } from '../services';
-import { EnvelopeIcon, CalendarIcon, ClockIcon, ArrowsUpDownIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
+import { 
+  interestService, 
+  taskService, 
+  userService, 
+  emailService, 
+  apartmentService, 
+  tenantService, 
+  authService 
+} from '../services';
+import { 
+  EnvelopeIcon, 
+  CalendarIcon, 
+  ClockIcon, 
+  ArrowsUpDownIcon, 
+  DocumentTextIcon 
+} from '@heroicons/react/24/outline';
 import EmailModal from '../components/EmailModal';
 import { useNavigate } from 'react-router-dom';
 import { createLogger } from '../utils/logger';
@@ -78,14 +92,20 @@ const Interests = ({ view = 'list' }) => {
   // Formatera datum till lokalt format
   const formatDate = (dateString) => {
     if (!dateString) return '';
-    const date = new Date(dateString);
-    return date.toLocaleString('sv-SE', { 
-      year: 'numeric', 
-      month: 'numeric', 
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('sv-SE', { 
+        // Ta bort år och tid, visa bara dag och månad
+        month: 'numeric', 
+        day: 'numeric'
+        // year: 'numeric', 
+        // hour: '2-digit',
+        // minute: '2-digit'
+      });
+    } catch (error) {
+      logger.error('Fel vid formatering av datum:', error);
+      return '-'; // Returnera bindestreck vid fel
+    }
   };
   
   // Formatera text för visning (ta bort HTML, hantera radbrytningar)
@@ -699,8 +719,96 @@ const Interests = ({ view = 'list' }) => {
         .dark-mode .secondary-text {
           color: #9ca3af;
         }
-        /* Ta bort status-styling eftersom kolumnen inte alltid finns */
-        @media print { /* ... print styles ... */ }
+        /* Nya stilar för statusar */
+        .status {
+          display: inline-block;
+          padding: 0.25rem 0.5rem;
+          border-radius: 9999px;
+          font-size: 0.75rem;
+          font-weight: 600;
+          text-align: center;
+        }
+        .status-new {
+          background-color: #e5e7eb;
+          color: #4b5563;
+        }
+        .status-reviewed {
+          background-color: #d1fae5;
+          color: #065f46;
+        }
+        .status-scheduled {
+          background-color: #a855f7;
+          color: #ffffff;
+        }
+        .status-confirmed {
+          background-color: #3b82f6;
+          color: #ffffff;
+        }
+        .status-completed {
+          background-color: #10b981;
+          color: #ffffff;
+        }
+        .status-cancelled {
+          background-color: #ef4444;
+          color: #ffffff;
+        }
+        .status-declined {
+          background-color: #f59e0b;
+          color: #ffffff;
+        }
+        .status-rejected {
+          background-color: #fee2e2;
+          color: #b91c1c;
+        }
+        .dark-mode .status-new {
+          background-color: #6b7280;
+          color: #f3f4f6;
+        }
+        .dark-mode .status-reviewed {
+          background-color: #10b981;
+          color: #ecfdf5;
+        }
+        .dark-mode .status-scheduled {
+          background-color: #a855f7;
+          color: #ffffff;
+        }
+        .dark-mode .status-confirmed {
+          background-color: #3b82f6;
+          color: #ffffff;
+        }
+        .dark-mode .status-completed {
+          background-color: #10b981;
+          color: #ffffff;
+        }
+        .dark-mode .status-cancelled {
+          background-color: #ef4444;
+          color: #ffffff;
+        }
+        .dark-mode .status-declined {
+          background-color: #f59e0b;
+          color: #ffffff;
+        }
+        .dark-mode .status-rejected {
+          background-color: #ef4444;
+          color: #fef2f2;
+        }
+        @media print {
+          body {
+            background-color: white;
+            color: black;
+          }
+          table {
+            box-shadow: none;
+          }
+          th, td {
+            background-color: white !important;
+            color: black !important;
+            border-bottom: 1px solid #e5e7eb !important;
+          }
+          .status {
+            border: 1px solid #e5e7eb;
+          }
+        }
       </style>`;
       
       // Funktion för att skapa HTML för en tabell
@@ -717,7 +825,7 @@ const Interests = ({ view = 'list' }) => {
         if (type === 'unreviewed') {
           tableHtml += `<th>${t('interests.fields.message')}</th>`;
         } else if (type === 'booked') {
-          tableHtml += `<th>Visningstid</th>`; // Ny kolumn för bokade
+          tableHtml += `<th>${t('interests.fields.status')}</th>`; // Visa status istället för visningstid
         }
         tableHtml += `<th>${t('interests.fields.received')}</th>`;
         tableHtml += '</tr></thead>';
@@ -748,7 +856,10 @@ const Interests = ({ view = 'list' }) => {
           if (type === 'unreviewed') {
             tableHtml += `<td>${formatText(interest.message)?.substring(0, 50) + (formatText(interest.message)?.length > 50 ? '...' : '') || '-'}</td>`;
           } else if (type === 'booked') {
-            tableHtml += `<td>${formatShowingDateTime(interest.showingDateTime)}</td>`; // Använd nya formatfunktionen
+            // Visa status med lämplig färg
+            const statusClass = getStatusClass(interest.status);
+            const statusText = getStatusText(interest.status);
+            tableHtml += `<td><span class="${statusClass}">${statusText}</span></td>`;
           }
           
           // Mottagen
@@ -783,8 +894,28 @@ const Interests = ({ view = 'list' }) => {
         ${createTableHtml(bookedData, 'booked')}
 
         <script>
-          // Lyssna efter klick för att växla mellan ljust/mörkt läge (oförändrad)
-          // ... script code ...
+          // Lyssna efter klick för att växla mellan ljust/mörkt läge
+          document.addEventListener('DOMContentLoaded', function() {
+            const toggleDarkMode = () => {
+              document.body.classList.toggle('dark-mode');
+            };
+            
+            // Lägg till knapp för att växla mellan ljust/mörkt läge
+            const toggleBtn = document.createElement('button');
+            toggleBtn.textContent = 'Växla ljust/mörkt läge';
+            toggleBtn.style.position = 'fixed';
+            toggleBtn.style.bottom = '20px';
+            toggleBtn.style.right = '20px';
+            toggleBtn.style.padding = '8px 16px';
+            toggleBtn.style.backgroundColor = '#3b82f6'; // Blå färg som exempel
+            toggleBtn.style.color = '#ffffff';
+            toggleBtn.style.border = 'none';
+            toggleBtn.style.borderRadius = '4px';
+            toggleBtn.style.cursor = 'pointer';
+            toggleBtn.style.zIndex = '1000'; // Se till att knappen är överst
+            toggleBtn.onclick = toggleDarkMode;
+            document.body.appendChild(toggleBtn);
+          });
         </script>
       </body>
       </html>`;
@@ -834,6 +965,92 @@ const Interests = ({ view = 'list' }) => {
       ? t('interests.messages.loadingReviewed') 
       : t('interests.messages.loadingUnreviewed')
     );
+  };
+
+  // Hjälpfunktion för att få CSS-klass baserat på status
+  const getStatusClass = (status) => {
+    switch (status) {
+      case 'NEW': return 'status status-new';
+      case 'REVIEWED': return 'status status-reviewed';
+      case 'SHOWING_SCHEDULED': return 'status status-scheduled';
+      case 'SHOWING_CONFIRMED': return 'status status-confirmed';
+      case 'SHOWING_COMPLETED': return 'status status-completed';
+      case 'SHOWING_CANCELLED': return 'status status-cancelled';
+      case 'SHOWING_DECLINED': return 'status status-declined';
+      case 'REJECTED': return 'status status-rejected';
+      default: return 'status status-unknown';
+    }
+  };
+
+  // Hjälpfunktion för att få statustext baserat på status
+  const getStatusText = (status) => {
+    switch (status) {
+      case 'NEW': return t('interests.status.NEW');
+      case 'REVIEWED': return t('interests.status.REVIEWED');
+      case 'SHOWING_SCHEDULED': return t('interests.status.SHOWING_SCHEDULED');
+      case 'SHOWING_CONFIRMED': return t('interests.status.SHOWING_CONFIRMED');
+      case 'SHOWING_COMPLETED': return t('interests.status.SHOWING_COMPLETED');
+      case 'SHOWING_CANCELLED': return t('interests.status.SHOWING_CANCELLED');
+      case 'SHOWING_DECLINED': return t('interests.status.SHOWING_DECLINED');
+      case 'REJECTED': return t('interests.status.REJECTED');
+      default: return 'Okänd';
+    }
+  };
+
+  const handleStatusUpdate = async () => {
+    try {
+      setIsLoading(true);
+      
+      // Skapa ett uppdateringsobjekt med bara status och id
+      const updateData = {
+        id: selectedInterest.id,
+        status: selectedInterest.status
+      };
+      
+      // Om statusen är SHOWING_SCHEDULED men intresseanmälan inte har någon visningstid, 
+      // visa ett felmeddelande
+      if (
+        selectedInterest.status === 'SHOWING_SCHEDULED' && 
+        !selectedInterest.showingDateTime
+      ) {
+        setError(t('interests.messages.showingDateRequired'));
+        setIsLoading(false);
+        return;
+      }
+      
+      logger.info('Uppdaterar status för intresseanmälan:', updateData);
+      
+      // Anropa API för att uppdatera status
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/interests/${selectedInterest.id}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authService.getToken()}`
+        },
+        body: JSON.stringify({ status: selectedInterest.status })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error ${response.status}`);
+      }
+      
+      // Hämta den uppdaterade intresseanmälan
+      const updatedInterest = await response.json();
+      
+      // Uppdatera den lokala arrayen med den uppdaterade intresseanmälan
+      const updatedReviewedInterests = reviewedInterests.map(interest => 
+        interest.id === updatedInterest.id ? updatedInterest : interest
+      );
+      
+      setReviewedInterests(updatedReviewedInterests);
+      setSuccessMessage(t('interests.messages.statusUpdated'));
+      setIsReviewModalOpen(false);
+    } catch (error) {
+      logger.error('Fel vid uppdatering av intresseanmälans status:', error);
+      setError(t('interests.messages.statusUpdateError'));
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // Om vi visar export-vyn, visa Google Docs-exportkomponenten
@@ -936,15 +1153,34 @@ const Interests = ({ view = 'list' }) => {
               }
             },
             {
-              key: 'message',
-              label: t('interests.fields.message'),
-              render: (_, interest) => formatText(interest.message)?.substring(0, 50) + (formatText(interest.message)?.length > 50 ? '...' : '') || '-' 
+              key: 'status',
+              label: t('interests.fields.status'),
+              render: (_, interest) => (
+                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                  ${interest.status === 'NEW' ? 'bg-slate-200 text-slate-800' : 
+                    interest.status === 'REVIEWED' ? 'bg-green-200 text-green-800' : 
+                    interest.status === 'SHOWING_SCHEDULED' ? 'bg-purple-500 text-white' :
+                    interest.status === 'SHOWING_CONFIRMED' ? 'bg-blue-500 text-white' :
+                    interest.status === 'SHOWING_COMPLETED' ? 'bg-emerald-500 text-white' :
+                    interest.status === 'SHOWING_CANCELLED' ? 'bg-red-500 text-white' :
+                    interest.status === 'SHOWING_DECLINED' ? 'bg-yellow-500 text-white' :
+                    'bg-red-200 text-red-800'}`}>
+                  {interest.status === 'NEW' ? t('interests.status.NEW') : 
+                   interest.status === 'REVIEWED' ? t('interests.status.REVIEWED') : 
+                   interest.status === 'SHOWING_SCHEDULED' ? t('interests.status.SHOWING_SCHEDULED') :
+                   interest.status === 'SHOWING_CONFIRMED' ? t('interests.status.SHOWING_CONFIRMED') :
+                   interest.status === 'SHOWING_COMPLETED' ? t('interests.status.SHOWING_COMPLETED') :
+                   interest.status === 'SHOWING_CANCELLED' ? t('interests.status.SHOWING_CANCELLED') :
+                   interest.status === 'SHOWING_DECLINED' ? t('interests.status.SHOWING_DECLINED') :
+                   t('interests.status.REJECTED')}
+                </span>
+              )
             },
             {
               key: 'received',
               label: t('interests.fields.received'),
               render: (received) => formatDate(received)
-            },
+            }
           ]}
           data={getDisplayData()}
           onRowClick={handleRowClick}
@@ -1055,12 +1291,21 @@ const Interests = ({ view = 'list' }) => {
                   </label>
                   <select
                     value={selectedInterest.status}
-                    disabled
+                    onChange={e => {
+                      setSelectedInterest(prev => ({
+                        ...prev,
+                        status: e.target.value
+                      }));
+                    }}
                     className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-gray-900 dark:text-white"
                   >
                     <option value="NEW">{t('interests.status.NEW')}</option>
                     <option value="REVIEWED">{t('interests.status.REVIEWED')}</option>
                     <option value="SHOWING_SCHEDULED">{t('interests.status.SHOWING_SCHEDULED')}</option>
+                    <option value="SHOWING_CONFIRMED">{t('interests.status.SHOWING_CONFIRMED')}</option>
+                    <option value="SHOWING_COMPLETED">{t('interests.status.SHOWING_COMPLETED')}</option>
+                    <option value="SHOWING_CANCELLED">{t('interests.status.SHOWING_CANCELLED')}</option>
+                    <option value="SHOWING_DECLINED">{t('interests.status.SHOWING_DECLINED')}</option>
                     <option value="REJECTED">{t('interests.status.REJECTED')}</option>
                   </select>
                 </div>
@@ -1093,91 +1338,51 @@ const Interests = ({ view = 'list' }) => {
                 </div>
               )}
             
-              {/* Formulär för granskning */}
-              {selectedInterest.status === 'NEW' && (
-                <>
-                  <div className="mb-3">
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                      {t('interests.fields.reviewComments')}
-                    </label>
-                    <textarea
-                      id="reviewComments"
-                      rows="3"
-                      className="mt-1 block w-full px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-gray-900 dark:text-white"
-                      value={reviewComments}
-                      onChange={(e) => setReviewComments(e.target.value)}
-                      placeholder={t('interests.addComments')}
-                    ></textarea>
+              {/* Modalknappar */}
+              <div className="flex mt-6 space-x-2 justify-end">
+                {/* Visa visningstidsinformation om det finns */}
+                {selectedInterest.status === 'SHOWING_SCHEDULED' && selectedInterest.showingDateTime && (
+                  <div className="flex-1 text-sm text-gray-500 dark:text-gray-400 py-2">
+                    <ClockIcon className="h-4 w-4 inline-block mr-1" />
+                    {new Date(selectedInterest.showingDateTime).toLocaleString('sv-SE')}
                   </div>
-
-                  <div className="flex space-x-2 justify-end mt-4">
-                    <button
-                      type="button"
-                      className="inline-flex justify-center rounded-md border border-transparent bg-purple-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
-                      onClick={handleShowingButtonClick}
-                      disabled={isLoading}
-                    >
-                      {isLoading ? t('common.loading') : t('interests.actions.scheduleShowing')}
-                    </button>
-                    <button
-                      type="button"
-                      className="inline-flex justify-center rounded-md border border-transparent bg-green-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
-                      onClick={handleReview}
-                      disabled={isLoading}
-                    >
-                      {isLoading ? t('common.loading') : t('interests.actions.review')}
-                    </button>
-                    <button
-                      type="button"
-                      className="inline-flex justify-center rounded-md border border-transparent bg-red-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
-                      onClick={handleReject}
-                      disabled={isLoading}
-                    >
-                      {isLoading ? t('common.loading') : t('interests.actions.reject')}
-                    </button>
-                  </div>
-                </>
-              )}
-              
-              {/* Visa kommande visningstid om den är schemalagd */}
-              {selectedInterest.status === 'SHOWING_SCHEDULED' && selectedInterest.showingDateTime && (
-                <div className="bg-purple-100 dark:bg-purple-900 p-4 rounded-md">
-                  <h3 className="font-medium text-purple-800 dark:text-purple-100 flex items-center">
-                    <CalendarIcon className="h-5 w-5 mr-2" />
-                    {t('interests.showingScheduled')}
-                  </h3>
-                  <p className="text-purple-700 dark:text-purple-200 mt-2">
-                    {new Date(selectedInterest.showingDateTime).toLocaleDateString()} {t('common.at')} {new Date(selectedInterest.showingDateTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                  </p>
-                </div>
-              )}
-
-              {/* Kontaktinformation */}
-              <div>
-                <div className="flex justify-between items-center mb-2">
-                  <h3 className="text-lg font-medium text-gray-900 dark:text-white">{t('interests.fields.contact')}</h3>
+                )}
+                
+                {/* Knapp för att stänga */}
+                <button
+                  onClick={() => setIsReviewModalOpen(false)}
+                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+                >
+                  {t('common.close')}
+                </button>
+                
+                {/* Knapp för att skicka e-post */}
+                <button
+                  onClick={openEmailModal}
+                  className="px-4 py-2 border border-indigo-500 dark:border-indigo-600 text-sm font-medium rounded-md text-indigo-500 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                >
+                  <EnvelopeIcon className="h-4 w-4 inline-block mr-1" />
+                  {t('common.sendEmail')}
+                </button>
+                
+                {/* Visa 'Boka visning' för nya intresseanmälningar, 
+                    'Uppdatera status' för redan behandlade intresseanmälningar */}
+                {selectedInterest.status === 'NEW' ? (
                   <button
-                    onClick={openEmailModal}
-                    className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
-                    title={t('email.send')}
+                    onClick={handleShowingButtonClick}
+                    className="px-4 py-2 bg-primary text-white text-sm font-medium rounded-md hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
                   >
-                    <EnvelopeIcon className="h-5 w-5" />
+                    <CalendarIcon className="h-4 w-4 inline-block mr-1" />
+                    {t('interests.actions.scheduleShowing')}
                   </button>
-                </div>
-                <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-                  <p className="text-sm text-gray-600 dark:text-gray-300">
-                    <span className="font-medium">{t('interests.fields.name')}: </span>
-                    {selectedInterest.name}
-                  </p>
-                  <p className="text-sm text-gray-600 dark:text-gray-300">
-                    <span className="font-medium">{t('interests.fields.email')}: </span>
-                    {selectedInterest.email}
-                  </p>
-                  <p className="text-sm text-gray-600 dark:text-gray-300">
-                    <span className="font-medium">{t('interests.fields.phone')}: </span>
-                    {selectedInterest.phone}
-                  </p>
-                </div>
+                ) : (
+                  <button
+                    onClick={handleStatusUpdate}
+                    className="px-4 py-2 bg-primary text-white text-sm font-medium rounded-md hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+                  >
+                    {t('interests.actions.updateStatus')}
+                  </button>
+                )}
               </div>
             </div>
           </div>

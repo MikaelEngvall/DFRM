@@ -565,12 +565,19 @@ export default {
     actions: {
       review: 'Review',
       reject: 'Reject',
-      checkEmails: 'Check Emails'
+      checkEmails: 'Check Emails',
+      scheduleShowing: 'Schedule Showing',
+      updateStatus: 'Update Status',
     },
     status: {
       NEW: 'New',
       REVIEWED: 'Reviewed',
       REJECTED: 'Rejected',
+      SHOWING_SCHEDULED: 'Showing Scheduled',
+      SHOWING_CONFIRMED: 'Showing Confirmed',
+      SHOWING_COMPLETED: 'Showing Completed',
+      SHOWING_CANCELLED: 'Showing Cancelled',
+      SHOWING_DECLINED: 'Declined',
     },
     messages: {
       reviewSuccess: 'Interest inquiry has been reviewed',
@@ -582,8 +589,14 @@ export default {
       showingError: 'An error occurred while scheduling the showing',
       fieldsRequired: 'All fields are required',
       emailCheckSuccess: 'Emails have been loaded successfully',
-      exportSuccess: 'Interests have been exported to SQL',
-      exportError: 'An error occurred while exporting interests'
+      exportSuccess: 'Interests have been exported successfully',
+      exportError: 'An error occurred while exporting interests',
+      statusUpdated: 'Status updated',
+      statusUpdateError: 'An error occurred while updating status',
+      showingDateRequired: 'Showing date and time are required for "Showing Scheduled" status',
+      loadingReviewed: 'Loading reviewed interests...',
+      loadingUnreviewed: 'Loading unreviewed interests...',
+      noDataToExport: 'No data to export',
     },
     noInterests: 'No interest inquiries',
     reviewRequest: 'Review Interest Inquiry',

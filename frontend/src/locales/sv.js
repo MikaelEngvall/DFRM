@@ -668,7 +668,11 @@ export default {
       NEW: 'Ny',
       REVIEWED: 'Granskad',
       REJECTED: 'Avvisad',
-      SHOWING_SCHEDULED: 'Visning bokad'
+      SHOWING_SCHEDULED: 'Visning bokad',
+      SHOWING_CONFIRMED: 'Visning bekräftad',
+      SHOWING_COMPLETED: 'Visning genomförd',
+      SHOWING_CANCELLED: 'Visning avbokad',
+      SHOWING_DECLINED: 'Tackat nej'
     },
     actions: {
       review: 'Granska',
@@ -676,7 +680,8 @@ export default {
       checkEmails: 'Läs e-post',
       scheduleShowing: 'Boka visning',
       sendAndSchedule: 'Skicka och boka',
-      exportToExcel: 'Exportera till Excel'
+      exportToExcel: 'Exportera till Excel',
+      updateStatus: 'Uppdatera status'
     },
     messages: {
       reviewError: 'Ett fel uppstod vid granskning av intresseanmälan',
@@ -686,8 +691,14 @@ export default {
       showingError: 'Ett fel uppstod vid bokning av visning',
       fieldsRequired: 'Alla fält måste fyllas i',
       emailCheckSuccess: 'E-post har lästs in utan problem',
-      exportSuccess: 'Intresseanmälningar har exporterats till SQL',
-      exportError: 'Ett fel uppstod när intresseanmälningarna skulle exporteras'
+      exportSuccess: 'Exporten slutfördes framgångsrikt',
+      exportError: 'Ett fel uppstod när intresseanmälningarna skulle exporteras',
+      statusUpdated: 'Status uppdaterad',
+      statusUpdateError: 'Ett fel uppstod vid uppdatering av status',
+      showingDateRequired: 'Visningsdatum och tid krävs för status "Visning bokad"',
+      loadingReviewed: 'Laddar behandlade intresseanmälningar...',
+      loadingUnreviewed: 'Laddar obehandlade intresseanmälningar...',
+      noDataToExport: 'Inga data att exportera'
     }
   },
 
