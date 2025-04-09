@@ -642,13 +642,16 @@ const Interests = ({ view = 'list' }) => {
       
       // Hämta data för båda tabellerna
       const unreviewedData = interests;
-      const bookedData = reviewedInterests.filter(interest => interest.status === 'SHOWING_SCHEDULED' || 
-                                                            interest.status === 'SHOWING_CONFIRMED' || 
-                                                            interest.status === 'SHOWING_COMPLETED' || 
-                                                            interest.status === 'SHOWING_CANCELLED' || 
-                                                            interest.status === 'SHOWING_DECLINED');
+      // Inkludera alla granskade intresseanmälningar, inte bara bokningar
+      const reviewedData = currentView === INTEREST_VIEWS.UNREVIEWED ? 
+                           reviewedInterests.filter(interest => interest.status === 'SHOWING_SCHEDULED' || 
+                                                             interest.status === 'SHOWING_CONFIRMED' || 
+                                                             interest.status === 'SHOWING_COMPLETED' || 
+                                                             interest.status === 'SHOWING_CANCELLED' || 
+                                                             interest.status === 'SHOWING_DECLINED') :
+                           reviewedInterests; // Inkludera alla när vi redan är i granskade-vyn
         
-      if ((!unreviewedData || unreviewedData.length === 0) && (!bookedData || bookedData.length === 0)) {
+      if ((!unreviewedData || unreviewedData.length === 0) && (!reviewedData || reviewedData.length === 0)) {
         setError(t('interests.messages.noDataToExport'));
         setIsLoading(false); // Avsluta laddning om ingen data finns
         return;
@@ -879,7 +882,7 @@ const Interests = ({ view = 'list' }) => {
       // Skapa HTML-tabeller baserat på vilken vy som används
       const tableHtml = currentView === INTEREST_VIEWS.UNREVIEWED 
         ? createTableHtml(unreviewedData, 'unreviewed')
-        : createTableHtml(bookedData, 'booked');
+        : createTableHtml(reviewedData, 'booked');
       
       // Skapa fullständig HTML med rätt titel för aktuell vy
       const today = new Date().toLocaleDateString('sv-SE').replace(/\//g, '-');
