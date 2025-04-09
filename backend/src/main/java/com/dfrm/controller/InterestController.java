@@ -8,7 +8,6 @@ import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -21,7 +20,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.dfrm.model.Interest;
@@ -165,6 +163,43 @@ public class InterestController {
         } catch (Exception e) {
             log.error("Fel vid manuell läsning av intresse-e-post: {}", e.getMessage());
             return ResponseEntity.status(500).body("Fel vid läsning av e-post: " + e.getMessage());
+        }
+    }
+
+    @org.springframework.web.bind.annotation.PutMapping("/{id}/status")
+    @PreAuthorize("hasAnyAuthority('ROLE_SUPERADMIN', 'ROLE_ADMIN', 'SUPERADMIN', 'ADMIN') or hasRole('ADMIN') or hasRole('SUPERADMIN')")
+    public ResponseEntity<Interest> updateStatus(
+            @PathVariable String id,
+            @RequestBody Map<String, String> statusData) {
+        
+        try {
+            log.info("Uppdaterar status för intresse med ID: {}, data: {}", id, statusData);
+            
+            String status = statusData.get("status");
+            if (status == null) {
+                return ResponseEntity.badRequest().body(null);
+            }
+            
+            // Validera status
+            if (!status.equals("NEW") && !status.equals("REVIEWED") && !status.equals("REJECTED") && 
+                !status.equals("SHOWING_SCHEDULED") && !status.equals("SHOWING_CONFIRMED") && 
+                !status.equals("SHOWING_COMPLETED") && !status.equals("SHOWING_CANCELLED") && 
+                !status.equals("SHOWING_DECLINED")) {
+                return ResponseEntity.badRequest().body(null);
+            }
+            
+            // Hämta intresseanmälan
+            Interest interest = interestService.getInterestById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Intresse med ID " + id + " hittades inte"));
+            
+            // Uppdatera status
+            interest.setStatus(status);
+            interest = interestService.save(interest);
+            
+            return ResponseEntity.ok(interest);
+        } catch (Exception e) {
+            log.error("Fel vid uppdatering av status: {}", e.getMessage());
+            return ResponseEntity.status(500).body(null);
         }
     }
 

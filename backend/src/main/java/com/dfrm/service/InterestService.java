@@ -10,7 +10,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.dfrm.model.Interest;
-import com.dfrm.model.SecurityToken;
 import com.dfrm.model.User;
 import com.dfrm.repository.InterestRepository;
 import com.dfrm.repository.TaskRepository;
@@ -167,6 +166,10 @@ public class InterestService {
     
     public void deleteInterest(String id) {
         interestRepository.deleteById(id);
+    }
+    
+    public Interest save(Interest interest) {
+        return interestRepository.save(interest);
     }
     
     public long countByStatus(String status) {
