@@ -93,10 +93,10 @@ const Interests = ({ view = 'list' }) => {
   const formatDate = (dateString) => {
     if (!dateString) return '';
     try {
-      const date = new Date(dateString);
+    const date = new Date(dateString);
       return date.toLocaleDateString('sv-SE', { 
         // Ta bort år och tid, visa bara dag och månad
-        month: 'numeric', 
+      month: 'numeric', 
         day: 'numeric'
         // year: 'numeric', 
         // hour: '2-digit',
@@ -634,7 +634,7 @@ const Interests = ({ view = 'list' }) => {
       return '-';
     }
   };
-  
+
   // Funktion för att exportera till HTML
   const exportToHtml = () => {
     try {
@@ -642,7 +642,11 @@ const Interests = ({ view = 'list' }) => {
       
       // Hämta data för båda tabellerna
       const unreviewedData = interests;
-      const bookedData = reviewedInterests.filter(interest => interest.status === 'SHOWING_SCHEDULED');
+      const bookedData = reviewedInterests.filter(interest => interest.status === 'SHOWING_SCHEDULED' || 
+                                                            interest.status === 'SHOWING_CONFIRMED' || 
+                                                            interest.status === 'SHOWING_COMPLETED' || 
+                                                            interest.status === 'SHOWING_CANCELLED' || 
+                                                            interest.status === 'SHOWING_DECLINED');
         
       if ((!unreviewedData || unreviewedData.length === 0) && (!bookedData || bookedData.length === 0)) {
         setError(t('interests.messages.noDataToExport'));
@@ -650,7 +654,7 @@ const Interests = ({ view = 'list' }) => {
         return;
       }
       
-      // Skapa stilmall (oförändrad)
+      // Stilmall för HTML-exporten
       const styles = `
       <style>
         body {
@@ -825,7 +829,7 @@ const Interests = ({ view = 'list' }) => {
         if (type === 'unreviewed') {
           tableHtml += `<th>${t('interests.fields.message')}</th>`;
         } else if (type === 'booked') {
-          tableHtml += `<th>${t('interests.fields.status')}</th>`; // Visa status istället för visningstid
+          tableHtml += `<th>${t('interests.fields.status')}</th>`;
         }
         tableHtml += `<th>${t('interests.fields.received')}</th>`;
         tableHtml += '</tr></thead>';
@@ -872,10 +876,16 @@ const Interests = ({ view = 'list' }) => {
         return tableHtml;
       };
       
-      // Skapa fullständig HTML med båda tabellerna
+      // Skapa HTML-tabeller baserat på vilken vy som används
+      const tableHtml = currentView === INTEREST_VIEWS.UNREVIEWED 
+        ? createTableHtml(unreviewedData, 'unreviewed')
+        : createTableHtml(bookedData, 'booked');
+      
+      // Skapa fullständig HTML med rätt titel för aktuell vy
       const today = new Date().toLocaleDateString('sv-SE').replace(/\//g, '-');
-      const unreviewedTitle = t('interests.title');
-      const bookedTitle = t('interests.bookedShowingsTitle'); // Behöver ny översättningstext
+      const title = currentView === INTEREST_VIEWS.UNREVIEWED 
+        ? t('interests.title') 
+        : t('interests.reviewedTitle');
       
       const html = `
       <!DOCTYPE html>
@@ -883,15 +893,12 @@ const Interests = ({ view = 'list' }) => {
       <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Intresseanmälningar Export ${today}</title>
+        <title>${title} ${today}</title>
         ${styles}
       </head>
       <body class="${isDarkMode ? 'dark-mode' : ''}">
-        <h1>${unreviewedTitle}</h1>
-        ${createTableHtml(unreviewedData, 'unreviewed')}
-        
-        <h1>${bookedTitle}</h1>
-        ${createTableHtml(bookedData, 'booked')}
+        <h1>${title}</h1>
+        ${tableHtml}
 
         <script>
           // Lyssna efter klick för att växla mellan ljust/mörkt läge
@@ -920,22 +927,22 @@ const Interests = ({ view = 'list' }) => {
       </body>
       </html>`;
       
-      // Skapa Blob och URL (oförändrad)
+      // Skapa Blob och URL
       const blob = new Blob([html], { type: 'text/html' });
       const url = URL.createObjectURL(blob);
       
-      // Skapa länk och ladda ned (oförändrad)
+      // Skapa länk och ladda ned
       const a = document.createElement('a');
       a.href = url;
-      a.download = `Intresseanmälningar_${today}.html`; // Ändrat filnamn
+      a.download = `${title}_${today}.html`;
       document.body.appendChild(a);
       a.click();
       
-      // Städa upp (oförändrad)
+      // Städa upp
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
       
-      // Visa framgångsmeddelande (oförändrad)
+      // Visa framgångsmeddelande
       setSuccessMessage(t('interests.messages.exportSuccess'));
       setTimeout(() => setSuccessMessage(''), 3000);
       
@@ -1152,6 +1159,13 @@ const Interests = ({ view = 'list' }) => {
                 return 'Ingen boende';
               }
             },
+            // Visa meddelande för obehandlade och status för behandlade intresseanmälningar
+            currentView === INTEREST_VIEWS.UNREVIEWED ? 
+            {
+              key: 'message',
+              label: t('interests.fields.message'),
+              render: (_, interest) => formatText(interest.message)?.substring(0, 50) + (formatText(interest.message)?.length > 50 ? '...' : '') || '-' 
+            } : 
             {
               key: 'status',
               label: t('interests.fields.status'),
@@ -1344,37 +1358,37 @@ const Interests = ({ view = 'list' }) => {
                 {selectedInterest.status === 'SHOWING_SCHEDULED' && selectedInterest.showingDateTime && (
                   <div className="flex-1 text-sm text-gray-500 dark:text-gray-400 py-2">
                     <ClockIcon className="h-4 w-4 inline-block mr-1" />
-                    {new Date(selectedInterest.showingDateTime).toLocaleString('sv-SE')}
+                    {formatShowingDateTime(selectedInterest.showingDateTime)}
                   </div>
                 )}
-                
+
                 {/* Knapp för att stänga */}
-                <button
+                    <button
                   onClick={() => setIsReviewModalOpen(false)}
-                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+                  className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                 >
                   {t('common.close')}
-                </button>
+                    </button>
                 
                 {/* Knapp för att skicka e-post */}
-                <button
+                    <button
                   onClick={openEmailModal}
                   className="px-4 py-2 border border-indigo-500 dark:border-indigo-600 text-sm font-medium rounded-md text-indigo-500 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                 >
                   <EnvelopeIcon className="h-4 w-4 inline-block mr-1" />
                   {t('common.sendEmail')}
-                </button>
+                    </button>
                 
                 {/* Visa 'Boka visning' för nya intresseanmälningar, 
                     'Uppdatera status' för redan behandlade intresseanmälningar */}
                 {selectedInterest.status === 'NEW' ? (
-                  <button
+                    <button
                     onClick={handleShowingButtonClick}
                     className="px-4 py-2 bg-primary text-white text-sm font-medium rounded-md hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
                   >
                     <CalendarIcon className="h-4 w-4 inline-block mr-1" />
                     {t('interests.actions.scheduleShowing')}
-                  </button>
+                    </button>
                 ) : (
                   <button
                     onClick={handleStatusUpdate}

@@ -247,26 +247,6 @@ const InterestGoogleDocsExport = () => {
     return 'Okänd';
   };
 
-  const getShowingStatus = (interest) => {
-    if (!interest.showingDate) {
-      return 'Ingen visning';
-    }
-    
-    if (interest.processedDate) {
-      return 'Processad';
-    }
-    
-    if (interest.acceptedDate) {
-      return 'Bekräftad';
-    }
-    
-    if (interest.showingDate) {
-      return 'Bokad';
-    }
-    
-    return 'Okänd';
-  };
-
   // Få en färg för visningsstatus
   const getStatusColor = (interest) => {
     // Om det är ett interest-objekt utan showing
@@ -782,7 +762,7 @@ const InterestGoogleDocsExport = () => {
                           borderRadius: '4px',
                           fontSize: '0.875rem', 
                           fontWeight: 'medium'
-                        }}>{getShowingStatus(interest)}</span>
+                        }}>{formatShowingStatus(interest)}</span>
                       </td>
                     </tr>
                   );
