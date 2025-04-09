@@ -602,10 +602,14 @@ const Interests = ({ view = 'list' }) => {
     try {
       setIsLoading(true);
       
-      // Hämta rätt data baserat på vilken vy som visas
-      const data = getDisplayData();
-      if (!data || data.length === 0) {
+      // Hämta rätt data direkt från state baserat på aktuell vy
+      const dataToExport = currentView === INTEREST_VIEWS.UNREVIEWED 
+        ? interests 
+        : reviewedInterests;
+        
+      if (!dataToExport || dataToExport.length === 0) {
         setError(t('interests.messages.noDataToExport'));
+        setIsLoading(false); // Avsluta laddning om ingen data finns
         return;
       }
       
@@ -727,36 +731,26 @@ const Interests = ({ view = 'list' }) => {
         }
       </style>`;
       
-      // Funktion för att skapa HTML-tabell
+      // Funktion för att skapa HTML-tabell (använder nu dataToExport)
       const createTableHtml = () => {
         let tableHtml = '<table>';
         
         // Tabellhuvud
         tableHtml += '<thead><tr>';
         tableHtml += `<th>${t('interests.fields.name')}</th>`;
-        tableHtml += `<th>${t('interests.fields.contact')}</th>`;
         tableHtml += `<th>${t('interests.fields.apartment')}</th>`;
         tableHtml += `<th>Nuvarande hyresgäst</th>`;
+        tableHtml += `<th>${t('interests.fields.message')}</th>`;
         tableHtml += `<th>${t('interests.fields.received')}</th>`;
-        tableHtml += `<th>${t('interests.fields.status')}</th>`;
-        if (currentView === INTEREST_VIEWS.REVIEWED) {
-          tableHtml += `<th>${t('interests.fields.reviewedBy')}</th>`;
-        }
         tableHtml += '</tr></thead>';
         
-        // Tabellkropp
+        // Tabellkropp (använder nu dataToExport)
         tableHtml += '<tbody>';
-        data.forEach(interest => {
+        dataToExport.forEach(interest => { // Ändrad från data till dataToExport
           tableHtml += '<tr>';
           
           // Namn
           tableHtml += `<td>${formatText(interest.name) || '-'}</td>`;
-          
-          // Kontaktinfo
-          tableHtml += '<td>';
-          tableHtml += `<div>${formatText(interest.email) || '-'}</div>`;
-          tableHtml += `<div class="secondary-text">${formatText(interest.phone) || '-'}</div>`;
-          tableHtml += '</td>';
           
           // Lägenhet
           tableHtml += `<td>${formatText(interest.apartment)?.substring(0, 30) || '-'}</td>`;
@@ -771,29 +765,12 @@ const Interests = ({ view = 'list' }) => {
             tableHtml += 'Ingen boende';
           }
           tableHtml += '</td>';
+
+          // Meddelande
+          tableHtml += `<td>${formatText(interest.message)?.substring(0, 50) + (formatText(interest.message)?.length > 50 ? '...' : '') || '-'}</td>`;
           
           // Mottagen
           tableHtml += `<td>${formatDate(interest.received)}</td>`;
-          
-          // Status
-          tableHtml += '<td>';
-          const statusClass = `status status-${interest.status}`;
-          const statusText = interest.status === 'NEW' ? t('interests.status.NEW') : 
-                            interest.status === 'REVIEWED' ? t('interests.status.REVIEWED') : 
-                            interest.status === 'SHOWING_SCHEDULED' ? t('interests.status.SHOWING_SCHEDULED') :
-                            t('interests.status.REJECTED');
-                            
-          tableHtml += `<span class="${statusClass}">${statusText}</span>`;
-          tableHtml += '</td>';
-          
-          // Granskad av (endast för granskade intresseanmälningar)
-          if (currentView === INTEREST_VIEWS.REVIEWED) {
-            tableHtml += '<td>';
-            if (interest.reviewedBy) {
-              tableHtml += `${interest.reviewedBy.firstName || ''} ${interest.reviewedBy.lastName || ''}`;
-            }
-            tableHtml += '</td>';
-          }
           
           tableHtml += '</tr>';
         });
@@ -802,7 +779,7 @@ const Interests = ({ view = 'list' }) => {
         return tableHtml;
       };
       
-      // Skapa fullständig HTML
+      // Skapa fullständig HTML (oförändrad logik, använder rätt titel)
       const today = new Date().toLocaleDateString('sv-SE').replace(/\//g, '-');
       const title = currentView === INTEREST_VIEWS.UNREVIEWED ? t('interests.title') : t('interests.reviewedTitle');
       const html = `
@@ -968,16 +945,6 @@ const Interests = ({ view = 'list' }) => {
               render: (name) => formatText(name) || '-'
             },
             {
-              key: 'contact',
-              label: t('interests.fields.contact'),
-              render: (_, interest) => (
-                <div>
-                  <div>{formatText(interest.email) || '-'}</div>
-                  <div className="text-sm text-gray-500 dark:text-gray-400">{formatText(interest.phone) || '-'}</div>
-                </div>
-              )
-            },
-            {
               key: 'apartment',
               label: t('interests.fields.apartment'),
               render: (apartment) => formatText(apartment)?.substring(0, 30) || '-'
@@ -1001,34 +968,15 @@ const Interests = ({ view = 'list' }) => {
               }
             },
             {
+              key: 'message',
+              label: t('interests.fields.message'),
+              render: (_, interest) => formatText(interest.message)?.substring(0, 50) + (formatText(interest.message)?.length > 50 ? '...' : '') || '-' 
+            },
+            {
               key: 'received',
               label: t('interests.fields.received'),
               render: (received) => formatDate(received)
             },
-            {
-              key: 'status',
-              label: t('interests.fields.status'),
-              render: (_, interest) => (
-                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                  ${interest.status === 'NEW' ? 'bg-slate-200 text-slate-800' : 
-                    interest.status === 'REVIEWED' ? 'bg-green-200 text-green-800' : 
-                    interest.status === 'SHOWING_SCHEDULED' ? 'bg-purple-500 text-white' :
-                    'bg-red-200 text-red-800'}`}>
-                  {interest.status === 'NEW' ? t('interests.status.NEW') : 
-                   interest.status === 'REVIEWED' ? t('interests.status.REVIEWED') : 
-                   interest.status === 'SHOWING_SCHEDULED' ? t('interests.status.SHOWING_SCHEDULED') :
-                   t('interests.status.REJECTED')}
-                </span>
-              )
-            },
-            ...(currentView === INTEREST_VIEWS.REVIEWED ? [
-            {
-              key: 'reviewedBy',
-              label: t('interests.fields.reviewedBy'),
-              render: (_, interest) => interest.reviewedBy ? 
-                `${interest.reviewedBy.firstName || ''} ${interest.reviewedBy.lastName || ''}` : ''
-            }
-            ] : [])
           ]}
           data={getDisplayData()}
           onRowClick={handleRowClick}
