@@ -1,5 +1,6 @@
 import api from './api';
 import { getFromCache, saveToCache, addToCache, updateInCache, removeFromCache, CACHE_KEYS } from '../utils/cacheManager';
+import { handleKeyErrors } from '../utils/errorHandler';
 
 const tenantService = {
   // Hämta alla hyresgäster
@@ -159,9 +160,25 @@ const tenantService = {
       
       // Om databasen uppdaterades framgångsrikt, uppdatera båda cacherna
       if (response.data) {
-        updateInCache(CACHE_KEYS.TENANTS, tenantId, response.data.tenant);
-        if (response.data.apartment) {
-          updateInCache(CACHE_KEYS.APARTMENTS, apartmentId, response.data.apartment);
+        // Skapa en fullständig kopia av den returnerade hyresgästen för att uppdatera cachen
+        const tenant = { ...response.data };
+        
+        // Se till att lägenhetsdatan är korrekt kopplad till hyresgästen
+        if (typeof tenant.apartment === 'string') {
+          tenant.apartment = apartmentId;
+        }
+        
+        // Uppdatera hyresgästen i cachen
+        updateInCache(CACHE_KEYS.TENANTS, tenantId, tenant);
+        
+        // Hämta aktuell lägenhet för att säkerställa att vi har full data
+        try {
+          const apartmentResponse = await api.get(`/api/apartments/${apartmentId}`);
+          if (apartmentResponse.data) {
+            updateInCache(CACHE_KEYS.APARTMENTS, apartmentId, apartmentResponse.data);
+          }
+        } catch (apartmentError) {
+          console.error('Fel vid uppdatering av lägenhetsdata i cache:', apartmentError);
         }
       }
       
@@ -174,7 +191,7 @@ const tenantService = {
   },
 
   // Tilldela en nyckel till en hyresgäst
-  assignKey: async (tenantId, keyId) => {
+  assignKey: async (tenantId, keyId, navigate) => {
     try {
       // Uppdatera i databasen först
       const response = await api.patch(`/api/tenants/${tenantId}/key/${keyId}`);
@@ -187,8 +204,9 @@ const tenantService = {
       
       return response.data;
     } catch (error) {
-      console.error(`Error assigning key ${keyId} to tenant ${tenantId}:`, error);
-      throw error;
+      // Använd den nya handleKeyErrors-funktionen för att hantera felet
+      const errorMessage = handleKeyErrors(error, navigate);
+      throw new Error(errorMessage);
     }
   },
 

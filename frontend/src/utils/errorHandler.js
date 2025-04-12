@@ -4,6 +4,7 @@
  */
 import { removeAuthToken } from './tokenStorage';
 import { createLogger } from './logger';
+import { toast } from 'react-hot-toast';
 
 // Skapa en dedikerad logger för denna modul
 const logger = createLogger('ErrorHandler');
@@ -253,4 +254,37 @@ const getAuthToken = () => {
     logger.error('Fel vid hämtning av token:', e);
     return null;
   }
+};
+
+// Hantera nyckelrelaterade fel
+export const handleKeyErrors = (error, navigate) => {
+  console.error('Nyckelfel:', error);
+  
+  // Kontrollera om det finns ett specifikt felmeddelande från servern
+  const errorMessage = error?.response?.data?.message || 
+                       error.message || 
+                       'Ett fel uppstod vid hantering av nycklar';
+  
+  // Hantera specifika felkoder
+  if (error.response) {
+    switch (error.response.status) {
+      case 404:
+        toast.error('Nyckeln eller hyresgästen kunde inte hittas');
+        break;
+      case 409:
+        toast.error('Nyckeln är redan tilldelad en annan hyresgäst');
+        break;
+      default:
+        toast.error(errorMessage);
+    }
+  } else {
+    toast.error(errorMessage);
+  }
+  
+  // Hantera autentiseringsfel via den befintliga handleAuthError-funktionen
+  if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+    handleAuthError(error, navigate);
+  }
+  
+  return errorMessage;
 }; 

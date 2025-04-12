@@ -3,6 +3,7 @@ package com.dfrm.controller;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -21,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.dfrm.model.Tenant;
+import com.dfrm.service.ApartmentService;
 import com.dfrm.service.TenantService;
 
 import lombok.RequiredArgsConstructor;
@@ -30,6 +32,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class TenantController {
     private final TenantService tenantService;
+    private final ApartmentService apartmentService;
     
     @GetMapping
     public List<Tenant> getAllTenants() {
@@ -66,20 +69,40 @@ public class TenantController {
     }
     
     @PutMapping("/{id}/apartment")
-    public ResponseEntity<Tenant> assignApartment(
+    public ResponseEntity<Map<String, Object>> assignApartment(
             @PathVariable String id,
             @RequestParam String apartmentId) {
         return tenantService.assignApartment(id, apartmentId)
-                .map(ResponseEntity::ok)
+                .map(tenant -> {
+                    Map<String, Object> response = new HashMap<>();
+                    response.put("tenant", tenant);
+                    // Lägg till lägenhetsreferensen också
+                    if (tenant.getApartment() != null) {
+                        // Hämta fullständig lägenhetsdata för att säkerställa att all data returneras
+                        apartmentService.getApartmentById(tenant.getApartment().getId())
+                            .ifPresent(apartment -> response.put("apartment", apartment));
+                    }
+                    return ResponseEntity.ok(response);
+                })
                 .orElse(ResponseEntity.notFound().build());
     }
     
     @PatchMapping("/{id}/apartment")
-    public ResponseEntity<Tenant> patchAssignApartment(
+    public ResponseEntity<Map<String, Object>> patchAssignApartment(
             @PathVariable String id,
             @RequestParam String apartmentId) {
         return tenantService.assignApartment(id, apartmentId)
-                .map(ResponseEntity::ok)
+                .map(tenant -> {
+                    Map<String, Object> response = new HashMap<>();
+                    response.put("tenant", tenant);
+                    // Lägg till lägenhetsreferensen också
+                    if (tenant.getApartment() != null) {
+                        // Hämta fullständig lägenhetsdata för att säkerställa att all data returneras
+                        apartmentService.getApartmentById(tenant.getApartment().getId())
+                            .ifPresent(apartment -> response.put("apartment", apartment));
+                    }
+                    return ResponseEntity.ok(response);
+                })
                 .orElse(ResponseEntity.notFound().build());
     }
     

@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import com.dfrm.model.Apartment;
@@ -18,8 +20,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import lombok.RequiredArgsConstructor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @Service
 @RequiredArgsConstructor
@@ -106,10 +106,16 @@ public class TenantService {
                             apartment.getTenants().add(tenant);
 
                             // Spara först lägenheten för att uppdatera dess hyresgästlista
-                            apartmentRepository.save(apartment);
+                            Apartment savedApartment = apartmentRepository.save(apartment);
+                            
+                            // Säkerställ att hyresgästen har en uppdaterad referens till lägenheten
+                            tenant.setApartment(savedApartment);
                             
                             // Spara och returnera den uppdaterade hyresgästen
-                            return tenantRepository.save(tenant);
+                            Tenant savedTenant = tenantRepository.save(tenant);
+                            
+                            // Returnera den slutliga hyresgästen efter att alla relationer uppdaterats
+                            return savedTenant;
                         }));
     }
 

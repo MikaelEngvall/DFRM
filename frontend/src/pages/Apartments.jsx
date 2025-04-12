@@ -346,34 +346,47 @@ const Apartments = () => {
     }
   }, [activeTab, filters, apartments]);
 
-  const fetchInitialData = async () => {
-    setIsLoading(true);
-    setError(null);
-    
+  const fetchInitialData = async (bypassCache = false) => {
     try {
-      // Hämta lägenheter
-      const apartmentsData = await apartmentService.getAllApartments();
+      setIsLoading(true);
+      setError(null);
       
-      // Uppdatera state med hämtad data
-      setApartments(apartmentsData || []);
-      setFilteredApartments(apartmentsData || []);
+      // Hämta alla apartments och tenants
+      const [apartmentsData, tenantsData, keysData] = await Promise.all([
+        apartmentService.getAllApartments(bypassCache),
+        tenantService.getAllTenants(bypassCache),
+        keyService.getAllKeys(bypassCache)
+      ]);
       
-      // Hämta tillgängliga hyresgäster (för dropdowns)
-      const tenantsData = await tenantService.getAllTenants();
-      setTenants(tenantsData || []);
+      // Transformera data för att säkerställa korrekt presentation
+      const enhancedApartments = apartmentsData.map(apartment => {
+        // Säkerställ att tenants-listan är ett giltigt array
+        const tenantsList = apartment.tenants || [];
+        
+        // Expandera tenant-referenserna med faktiska hyresgästobjekt
+        const enhancedTenants = tenantsList.map(tenantRef => {
+          if (typeof tenantRef === 'string') {
+            // Om vi bara har tenant-ID, hämta fullständig tenant från tenantsData
+            const fullTenant = tenantsData.find(t => t.id === tenantRef);
+            return fullTenant || { id: tenantRef };
+          }
+          return tenantRef;
+        }).filter(Boolean); // Filtrera bort eventuella null/undefined
+        
+        return {
+          ...apartment,
+          tenants: enhancedTenants
+        };
+      });
       
-      // Hämta tillgängliga nycklar (för dropdowns)
-      const keysData = await keyService.getAllKeys();
-      setKeys(keysData || []);
+      setApartments(enhancedApartments);
+      setTenants(tenantsData);
+      setKeys(keysData);
+      setFilteredApartments(enhancedApartments);
+      
     } catch (err) {
-      console.error('Fel vid datahämtning:', err);
-      if (err.response) {
-        setError(`${t('common.fetchError')}: ${err.response.status} - ${err.response.data.message || JSON.stringify(err.response.data)}`);
-      } else if (err.request) {
-        setError(`${t('common.fetchError')}: Ingen respons från servern`);
-      } else {
-        setError(`${t('common.fetchError')}: ${err.message}`);
-      }
+      console.error('Error fetching data:', err);
+      setError(`${t('common.fetchError')}: ${err.response?.status} - ${err.response?.data?.message || err.message}`);
     } finally {
       setIsLoading(false);
     }

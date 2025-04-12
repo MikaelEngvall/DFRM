@@ -484,6 +484,19 @@ const Tenants = () => {
         apartmentId = tenant.apartment.id || '';
       } else if (typeof tenant.apartment === 'string') {
         apartmentId = tenant.apartment;
+        
+        // Om apartment bara är ett ID, försök ladda full data
+        (async () => {
+          try {
+            const apartmentData = await apartmentService.getApartmentById(apartmentId);
+            if (apartmentData) {
+              const updatedTenant = { ...tenant, apartment: apartmentData };
+              setSelectedTenant(updatedTenant);
+            }
+          } catch (error) {
+            console.error('Kunde inte ladda lägenhetsdata:', error);
+          }
+        })();
       }
     }
     
