@@ -275,14 +275,22 @@ export const interestService = {
   updateStatus: async (id, status) => {
     try {
       logger.info(`Uppdaterar status för intresseanmälan ${id} till ${status}`);
+      
+      // För SHOWING_DECLINED-status, lägg till extra loggning
+      if (status === 'SHOWING_DECLINED') {
+        logger.info(`✨ Uppdaterar status till SHOWING_DECLINED (Tackat nej) för intresseanmälan ${id}`);
+      }
+      
       const response = await api.put(`/api/interests/${id}/status`, { status });
       
-      // Rensa cache efter ändring
+      // Rensa cache efter ändring - viktigt för att nyligen ändrade intresseanmälningar visas korrekt
       clearInterestCache();
+      
+      logger.info(`✅ Status uppdaterad för intresseanmälan ${id} till ${status}. Svar:`, response.data);
       
       return response.data;
     } catch (error) {
-      logger.error(`Fel vid uppdatering av status för intresseanmälan ${id}:`, error);
+      logger.error(`❌ Fel vid uppdatering av status för intresseanmälan ${id} till ${status}:`, error);
       throw error;
     }
   },

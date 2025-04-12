@@ -330,6 +330,20 @@ const Interests = ({ view = 'list' }) => {
       // Alltid hämta färsk data från servern (bypassCache = true)
       const data = await interestService.getReviewed(true);
       logger.debug('Hämtade granskade intresseanmälningar:', data);
+      
+      // Logga statusfördelning för debugging
+      if (data && Array.isArray(data)) {
+        const statusCount = {};
+        data.forEach(item => {
+          statusCount[item.status] = (statusCount[item.status] || 0) + 1;
+        });
+        logger.info('Status fördelning i hämtade intresseanmälningar:', statusCount);
+        
+        // Specifikt leta efter SHOWING_DECLINED för att bekräfta att de kommer från backend
+        const declined = data.filter(item => item.status === 'SHOWING_DECLINED');
+        logger.info(`Antal SHOWING_DECLINED i svaret: ${declined.length}`);
+      }
+      
       if (data && Array.isArray(data)) {
         setReviewedInterests(data);
         if (data.length === 0) {
@@ -461,6 +475,25 @@ const Interests = ({ view = 'list' }) => {
     const sourceData = currentView === INTEREST_VIEWS.UNREVIEWED 
       ? interests 
       : reviewedInterests;
+    
+    // Logga behandlade intresseanmälningar för debug
+    if (currentView === INTEREST_VIEWS.REVIEWED) {
+      logger.debug(`Antal behandlade intresseanmälningar: ${reviewedInterests.length}`);
+      
+      // Logga fördelningen av status
+      const statusCounts = {};
+      reviewedInterests.forEach(interest => {
+        statusCounts[interest.status] = (statusCounts[interest.status] || 0) + 1;
+      });
+      logger.debug('Status-fördelning för behandlade intresseanmälningar:', statusCounts);
+      
+      // Logga intresseanmälningar med status SHOWING_DECLINED
+      const declinedInterests = reviewedInterests.filter(interest => interest.status === 'SHOWING_DECLINED');
+      logger.debug(`Antal SHOWING_DECLINED intresseanmälningar: ${declinedInterests.length}`);
+      if (declinedInterests.length > 0) {
+        logger.debug('Exempel på SHOWING_DECLINED intresseanmälan:', declinedInterests[0]);
+      }
+    }
     
     // Applicera filter på rätt datakälla
     return sourceData.filter(interest => {
@@ -871,6 +904,11 @@ const Interests = ({ view = 'list' }) => {
       ? t('interests.messages.loadingReviewed') 
       : t('interests.messages.loadingUnreviewed')
     );
+    
+    // Ta bort meddelandet efter 3 sekunder
+    setTimeout(() => {
+      setSuccessMessage('');
+    }, 3000);
   };
 
   // Hjälpfunktion för att få CSS-klass baserat på status
@@ -926,6 +964,11 @@ const Interests = ({ view = 'list' }) => {
       
       logger.info('Uppdaterar status för intresseanmälan:', updateData);
       
+      // Logga explicit om det är en "Tackat nej" status
+      if (selectedInterest.status === 'SHOWING_DECLINED') {
+        logger.info('🔔 Uppdaterar status till "Tackat nej" för', selectedInterest.id);
+      }
+      
       // Anropa API för att uppdatera status - använder interestService istället för direkt fetch
       const updatedInterest = await interestService.updateStatus(selectedInterest.id, selectedInterest.status);
       
@@ -935,6 +978,12 @@ const Interests = ({ view = 'list' }) => {
       );
       
       setReviewedInterests(updatedReviewedInterests);
+      
+      // Viktigt: Ladda om både obehandlade och behandlade intresseanmälningar
+      // för att säkerställa att UI:t visar korrekt data
+      fetchInterests(true);
+      fetchReviewedInterests(true);
+      
       setSuccessMessage(t('interests.messages.statusUpdated'));
       setIsReviewModalOpen(false);
     } catch (error) {
