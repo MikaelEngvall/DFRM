@@ -66,6 +66,32 @@ const Interests = ({ view = 'list' }) => {
   const [apartmentsMap, setApartmentsMap] = useState({});
   const [tenantsMap, setTenantsMap] = useState({});
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const successMessageTimerRef = useRef(null);
+
+  // Hjälpfunktion för att sätta framgångsmeddelande med auto-rensning efter 3 sekunder
+  const showSuccessMessage = (message) => {
+    // Rensa eventuell tidigare timer
+    if (successMessageTimerRef.current) {
+      clearTimeout(successMessageTimerRef.current);
+    }
+    
+    // Sätt meddelandet
+    setSuccessMessage(message);
+    
+    // Starta en timer för att rensa meddelandet efter 3 sekunder
+    successMessageTimerRef.current = setTimeout(() => {
+      setSuccessMessage('');
+    }, 3000);
+  };
+  
+  // Rensa timern när komponenten avmonteras
+  useEffect(() => {
+    return () => {
+      if (successMessageTimerRef.current) {
+        clearTimeout(successMessageTimerRef.current);
+      }
+    };
+  }, []);
 
   // Detektera mörkt läge vid komponentladdning
   useEffect(() => {
@@ -589,8 +615,7 @@ const Interests = ({ view = 'list' }) => {
       fetchReviewedInterests();
       
       // Visa framgångsmeddelande och återställ formulär
-      setSuccessMessage(t('interests.messages.showingScheduled'));
-      setTimeout(() => setSuccessMessage(''), 3000);
+      showSuccessMessage(t('interests.messages.showingScheduled'));
       
       // Stäng modalen och återställ formuläret
       setIsShowingModalOpen(false);
@@ -641,7 +666,7 @@ const Interests = ({ view = 'list' }) => {
     try {
       setIsLoading(true);
       await interestService.exportToSql();
-      setSuccessMessage(t('interests.messages.exportSuccess'));
+      showSuccessMessage(t('interests.messages.exportSuccess'));
     } catch (err) {
       logger.error('Error exporting to SQL:', err);
       setError(t('interests.messages.exportError'));
@@ -875,8 +900,7 @@ const Interests = ({ view = 'list' }) => {
       URL.revokeObjectURL(url);
       
       // Visa framgångsmeddelande
-      setSuccessMessage(t('interests.messages.exportSuccess'));
-      setTimeout(() => setSuccessMessage(''), 3000);
+      showSuccessMessage(t('interests.messages.exportSuccess'));
       
     } catch (err) {
       logger.error('Error exporting to HTML:', err);
@@ -899,16 +923,11 @@ const Interests = ({ view = 'list' }) => {
     );
     
     // Meddelande om vilken vy som laddas
-    setSuccessMessage(
+    showSuccessMessage(
       currentView === INTEREST_VIEWS.UNREVIEWED 
       ? t('interests.messages.loadingReviewed') 
       : t('interests.messages.loadingUnreviewed')
     );
-    
-    // Ta bort meddelandet efter 3 sekunder
-    setTimeout(() => {
-      setSuccessMessage('');
-    }, 3000);
   };
 
   // Hjälpfunktion för att få CSS-klass baserat på status
@@ -984,7 +1003,7 @@ const Interests = ({ view = 'list' }) => {
       fetchInterests(true);
       fetchReviewedInterests(true);
       
-      setSuccessMessage(t('interests.messages.statusUpdated'));
+      showSuccessMessage(t('interests.messages.statusUpdated'));
       setIsReviewModalOpen(false);
     } catch (error) {
       logger.error('Fel vid uppdatering av intresseanmälans status:', error);
