@@ -659,164 +659,57 @@ const Interests = ({ view = 'list' }) => {
       
       // Stilmall för HTML-exporten
       const styles = `
-      <style>
-        body {
-          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-          line-height: 1.5;
-          color: #1f2937;
-          background-color: #f9fafb;
-          padding: 2rem;
-        }
-        .dark-mode {
-          color: #f9fafb;
-          background-color: #1f2937;
-        }
-        h1 {
-          font-size: 1.5rem; /* Mindre H1 för att passa två rubriker */
-          font-weight: 600;
-          margin-top: 2rem; /* Mellanrum mellan tabeller */
-          margin-bottom: 0.5rem;
-        }
-        h1:first-of-type {
-          margin-top: 0; /* Ingen extra marginal för första rubriken */
-        }
-        table {
-          width: 100%;
-          border-collapse: separate;
-          border-spacing: 0;
-          margin-top: 0.5rem;
-          border-radius: 0.5rem;
-          overflow: hidden;
-          box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
-        }
-        th {
-          background-color: #f3f4f6;
-          padding: 0.75rem 1rem;
-          text-align: left;
-          font-weight: 600;
-          border-bottom: 1px solid #e5e7eb;
-          white-space: nowrap; /* Förhindra radbrytning i header */
-        }
-        .dark-mode th {
-          background-color: #374151;
-          color: #f9fafb;
-          border-bottom: 1px solid #4b5563;
-        }
-        td {
-          padding: 0.75rem 1rem;
-          border-bottom: 1px solid #e5e7eb;
-          vertical-align: top;
-        }
-        .dark-mode td {
-          border-bottom: 1px solid #4b5563;
-        }
-        tr:nth-child(even) {
-          background-color: #f9fafb;
-        }
-        .dark-mode tr:nth-child(even) {
-          background-color: #1f2937;
-        }
-        .dark-mode tr:nth-child(odd) {
-          background-color: #111827;
-        }
-        .secondary-text {
-          color: #6b7280;
-          font-size: 0.875rem;
-        }
-        .dark-mode .secondary-text {
-          color: #9ca3af;
-        }
-        /* Nya stilar för statusar */
-        .status {
-          display: inline-block;
-          padding: 0.25rem 0.5rem;
-          border-radius: 9999px;
-          font-size: 0.75rem;
-          font-weight: 600;
-          text-align: center;
-        }
-        .status-new {
-          background-color: #e5e7eb;
-          color: #4b5563;
-        }
-        .status-reviewed {
-          background-color: #d1fae5;
-          color: #065f46;
-        }
-        .status-scheduled {
-          background-color: #a855f7;
-          color: #ffffff;
-        }
-        .status-confirmed {
-          background-color: #3b82f6;
-          color: #ffffff;
-        }
-        .status-completed {
-          background-color: #10b981;
-          color: #ffffff;
-        }
-        .status-cancelled {
-          background-color: #ef4444;
-          color: #ffffff;
-        }
-        .status-declined {
-          background-color: #f59e0b;
-          color: #ffffff;
-        }
-        .status-rejected {
-          background-color: #fee2e2;
-          color: #b91c1c;
-        }
-        .dark-mode .status-new {
-          background-color: #6b7280;
-          color: #f3f4f6;
-        }
-        .dark-mode .status-reviewed {
-          background-color: #10b981;
-          color: #ecfdf5;
-        }
-        .dark-mode .status-scheduled {
-          background-color: #a855f7;
-          color: #ffffff;
-        }
-        .dark-mode .status-confirmed {
-          background-color: #3b82f6;
-          color: #ffffff;
-        }
-        .dark-mode .status-completed {
-          background-color: #10b981;
-          color: #ffffff;
-        }
-        .dark-mode .status-cancelled {
-          background-color: #ef4444;
-          color: #ffffff;
-        }
-        .dark-mode .status-declined {
-          background-color: #f59e0b;
-          color: #ffffff;
-        }
-        .dark-mode .status-rejected {
-          background-color: #ef4444;
-          color: #fef2f2;
-        }
-        @media print {
+        <style>
           body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            padding: 2rem;
             background-color: white;
-            color: black;
+            color: #333;
+          }
+          h1 {
+            color: #1e3a8a;
+            text-align: center;
+            margin-bottom: 2rem;
           }
           table {
-            box-shadow: none;
+            width: 100%;
+            border-collapse: collapse;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            margin-bottom: 2rem;
+            background-color: white;
           }
           th, td {
-            background-color: white !important;
-            color: black !important;
-            border-bottom: 1px solid #e5e7eb !important;
+            padding: 0.75rem 1rem;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
           }
-          .status {
-            border: 1px solid #e5e7eb;
+          th {
+            background-color: #f3f4f6;
+            font-weight: 600;
+            color: #374151;
           }
-        }
-      </style>`;
+          tr:hover td {
+            background-color: #f9fafb;
+          }
+          .secondary-text {
+            font-size: 0.875rem;
+            color: #6b7280;
+            margin-top: 0.25rem;
+          }
+          .dark-mode .status-rejected {
+            background-color: #ef4444;
+            color: #fef2f2;
+          }
+          .dark-mode .secondary-text {
+            color: #9ca3af;
+          }
+          @media print {
+            body {
+              background-color: white;
+              color: black;
+            }
+            // ... existing code ...
+          </style>`;
       
       // Funktion för att skapa HTML för en tabell
       const createTableHtml = (data, type) => {
@@ -843,7 +736,10 @@ const Interests = ({ view = 'list' }) => {
           tableHtml += '<tr>';
           
           // Namn
-          tableHtml += `<td>${formatText(interest.name) || '-'}</td>`;
+          tableHtml += `<td>
+            <div>${formatText(interest.name) || '-'}</div>
+            <div class="secondary-text">${formatText(interest.phone) || '-'}</div>
+          </td>`;
           
           // Lägenhet
           tableHtml += `<td>${formatText(interest.apartment)?.substring(0, 30) || '-'}</td>`;
@@ -1030,22 +926,8 @@ const Interests = ({ view = 'list' }) => {
       
       logger.info('Uppdaterar status för intresseanmälan:', updateData);
       
-      // Anropa API för att uppdatera status
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/interests/${selectedInterest.id}/status`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${authService.getToken()}`
-        },
-        body: JSON.stringify({ status: selectedInterest.status })
-      });
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error ${response.status}`);
-      }
-      
-      // Hämta den uppdaterade intresseanmälan
-      const updatedInterest = await response.json();
+      // Anropa API för att uppdatera status - använder interestService istället för direkt fetch
+      const updatedInterest = await interestService.updateStatus(selectedInterest.id, selectedInterest.status);
       
       // Uppdatera den lokala arrayen med den uppdaterade intresseanmälan
       const updatedReviewedInterests = reviewedInterests.map(interest => 
@@ -1137,7 +1019,14 @@ const Interests = ({ view = 'list' }) => {
             {
               key: 'name',
               label: t('interests.fields.name'),
-              render: (name) => formatText(name) || '-'
+              render: (name, interest) => (
+                <div>
+                  <div>{formatText(name) || '-'}</div>
+                  <div className="text-sm text-gray-500 dark:text-gray-400">
+                    {formatText(interest.phone) || '-'}
+                  </div>
+                </div>
+              )
             },
             {
               key: 'apartment',

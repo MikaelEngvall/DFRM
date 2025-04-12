@@ -271,6 +271,22 @@ export const interestService = {
     }
   },
   
+  // Uppdatera status för en intresseanmälan
+  updateStatus: async (id, status) => {
+    try {
+      logger.info(`Uppdaterar status för intresseanmälan ${id} till ${status}`);
+      const response = await api.put(`/api/interests/${id}/status`, { status });
+      
+      // Rensa cache efter ändring
+      clearInterestCache();
+      
+      return response.data;
+    } catch (error) {
+      logger.error(`Fel vid uppdatering av status för intresseanmälan ${id}:`, error);
+      throw error;
+    }
+  },
+  
   // Exportera intresseanmälningar som SQL
   exportToSql: async () => {
     try {
