@@ -41,7 +41,7 @@ public class Interest {
     private Map<Language, String> messageTranslations;
     
     private LocalDateTime received;
-    private String status; // NEW, REVIEWED, REJECTED, SHOWING_SCHEDULED
+    private String status; // Möjliga värden: NEW, REVIEWED, REJECTED, SHOWING_SCHEDULED, SHOWING_CONFIRMED, SHOWING_COMPLETED, SHOWING_CANCELLED, SHOWING_DECLINED
     
     // Nya fält för visningstider
     private LocalDateTime showingDateTime;

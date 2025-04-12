@@ -36,8 +36,7 @@ const Dashboard = () => {
   const [interestStats, setInterestStats] = useState({
     new: 0,
     booked: 0,
-    completed: 0,
-    cancelled: 0
+    completed: 0
   });
   const [successMessage, setSuccessMessage] = useState('');
 
@@ -122,18 +121,11 @@ const Dashboard = () => {
         interest.showing.status === 'COMPLETED'
       );
       
-      // Leta efter avbokade visningar (cancelled showings)
-      const cancelledInterests = allInterests.filter(interest => 
-        interest.status === 'SHOWING_SCHEDULED' && 
-        interest.showing && 
-        interest.showing.status === 'CANCELLED'
-      );
-      
+      // Uppdatera state med statistik (ta bort cancelled)
       setInterestStats({
         new: newInterests?.length || 0,
         booked: bookedInterests?.length || 0,
-        completed: completedInterests?.length || 0,
-        cancelled: cancelledInterests?.length || 0
+        completed: completedInterests?.length || 0
       });
     } catch (err) {
       console.error('Error fetching interest stats:', err);
@@ -365,13 +357,6 @@ const Dashboard = () => {
                 <span className="text-sm font-medium">{t('showings.statusTypes.COMPLETED')}</span>
                 <span className={`px-2 py-1 rounded-full text-xs font-medium ${interestStats.completed > 0 ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'}`}>
                   {interestStats.completed > 0 ? interestStats.completed : t('common.none')}
-                </span>
-              </div>
-              
-              <div className="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-md">
-                <span className="text-sm font-medium">{t('showings.statusTypes.CANCELLED')}</span>
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${interestStats.cancelled > 0 ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200' : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'}`}>
-                  {interestStats.cancelled > 0 ? interestStats.cancelled : t('common.none')}
                 </span>
               </div>
             </div>
