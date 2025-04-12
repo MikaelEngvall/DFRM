@@ -18,13 +18,11 @@ import com.dfrm.repository.ApartmentRepository;
 import com.dfrm.repository.PendingTaskRepository;
 import com.dfrm.repository.TenantRepository;
 
-import jakarta.mail.Address;
 import jakarta.mail.BodyPart;
 import jakarta.mail.Folder;
 import jakarta.mail.Message;
 import jakarta.mail.Session;
 import jakarta.mail.Store;
-import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMultipart;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -44,7 +42,6 @@ public class EmailListener {
     
     private static final String TARGET_RECIPIENT = "felanmalan@duggalsfastigheter.se";
     private static final String TARGET_SENDER = "felanmalan@duggalsfastigheter.se";
-    private static final String TARGET_REPLY_TO = "mikael.engvall.me@gmail.com";
 
     private boolean isDevEnvironment() {
         String[] activeProfiles = environment.getActiveProfiles();
@@ -72,7 +69,7 @@ public class EmailListener {
         // I utvecklingsmiljö, logga men fortsätt körningen
         boolean isDev = isDevEnvironment();
         if (isDev) {
-            log.info("Running in dev environment - will look for emails with Reply-To: {}", TARGET_REPLY_TO);
+            log.info("Running in dev environment - kommer att läsa alla mejl oavsett avsändare");
             log.info("Mail listening properties: host={}, port={}, username={}", 
                 mailProperties.getHost(), mailProperties.getListeningPort(), mailProperties.getListeningUsername());
         }
@@ -141,33 +138,10 @@ public class EmailListener {
                 
                 for (Message message : messages) {
                     try {
-                        // Kontrollera reply-to adressen före bearbetning
-                        Address[] replyTo = message.getReplyTo();
                         log.info("Processing email with subject: {}", message.getSubject());
                         
-                        boolean validReplyTo = false;
-                        
-                        if (replyTo != null && replyTo.length > 0) {
-                            log.info("Email has {} reply-to addresses", replyTo.length);
-                            for (Address address : replyTo) {
-                                if (address instanceof InternetAddress) {
-                                    log.info("Reply-To address: {}", ((InternetAddress) address).getAddress());
-                                    if (TARGET_REPLY_TO.equals(((InternetAddress) address).getAddress())) {
-                                        log.info("Found matching reply-to address, will process email");
-                                    validReplyTo = true;
-                                    break;
-                                    }
-                                }
-                            }
-                        } else {
-                            log.info("Email has no reply-to addresses");
-                        }
-                        
-                        if (validReplyTo) {
-                            processEmail(message);
-                        } else {
-                            log.info("E-post ignorerad - ogiltig reply-to adress");
-                        }
+                        // Bearbeta alla e-postmeddelanden oavsett avsändare
+                        processEmail(message);
                     } catch (Exception e) {
                         log.error("Fel vid bearbetning av e-post: {}", e.getMessage(), e);
                     }
@@ -578,7 +552,7 @@ public class EmailListener {
         for (String line : lines) {
             if (line.toLowerCase().contains("lägenhet") || 
                 line.toLowerCase().contains("lgh") || 
-                line.toLowerCase().contains("apartment")) {
+                line.contains("apartment")) {
                 
                 Matcher apartmentMatcher = apartmentPattern.matcher(line);
                 if (apartmentMatcher.find()) {

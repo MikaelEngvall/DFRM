@@ -41,7 +41,6 @@ public class InterestEmailListener {
     
     private static final String TARGET_RECIPIENT = "info@duggalsfastigheter.se";
     private static final String TARGET_SENDER = "info@duggalsfastigheter.se";
-    private static final String TARGET_REPLY_TO = "mikael.engvall.me@gmail.com";
 
     private boolean isDevEnvironment() {
         String[] activeProfiles = environment.getActiveProfiles();
