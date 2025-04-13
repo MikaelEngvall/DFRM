@@ -295,14 +295,15 @@ const translations = {
       HIGH: 'Високий',
       URGENT: 'Терміновий',
     },
-    status: {
+    statuses: {
       NEW: 'Новий',
       PENDING: 'Очікує',
       IN_PROGRESS: 'В процесі',
       COMPLETED: 'Завершено',
+      CANCELLED: 'Скасовано',
       APPROVED: 'Схвалено',
       REJECTED: 'Відхилено',
-      NOT_FEASIBLE: 'Неможливо виконати',
+      NOT_FEASIBLE: 'Неможливо виконати'
     },
     messages: {
       saveSuccess: 'Завдання збережено',

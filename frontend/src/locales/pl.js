@@ -295,14 +295,15 @@ export default {
       HIGH: 'Wysoki',
       URGENT: 'Pilny',
     },
-    status: {
+    statuses: {
       NEW: 'Nowy',
       PENDING: 'Oczekujące',
       IN_PROGRESS: 'W trakcie',
       COMPLETED: 'Zakończone',
+      CANCELLED: 'Anulowane',
       APPROVED: 'Zatwierdzone',
       REJECTED: 'Odrzucone',
-      NOT_FEASIBLE: 'Niewykonalne',
+      NOT_FEASIBLE: 'Niewykonalne'
     },
     messages: {
       saveSuccess: 'Zadanie zostało zapisane',
