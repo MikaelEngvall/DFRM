@@ -9,6 +9,8 @@ export default {
     add: 'Lägg till',
     search: 'Sök',
     required: 'Obligatoriskt',
+    select: 'Välj',
+    selectOption: 'Välj alternativ',
     yes: 'Ja',
     no: 'Nej',
     close: 'Stäng',
@@ -19,7 +21,6 @@ export default {
     noData: 'Ingen data tillgänglig',
     back: 'Tillbaka',
     next: 'Nästa',
-    select: 'Välj',
     none: 'Ingen',
     all: 'Alla',
     optional: 'Valfri',
@@ -264,9 +265,13 @@ export default {
 
   tasks: {
     title: 'Uppgifter',
-    addNew: 'Lägg till uppgift',
+    add: 'Lägg till uppgift',
     edit: 'Redigera uppgift',
-    detail: 'Uppgiftsdetaljer',
+    update: 'Uppdatera status',
+    details: 'Uppgiftsinformation',
+    search: 'Sök uppgifter',
+    view: 'Visa uppgift',
+    addNew: 'Lägg till uppgift',
     pendingTitle: 'Väntande uppgifter',
     comments: 'Kommentarer',
     addComment: 'Lägg till kommentar',
@@ -276,7 +281,6 @@ export default {
     updateSuccess: 'Uppdaterade uppgift',
     deleteSuccess: 'Tog bort uppgift',
     addCommentSuccess: 'Lade till kommentar',
-    add: 'Lägg till uppgift',
     fields: {
       title: 'Titel',
       description: 'Beskrivning',
@@ -298,13 +302,15 @@ export default {
       details: 'Detaljer',
       assignment: 'Tilldelning',
     },
-    status: {
+    statuses: {
+      NEW: 'Ny',
       PENDING: 'Väntande',
       IN_PROGRESS: 'Pågående',
       COMPLETED: 'Avslutad',
-      'Väntande': 'Väntande',
-      'Pågående': 'Pågående',
-      'Avslutad': 'Avslutad',
+      CANCELLED: 'Avbruten',
+      APPROVED: 'Godkänd',
+      REJECTED: 'Avvisad',
+      NOT_FEASIBLE: 'Ej genomförbar'
     },
     priority: {
       LOW: 'Låg',
@@ -704,8 +710,9 @@ export default {
 
   showings: {
     title: 'Visningar',
-    details: 'Visningsdetaljer',
+    add: 'Lägg till visning',
     edit: 'Redigera visning',
+    details: 'Visningsinformation',
     defaultTitle: 'Visning',
     dateTime: 'Datum och tid',
     status: 'Status',

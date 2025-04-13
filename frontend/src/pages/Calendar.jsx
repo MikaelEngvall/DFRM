@@ -25,6 +25,8 @@ const Calendar = () => {
   const [selectedTask, setSelectedTask] = useState(null);
   const [selectedShowing, setSelectedShowing] = useState(null);  // Ny state för vald visning
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
+  const [isTaskInfoModalOpen, setIsTaskInfoModalOpen] = useState(false); // Ny state för info-modalen
+  const [isTaskEditModalOpen, setIsTaskEditModalOpen] = useState(false); // Ny state för redigerings-modalen
   const [isShowingModalOpen, setIsShowingModalOpen] = useState(false);  // Ny state för visningsmodalen
   const [isShowingEditModalOpen, setIsShowingEditModalOpen] = useState(false);  // Ny state för redigeringsmodalen
   const [isLoading, setIsLoading] = useState(true);
@@ -769,6 +771,9 @@ const Calendar = () => {
       // Hämta meddelanden tillhörande uppgiften
       const taskMessages = await taskMessageService.getMessagesByTaskId(task.id);
       
+      // Stäng eventuell redigeringsmodal först
+      setIsTaskEditModalOpen(false);
+      
       setFormData({
         id: updatedTask.id,
         title: updatedTask.title || '',
@@ -787,21 +792,68 @@ const Calendar = () => {
       });
       
       // Kontrollera om användaren kan redigera uppgiften eller bara visa den
-      // USER kan endast redigera uppgifter som är tilldelade dem själva
-      const canEdit = hasRole(['ADMIN', 'SUPERADMIN']) || 
-                      updatedTask.assignedToUserId === currentUser.id;
+      const canEditTask = hasRole(['ADMIN', 'SUPERADMIN']); 
+      const isOwner = updatedTask.assignedToUserId === currentUser.id;
       
       setSelectedTask({
         ...updatedTask,
         messages: taskMessages || [],
-        canEdit: canEdit
+        canEdit: canEditTask,
+        isOwner: isOwner
       });
       
-      setIsTaskModalOpen(true);
+      // Öppna informationsmodalen istället för redigeringsmodalen
+      setIsTaskInfoModalOpen(true);
     } catch (err) {
       logger.error('Error fetching task details:', err);
       setError(t('tasks.errors.fetchFailed'));
     }
+  };
+
+  // Ny funktion för att öppna redigeringsmodalen från informationsmodalen
+  const handleEditTask = () => {
+    if (!selectedTask) return;
+    
+    // Stäng informationsmodalen och öppna redigeringsmodalen
+    setIsTaskInfoModalOpen(false);
+    setIsTaskEditModalOpen(true);
+  };
+
+  // Funktion för att hantera status- och kommentarsändringar
+  const handleUserTaskUpdate = async (e) => {
+    e.preventDefault();
+    try {
+      if (!selectedTask) return;
+      
+      // Alla användare kan uppdatera status och lägga till kommentarer
+      const updatedTask = {
+        ...selectedTask,
+        status: formData.status,
+        comments: formData.comments,
+      };
+      
+      await taskService.updateTask(selectedTask.id, updatedTask);
+      await fetchCalendarData();
+      
+      // Stäng informationsmodalen
+      setIsTaskInfoModalOpen(false);
+      setSelectedTask(null);
+      
+      setSuccessMessage(t('tasks.messages.statusUpdateSuccess'));
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (err) {
+      logger.error('Error updating task status:', err);
+      setError(t('tasks.messages.error'));
+    }
+  };
+
+  const handleEditShowing = (showing) => {
+    setShowingFormData({
+      ...showing,
+      dateTime: showing.dateTime ? showing.dateTime.split('.')[0] : '',
+    });
+    setIsShowingEditModalOpen(true);
+    setIsShowingModalOpen(false);
   };
 
   const handleInputChange = (e) => {
@@ -835,41 +887,19 @@ const Calendar = () => {
     e.preventDefault();
     try {
       if (selectedTask) {
-        // Kontrollera om användaren kan redigera uppgiften
-        if (!selectedTask.canEdit) {
-          setError(t('calendar.errors.permissionDenied'));
-          return;
-        }
-        
-        // För USER-rollen, begränsa vilka fält som kan uppdateras
-        if (!hasRole(['ADMIN', 'SUPERADMIN'])) {
-          // USER kan bara ändra status, kommentarer och datum på sina egna uppgifter
-          // Behåll alla viktiga fält från den ursprungliga uppgiften
-          const allowedUpdates = {
-            ...selectedTask, // Bevara alla ursprungliga värden
-            id: selectedTask.id,
-            status: formData.status,
-            comments: formData.comments,
-            dueDate: formData.dueDate,
-            assignedToUserId: selectedTask.assignedToUserId // Behåll den ursprungliga tilldelningen
-          };
-          
-          await taskService.updateTask(selectedTask.id, allowedUpdates);
-        } else {
-          // ADMIN och SUPERADMIN kan uppdatera alla fält
-          // Säkerställ att all ursprunglig information bevaras om den inte uttryckligen ändrats
+        // Endast ADMIN och SUPERADMIN kan göra fullständiga uppdateringar
+        if (hasRole(['ADMIN', 'SUPERADMIN'])) {
           const updatedTask = {
-            ...selectedTask, // Bevara ursprungliga värden
-            ...formData,     // Lägg till/ersätt med nya värden
+            ...selectedTask,
+            ...formData,
             id: selectedTask.id
           };
           
-          // Kontrollera att viktiga fält inte går förlorade
-          if (!updatedTask.assignedToUserId && selectedTask.assignedToUserId) {
-            updatedTask.assignedToUserId = selectedTask.assignedToUserId;
-          }
-          
           await taskService.updateTask(selectedTask.id, updatedTask);
+        } else {
+          // Detta bör inte inträffa med den nya UI-designen, men finns som säkerhetsåtgärd
+          setError(t('calendar.errors.permissionDenied'));
+          return;
         }
       } else {
         // Endast ADMIN och SUPERADMIN kan skapa nya uppgifter
@@ -882,10 +912,10 @@ const Calendar = () => {
       }
       
       await fetchCalendarData();
-      setIsTaskModalOpen(false);
+      setIsTaskEditModalOpen(false);
       setSelectedTask(null);
       resetForm();
-      setSuccessMessage(t(selectedTask ? 'tasks.messages.statusUpdateSuccess' : 'tasks.messages.saveSuccess'));
+      setSuccessMessage(t('tasks.messages.saveSuccess'));
       setTimeout(() => setSuccessMessage(''), 3000);
     } catch (err) {
       logger.error('Error submitting task:', err);
@@ -907,7 +937,8 @@ const Calendar = () => {
       ...formData,
       dueDate: formatDateForInput(date)
     });
-    setIsTaskModalOpen(true);
+    // Vid dagklick, öppna endast redigeringsmodalen direkt eftersom det handlar om en ny uppgift
+    setIsTaskEditModalOpen(true);
   };
 
   const handleShowingInputChange = (e) => {
@@ -950,15 +981,6 @@ const Calendar = () => {
       logger.error('Error submitting showing:', err);
       setError(t('showings.messages.error'));
     }
-  };
-
-  const handleEditShowing = (showing) => {
-    setShowingFormData({
-      ...showing,
-      dateTime: showing.dateTime ? showing.dateTime.split('.')[0] : '',
-    });
-    setIsShowingEditModalOpen(true);
-    setIsShowingModalOpen(false);
   };
 
   if (isLoading && tasks.length === 0) {
@@ -1079,261 +1101,383 @@ const Calendar = () => {
         {viewType === 'day' && renderDayView()}
       </div>
 
-      {isTaskModalOpen && (
-        <Modal
-          isOpen={isTaskModalOpen}
-          onClose={() => {
-            setIsTaskModalOpen(false);
-            setSelectedTask(null);
-          }}
-          title={selectedTask ? t('tasks.fields.details') : t('tasks.add')}
-          onSubmit={handleSubmit}
-        >
-          <div className="grid grid-cols-1 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                {t('tasks.fields.title')}
-              </label>
-              <input
-                type="text"
-                name="title"
-                value={formData.title}
-                onChange={handleInputChange}
-                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                required
-                readOnly={selectedTask && !selectedTask.canEdit}
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                {t('tasks.fields.description')}
-              </label>
-              <textarea
-                name="description"
-                value={formData.description}
-                onChange={handleInputChange}
-                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                rows="4"
-                readOnly={selectedTask && !selectedTask.canEdit}
-              ></textarea>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* Information Modal för uppgifter */}
+      <Modal
+        isOpen={isTaskInfoModalOpen}
+        onClose={() => {
+          setIsTaskInfoModalOpen(false);
+          setSelectedTask(null);
+        }}
+        title={t('tasks.details')}
+        size="medium"
+        showFooter={true}
+        submitButtonText={t('common.close')}
+      >
+        {selectedTask && (
+          <div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  {t('tasks.fields.dueDate')}
-                </label>
-                <input
-                  type="date"
-                  name="dueDate"
-                  value={formData.dueDate}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  required
-                  readOnly={selectedTask && !selectedTask.canEdit && !hasRole(['USER'])}
-                />
+                <h3 className="font-bold text-lg mb-1 text-gray-900 dark:text-white">{selectedTask.title}</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap">
+                  {selectedTask.description}
+                </p>
               </div>
               
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  {t('tasks.fields.priority')}
-                </label>
-                <select
-                  name="priority"
-                  value={formData.priority}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  required
-                  disabled={selectedTask && !selectedTask.canEdit}
-                >
-                  <option value="">{t('common.select')}</option>
-                  <option value="LOW">{t('tasks.priorities.LOW')}</option>
-                  <option value="MEDIUM">{t('tasks.priorities.MEDIUM')}</option>
-                  <option value="HIGH">{t('tasks.priorities.HIGH')}</option>
-                  <option value="URGENT">{t('tasks.priorities.URGENT')}</option>
-                </select>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                    {t('tasks.fields.status')}
+                  </p>
+                  
+                  {/* Status dropdown för alla användare */}
+                  <select
+                    name="status"
+                    value={formData.status}
+                    onChange={handleInputChange}
+                    className="mt-1 w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
+                  >
+                    <option value="">{t('common.selectOption')}</option>
+                    <option value="NEW">{t('tasks.statuses.NEW')}</option>
+                    <option value="IN_PROGRESS">{t('tasks.statuses.IN_PROGRESS')}</option>
+                    <option value="COMPLETED">{t('tasks.statuses.COMPLETED')}</option>
+                    <option value="CANCELLED">{t('tasks.statuses.CANCELLED')}</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                    {t('tasks.fields.priority')}
+                  </p>
+                  <p className="mt-1 text-sm text-gray-900 dark:text-white">
+                    {selectedTask.priority ? t(`tasks.priorities.${selectedTask.priority}`) : '-'}
+                  </p>
+                </div>
+                
+                <div>
+                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                    {t('tasks.fields.dueDate')}
+                  </p>
+                  <p className="mt-1 text-sm text-gray-900 dark:text-white">
+                    {formatShortDate(selectedTask.dueDate)}
+                  </p>
+                </div>
+                
+                <div>
+                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                    {t('tasks.fields.assignedUser')}
+                  </p>
+                  <p className="mt-1 text-sm text-gray-900 dark:text-white">
+                    {users.find(u => u.id === selectedTask.assignedToUserId)?.firstName || '-'}
+                  </p>
+                </div>
+                
+                <div>
+                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                    {t('tasks.fields.apartment')}
+                  </p>
+                  <p className="mt-1 text-sm text-gray-900 dark:text-white">
+                    {apartments.find(a => a.id === selectedTask.apartmentId)?.propertyId || '-'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Meddelandedel med minskad höjd när tom */}
+            <div className="mt-4">
+              <h4 className="font-medium mb-2 text-gray-900 dark:text-white">{t('tasks.messages.title')}</h4>
+              <div className={`border border-gray-200 dark:border-gray-700 rounded-md ${!selectedTask.messages || selectedTask.messages.length === 0 ? 'h-20' : 'h-48'} overflow-y-auto`}>
+                <TaskMessages taskId={selectedTask.id} canSendMessages={true} />
               </div>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  {t('tasks.fields.status')}
+            {/* Kommentarsfält (för alla användare som kan ändra status) */}
+            <form onSubmit={handleUserTaskUpdate} className="mt-4">
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                  {t('tasks.fields.comments')}
                 </label>
-                <select
-                  name="status"
-                  value={formData.status}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  required
-                  disabled={selectedTask && !selectedTask.canEdit}
-                >
-                  <option value="">{t('common.select')}</option>
-                  <option value="PENDING">{t('tasks.status.PENDING')}</option>
-                  <option value="IN_PROGRESS">{t('tasks.status.IN_PROGRESS')}</option>
-                  <option value="COMPLETED">{t('tasks.status.COMPLETED')}</option>
-                </select>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  {t('tasks.fields.assignedUser')}
-                </label>
-                <select
-                  name="assignedToUserId"
-                  value={formData.assignedToUserId}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  disabled={selectedTask && !selectedTask.canEdit}
-                >
-                  <option value="">{t('common.select')}</option>
-                  {users.map((user) => (
-                    <option key={user.id} value={user.id}>
-                      {user.firstName} {user.lastName}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Autocomplete
-                  label={t('tasks.fields.apartment')}
-                  name="apartmentId"
-                  value={formData.apartmentId}
-                  onChange={handleInputChange}
-                  onSelect={(apartment) => {
-                    const relatedTenants = tenants.filter(tenant => 
-                      tenant.apartment && 
-                      (tenant.apartment.id === apartment.id || tenant.apartment === apartment.id)
-                    );
-                    
-                    if (relatedTenants.length > 0) {
-                      setFormData(prev => ({
-                        ...prev,
-                        apartmentId: apartment.id,
-                        tenantId: relatedTenants[0].id
-                      }));
-                    } else {
-                      setFormData(prev => ({
-                        ...prev,
-                        apartmentId: apartment.id
-                      }));
-                    }
-                  }}
-                  options={apartments}
-                  displayField={(apartment) => `${apartment.street} ${apartment.number}, LGH ${apartment.apartmentNumber}`}
-                  placeholder={t('common.search')}
-                  className="mb-0"
-                />
-              </div>
-              
-              <div>
-                <Autocomplete
-                  label={t('tasks.fields.tenant')}
-                  name="tenantId"
-                  value={formData.tenantId}
-                  onChange={handleInputChange}
-                  options={tenants}
-                  displayField={(tenant) => `${tenant.firstName} ${tenant.lastName}`}
-                  placeholder={t('common.search')}
-                  className="mb-0"
-                />
-              </div>
-            </div>
-            
-            <div className="mb-3">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                {t('tasks.messages.title')}
-              </label>
-              <div className="relative">
                 <textarea
                   name="comments"
                   value={formData.comments}
                   onChange={handleInputChange}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  rows="4"
-                  placeholder={t('tasks.messages.inputPlaceholder')}
-                />
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
+                  rows="3"
+                ></textarea>
+              </div>
+              
+              <div className="flex justify-between gap-4 mt-6">
                 <button
-                  type="button"
-                  onClick={() => {
-                    if (formData.comments.trim() && selectedTask && selectedTask.id) {
-                      taskMessageService.createMessage(selectedTask.id, formData.comments, currentLocale);
-                      setFormData({...formData, comments: ''});
-                    }
-                  }}
-                  disabled={!formData.comments.trim() || !selectedTask || !selectedTask.id}
-                  className="absolute bottom-2 right-2 p-1 rounded-full bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  type="submit"
+                  className="px-4 py-2 bg-primary text-white rounded-md hover:bg-secondary dark:bg-primary dark:hover:bg-secondary"
                 >
-                  <PaperAirplaneIcon className="h-5 w-5" />
+                  {t('tasks.update')}
                 </button>
+                
+                {/* Knapp för att öppna redigeringsmodalen (endast för ADMIN/SUPERADMIN) */}
+                {hasRole(['ADMIN', 'SUPERADMIN']) && (
+                  <button
+                    type="button"
+                    onClick={handleEditTask}
+                    className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-white rounded-md hover:bg-gray-300 dark:hover:bg-gray-600"
+                  >
+                    {t('tasks.edit')}
+                  </button>
+                )}
               </div>
-            </div>
-            
-            <div className="flex items-center">
-              <input
-                id="isRecurring"
-                name="isRecurring"
-                type="checkbox"
-                checked={formData.isRecurring}
-                onChange={handleInputChange}
-                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-              />
-              <label htmlFor="isRecurring" className="ml-2 block text-sm text-gray-900 dark:text-gray-300">
-                {t('tasks.fields.isRecurring')}
-              </label>
-            </div>
-            
-            {formData.isRecurring && (
-              <div className="mt-3">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                  {t('tasks.fields.recurringPattern')}
-                </label>
-                <select
-                  name="recurringPattern"
-                  value={formData.recurringPattern}
-                  onChange={handleInputChange}
-                  className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                  required={formData.isRecurring}
-                >
-                  <option value="">{t('common.select')}</option>
-                  <option value="DAILY">{t('tasks.recurringPatterns.DAILY')}</option>
-                  <option value="WEEKLY">{t('tasks.recurringPatterns.WEEKLY')}</option>
-                  <option value="BIWEEKLY">{t('tasks.recurringPatterns.BIWEEKLY')}</option>
-                  <option value="MONTHLY">{t('tasks.recurringPatterns.MONTHLY')}</option>
-                  <option value="QUARTERLY">{t('tasks.recurringPatterns.QUARTERLY')}</option>
-                  <option value="YEARLY">{t('tasks.recurringPatterns.YEARLY')}</option>
-                </select>
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  {t('tasks.recurringPatternHelp')}
-                </p>
-              </div>
-            )}
+            </form>
           </div>
+        )}
+      </Modal>
 
-          {selectedTask && selectedTask.id && (
-            <div className="mt-4 border-t pt-4 border-gray-200 dark:border-gray-700">
-              <TaskMessages 
-                taskId={selectedTask.id} 
-                canSendMessages={false}
+      {/* Redigeringsmodal för uppgifter (endast för ADMIN/SUPERADMIN) */}
+      <Modal
+        isOpen={isTaskEditModalOpen}
+        onClose={() => {
+          setIsTaskEditModalOpen(false);
+          if (!selectedTask) {
+            resetForm();
+          }
+          setSelectedTask(null);
+        }}
+        title={selectedTask ? t('tasks.edit') : t('tasks.add')}
+        onSubmit={handleSubmit}
+        size="medium"
+      >
+        <div className="grid grid-cols-1 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              {t('tasks.fields.title')}
+            </label>
+            <input
+              type="text"
+              name="title"
+              value={formData.title}
+              onChange={handleInputChange}
+              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              required
+              readOnly={selectedTask && !selectedTask.canEdit}
+            />
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              {t('tasks.fields.description')}
+            </label>
+            <textarea
+              name="description"
+              value={formData.description}
+              onChange={handleInputChange}
+              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              rows="4"
+              readOnly={selectedTask && !selectedTask.canEdit}
+            ></textarea>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                {t('tasks.fields.dueDate')}
+              </label>
+              <input
+                type="date"
+                name="dueDate"
+                value={formData.dueDate}
+                onChange={handleInputChange}
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                required
+                readOnly={selectedTask && !selectedTask.canEdit && !hasRole(['USER'])}
               />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                {t('tasks.fields.priority')}
+              </label>
+              <select
+                name="priority"
+                value={formData.priority}
+                onChange={handleInputChange}
+                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                required
+                disabled={selectedTask && !selectedTask.canEdit}
+              >
+                <option value="">{t('common.select')}</option>
+                <option value="LOW">{t('tasks.priorities.LOW')}</option>
+                <option value="MEDIUM">{t('tasks.priorities.MEDIUM')}</option>
+                <option value="HIGH">{t('tasks.priorities.HIGH')}</option>
+                <option value="URGENT">{t('tasks.priorities.URGENT')}</option>
+              </select>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                {t('tasks.fields.status')}
+              </label>
+              <select
+                name="status"
+                value={formData.status}
+                onChange={handleInputChange}
+                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                required
+                disabled={selectedTask && !selectedTask.canEdit}
+              >
+                <option value="">{t('common.select')}</option>
+                <option value="PENDING">{t('tasks.statuses.PENDING')}</option>
+                <option value="IN_PROGRESS">{t('tasks.statuses.IN_PROGRESS')}</option>
+                <option value="COMPLETED">{t('tasks.statuses.COMPLETED')}</option>
+                <option value="CANCELLED">{t('tasks.statuses.CANCELLED')}</option>
+              </select>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                {t('tasks.fields.assignedUser')}
+              </label>
+              <select
+                name="assignedToUserId"
+                value={formData.assignedToUserId}
+                onChange={handleInputChange}
+                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                disabled={selectedTask && !selectedTask.canEdit}
+              >
+                <option value="">{t('common.select')}</option>
+                {users.map((user) => (
+                  <option key={user.id} value={user.id}>
+                    {user.firstName} {user.lastName}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Autocomplete
+                label={t('tasks.fields.apartment')}
+                name="apartmentId"
+                value={formData.apartmentId}
+                onChange={handleInputChange}
+                onSelect={(apartment) => {
+                  const relatedTenants = tenants.filter(tenant => 
+                    tenant.apartment && 
+                    (tenant.apartment.id === apartment.id || tenant.apartment === apartment.id)
+                  );
+                  
+                  if (relatedTenants.length > 0) {
+                    setFormData(prev => ({
+                      ...prev,
+                      apartmentId: apartment.id,
+                      tenantId: relatedTenants[0].id
+                    }));
+                  } else {
+                    setFormData(prev => ({
+                      ...prev,
+                      apartmentId: apartment.id
+                    }));
+                  }
+                }}
+                options={apartments}
+                displayField={(apartment) => `${apartment.street} ${apartment.number}, LGH ${apartment.apartmentNumber}`}
+                placeholder={t('common.search')}
+                className="mb-0"
+              />
+            </div>
+            
+            <div>
+              <Autocomplete
+                label={t('tasks.fields.tenant')}
+                name="tenantId"
+                value={formData.tenantId}
+                onChange={handleInputChange}
+                options={tenants}
+                displayField={(tenant) => `${tenant.firstName} ${tenant.lastName}`}
+                placeholder={t('common.search')}
+                className="mb-0"
+              />
+            </div>
+          </div>
+          
+          <div className="mb-3">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              {t('tasks.messages.title')}
+            </label>
+            <div className="relative">
+              <textarea
+                name="comments"
+                value={formData.comments}
+                onChange={handleInputChange}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                rows="4"
+                placeholder={t('tasks.messages.inputPlaceholder')}
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  if (formData.comments.trim() && selectedTask && selectedTask.id) {
+                    taskMessageService.createMessage(selectedTask.id, formData.comments, currentLocale);
+                    setFormData({...formData, comments: ''});
+                  }
+                }}
+                disabled={!formData.comments.trim() || !selectedTask || !selectedTask.id}
+                className="absolute bottom-2 right-2 p-1 rounded-full bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <PaperAirplaneIcon className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+          
+          <div className="flex items-center">
+            <input
+              id="isRecurring"
+              name="isRecurring"
+              type="checkbox"
+              checked={formData.isRecurring}
+              onChange={handleInputChange}
+              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+            />
+            <label htmlFor="isRecurring" className="ml-2 block text-sm text-gray-900 dark:text-gray-300">
+              {t('tasks.fields.isRecurring')}
+            </label>
+          </div>
+          
+          {formData.isRecurring && (
+            <div className="mt-3">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                {t('tasks.fields.recurringPattern')}
+              </label>
+              <select
+                name="recurringPattern"
+                value={formData.recurringPattern}
+                onChange={handleInputChange}
+                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                required={formData.isRecurring}
+              >
+                <option value="">{t('common.select')}</option>
+                <option value="DAILY">{t('tasks.recurringPatterns.DAILY')}</option>
+                <option value="WEEKLY">{t('tasks.recurringPatterns.WEEKLY')}</option>
+                <option value="BIWEEKLY">{t('tasks.recurringPatterns.BIWEEKLY')}</option>
+                <option value="MONTHLY">{t('tasks.recurringPatterns.MONTHLY')}</option>
+                <option value="QUARTERLY">{t('tasks.recurringPatterns.QUARTERLY')}</option>
+                <option value="YEARLY">{t('tasks.recurringPatterns.YEARLY')}</option>
+              </select>
+              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                {t('tasks.recurringPatternHelp')}
+              </p>
             </div>
           )}
-        </Modal>
-      )}
+        </div>
+      </Modal>
 
-      {selectedShowing && (
-        <Modal
-          isOpen={isShowingModalOpen}
-          onClose={() => {
-            setIsShowingModalOpen(false);
-            setSelectedShowing(null);
-          }}
-          title={t('showings.details')}
-        >
+      {/* Visningsmodal (view only) */}
+      <Modal
+        isOpen={isShowingModalOpen}
+        onClose={() => setIsShowingModalOpen(false)}
+        title={t('showings.details')}
+        size="medium"
+      >
+        {selectedShowing && (
           <div className="p-4 space-y-4">
             <div className="bg-purple-50 dark:bg-purple-900 p-4 rounded-md">
               <h3 className="text-lg font-semibold text-purple-800 dark:text-purple-100">
@@ -1457,129 +1601,126 @@ const Calendar = () => {
               </button>
             </div>
           </div>
-        </Modal>
-      )}
+        )}
+      </Modal>
 
-      {isShowingEditModalOpen && (
-        <Modal
-          isOpen={isShowingEditModalOpen}
-          onClose={() => {
-            setIsShowingEditModalOpen(false);
-            setSelectedShowing(null);
-          }}
-          title={t('showings.edit')}
-          onSubmit={handleShowingSubmit}
-        >
-          <div className="grid grid-cols-1 gap-4">
-            <FormInput
-              label={t('showings.fields.title')}
-              name="title"
-              type="text"
-              value={showingFormData.title}
+      {/* Visningsredigeringsmodal */}
+      <Modal
+        isOpen={isShowingEditModalOpen}
+        onClose={() => setIsShowingEditModalOpen(false)}
+        title={selectedShowing ? t('showings.edit') : t('showings.add')}
+        onSubmit={handleShowingSubmit}
+        size="medium"
+      >
+        <div className="grid grid-cols-1 gap-4">
+          <FormInput
+            label={t('showings.fields.title')}
+            name="title"
+            type="text"
+            value={showingFormData.title}
+            onChange={handleShowingInputChange}
+          />
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-100 mb-1">
+              {t('showings.fields.descriptionLanguage')}
+            </label>
+            <select
+              name="descriptionLanguage"
+              value={showingFormData.descriptionLanguage}
               onChange={handleShowingInputChange}
+              className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white mb-2"
+            >
+              <option value="sv">{t('languages.swedish')}</option>
+              <option value="en">{t('languages.english')}</option>
+              <option value="pl">{t('languages.polish')}</option>
+              <option value="uk">{t('languages.ukrainian')}</option>
+            </select>
+
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-100">
+              {t('showings.fields.description')}
+            </label>
+            <textarea
+              name="description"
+              value={showingFormData.description}
+              onChange={handleShowingInputChange}
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              rows="3"
             />
+          </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-100 mb-1">
-                {t('showings.fields.descriptionLanguage')}
-              </label>
-              <select
-                name="descriptionLanguage"
-                value={showingFormData.descriptionLanguage}
-                onChange={handleShowingInputChange}
-                className="block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white mb-2"
-              >
-                <option value="sv">{t('languages.swedish')}</option>
-                <option value="en">{t('languages.english')}</option>
-                <option value="pl">{t('languages.polish')}</option>
-                <option value="uk">{t('languages.ukrainian')}</option>
-              </select>
+          <FormInput
+            label={t('showings.fields.dateTime')}
+            name="dateTime"
+            type="datetime-local"
+            value={showingFormData.dateTime}
+            onChange={handleShowingInputChange}
+            required
+          />
 
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-100">
-                {t('showings.fields.description')}
-              </label>
-              <textarea
-                name="description"
-                value={showingFormData.description}
-                onChange={handleShowingInputChange}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                rows="3"
-              />
-            </div>
-
-            <FormInput
-              label={t('showings.fields.dateTime')}
-              name="dateTime"
-              type="datetime-local"
-              value={showingFormData.dateTime}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-100">
+              {t('showings.fields.status')}
+            </label>
+            <select
+              name="status"
+              value={showingFormData.status}
               onChange={handleShowingInputChange}
+              className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
               required
-            />
+            >
+              <option value="">{t('common.select')}</option>
+              <option value="PENDING">{t('showings.statusTypes.PENDING')}</option>
+              <option value="CONFIRMED">{t('showings.statusTypes.CONFIRMED')}</option>
+              <option value="COMPLETED">{t('showings.statusTypes.COMPLETED')}</option>
+              <option value="CANCELLED">{t('showings.statusTypes.CANCELLED')}</option>
+            </select>
+          </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-100">
-                {t('showings.fields.status')}
-              </label>
-              <select
-                name="status"
-                value={showingFormData.status}
-                onChange={handleShowingInputChange}
-                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                required
-              >
-                <option value="">{t('common.select')}</option>
-                <option value="PENDING">{t('showings.statusTypes.PENDING')}</option>
-                <option value="CONFIRMED">{t('showings.statusTypes.CONFIRMED')}</option>
-                <option value="COMPLETED">{t('showings.statusTypes.COMPLETED')}</option>
-                <option value="CANCELLED">{t('showings.statusTypes.CANCELLED')}</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-100">
-                {t('showings.fields.assignedToUserId')}
-              </label>
-              <div className="mt-1 bg-gray-50 dark:bg-gray-800 rounded-md p-3 border border-gray-200 dark:border-gray-700">
-                <div className="grid grid-cols-1 gap-2 p-4 mb-4 bg-gray-100 dark:bg-gray-700 rounded-lg">
-                  <div className="text-gray-700 dark:text-gray-200">
-                    <span className="font-semibold">Kontaktperson: </span>
-                    <span>{showingFormData.contactName}</span>
-                  </div>
-                  <div className="text-gray-700 dark:text-gray-200">
-                    <span className="font-semibold">Telefon: </span>
-                    <span>{showingFormData.contactPhone}</span>
-                  </div>
-                  <div className="text-gray-700 dark:text-gray-200">
-                    <span className="font-semibold">E-post: </span>
-                    <span>{showingFormData.contactEmail}</span>
-                  </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-100">
+              {t('showings.fields.assignedToUserId')}
+            </label>
+            <div className="mt-1 bg-gray-50 dark:bg-gray-800 rounded-md p-3 border border-gray-200 dark:border-gray-700">
+              <div className="grid grid-cols-1 gap-2 p-4 mb-4 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                <div className="text-gray-700 dark:text-gray-200">
+                  <span className="font-semibold">Kontaktperson: </span>
+                  <span>{showingFormData.contactName}</span>
+                </div>
+                <div className="text-gray-700 dark:text-gray-200">
+                  <span className="font-semibold">Telefon: </span>
+                  <span>{showingFormData.contactPhone}</span>
+                </div>
+                <div className="text-gray-700 dark:text-gray-200">
+                  <span className="font-semibold">E-post: </span>
+                  <span>{showingFormData.contactEmail}</span>
                 </div>
               </div>
             </div>
-
-            <FormInput
-              label={t('showings.fields.apartmentId')}
-              name="apartmentId"
-              type="text"
-              value={showingFormData.apartmentId}
-              onChange={handleShowingInputChange}
-            />
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-100">
-                {t('showings.fields.notes')}
-              </label>
-              <textarea
-                name="notes"
-                value={showingFormData.notes}
-                onChange={handleShowingInputChange}
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                rows="3"
-              />
-            </div>
           </div>
-        </Modal>
-      )}
+
+          <FormInput
+            label={t('showings.fields.apartmentId')}
+            name="apartmentId"
+            type="text"
+            value={showingFormData.apartmentId}
+            onChange={handleShowingInputChange}
+          />
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-100">
+              {t('showings.fields.notes')}
+            </label>
+            <textarea
+              name="notes"
+              value={showingFormData.notes}
+              onChange={handleShowingInputChange}
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              rows="3"
+            />
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };

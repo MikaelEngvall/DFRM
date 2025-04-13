@@ -195,40 +195,34 @@ const TaskMessages = ({ taskId, canSendMessages = true }) => {
   
   if (isLoading) {
     return (
-      <div className="flex justify-center items-center py-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="flex justify-center items-center py-3">
+        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
       </div>
     );
   }
   
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
-      <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-        <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-          {t('tasks.messages.title')}
-        </h3>
-      </div>
-      
+    <div className="h-full flex flex-col">
       {error && (
-        <div className="p-4 bg-red-50 dark:bg-red-900/20">
+        <div className="p-2 bg-red-50 dark:bg-red-900/20">
           <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
         </div>
       )}
       
-      <div className="p-4 h-64 overflow-y-auto">
+      <div className="p-2 flex-grow overflow-y-auto">
         {messages.length === 0 ? (
-          <p className="text-center text-gray-500 dark:text-gray-400 py-8">
+          <p className="text-center text-gray-500 dark:text-gray-400 py-2 text-sm">
             {t('tasks.messages.noMessages')}
           </p>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-3">
             {messages.map((message) => (
               <div 
                 key={message.id} 
                 className={`flex ${isCurrentUserSender(message) ? 'justify-end' : 'justify-start'}`}
               >
                 <div 
-                  className={`max-w-3/4 rounded-lg px-4 py-2 ${
+                  className={`max-w-3/4 rounded-lg px-3 py-2 ${
                     isCurrentUserSender(message) 
                       ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-100' 
                       : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-100'
@@ -251,14 +245,14 @@ const TaskMessages = ({ taskId, canSendMessages = true }) => {
                         {getTranslatedFromText(message.language)}
                       </span>
                     )}
+                    
                     {isCurrentUserSender(message) && (
-                      <button 
+                      <button
                         onClick={() => handleDeleteMessage(message.id)}
-                        className="text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 text-xs flex items-center"
-                        aria-label={t('tasks.messages.delete')}
+                        className="text-xs text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 ml-auto"
+                        title={t('tasks.messages.delete')}
                       >
-                        <TrashIcon className="h-3 w-3 mr-1" />
-                        {t('tasks.messages.delete')}
+                        <TrashIcon className="h-3.5 w-3.5" />
                       </button>
                     )}
                   </div>
@@ -271,21 +265,21 @@ const TaskMessages = ({ taskId, canSendMessages = true }) => {
       </div>
       
       {canSendMessages && (
-        <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-          <form onSubmit={handleSendMessage} className="flex">
+        <div className="border-t border-gray-200 dark:border-gray-700 p-2 mt-auto">
+          <form onSubmit={handleSendMessage} className="flex space-x-2">
             <input
               type="text"
               value={newMessage}
               onChange={(e) => setNewMessage(e.target.value)}
+              className="flex-grow px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white text-sm"
               placeholder={t('tasks.messages.inputPlaceholder')}
-              className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-l-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
             />
             <button
               type="submit"
+              className="px-3 py-2 bg-primary text-white rounded-md hover:bg-secondary focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
               disabled={!newMessage.trim()}
-              className="px-4 py-2 bg-blue-600 text-white rounded-r-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <PaperAirplaneIcon className="h-5 w-5" />
+              <PaperAirplaneIcon className="h-4 w-4" />
             </button>
           </form>
         </div>

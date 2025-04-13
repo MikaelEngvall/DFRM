@@ -9,6 +9,8 @@ export default {
     add: 'Add',
     search: 'Search',
     required: 'Required',
+    select: 'Select',
+    selectOption: 'Select option',
     yes: 'Yes',
     no: 'No',
     close: 'Close',
@@ -19,7 +21,6 @@ export default {
     noData: 'No data available',
     back: 'Back',
     next: 'Next',
-    select: 'Select',
     none: 'None',
     all: 'All',
     optional: 'Optional',
@@ -255,8 +256,12 @@ export default {
 
   tasks: {
     title: 'Tasks',
-    add: 'Add task',
-    edit: 'Edit task',
+    add: 'Add Task',
+    edit: 'Edit Task',
+    update: 'Update Status',
+    details: 'Task Information',
+    search: 'Search Tasks',
+    view: 'View Task',
     addNew: 'Add task',
     relatedTasks: 'Related tasks',
     noRelatedTasks: 'No related tasks',
@@ -295,6 +300,16 @@ export default {
       MEDIUM: 'Medium',
       HIGH: 'High',
       URGENT: 'Urgent',
+    },
+    statuses: {
+      NEW: 'New',
+      PENDING: 'Pending',
+      IN_PROGRESS: 'In Progress',
+      COMPLETED: 'Completed',
+      CANCELLED: 'Cancelled',
+      APPROVED: 'Approved',
+      REJECTED: 'Rejected',
+      NOT_FEASIBLE: 'Not Feasible'
     },
     status: {
       NEW: 'New',
