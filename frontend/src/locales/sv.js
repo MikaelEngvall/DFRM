@@ -334,6 +334,7 @@ export default {
       delete: 'Ta bort',
       assign: 'Tilldela',
       changeStatus: 'Ändra status',
+      updateStatus: 'Uppdatera status',
       markInProgress: 'Markera som pågående',
       markCompleted: 'Markera som avslutad',
       addMessage: 'Lägg till meddelande',

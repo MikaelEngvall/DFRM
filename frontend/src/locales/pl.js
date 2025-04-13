@@ -346,7 +346,14 @@ export default {
       startWork: 'Rozpocznij pracę',
       markComplete: 'Oznacz jako zakończone',
       approve: 'Zatwierdź',
-      reject: 'Odrzuć'
+      reject: 'Odrzuć',
+      addNew: 'Dodaj zadanie',
+      edit: 'Edytuj',
+      delete: 'Usuń',
+      assign: 'Przypisz',
+      changeStatus: 'Zmień status',
+      updateStatus: 'Aktualizuj status',
+      markInProgress: 'Oznacz jako w trakcie',
     },
   },
 

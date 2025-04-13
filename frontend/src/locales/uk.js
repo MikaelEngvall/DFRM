@@ -343,7 +343,14 @@ const translations = {
       startWork: 'Почати роботу',
       markComplete: 'Позначити як завершене',
       approve: 'Схвалити',
-      reject: 'Відхилити'
+      reject: 'Відхилити',
+      addNew: 'Додати завдання',
+      edit: 'Редагувати',
+      delete: 'Видалити',
+      assign: 'Призначити',
+      changeStatus: 'Змінити статус',
+      updateStatus: 'Оновити статус',
+      markInProgress: 'Позначити як виконується',
     },
   },
 

@@ -1119,7 +1119,9 @@ const Calendar = () => {
               <div>
                 <h3 className="font-bold text-lg mb-1 text-gray-900 dark:text-white">{selectedTask.title}</h3>
                 <p className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap">
-                  {selectedTask.description}
+                  {selectedTask.translations && selectedTask.translations[currentLocale] 
+                    ? selectedTask.translations[currentLocale] 
+                    : selectedTask.description}
                 </p>
               </div>
               
@@ -1210,7 +1212,7 @@ const Calendar = () => {
                   type="submit"
                   className="px-4 py-2 bg-primary text-white rounded-md hover:bg-secondary dark:bg-primary dark:hover:bg-secondary"
                 >
-                  {t('tasks.update')}
+                  {t('tasks.actions.updateStatus')}
                 </button>
                 
                 {/* Knapp för att öppna redigeringsmodalen (endast för ADMIN/SUPERADMIN) */}

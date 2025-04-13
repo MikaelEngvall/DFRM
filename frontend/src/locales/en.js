@@ -363,7 +363,14 @@ export default {
       startWork: 'Start work',
       markComplete: 'Mark as completed',
       approve: 'Approve',
-      reject: 'Reject'
+      reject: 'Reject',
+      addNew: 'Add task',
+      edit: 'Edit',
+      delete: 'Delete',
+      assign: 'Assign',
+      changeStatus: 'Change status',
+      updateStatus: 'Update Status',
+      markInProgress: 'Mark as in progress',
     },
   },
 
