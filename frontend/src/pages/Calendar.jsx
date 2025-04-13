@@ -825,12 +825,16 @@ const Calendar = () => {
     try {
       if (!selectedTask) return;
       
-      // Alla användare kan uppdatera status och lägga till kommentarer
+      // Skapa en uppdaterad uppgift beroende på användarens behörighet
       const updatedTask = {
         ...selectedTask,
-        status: formData.status,
         comments: formData.comments,
       };
+      
+      // Endast ägare eller admin/superadmin kan uppdatera status
+      if (selectedTask.isOwner || hasRole(['ADMIN', 'SUPERADMIN'])) {
+        updatedTask.status = formData.status;
+      }
       
       await taskService.updateTask(selectedTask.id, updatedTask);
       await fetchCalendarData();
@@ -1131,19 +1135,25 @@ const Calendar = () => {
                     {t('tasks.fields.status')}
                   </p>
                   
-                  {/* Status dropdown för alla användare */}
-                  <select
-                    name="status"
-                    value={formData.status}
-                    onChange={handleInputChange}
-                    className="mt-1 w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
-                  >
-                    <option value="">{t('common.selectOption')}</option>
-                    <option value="NEW">{t('tasks.statuses.NEW')}</option>
-                    <option value="IN_PROGRESS">{t('tasks.statuses.IN_PROGRESS')}</option>
-                    <option value="COMPLETED">{t('tasks.statuses.COMPLETED')}</option>
-                    <option value="CANCELLED">{t('tasks.statuses.CANCELLED')}</option>
-                  </select>
+                  {/* Status dropdown, endast för ägare eller administratörer */}
+                  {(selectedTask.isOwner || hasRole(['ADMIN', 'SUPERADMIN'])) ? (
+                    <select
+                      name="status"
+                      value={formData.status}
+                      onChange={handleInputChange}
+                      className="mt-1 w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:outline-none focus:ring-primary focus:border-primary dark:bg-gray-700 dark:text-white"
+                    >
+                      <option value="">{t('common.selectOption')}</option>
+                      <option value="NEW">{t('tasks.statuses.NEW')}</option>
+                      <option value="IN_PROGRESS">{t('tasks.statuses.IN_PROGRESS')}</option>
+                      <option value="COMPLETED">{t('tasks.statuses.COMPLETED')}</option>
+                      <option value="CANCELLED">{t('tasks.statuses.CANCELLED')}</option>
+                    </select>
+                  ) : (
+                    <p className="mt-1 text-sm text-gray-900 dark:text-white">
+                      {selectedTask.status ? t(`tasks.statuses.${selectedTask.status}`) : '-'}
+                    </p>
+                  )}
                 </div>
                 
                 <div>
@@ -1192,7 +1202,7 @@ const Calendar = () => {
               </div>
             </div>
             
-            {/* Kommentarsfält (för alla användare som kan ändra status) */}
+            {/* Kommentarsfält (för alla användare) */}
             <form onSubmit={handleUserTaskUpdate} className="mt-4">
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -1212,7 +1222,9 @@ const Calendar = () => {
                   type="submit"
                   className="px-4 py-2 bg-primary text-white rounded-md hover:bg-secondary dark:bg-primary dark:hover:bg-secondary"
                 >
-                  {t('tasks.actions.updateStatus')}
+                  {(selectedTask.isOwner || hasRole(['ADMIN', 'SUPERADMIN'])) 
+                    ? t('tasks.actions.updateStatus')
+                    : t('tasks.messages.send')}
                 </button>
                 
                 {/* Knapp för att öppna redigeringsmodalen (endast för ADMIN/SUPERADMIN) */}
