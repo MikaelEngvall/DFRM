@@ -1108,7 +1108,7 @@ const Calendar = () => {
           setIsTaskInfoModalOpen(false);
           setSelectedTask(null);
         }}
-        title={t('tasks.details')}
+        title={t('tasks.information')}
         size="medium"
         showFooter={true}
         submitButtonText={t('common.close')}

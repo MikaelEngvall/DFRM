@@ -38,7 +38,8 @@ export default {
     at: 'o',
     forceUpdate: 'Wymuś aktualizację',
     export: 'Eksportuj',
-    send: 'Wyślij'
+    send: 'Wyślij',
+    selectOption: 'Wybierz opcję',
   },
 
   languages: {
@@ -355,6 +356,8 @@ export default {
       updateStatus: 'Aktualizuj status',
       markInProgress: 'Oznacz jako w trakcie',
     },
+    details: 'Informacje o zadaniu',
+    information: 'Informacje o zadaniu',
   },
 
   pendingTasks: {

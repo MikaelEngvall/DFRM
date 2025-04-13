@@ -260,6 +260,7 @@ export default {
     edit: 'Edit Task',
     update: 'Update Status',
     details: 'Task Information',
+    information: 'Task Information',
     search: 'Search Tasks',
     view: 'View Task',
     addNew: 'Add task',

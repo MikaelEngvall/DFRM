@@ -38,7 +38,8 @@ const translations = {
     at: 'о',
     forceUpdate: 'Примусове оновлення',
     export: 'Експортувати',
-    send: 'Надіслати'
+    send: 'Надіслати',
+    selectOption: 'Виберіть опцію',
   },
 
   languages: {
@@ -352,6 +353,8 @@ const translations = {
       updateStatus: 'Оновити статус',
       markInProgress: 'Позначити як виконується',
     },
+    details: 'Інформація про завдання',
+    information: 'Інформація про завдання',
   },
 
   pendingTasks: {

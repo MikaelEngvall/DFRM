@@ -269,6 +269,7 @@ export default {
     edit: 'Redigera uppgift',
     update: 'Uppdatera status',
     details: 'Uppgiftsinformation',
+    information: 'Uppgiftsinformation',
     search: 'Sök uppgifter',
     view: 'Visa uppgift',
     addNew: 'Lägg till uppgift',
