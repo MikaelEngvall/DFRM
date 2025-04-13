@@ -313,6 +313,13 @@ export default {
       REJECTED: 'Avvisad',
       NOT_FEASIBLE: 'Ej genomförbar'
     },
+    status: {
+      NEW: 'Ny',
+      PENDING: 'Väntande',
+      IN_PROGRESS: 'Pågående',
+      COMPLETED: 'Avslutad',
+      CANCELLED: 'Avbruten'
+    },
     priority: {
       LOW: 'Låg',
       MEDIUM: 'Medium',

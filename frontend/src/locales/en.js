@@ -315,11 +315,9 @@ export default {
     status: {
       NEW: 'New',
       PENDING: 'Pending',
-      IN_PROGRESS: 'In progress',
+      IN_PROGRESS: 'In Progress',
       COMPLETED: 'Completed',
-      APPROVED: 'Approved',
-      REJECTED: 'Rejected',
-      NOT_FEASIBLE: 'Not feasible',
+      CANCELLED: 'Cancelled'
     },
     messages: {
       saveSuccess: 'Task has been saved',
