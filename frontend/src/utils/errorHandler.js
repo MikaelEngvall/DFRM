@@ -5,6 +5,7 @@
 import { removeAuthToken } from './tokenStorage';
 import { createLogger } from './logger';
 import { toast } from 'react-hot-toast';
+import CryptoJS from 'crypto-js';
 
 // Skapa en dedikerad logger för denna modul
 const logger = createLogger('ErrorHandler');
@@ -240,6 +241,15 @@ export const handleAuthStatusError = (status, config = {}) => {
  * Hjälpfunktion för att omdirigera till inloggningssidan
  */
 const redirectToLogin = () => {
+  // Spara aktuell sökväg för att kunna återvända efter inloggning
+  const currentPath = window.location.pathname + window.location.search;
+  sessionStorage.setItem('savedLocation', currentPath);
+  
+  // Rensa cachelagrade användaruppgifter
+  localStorage.removeItem('userData');
+  
+  // Använd direct page reload istället för React Router navigering
+  // för att säkerställa att tillståndet helt återställs
   window.location.href = '/login';
 };
 
@@ -249,9 +259,39 @@ const redirectToLogin = () => {
  */
 const getAuthToken = () => {
   try {
-    return localStorage.getItem('auth_token');
+    // Först kolla efter raw_token som är direktåtkomlig
+    const rawToken = localStorage.getItem('raw_token');
+    if (rawToken) {
+      return rawToken;
+    }
+    
+    // Sedan försök hämta från localStorage med namespace prefix
+    const authToken = localStorage.getItem('auth_auth_token');
+    
+    // Försök fallback direkta nycklar
+    if (!authToken) {
+      const fallbackToken = localStorage.getItem('fallback_token');
+      if (fallbackToken) {
+        logger.warn('Hämtade fallback token i errorHandler');
+        return fallbackToken;
+      }
+    } else {
+      // Om vi har den krypterade token, försök dekryptera
+      try {
+        const secretKey = process.env.REACT_APP_STORAGE_KEY || 'default-secret-key-change-in-production';
+        
+        const bytes = CryptoJS.AES.decrypt(authToken, secretKey);
+        const decryptedToken = JSON.parse(bytes.toString(CryptoJS.enc.Utf8));
+        return decryptedToken;
+      } catch (decryptError) {
+        logger.error('Kunde inte dekryptera token:', decryptError);
+        return null;
+      }
+    }
+    
+    return null;
   } catch (e) {
-    logger.error('Fel vid hämtning av token:', e);
+    logger.error('Fel vid hämtning av token i errorHandler:', e);
     return null;
   }
 };

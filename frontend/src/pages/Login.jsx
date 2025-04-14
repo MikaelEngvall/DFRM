@@ -4,6 +4,10 @@ import FormInput from '../components/FormInput';
 import { useAuth } from '../contexts/AuthContext';
 import { useLocale } from '../contexts/LocaleContext';
 import { validateEmail, validatePassword } from '../utils/validation';
+import { createLogger } from '../utils/logger';
+import { useTranslation } from 'react-i18next';
+
+const logger = createLogger('Login');
 
 const Login = () => {
   const navigate = useNavigate();
@@ -16,6 +20,7 @@ const Login = () => {
   const [errors, setErrors] = useState({});
   const [submitError, setSubmitError] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const { t } = useTranslation();
 
   const validateForm = () => {
     const newErrors = {};
@@ -45,31 +50,43 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsLoading(true);
     setSubmitError(null);
 
     if (!validateForm()) {
+      setIsLoading(false);
       return;
     }
 
     try {
-      setIsLoading(true);
       const userData = await login(formData);
+      logger.info('Inloggning lyckades');
       
       // Sätt användarens föredragna språk om det finns
       if (userData && userData.preferredLanguage) {
         changeLocale(userData.preferredLanguage);
       }
       
-      navigate('/dashboard');
-    } catch (err) {
-      console.error('Login error:', err);
-      if (err.statusCode === 401) {
-        setSubmitError('Felaktiga inloggningsuppgifter');
-      } else if (err.statusCode === 429) {
-        setSubmitError('För många inloggningsförsök. Försök igen senare.');
+      // Hämta sparad plats från sessionStorage
+      const savedLocation = sessionStorage.getItem('savedLocation');
+      
+      if (savedLocation) {
+        // Navigera till den sparade platsen
+        navigate(savedLocation);
       } else {
-        setSubmitError('Ett fel uppstod vid inloggning. Försök igen senare.');
+        // Standardomdirigering baserat på roll om ingen plats var sparad
+        if (userData && (userData.role === 'ROLE_USER' || userData.role === 'USER')) {
+          navigate('/calendar');
+        } else {
+          navigate('/dashboard');
+        }
       }
+    } catch (err) {
+      logger.error('Login error:', err);
+      setSubmitError(
+        err.response?.data?.message ||
+        t('auth.errors.invalidCredentials')
+      );
     } finally {
       setIsLoading(false);
     }

@@ -243,82 +243,57 @@ const Apartments = () => {
       }
     },
     {
-      key: 'keys',
-      label: t('apartments.fields.keys'),
-      render: (keysValue, apartment) => {
-        // Om keys inte finns eller är en tom array
-        if (!keysValue || (Array.isArray(keysValue) && keysValue.length === 0)) {
-          return <span className="text-gray-400 dark:text-gray-500">{t('apartments.fields.noKey')}</span>;
+      key: 'email',
+      label: t('common.email'),
+      render: (_, apartment) => {
+        // Om tenants inte finns eller är en tom array
+        if (!apartment.tenants || (Array.isArray(apartment.tenants) && apartment.tenants.length === 0)) {
+          return <span className="text-gray-400 dark:text-gray-500">-</span>;
         }
         
-        // Om keys är en array, räkna antalet nycklar
-        if (Array.isArray(keysValue)) {
-          // Filtrera bort ogiltiga nycklar
-          const validKeys = keysValue.filter(key => key && (typeof key === 'string' || key.id));
+        // Om tenants är en array, hämta e-post från varje hyresgäst
+        if (Array.isArray(apartment.tenants)) {
+          // Filtrera bort ogiltiga hyresgäster
+          const validTenants = apartment.tenants.filter(tenant => 
+            tenant && (typeof tenant === 'string' || tenant.id)
+          );
           
-          if (validKeys.length === 0) {
-            return <span className="text-gray-400 dark:text-gray-500">{t('apartments.fields.noKey')}</span>;
+          if (validTenants.length === 0) {
+            return <span className="text-gray-400 dark:text-gray-500">-</span>;
           }
           
-          // Räkna antalet typer (unique serie-number kombinationer)
-          const keyTypes = new Set();
-          
-          // För fullständiga nyckelobjekt (där vi har tillgång till alla egenskaper)
-          const fullKeyObjects = validKeys.filter(key => typeof key === 'object' && key.id && key.serie && key.number);
-          
-          // För nyckel-IDs, hämta motsvarande objekt från keys-listan
-          const keyIdsWithObjects = validKeys
-            .filter(key => typeof key === 'string')
-            .map(keyId => keys.find(k => k.id === keyId))
-            .filter(Boolean);
-          
-          // Kombinera alla giltiga nyckelobjekt
-          const allKeyObjects = [...fullKeyObjects, ...keyIdsWithObjects];
-          
-          // Räkna typer
-          allKeyObjects.forEach(key => {
-            keyTypes.add(`${key.type}-${key.serie}-${key.number}`);
-          });
-          
-          // Räkna det faktiska antalet nycklar baserat på kopienummer
-          let totalKeyCount = 0;
-          
-          allKeyObjects.forEach(key => {
-            if (key.copyNumber) {
-              // Om copyNumber representerar ett antal (t.ex. "3") eller en lista (t.ex. "L1,L2,L3")
-              if (key.copyNumber.includes(',')) {
-                // Räkna antalet separata kopior om flera är listade
-                totalKeyCount += key.copyNumber.split(',').length;
-              } else if (key.copyNumber.match(/^L\d+$/)) {
-                // Om copyNumber är på formen "L1", "L2" etc. räknar vi det som 1 nyckel
-                totalKeyCount += 1;
-              } else if (!isNaN(key.copyNumber)) {
-                // Om copyNumber är ett nummer, t.ex. "3", representerar det antalet kopior
-                totalKeyCount += parseInt(key.copyNumber, 10);
-              } else {
-                // Annars räknar vi det som en nyckel
-                totalKeyCount += 1;
-              }
-            } else {
-              // Om ingen copyNumber angetts, antar vi att det är 1 nyckel
-              totalKeyCount += 1;
-            }
-          });
-          
-          // Om vi inte kunde beräkna antalet (inga kopienummer finns), använd antal typer
-          if (totalKeyCount === 0) {
-            totalKeyCount = allKeyObjects.length;
-          }
-          
-          // Visa både totala antalet nycklar och antalet typer
+          // Skapa en lista över hyresgästers e-postadresser
           return (
-            <span className="inline-flex items-center justify-center min-w-[24px] px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">
-              {totalKeyCount}{keyTypes.size > 0 ? `(${keyTypes.size})` : ''}
-            </span>
+            <div className="space-y-1">
+              {validTenants.map((tenant, index) => {
+                const tenantObj = typeof tenant === 'string' 
+                  ? tenants.find(t => t.id === tenant) 
+                  : tenant;
+                
+                if (!tenantObj || !tenantObj.email) return null;
+                
+                return (
+                  <div key={index} className="flex items-center">
+                    <span className="text-sm text-blue-600 dark:text-blue-400 truncate max-w-xs">
+                      {tenantObj.email}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
           );
         }
         
-        return '-';
+        // Om tenants är ett objekt, visa den enskilda hyresgästens e-post
+        if (typeof apartment.tenants === 'object' && apartment.tenants.id) {
+          return apartment.tenants.email ? (
+            <span className="text-blue-600 dark:text-blue-400 truncate max-w-xs">
+              {apartment.tenants.email}
+            </span>
+          ) : <span className="text-gray-400 dark:text-gray-500">-</span>;
+        }
+        
+        return <span className="text-gray-400 dark:text-gray-500">-</span>;
       }
     },
   ];

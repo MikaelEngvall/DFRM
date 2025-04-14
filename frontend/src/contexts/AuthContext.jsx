@@ -4,7 +4,10 @@ import { authService, userService } from '../services';
 import sessionManager from '../utils/sessionManager';
 import SessionWarning from '../components/SessionWarning';
 import { getAuthToken, removeAuthToken } from '../utils/tokenStorage';
+import { createLogger } from '../utils/logger';
+import { validateJwtToken } from '../utils/errorHandler';
 
+const logger = createLogger('AuthContext');
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
@@ -22,30 +25,78 @@ export const AuthProvider = ({ children }) => {
       const allUsers = await userService.getAllUsers();
       setUsers(allUsers);
     } catch (error) {
-      console.error('Error fetching users in auth context:', error);
+      logger.error('Error fetching users in auth context:', error);
     }
   }, []);
 
   const checkAuth = useCallback(async () => {
     if (authCheckRef.current) return;
     authCheckRef.current = true;
+    logger.info('Kontrollerar autentisering...');
 
     try {
       const token = getAuthToken();
       if (!token) {
+        logger.info('Ingen token hittades');
         setUser(null);
+        localStorage.removeItem('userData');
         setLoading(false);
         return;
       }
 
-      // Hämta användardata från backend
-      const userData = await authService.getCurrentUser();
-      setUser(userData);
+      // Kontrollera först om vi har cachad användardata
+      const cachedUserData = localStorage.getItem('userData');
+      let userData = null;
       
+      if (cachedUserData) {
+        try {
+          userData = JSON.parse(cachedUserData);
+          logger.info('Hittade cachad användardata', { userId: userData.id, role: userData.role });
+        } catch (error) {
+          logger.error('Kunde inte parsa cachad användardata:', error);
+        }
+      }
+
+      // Försök hämta användardata från backend även om vi har cachad data
+      try {
+        logger.info('Token hittad, hämtar användardata från API...');
+        const serverUserData = await authService.getCurrentUser();
+        logger.info('Användardata hämtad från API, användare inloggad', { userId: serverUserData.id, role: serverUserData.role });
+        
+        // Uppdatera cachad användardata
+        localStorage.setItem('userData', JSON.stringify(serverUserData));
+        
+        // Använd server-data
+        setUser(serverUserData);
+      } catch (error) {
+        // Om API-anrop misslyckas, använd cachad användardata om sådan finns
+        if (userData) {
+          logger.warn('Kunde inte hämta uppdaterad användardata från API, använder cachad data', 
+            { error: error.message, status: error.response?.status });
+          
+          // Validera token för att säkerställa att den inte har utgått
+          const validation = validateJwtToken(token);
+          if (validation.valid) {
+            logger.info('Token fortfarande giltig, fortsätter session med cachad användardata');
+            setUser(userData);
+          } else {
+            logger.error('Token ogiltig men finns i localStorage:', validation.error);
+            setUser(null);
+            removeAuthToken();
+            localStorage.removeItem('userData');
+          }
+        } else {
+          // Ingen cachad data och API-anrop misslyckades
+          logger.error('Fel vid autentkontroll och ingen cachad data:', error);
+          setUser(null);
+          removeAuthToken();
+        }
+      }
     } catch (error) {
-      console.error('Auth check error:', error);
+      logger.error('Autentiseringskontroll misslyckades:', error);
       setUser(null);
       removeAuthToken();
+      localStorage.removeItem('userData');
     } finally {
       setLoading(false);
     }
@@ -85,18 +136,8 @@ export const AuthProvider = ({ children }) => {
       const userData = await authService.login(credentials);
       setUser(userData);
       
-      // Hämta den sparade sidan från sessionStorage
-      const savedLocation = sessionStorage.getItem('savedLocation');
-      sessionStorage.removeItem('savedLocation');
-      
-      // Omdirigera till sparad sida om den finns, annars till standardsida
-      if (savedLocation) {
-        navigate(savedLocation);
-      } else if (userData.role === 'ROLE_USER' || userData.role === 'USER') {
-        navigate('/calendar');
-      } else {
-        navigate('/');
-      }
+      // Spara användardata i localStorage för att återställa session vid sidladdning
+      localStorage.setItem('userData', JSON.stringify(userData));
       
       return userData;
     } catch (error) {
@@ -107,6 +148,7 @@ export const AuthProvider = ({ children }) => {
   const logout = useCallback(() => {
     setUser(null);
     removeAuthToken();
+    localStorage.removeItem('userData');
     setShowSessionWarning(false);
     navigate('/login');
   }, [navigate]);

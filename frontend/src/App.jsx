@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { LocaleProvider } from './contexts/LocaleContext';
 import { ThemeProvider } from './contexts/ThemeContext';
@@ -19,6 +19,9 @@ import Import from './pages/Import';
 import Interests from './pages/Interests';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import { createLogger } from './utils/logger';
+
+const logger = createLogger('App');
 
 // Wrapper-komponent för sidor som kräver navigation
 const NavigationWrapper = ({ children }) => {
@@ -43,6 +46,50 @@ const NavigationWrapper = ({ children }) => {
   );
 };
 
+// Auth event listener component
+const AuthEventListener = () => {
+  const navigate = useNavigate();
+  const { logout } = useAuth();
+  
+  useEffect(() => {
+    // Lyssnare för auth:logout-händelsen
+    const handleAuthLogout = () => {
+      logger.info('Auth logout händelse mottagen');
+      
+      // Hämta redirect-flaggan från localStorage
+      const shouldRedirect = localStorage.getItem('auth_redirect');
+      
+      if (shouldRedirect === 'true') {
+        logger.info('Omdirigerar till inloggningssidan');
+        
+        // Ta bort flaggan
+        localStorage.removeItem('auth_redirect');
+        
+        // Utför utloggning
+        logout();
+        
+        // Navigera till login
+        navigate('/login');
+      }
+    };
+    
+    // Lyssna på eventet
+    window.addEventListener('auth:logout', handleAuthLogout);
+    
+    // Kontrollera vid komponentladdning om flaggan är satt
+    if (localStorage.getItem('auth_redirect') === 'true') {
+      handleAuthLogout();
+    }
+    
+    // Rensa lyssnare vid unmount
+    return () => {
+      window.removeEventListener('auth:logout', handleAuthLogout);
+    };
+  }, [navigate, logout]);
+  
+  return null;
+};
+
 const App = () => {
   return (
     <Router future={{ 
@@ -54,6 +101,7 @@ const App = () => {
           <AuthProvider>
             <TaskModalProvider>
               <div className="min-h-screen bg-gray-100 dark:bg-gray-900 transition-colors duration-200">
+                <AuthEventListener />
                 <ToastContainer 
                   position="top-right" 
                   autoClose={3000} 
