@@ -660,6 +660,8 @@ export default {
     refreshCache: 'Uppdatera intresseanmälningar',
     cacheCleared: 'Cachen för intresseanmälningar har uppdaterats',
     cacheError: 'Kunde inte uppdatera intresseanmälningar',
+    confirmDelete: 'Är du säker på att du vill ta bort denna intresseanmälan?',
+    thisInterest: 'denna intresseanmälan',
     fields: {
       name: 'Namn',
       email: 'E-post',
@@ -713,7 +715,9 @@ export default {
       showingDateRequired: 'Visningsdatum och tid krävs för status "Visning bokad"',
       loadingReviewed: 'Laddar behandlade intresseanmälningar...',
       loadingUnreviewed: 'Laddar obehandlade intresseanmälningar...',
-      noDataToExport: 'Inga data att exportera'
+      noDataToExport: 'Inga data att exportera',
+      deleteSuccess: 'Intresseanmälan har tagits bort',
+      deleteError: 'Ett fel uppstod när intresseanmälan skulle tas bort'
     }
   },
 

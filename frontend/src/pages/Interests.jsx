@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import Modal from '../components/Modal';
 import Title from '../components/Title';
 import DataTable from '../components/DataTable';
+import AlertModal from '../components/AlertModal';
 import { 
   interestService, 
   taskService, 
@@ -19,7 +20,8 @@ import {
   CalendarIcon, 
   ClockIcon, 
   ArrowsUpDownIcon, 
-  DocumentTextIcon 
+  DocumentTextIcon,
+  TrashIcon
 } from '@heroicons/react/24/outline';
 import EmailModal from '../components/EmailModal';
 import { useNavigate } from 'react-router-dom';
@@ -67,6 +69,9 @@ const Interests = ({ view = 'list' }) => {
   const [tenantsMap, setTenantsMap] = useState({});
   const [isDarkMode, setIsDarkMode] = useState(false);
   const successMessageTimerRef = useRef(null);
+  // Lägg till tillstånd för bekräftelsemodalen för radering
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [interestToDelete, setInterestToDelete] = useState(null);
 
   // Hjälpfunktion för att sätta framgångsmeddelande med auto-rensning efter 3 sekunder
   const showSuccessMessage = (message) => {
@@ -1013,6 +1018,38 @@ const Interests = ({ view = 'list' }) => {
     }
   };
 
+  // Hantera radering av intresseanmälan
+  const handleDelete = (interest) => {
+    setInterestToDelete(interest);
+    setIsDeleteModalOpen(true);
+  };
+
+  // Bekräfta radering av intresseanmälan
+  const confirmDelete = async () => {
+    try {
+      setIsLoading(true);
+      await interestService.deleteInterest(interestToDelete.id);
+      
+      // Uppdatera listor efter radering
+      fetchInterests();
+      fetchReviewedInterests();
+      
+      // Stäng modalerna och återställ tillstånd
+      setIsDeleteModalOpen(false);
+      setIsReviewModalOpen(false);
+      setInterestToDelete(null);
+      setSelectedInterest(null);
+      
+      // Visa framgångsmeddelande
+      showSuccessMessage(t('interests.messages.deleteSuccess'));
+    } catch (err) {
+      logger.error('Error deleting interest:', err);
+      setError(t('interests.messages.deleteError'));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Om vi visar export-vyn, visa Google Docs-exportkomponenten
   if (view === 'export-to-google-docs') {
     return <InterestGoogleDocsExport />;
@@ -1322,33 +1359,42 @@ const Interests = ({ view = 'list' }) => {
                   </div>
                 )}
 
+                {/* Knapp för radering */}
+                <button
+                  onClick={() => handleDelete(selectedInterest)}
+                  className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800 flex items-center"
+                >
+                  <TrashIcon className="h-4 w-4 mr-1" />
+                  {t('common.delete')}
+                </button>
+
                 {/* Knapp för att stänga */}
-                    <button
+                <button
                   onClick={() => setIsReviewModalOpen(false)}
                   className="px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                 >
                   {t('common.close')}
-                    </button>
+                </button>
                 
                 {/* Knapp för att skicka e-post */}
-                    <button
+                <button
                   onClick={openEmailModal}
                   className="px-4 py-2 border border-indigo-500 dark:border-indigo-600 text-sm font-medium rounded-md text-indigo-500 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                 >
                   <EnvelopeIcon className="h-4 w-4 inline-block mr-1" />
                   {t('common.sendEmail')}
-                    </button>
+                </button>
                 
                 {/* Visa 'Boka visning' för nya intresseanmälningar, 
                     'Uppdatera status' för redan behandlade intresseanmälningar */}
                 {selectedInterest.status === 'NEW' ? (
-                    <button
+                  <button
                     onClick={handleShowingButtonClick}
                     className="px-4 py-2 bg-primary text-white text-sm font-medium rounded-md hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
                   >
                     <CalendarIcon className="h-4 w-4 inline-block mr-1" />
                     {t('interests.actions.scheduleShowing')}
-                    </button>
+                  </button>
                 ) : (
                   <button
                     onClick={handleStatusUpdate}
@@ -1491,6 +1537,17 @@ const Interests = ({ view = 'list' }) => {
         </Modal>
       )}
       
+      {/* Bekräftelsemodal för borttagning */}
+      <AlertModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => setIsDeleteModalOpen(false)}
+        onConfirm={confirmDelete}
+        title={t('interests.confirmDelete')}
+        message={`${t('interests.confirmDelete')} "${interestToDelete?.name || interestToDelete?.apartment || t('interests.thisInterest')}"?`}
+        confirmText={t('common.delete')}
+        cancelText={t('common.cancel')}
+      />
+
       {/* Framgångsmeddelande */}
       {successMessage && (
         <div className="fixed bottom-4 right-4 bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded shadow-lg z-50">

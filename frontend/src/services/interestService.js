@@ -316,5 +316,24 @@ export const interestService = {
       console.error('Error exporting interests to SQL:', error);
       throw error;
     }
+  },
+  
+  // Radera en intresseanmälan
+  deleteInterest: async (id) => {
+    try {
+      logger.info(`Raderar intresseanmälan med ID ${id}`);
+      
+      // Skicka radera-förfrågan till backend
+      await api.delete(`/api/interests/${id}`);
+      
+      // Rensa cache efter borttagning
+      clearInterestCache();
+      
+      logger.info(`✅ Intresseanmälan med ID ${id} raderad`);
+      return true;
+    } catch (error) {
+      logger.error(`❌ Fel vid radering av intresseanmälan med ID ${id}:`, error);
+      throw error;
+    }
   }
 }; 
