@@ -226,15 +226,22 @@ const PendingTasks = () => {
         // Svenska nyckelord
         "intresse", "lägenhet", "visning", "bostad", "ledig", "ledigt", 
         "flyttar", "flytta", "bostadsintresse", "bostadskö", "uthyrning",
-        "hyra", "hyres", "lediga", "bostäder", "boende", 
+        "hyra", "hyres", "lediga", "bostäder", "boende", "kontrakt",
+        "inflyttning", "uthyres", "bobutik", "bostadsförmedling", "bostadsrätt",
+        "bostadssökande", "bostadssituation", "nybyggd", "nyproduktion",
 
         // Engelska nyckelord
         "interest", "apartment", "showing", "housing", "vacant", "available", 
         "moving", "move", "rental", "rent", "renting", "accommodation",
-        "vacancy", "residence", "property", "viewing", "new home",
+        "vacancy", "residence", "property", "viewing", "new home", "contract",
+        "relocation", "flat", "studio", "real estate", "home viewing", "lease",
+        "tenancy", "new construction", "condo", "condominium",
 
         // Generella ord som ofta finns i intresseanmälningar
-        "kvadratmeter", "kvm", "m²", "square meters", "sqm"
+        "kvadratmeter", "kvm", "m²", "square meters", "sqm", "room size",
+        "rumsstorlek", "våning", "floor", "balkong", "balcony", "utsikt", "view",
+        "centralt", "central", "nycklar", "keys", "varmhyra", "kallhyra", "deposit",
+        "deposition", "husdjur", "pets", "borgenär", "guarantor"
       ];
       
       // Hjälpfunktion för att kontrollera om en text innehåller intresserelaterade nyckelord
@@ -315,14 +322,18 @@ const PendingTasks = () => {
         return false;
       };
       
-      // Filtrera bort ALLA intresseanmälningar från väntande uppgifter
-      const filteredPendingData = pendingData.filter(task => !isInterestRelated(task));
+      // Filtrera bort intresseanmälningar och redan granskade uppgifter
+      const filteredPendingData = pendingData
+        .filter(task => !isInterestRelated(task))
+        .filter(task => !task.reviewedBy); // Viktig filtrering - visa bara uppgifter som inte har reviewedBy
       
-      // Filtrera också bort intresseanmälningar från e-postrapporter
-      const filteredEmailReports = emailReportsData.filter(report => !isInterestRelated(report));
+      // Filtrera också bort intresseanmälningar och redan granskade uppgifter från e-postrapporter
+      const filteredEmailReports = emailReportsData
+        .filter(report => !isInterestRelated(report))
+        .filter(report => !report.reviewedBy); // Viktig filtrering - visa bara rapporter som inte har reviewedBy
       
-      logger.debug(`Filtrerade bort ${pendingData.length - filteredPendingData.length} intresseanmälningar från ${pendingData.length} väntande uppgifter`);
-      logger.debug(`Filtrerade bort ${emailReportsData.length - filteredEmailReports.length} intresseanmälningar från ${emailReportsData.length} e-postrapporter`);
+      logger.debug(`Filtrerade bort ${pendingData.length - filteredPendingData.length} intresseanmälningar/granskade från ${pendingData.length} väntande uppgifter`);
+      logger.debug(`Filtrerade bort ${emailReportsData.length - filteredEmailReports.length} intresseanmälningar/granskade från ${emailReportsData.length} e-postrapporter`);
       
       setPendingTasks(filteredPendingData);
       setEmailReports(filteredEmailReports);
@@ -696,11 +707,15 @@ const PendingTasks = () => {
         });
       }
     } else {
-      // När vi visar väntande uppgifter, visa både e-postrapporter och väntande uppgifter
+      // När vi visar väntande uppgifter, visa bara OBEHANDLADE e-postrapporter och uppgifter
       
-      // Lägg till e-postrapporter (om de inte redan finns i mappen)
+      // Lägg till obehandlade e-postrapporter
       if (emailReports && emailReports.length > 0) {
-        emailReports.forEach(report => {
+        // Filtrera för att endast inkludera rapporter som INTE har reviewedBy
+        const unreviewedReports = emailReports.filter(report => !report.reviewedBy);
+        logger.debug(`Visar ${unreviewedReports.length} av ${emailReports.length} e-postrapporter (endast obehandlade)`);
+        
+        unreviewedReports.forEach(report => {
           if (report && report.id) {
             uniqueDataMap.set(report.id, {
               ...report,
@@ -711,9 +726,13 @@ const PendingTasks = () => {
         });
       }
       
-      // Lägg till vanliga uppgifter (om de inte redan finns i mappen)
+      // Lägg till obehandlade uppgifter
       if (pendingTasks && pendingTasks.length > 0) {
-        pendingTasks.forEach(task => {
+        // Filtrera för att endast inkludera uppgifter som INTE har reviewedBy
+        const unreviewedTasks = pendingTasks.filter(task => !task.reviewedBy);
+        logger.debug(`Visar ${unreviewedTasks.length} av ${pendingTasks.length} väntande uppgifter (endast obehandlade)`);
+        
+        unreviewedTasks.forEach(task => {
           if (task && task.id) {
             uniqueDataMap.set(task.id, {
               ...task,
