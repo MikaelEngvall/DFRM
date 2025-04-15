@@ -190,7 +190,7 @@ const InterestGoogleDocsExport = () => {
         setExportReady(true);
         setLoading(false);
       } catch (error) {
-        console.error('Fel vid hämtning av intresseanmälningar:', error);
+        logger.error('Fel vid hämtning av intresseanmälningar:', error);
         setError(t('interests.errors.fetchFailed'));
         setLoading(false);
       }

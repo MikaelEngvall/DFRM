@@ -94,10 +94,6 @@ const TaskDetail = () => {
         ...formData, // Uppdatera med ändringar från formuläret
       };
       
-      console.log('Original task:', task);
-      console.log('Original formData:', formData);
-      console.log('Task ID som ska uppdateras:', id);
-      
       // Säkerställ att tenantId och apartmentId är strängar, inte objekt
       if (taskData.tenantId && typeof taskData.tenantId === 'object') {
         taskData.tenantId = taskData.tenantId.id;
@@ -120,8 +116,6 @@ const TaskDetail = () => {
       if (!taskData.assignedToUserId && task.assignedToUserId) {
         taskData.assignedToUserId = task.assignedToUserId;
       }
-      
-      console.log('Data som skickas till updateTask:', taskData);
       
       await taskService.updateTask(id, taskData);
       await fetchData();

@@ -257,7 +257,6 @@ const Tasks = () => {
           ...prev,
           apartmentId: tenant.apartmentId
         }));
-        console.log(`Hittade lägenhet direkt via tenant.apartmentId: ${tenant.apartmentId}`);
       } 
       // Variant 2: tenant.apartment är ett objekt
       else if (tenant.apartment && typeof tenant.apartment === 'object' && tenant.apartment.id) {
@@ -265,7 +264,6 @@ const Tasks = () => {
           ...prev,
           apartmentId: tenant.apartment.id
         }));
-        console.log(`Hittade lägenhet direkt via tenant.apartment.id: ${tenant.apartment.id}`);
       }
       // Variant 3: tenant.apartment är ett ID som sträng
       else if (tenant.apartment && typeof tenant.apartment === 'string') {
@@ -273,7 +271,6 @@ const Tasks = () => {
           ...prev,
           apartmentId: tenant.apartment
         }));
-        console.log(`Hittade lägenhet direkt via tenant.apartment: ${tenant.apartment}`);
       }
       // Om ingen av ovanstående, leta efter lägenheten i listan
       else {
@@ -290,9 +287,6 @@ const Tasks = () => {
             ...prev,
             apartmentId: relatedApartment.id
           }));
-          console.log(`Hittade lägenhet via sökning: ${relatedApartment.street} ${relatedApartment.number}, LGH ${relatedApartment.apartmentNumber}`);
-        } else {
-          console.log('Hittade ingen lägenhet kopplad till denna hyresgäst');
         }
       }
     }
@@ -318,7 +312,6 @@ const Tasks = () => {
             ...prev,
             tenantId: relatedTenant.id
           }));
-          console.log(`Hittade hyresgäst direkt via apartment.tenants: ${relatedTenant.firstName} ${relatedTenant.lastName}`);
         }
       } 
       // I andra API-implementationer kan det vara en array av objekt
@@ -328,11 +321,8 @@ const Tasks = () => {
           ...prev,
           tenantId: tenantId
         }));
-        console.log(`Hittade hyresgäst direkt via apartment.tenants[0].id: ${tenantId}`);
       }
     } else {
-      console.log('Lägenheten har inga kopplade hyresgäster, söker efter relaterade hyresgäster...');
-      
       // Alternativ metod: Sök efter alla hyresgäster som har denna lägenhet kopplad till sig
       const relatedTenants = tenants.filter(tenant => 
         tenant.apartment && (
@@ -343,13 +333,10 @@ const Tasks = () => {
       );
       
       if (relatedTenants.length > 0) {
-        console.log(`Hittade relaterad hyresgäst genom sökning: ${relatedTenants[0].firstName} ${relatedTenants[0].lastName}`);
         setFormData(prev => ({
           ...prev,
           tenantId: relatedTenants[0].id
         }));
-      } else {
-        console.log('Hittade inga relaterade hyresgäster för denna lägenhet');
       }
     }
   };
@@ -359,13 +346,8 @@ const Tasks = () => {
     setError(null);
     
     try {
-      console.log('handleSubmit - formData:', formData);
-      console.log('handleSubmit - selectedTask:', selectedTask);
-      
       // Om vi redigerar en befintlig uppgift
       if (selectedTask) {
-        console.log('Redigerar befintlig uppgift med ID:', selectedTask.id);
-        
         // Se till att alla fält från ursprungliga uppgiften bevaras om de inte explicit ändrats
         const taskData = {
           ...selectedTask, // Behåll alla originalfält från selectedTask
@@ -378,22 +360,14 @@ const Tasks = () => {
           taskData.assignedToUserId = selectedTask.assignedToUserId;
         }
         
-        // Logga vilken funktion som anropas
-        console.log('Anropar taskService.updateTask med ID:', selectedTask.id);
-        console.log('och data:', taskData);
-        
         await taskService.updateTask(selectedTask.id, taskData);
       } 
       // Annars skapar vi en ny uppgift
       else {
-        console.log('Skapar ny uppgift');
-        
         const taskData = {
           ...formData,
           assignedByUserId: currentUser.id
         };
-        
-        console.log('Anropar taskService.createTask med data:', taskData);
         
         await taskService.createTask(taskData);
       }

@@ -21,7 +21,9 @@ export const CACHE_KEYS = {
   PENDING_TASKS_FOR_REVIEW: 'cached_pending_tasks_for_review',
   PENDING_TASKS_APPROVED: 'cached_pending_tasks_approved',
   UNREVIEWED_COUNT: 'cached_unreviewed_count',
+  INTERESTS: 'cached_interests',
   INTERESTS_FOR_REVIEW: 'interests_for_review',
+  REVIEWED_INTERESTS: 'reviewed_interests',
   EMAIL_REPORTS: 'cached_email_reports',
 };
 
@@ -94,6 +96,12 @@ export const createCacheManager = (key, maxAge) => {
  */
 export const getFromCache = (cacheKey, ttl = DEFAULT_CACHE_TTL) => {
   try {
+    // Kontrollera om cacheKey är tom eller odefinierad
+    if (!cacheKey) {
+      console.warn('getFromCache anropades med tom nyckel');
+      return null;
+    }
+    
     const cachedItem = secureStorage.getItem(cacheKey);
     if (!cachedItem) return null;
 
@@ -117,6 +125,12 @@ export const getFromCache = (cacheKey, ttl = DEFAULT_CACHE_TTL) => {
  */
 export const saveToCache = (cacheKey, data) => {
   try {
+    // Kontrollera om cacheKey är tom eller odefinierad
+    if (!cacheKey) {
+      console.warn('saveToCache anropades med tom nyckel');
+      return;
+    }
+    
     const cacheObject = {
       timestamp: Date.now(),
       data
@@ -183,6 +197,12 @@ export const updateInCache = (cacheKey, itemId, updatedItem) => {
  */
 export const removeFromCache = (cacheKey, itemId) => {
   try {
+    // Kontrollera om cacheKey är tom eller odefinierad
+    if (!cacheKey) {
+      console.warn('removeFromCache anropades med tom nyckel');
+      return false;
+    }
+    
     const cachedData = getFromCache(cacheKey);
     if (!cachedData) return false;
 
@@ -201,6 +221,12 @@ export const removeFromCache = (cacheKey, itemId) => {
  */
 export const invalidateCache = (cacheKey) => {
   try {
+    // Kontrollera om cacheKey är tom eller odefinierad
+    if (!cacheKey) {
+      console.warn('invalidateCache anropades med tom nyckel');
+      return;
+    }
+    
     secureStorage.removeItem(cacheKey);
   } catch (error) {
     console.error('Fel vid invalidering av cache:', error);
@@ -247,7 +273,6 @@ export const clearCache = () => {
       localStorage.removeItem(`cache_${key}`);
       localStorage.removeItem(`cache_timestamp_${key}`);
     });
-    console.log('Cache cleared');
   } catch (error) {
     console.error('Error clearing cache:', error);
   }
@@ -258,7 +283,6 @@ export const clearCacheByKey = (key) => {
   try {
     localStorage.removeItem(`cache_${key}`);
     localStorage.removeItem(`cache_timestamp_${key}`);
-    console.log(`Cache cleared for key: ${key}`);
   } catch (error) {
     console.error(`Error clearing cache for key ${key}:`, error);
   }

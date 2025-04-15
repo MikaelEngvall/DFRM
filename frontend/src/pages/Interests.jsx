@@ -185,12 +185,10 @@ const Interests = ({ view = 'list' }) => {
       });
       
       setApartmentsMap(apartmentsMapObj);
-      logger.debug('Hämtade lägenheter och skapade sökkarta:', Object.keys(apartmentsMapObj).length);
       
       // Logga några exempel på lägenheter
       Object.keys(apartmentsMapObj).slice(0, 5).forEach(key => {
         const apt = apartmentsMapObj[key];
-        logger.debug(`Exempel på lägenhet: ${key} => ${apt.id}, ${apt.street} ${apt.number}, ${apt.apartmentNumber}`);
       });
     } catch (error) {
       logger.error('Fel vid hämtning av lägenheter:', error);
@@ -209,12 +207,10 @@ const Interests = ({ view = 'list' }) => {
       });
       
       setTenantsMap(tenantsMapObj);
-      logger.debug('Hämtade hyresgäster och skapade sökkarta:', Object.keys(tenantsMapObj).length);
       
       // Logga några exempel på hyresgäster
       Object.keys(tenantsMapObj).slice(0, 5).forEach(id => {
         const tenant = tenantsMapObj[id];
-        logger.debug(`Exempel på hyresgäst: ${id} => ${tenant.firstName} ${tenant.lastName}, ${tenant.phone}`);
       });
     } catch (error) {
       logger.error('Fel vid hämtning av hyresgäster:', error);
@@ -223,49 +219,75 @@ const Interests = ({ view = 'list' }) => {
   
   // Hjälpfunktion för att extrahera lägenhetsinfo från adresssträng
   const extractApartmentInfo = (apartmentString) => {
-    if (!apartmentString) return null;
-    
-    try {
-      // Hantera specialfall som "Re: Bekräftelse av visningstid"
-      if (apartmentString.startsWith("Re:") || !apartmentString.includes("lgh")) {
-        logger.debug(`Ignorerar adress: "${apartmentString}" (inte en lägenhet)`);
-        return null;
-      }
-      
-      const parts = apartmentString.split(' ');
-      if (parts.length < 4) return null;
-      
-      // Hantera olika format
-      // Format 1: "Chapmansgatan 6 lgh 1001 1rok"
-      // Format 2: "Valhallavägen 10C lgh 1202 3ro" 
-      // Format 3: "Utridarevägen 3B lgh 1101 1rok"
-      
-      let street = parts[0];
-      let number = parts[1]; // Behåll husnumret som det är (t.ex. "31A")
-      let apartmentNumber = null;
-      
-      // VIKTIGT: Ta bort uppdelningen av husnummer och bokstav
-      // Vi behåller hela husnumret som det är (t.ex. "31A")
-      
-      // Hitta lägenhetsnnummret efter "lgh"
-      for (let i = 0; i < parts.length; i++) {
-        if (parts[i].toLowerCase() === 'lgh' && i + 1 < parts.length) {
-          apartmentNumber = parts[i + 1];
-          break;
-        }
-      }
-      
-      // Specialhanteing för Utridarevägen
-      if (street === "Utridarevägen") {
-        street = "Utridare";
-      }
-      
-      logger.debug(`Extraherad lägenhetsinfo: "${apartmentString}" => ${street}, ${number}, ${apartmentNumber}`);
-      return { street, number, apartmentNumber };
-    } catch (error) {
-      logger.error('Fel vid extrahering av lägenhetsinfo:', error);
+    if (!apartmentString || typeof apartmentString !== 'string') {
       return null;
     }
+    
+    // Ignorera specifika värden som inte är lägenheter
+    if (['Ingen', 'ingen', 'N/A', '-', ''].includes(apartmentString.trim())) {
+      return null;
+    }
+    
+    // Försök att extrahera gatuadress, gatunummer och lägenhetsnummer
+    // Pattern: "Gatunamn gatunummer, LGH lägenhetsnummer"
+    // Exempel: "Storgatan 5, LGH 1001"
+    
+    let street = '';
+    let number = '';
+    let apartmentNumber = '';
+    
+    // Försök 1: Matcha hela mönstret
+    const fullPattern = /^([^0-9,]+)\s*([0-9A-Za-z]+)(?:,|\s+|\s*LGH\s*|\s*nr\s*)([0-9]+)/i;
+    const match = apartmentString.match(fullPattern);
+    
+    if (match) {
+      street = match[1].trim();
+      number = match[2];
+      apartmentNumber = match[3];
+      
+      return { street, number, apartmentNumber };
+    }
+    
+    // Försök 2: Separera på komma eller "LGH"
+    const parts = apartmentString.split(/,|\s+LGH\s+|LGH/i);
+    
+    if (parts.length >= 2) {
+      // Första delen är gatuadress, andra är lägenhetsnummer
+      const addressParts = parts[0].trim().match(/^([^0-9]+)\s*([0-9A-Za-z]+)$/);
+      
+      if (addressParts) {
+        street = addressParts[1].trim();
+        number = addressParts[2];
+        apartmentNumber = parts[1].trim().replace(/[^0-9]/g, '');
+        
+        return { street, number, apartmentNumber };
+      }
+    }
+    
+    // Försök 3: Enkel uppdelning om det finns siffror i slutet
+    const simpleMatch = apartmentString.match(/^([^0-9]+)\s*([0-9A-Za-z]+)(?:\s+|\s*nr\s*)([0-9]+)/i);
+    
+    if (simpleMatch) {
+      street = simpleMatch[1].trim();
+      number = simpleMatch[2];
+      apartmentNumber = simpleMatch[3];
+      
+      return { street, number, apartmentNumber };
+    }
+    
+    // Försök 4: Endast gatuadress och gatunummer
+    const addressOnlyMatch = apartmentString.match(/^([^0-9]+)\s*([0-9A-Za-z]+)/i);
+    
+    if (addressOnlyMatch) {
+      street = addressOnlyMatch[1].trim();
+      number = addressOnlyMatch[2];
+      apartmentNumber = ""; // Inget lägenhetsnummer
+      
+      return { street, number, apartmentNumber };
+    }
+    
+    // Kunde inte extrahera information
+    return null;
   };
   
   // Funktion för att hitta nuvarande hyresgäst baserat på lägenhetsadress

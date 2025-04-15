@@ -10,11 +10,8 @@ const emailService = {
    */
   sendBulkEmail: async (subject, content, recipients) => {
     try {
-      console.log(`emailService.sendBulkEmail: schemaläggning till ${recipients.length} mottagare`);
-      
       // Delar upp mottagarlistan i batchar om det är mer än 100 mottagare
       if (recipients.length > 100) {
-        console.log(`Stor mottagarlista detekterad (${recipients.length} mottagare). Delar upp i mindre batchar.`);
         const batchSize = 100;
         const batches = [];
         
@@ -23,15 +20,12 @@ const emailService = {
           batches.push(recipients.slice(i, i + batchSize));
         }
         
-        console.log(`Skapad ${batches.length} batchar för att skicka.`);
-        
         // Sekventiellt skicka varje batch för att undvika att överbelasta servern
         let successCount = 0;
         let errors = [];
         
         for (let i = 0; i < batches.length; i++) {
           const batch = batches[i];
-          console.log(`Skickar batch ${i+1}/${batches.length} (${batch.length} mottagare)...`);
           
           try {
             const response = await api.post('/api/mail/bulk', {
@@ -40,7 +34,6 @@ const emailService = {
               recipients: batch
             });
             
-            console.log(`Batch ${i+1} resultat:`, response.data);
             successCount += batch.length;
           } catch (error) {
             console.error(`Fel vid skickande av batch ${i+1}:`, error);
@@ -75,7 +68,6 @@ const emailService = {
           recipients
         });
         
-        console.log('Svar från API:', response.data);
         return response.data;
       }
     } catch (error) {

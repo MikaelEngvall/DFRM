@@ -58,20 +58,17 @@ const getPostalCode = (street, number, city) => {
     
     // SPECIALFALL: Kontrollera Valhallavägen först (högsta prioritet)
     if (streetLower.includes('valhallavägen')) {
-      console.log(`Hittade Valhallavägen, returnerar alltid postnummer 37141`);
       return '37141';
     }
     
     // Försök med exakt matchning först
     const exactKey = `${streetLower} ${numberLower} ${cityLower}`;
     if (POSTAL_CODE_LOOKUP[exactKey]) {
-      console.log(`Hittade postnummer ${POSTAL_CODE_LOOKUP[exactKey]} för exakt adress: ${exactKey}`);
       return POSTAL_CODE_LOOKUP[exactKey];
     }
     
     // Använd gatans standardvärde om det finns
     if (POSTAL_CODE_LOOKUP[streetLower]) {
-      console.log(`Hittade postnummer ${POSTAL_CODE_LOOKUP[streetLower]} för gata: ${streetLower}`);
       return POSTAL_CODE_LOOKUP[streetLower];
     }
     
@@ -107,7 +104,6 @@ const getPostalCode = (street, number, city) => {
           return '37141';
         default:
           // Standardvärde för Karlskrona om inget annat hittas
-          console.log(`Kunde inte hitta postnummer för ${street} ${number}, ${city}, använder standardvärde för Karlskrona`);
           return '37100';
       }
     } 
@@ -124,7 +120,6 @@ const getPostalCode = (street, number, city) => {
           return '37234';
         default:
           // Standardvärde för Ronneby om inget annat hittas
-          console.log(`Kunde inte hitta postnummer för ${street} ${number}, ${city}, använder standardvärde för Ronneby`);
           return '37200';
       }
     }
@@ -147,7 +142,6 @@ const getPostalCode = (street, number, city) => {
       }
       
       // Standardvärde om inget annat passar
-      console.log(`Kunde inte hitta postnummer för ${street} ${number}, ${city}, använder standardvärde`);
       return '37100';
     }
   } catch (error) {
@@ -214,12 +208,8 @@ const Import = () => {
         throw new Error('Inga giltiga rader hittades i filen.');
       }
       
-      console.log('Försöker importera', processedData.tenants.length, 'hyresgäster och', 
-                 processedData.apartments.length, 'lägenheter till databasen');
-      
       // Kontrollera att användaren har en giltig token
       const token = localStorage.getItem('auth_token');
-      console.log('Token finns:', !!token);
       
       // Skapa apartments och tenants och koppla dem till varandra
       const createdApartments = [];
@@ -231,8 +221,6 @@ const Import = () => {
         try {
           const tenant = processedData.tenants[i];
           const apartment = processedData.apartments[i];
-          
-          console.log(`Bearbetar rad ${i+1}: ${tenant.firstName} ${tenant.lastName}, lägenhet ${apartment.apartmentNumber}`);
           
           // STEG 1: Skapa lägenhet först (inga relation-fält)
           const apartmentData = {
@@ -248,17 +236,11 @@ const Import = () => {
             storage: true,
             internet: false
           };
-
-          console.log('Skapar lägenhet:', { 
-            apartmentNumber: apartmentData.apartmentNumber,
-            street: apartmentData.street
-          });
           
           // Skapa lägenheten i databasen
           const apartmentResponse = await api.post('/api/apartments', apartmentData);
           const createdApartment = apartmentResponse.data;
           createdApartments.push(createdApartment);
-          console.log(`Lägenhet skapad med ID: ${createdApartment.id}`);
           
           // STEG 2: Skapa hyresgäst (utan apartment-fält)
           const tenantData = {
@@ -275,19 +257,13 @@ const Import = () => {
             // OBS: INTE apartment-fält här!
           };
           
-          console.log('Skapar hyresgäst:', { 
-            namn: `${tenantData.firstName} ${tenantData.lastName}`
-          });
-          
           // Skapa hyresgästen utan apartment-koppling
           const tenantResponse = await api.post('/api/tenants', tenantData);
           const createdTenant = tenantResponse.data;
           createdTenants.push(createdTenant);
-          console.log(`Hyresgäst skapad med ID: ${createdTenant.id}`);
           
           // STEG 3: Använd det SPECIELLA APARTMENT-API:ET för att koppla lägenhet till hyresgäst
           // Detta är nyckeln! Backend har ett speciellt API för att tilldela lägenhet, TenantController.assignApartment
-          console.log(`Kopplar hyresgäst ${createdTenant.id} till lägenhet ${createdApartment.id} med KORREKT API-anrop`);
           
           try {
             // Använd PUT till den särskilda apartment-endpointen med apartmentId som query parameter
@@ -295,28 +271,11 @@ const Import = () => {
               `/api/tenants/${createdTenant.id}/apartment?apartmentId=${createdApartment.id}`
             );
             
-            if (assignResponse.status === 200) {
-              console.log(`✓✓✓ FRAMGÅNG: Hyresgäst kopplad till lägenhet med specialanrop!`);
-              // Kontrollera resultatet
-              const updatedTenant = assignResponse.data;
-              console.log('Uppdaterad hyresgäst från API:', updatedTenant);
-              
-              // Verifiera att apartment-fältet faktiskt sattes korrekt
-              if (updatedTenant.apartment === createdApartment.id) {
-                console.log(`Apartment-fält bekräftat!`);
-              } else {
-                console.warn(`Apartment-fält verkar vara i ett annat format:`, updatedTenant.apartment);
-              }
-            } else {
+            if (assignResponse.status !== 200) {
               console.error(`❌ Misslyckades med att koppla hyresgäst till lägenhet via specialanrop: ${assignResponse.status}`);
             }
           } catch (assignError) {
             console.error('Fel vid koppling av hyresgäst till lägenhet:', assignError.message);
-          }
-          
-          // Rapportera framsteg var 10:e rad
-          if ((i + 1) % 10 === 0 || i === processedData.tenants.length - 1) {
-            console.log(`Framsteg: ${i + 1} av ${processedData.tenants.length} (${Math.round((i + 1) / processedData.tenants.length * 100)}%)`);
           }
           
         } catch (error) {
@@ -333,8 +292,6 @@ const Import = () => {
         apartmentsCreated: createdApartments.length,
         errors: errors
       };
-      
-      console.log('Import slutförd:', responseData);
       
       setSuccess(true);
       setImportResult(responseData);
@@ -373,14 +330,10 @@ const Import = () => {
 
   // Bearbeta Excel-data till vårt format
   const processExcelData = async (rows) => {
-    console.log('Excel-data (första raden):', rows[0]);
-    
     // Hoppa över rubrikraden om den finns
     const dataRows = rows[0] && (String(rows[0][0]).toLowerCase().includes('name') || 
                      String(rows[0][0]).toLowerCase().includes('namn')) ? 
                      rows.slice(1) : rows;
-    
-    console.log(`Antal rader i data: ${dataRows.length}`);
     
     const result = {
       tenants: [],
@@ -390,14 +343,10 @@ const Import = () => {
     // Använd Promise.all för att göra alla postnummeruppslag parallellt
     await Promise.all(dataRows.map(async (row, index) => {
       if (!row || row.length === 0) {
-        console.log(`Rad ${index + 1} är tom, hoppar över.`);
         return; // Hoppa över tomma rader
       }
       
-      console.log(`Rad ${index + 1} har ${row.length} kolumner:`, row.slice(0, 3));
-      
       if (row.length < 5) {
-        console.warn(`Rad ${index + 1} har för få kolumner (${row.length}), hoppar över.`);
         return;
       }
       
@@ -447,12 +396,10 @@ const Import = () => {
         const streetLower = street.toLowerCase();
         if (['kungsgatan', 'hagagatan', 'gångbrogatan', 'tingsgatan'].includes(streetLower)) {
           city = 'Ronneby'; // Sätt ort till Ronneby för specifika gator
-          console.log(`Gatan ${street} är i Ronneby, ändrar ort från Karlskrona till Ronneby`);
         }
         
         // Hämta postnummer baserat på adressuppgifter
         const postalCode = getPostalCode(street, number, city);
-        console.log(`Använder postnummer för ${street} ${number}, ${city}: ${postalCode}`);
         
         // Kolumn F: Yta (kvm)
         const area = row[5] ? parseFloat(row[5]) || 0 : 0;
@@ -481,12 +428,8 @@ const Import = () => {
             
             if (!isNaN(dateObj.getTime())) {
               moveInDate = dateObj.toISOString().split('T')[0];
-            } else {
-              console.warn(`Ogiltigt datum '${moveInDateRaw}' för rad ${index + 1}`);
-              moveInDate = '';
             }
           } catch (e) {
-            console.warn(`Kunde inte formatera datum '${moveInDateRaw}' för rad ${index + 1}: ${e.message}`);
             moveInDate = '';
           }
         }
@@ -508,7 +451,6 @@ const Import = () => {
         // Generera ett unikt appartment-nummer om det saknas
         if (!apartmentNumber) {
           apartmentNumber = `A${index + 100}`;
-          console.log(`Genererade lägenhetsnummer ${apartmentNumber} för rad ${index + 1}`);
         }
         
         // Skapa tenant-objekt - OBS! apartment ska INTE sättas här, det sätts senare till lägenhetens ID
@@ -539,21 +481,12 @@ const Import = () => {
           tenant: `${firstName} ${lastName}` || `Hyresgäst${index + 1} Efternamn${index + 1}`
         };
         
-        console.log(`Skapad hyresgäst och lägenhet för rad ${index + 1}:`, {
-          tenant: tenant.firstName + ' ' + tenant.lastName,
-          apartment: apartment.apartmentNumber,
-          postalCode: postalCode || 'Inget hittat',
-          city: city
-        });
-        
         result.tenants.push(tenant);
         result.apartments.push(apartment);
       } catch (err) {
         console.error(`Fel vid bearbetning av rad ${index + 1}:`, err);
       }
     }));
-    
-    console.log(`Resultat: ${result.tenants.length} hyresgäster, ${result.apartments.length} lägenheter`);
     
     return result;
   };
