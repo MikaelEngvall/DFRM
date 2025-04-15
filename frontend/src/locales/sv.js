@@ -43,6 +43,7 @@ export default {
     forceUpdate: 'Tvinga uppdatering',
     export: 'Exportera',
     exporting: 'Exporterar...',
+    email: 'E-post',
   },
 
   languages: {

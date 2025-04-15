@@ -38,6 +38,7 @@ export default {
     notSpecified: 'Not specified',
     at: 'at',
     forceUpdate: 'Force Update',
+    email: 'Email',
   },
 
   languages: {
