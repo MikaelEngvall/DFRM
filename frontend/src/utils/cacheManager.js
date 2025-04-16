@@ -3,10 +3,7 @@
  * Används för att minska antalet API-anrop och förbättra prestandan
  */
 
-import SecureStorage from './secureStorage';
-
-// Skapa en instans av SecureStorage för cachehantering
-const secureStorage = new SecureStorage('cache');
+import { secureStorage } from './cryptoHelper';
 
 // Cache-nycklar för olika datatyper
 export const CACHE_KEYS = {

@@ -1,11 +1,10 @@
-import SecureStorage from './secureStorage';
+import { secureStorage } from './cryptoHelper';
 import { createLogger } from './logger';
 
 const logger = createLogger('TokenStorage');
 const TOKEN_KEY = 'auth_token';
-// Nyckel för direkt tillgänglig kopia av token (ej krypterad)
+// Nyckel för direkt tillgänglig kopia av token (Nu krypterad)
 const RAW_TOKEN_KEY = 'raw_token';
-const secureStorage = new SecureStorage('auth');
 
 export const setAuthToken = (token) => {
   if (!token) {
@@ -17,17 +16,16 @@ export const setAuthToken = (token) => {
     // Spara krypterad version
     secureStorage.setItem(TOKEN_KEY, token);
     
-    // Spara även en okrypterad (raw) version som kan användas direkt utan dekryptering
-    // Detta hjälper när sidan laddas om, innan SecureStorage är initierad
-    localStorage.setItem(RAW_TOKEN_KEY, token);
+    // Spara även en krypterad version för bakåtkompatibilitet
+    secureStorage.setItem(RAW_TOKEN_KEY, token);
     
-    logger.info('Token sparad (både krypterad och raw)');
+    logger.info('Token sparad (krypterad)');
   } catch (error) {
     logger.error('Fel vid sparande av token:', error);
-    // Fallback till vanlig localStorage om SecureStorage misslyckas
+    // Fallback om det inte fungerar alls
     try {
       localStorage.setItem('fallback_token', token);
-      logger.info('Token sparad i fallback-läge');
+      logger.info('Token sparad i fallback-läge (okrypterad)');
     } catch (fallbackError) {
       logger.error('Fallback token sparande misslyckades också:', fallbackError);
     }
@@ -36,28 +34,42 @@ export const setAuthToken = (token) => {
 
 export const getAuthToken = () => {
   try {
-    // Först: försök hämta raw token som inte kräver dekryptering
-    let token = localStorage.getItem(RAW_TOKEN_KEY);
+    // Först: försök hämta token från vår krypterade lagring
+    let token = secureStorage.getItem(RAW_TOKEN_KEY);
     if (token) {
-      logger.info('Token hämtad från raw storage');
+      logger.info('Token hämtad från krypterad storage');
       return token;
     }
     
-    // Fallback: Försök hämta token från säker lagring
+    // Försök med gamla nyckeln (för bakåtkompatibilitet)
     token = secureStorage.getItem(TOKEN_KEY);
+    if (token) {
+      logger.info('Token hämtad från krypterad storage (old key)');
+      return token;
+    }
     
-    // Om token inte finns i secureStorage, försök fallback
-    if (!token) {
-      token = localStorage.getItem('fallback_token');
-      if (token) {
-        logger.warn('Token hämtad från fallback-lagring');
-      }
+    // För bakåtkompatibilitet: kontrollera om det finns en okrypterad token
+    token = localStorage.getItem(RAW_TOKEN_KEY);
+    if (token) {
+      logger.warn('Token hittades i okrypterad lagring. Kommer att krypteras.');
+      // Migrera token till krypterad lagring
+      setAuthToken(token);
+      return token;
+    }
+    
+    // Sista fallback till fallback_token
+    token = localStorage.getItem('fallback_token');
+    if (token) {
+      logger.warn('Token hämtad från fallback-lagring (okrypterad)');
+      // Migrera token till krypterad lagring
+      setAuthToken(token);
+      return token;
     }
     
     if (!token) {
       logger.info('Ingen token hittades');
       // Rensa cachad användardata eftersom token inte finns
-      localStorage.removeItem('userData');
+      removeUserData();
       return null;
     }
     
@@ -76,8 +88,9 @@ export const getAuthToken = () => {
           
           if (expDate < now) {
             logger.warn('Token har löpt ut, raderar cachad användardata');
-            localStorage.removeItem('userData');
-            localStorage.removeItem(RAW_TOKEN_KEY);
+            removeUserData();
+            secureStorage.removeItem(RAW_TOKEN_KEY);
+            secureStorage.removeItem(TOKEN_KEY);
             return null;
           }
         }
@@ -103,7 +116,7 @@ export const getAuthToken = () => {
     }
     
     // Rensa cachad användardata vid fel
-    localStorage.removeItem('userData');
+    removeUserData();
     return null;
   }
 };
@@ -111,8 +124,9 @@ export const getAuthToken = () => {
 export const removeAuthToken = () => {
   try {
     secureStorage.removeItem(TOKEN_KEY);
+    secureStorage.removeItem(RAW_TOKEN_KEY);
     localStorage.removeItem('fallback_token');
-    localStorage.removeItem(RAW_TOKEN_KEY);
+    localStorage.removeItem(RAW_TOKEN_KEY); // Ta även bort från okrypterad lagring om den finns
     logger.info('Token borttagen (krypterad, fallback och raw)');
   } catch (error) {
     logger.error('Fel vid borttagning av token:', error);
@@ -123,4 +137,10 @@ export const hasAuthToken = () => {
   const hasToken = !!getAuthToken();
   logger.info(`Kontroll om token finns: ${hasToken}`);
   return hasToken;
+};
+
+// Hjälpfunktion för att ta bort användardata
+const removeUserData = () => {
+  secureStorage.removeItem('userData');
+  localStorage.removeItem('userData');
 }; 

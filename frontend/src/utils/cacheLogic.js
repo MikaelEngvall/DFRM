@@ -1,4 +1,4 @@
-import { secureStorage } from './secureStorage';
+import { secureStorage } from './cryptoHelper';
 
 export const cacheData = (key, data) => {
   const cacheItem = {

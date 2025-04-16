@@ -6,9 +6,13 @@ import SessionWarning from '../components/SessionWarning';
 import { getAuthToken, removeAuthToken } from '../utils/tokenStorage';
 import { createLogger } from '../utils/logger';
 import { validateJwtToken } from '../utils/errorHandler';
+import { secureStorage } from '../utils/cryptoHelper';
 
 const logger = createLogger('AuthContext');
 const AuthContext = createContext(null);
+
+// Konstanter för storage-nycklar
+const USER_DATA_KEY = 'userData';
 
 export const AuthProvider = ({ children }) => {
   const navigate = useNavigate();
@@ -39,22 +43,35 @@ export const AuthProvider = ({ children }) => {
       if (!token) {
         logger.info('Ingen token hittades');
         setUser(null);
-        localStorage.removeItem('userData');
+        secureStorage.removeItem(USER_DATA_KEY);
+        localStorage.removeItem(USER_DATA_KEY); // För bakåtkompatibilitet
         setLoading(false);
         return;
       }
 
-      // Kontrollera först om vi har cachad användardata
-      const cachedUserData = localStorage.getItem('userData');
-      let userData = null;
+      // Kontrollera först om vi har cachad användardata i krypterad lagring
+      let userData = secureStorage.getItem(USER_DATA_KEY);
       
-      if (cachedUserData) {
-        try {
-          userData = JSON.parse(cachedUserData);
-          logger.info('Hittade cachad användardata', { userId: userData.id, role: userData.role });
-        } catch (error) {
-          logger.error('Kunde inte parsa cachad användardata:', error);
+      // Om ingen krypterad data, kontrollera efter okrypterad data (för bakåtkompatibilitet)
+      if (!userData) {
+        const cachedUserData = localStorage.getItem(USER_DATA_KEY);
+        
+        if (cachedUserData) {
+          try {
+            userData = JSON.parse(cachedUserData);
+            logger.info('Hittade okrypterad användardata, flyttar till krypterad lagring', { userId: userData.id, role: userData.role });
+            
+            // Migrera data till krypterad lagring
+            secureStorage.setItem(USER_DATA_KEY, userData);
+            
+            // Ta bort okrypterad efter migrering (valfritt, men rekommenderat för säkerhet)
+            localStorage.removeItem(USER_DATA_KEY);
+          } catch (error) {
+            logger.error('Kunde inte parsa cachad användardata:', error);
+          }
         }
+      } else {
+        logger.info('Hittade cachad användardata i krypterad lagring', { userId: userData.id, role: userData.role });
       }
 
       // Försök hämta användardata från backend även om vi har cachad data
@@ -63,8 +80,8 @@ export const AuthProvider = ({ children }) => {
         const serverUserData = await authService.getCurrentUser();
         logger.info('Användardata hämtad från API, användare inloggad', { userId: serverUserData.id, role: serverUserData.role });
         
-        // Uppdatera cachad användardata
-        localStorage.setItem('userData', JSON.stringify(serverUserData));
+        // Uppdatera cachad användardata i krypterad lagring
+        secureStorage.setItem(USER_DATA_KEY, serverUserData);
         
         // Använd server-data
         setUser(serverUserData);
@@ -83,7 +100,8 @@ export const AuthProvider = ({ children }) => {
             logger.error('Token ogiltig men finns i localStorage:', validation.error);
             setUser(null);
             removeAuthToken();
-            localStorage.removeItem('userData');
+            secureStorage.removeItem(USER_DATA_KEY);
+            localStorage.removeItem(USER_DATA_KEY); // För bakåtkompatibilitet
           }
         } else {
           // Ingen cachad data och API-anrop misslyckades
@@ -96,7 +114,8 @@ export const AuthProvider = ({ children }) => {
       logger.error('Autentiseringskontroll misslyckades:', error);
       setUser(null);
       removeAuthToken();
-      localStorage.removeItem('userData');
+      secureStorage.removeItem(USER_DATA_KEY);
+      localStorage.removeItem(USER_DATA_KEY); // För bakåtkompatibilitet
     } finally {
       setLoading(false);
     }
@@ -136,8 +155,8 @@ export const AuthProvider = ({ children }) => {
       const userData = await authService.login(credentials);
       setUser(userData);
       
-      // Spara användardata i localStorage för att återställa session vid sidladdning
-      localStorage.setItem('userData', JSON.stringify(userData));
+      // Spara användardata i krypterad lagring för att återställa session vid sidladdning
+      secureStorage.setItem(USER_DATA_KEY, userData);
       
       return userData;
     } catch (error) {
@@ -148,7 +167,8 @@ export const AuthProvider = ({ children }) => {
   const logout = useCallback(() => {
     setUser(null);
     removeAuthToken();
-    localStorage.removeItem('userData');
+    secureStorage.removeItem(USER_DATA_KEY);
+    localStorage.removeItem(USER_DATA_KEY); // För bakåtkompatibilitet
     setShowSessionWarning(false);
     navigate('/login');
   }, [navigate]);
