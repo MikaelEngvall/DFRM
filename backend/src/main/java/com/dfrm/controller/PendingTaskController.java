@@ -212,7 +212,18 @@ public class PendingTaskController {
     
     @GetMapping("/email-reports")
     public ResponseEntity<List<PendingTask>> getEmailReports() {
-        List<PendingTask> emailReports = pendingTaskService.findPendingTasksByStatus("NEW");
+        // Ändrad från att bara hämta NEW-status till att hämta alla e-postrapporter utan Task-objekt
+        // Detta gör att vi fångar upp både nya och eventuellt manuellt skapade e-postrapporter
+        List<PendingTask> allTasks = pendingTaskRepository.findAll();
+        
+        // Filtrera ut e-postrapporter - de som inte har Task-objekt och troligen kommer från EmailListener
+        List<PendingTask> emailReports = allTasks.stream()
+            .filter(task -> task.getTask() == null) // Måste vara utan Task-objekt för att vara en e-postrapport
+            .filter(task -> task.getDescription() != null) // Måste ha beskrivning
+            .collect(java.util.stream.Collectors.toList());
+        
+        log.info("Hittade {} potentiella e-postrapporter av totalt {} väntande uppgifter", 
+                emailReports.size(), allTasks.size());
         
         // Manuellt hantera requestedBy för e-postrapporter som kan ha tillfälliga användare
         for (PendingTask report : emailReports) {
@@ -233,7 +244,7 @@ public class PendingTaskController {
                     }
                 } catch (Exception e) {
                     // Logga felet men fortsätt processen
-                    System.err.println("Kunde inte hitta hyresgäst för e-post: " + report.getEmail());
+                    log.error("Kunde inte hitta hyresgäst för e-post: {}", report.getEmail(), e);
                 }
             }
             
@@ -261,7 +272,8 @@ public class PendingTaskController {
                         }
                     }
                 } catch (Exception e) {
-                    System.err.println("Kunde inte hitta lägenhet/hyresgäst för: " + report.getAddress() + " " + report.getApartment());
+                    log.error("Kunde inte hitta lägenhet/hyresgäst för: {} {}", 
+                              report.getAddress(), report.getApartment(), e);
                 }
             }
 
@@ -292,6 +304,16 @@ public class PendingTaskController {
                     report.setSubject("Felanmälan via e-post");
                 }
             }
+            
+            // Se till att alla rapporter har rätt status
+            if (report.getStatus() == null || report.getStatus().isEmpty()) {
+                report.setStatus("NEW");
+            }
+            
+            // Logga information om varje rapport för felsökning
+            log.debug("E-postrapport: id={}, name={}, email={}, status={}, reviewedBy={}", 
+                    report.getId(), report.getName(), report.getEmail(), 
+                    report.getStatus(), report.getReviewedBy() != null ? report.getReviewedBy().getFirstName() : "null");
         }
         
         return ResponseEntity.ok(emailReports);

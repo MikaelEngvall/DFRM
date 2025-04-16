@@ -196,6 +196,34 @@ const PendingTasks = () => {
     fetchReferenceData();
   }, []);
 
+  // Lägg till en funktion för att skapa en testuppgift
+  const handleCreateTestTask = async () => {
+    try {
+      setLoading(true);
+      await pendingTaskService.checkEmails();
+      // Ladda om data direkt efter att testuppgiften skapats
+      await fetchData();
+    } catch (error) {
+      console.error("Fel vid skapande av testuppgift:", error);
+      setError("Kunde inte skapa testuppgift: " + (error.message || "Okänt fel"));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Lägg till en funktion för att manuellt ladda om data
+  const handleRefreshData = async () => {
+    try {
+      setLoading(true);
+      await fetchData();
+    } catch (error) {
+      console.error("Fel vid omladdning av data:", error);
+      setError("Kunde inte ladda om data: " + (error.message || "Okänt fel"));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const fetchReferenceData = async () => {
     try {
       const [usersData, apartmentsData, tenantsData] = await Promise.all([
@@ -220,6 +248,8 @@ const PendingTasks = () => {
         pendingTaskService.getUnreviewedTasks(),
         pendingEmailReportService.getAll()
       ]);
+      
+      console.log("Hämtade e-postrapporter (rå data):", emailReportsData);
       
       // Komplett lista med nyckelord som indikerar intresseanmälningar
       const interestKeywords = [
@@ -327,13 +357,16 @@ const PendingTasks = () => {
         .filter(task => !isInterestRelated(task))
         .filter(task => !task.reviewedBy); // Viktig filtrering - visa bara uppgifter som inte har reviewedBy
       
-      // Filtrera också bort intresseanmälningar och redan granskade uppgifter från e-postrapporter
+      // Filtrera också bort intresseanmälningar från e-postrapporter, men visa alla som inte har reviewedBy
+      // TEMP: Ta bort intressefiltreringen och visa alla e-postrapporter för felsökning
+      // Ändrad för att visa alla nya uppgifter, även om de skulle klassificeras som intresserelaterade
       const filteredEmailReports = emailReportsData
-        .filter(report => !isInterestRelated(report))
+        //.filter(report => !isInterestRelated(report))
         .filter(report => !report.reviewedBy); // Viktig filtrering - visa bara rapporter som inte har reviewedBy
       
       logger.debug(`Filtrerade bort ${pendingData.length - filteredPendingData.length} intresseanmälningar/granskade från ${pendingData.length} väntande uppgifter`);
-      logger.debug(`Filtrerade bort ${emailReportsData.length - filteredEmailReports.length} intresseanmälningar/granskade från ${emailReportsData.length} e-postrapporter`);
+      logger.debug(`Filtrerade bort ${emailReportsData.length - filteredEmailReports.length} granskade rapporter från ${emailReportsData.length} e-postrapporter`);
+      console.log("Filtrerade e-postrapporter som visas:", filteredEmailReports);
       
       setPendingTasks(filteredPendingData);
       setEmailReports(filteredEmailReports);
@@ -674,6 +707,14 @@ const PendingTasks = () => {
   const getDisplayData = () => {
     const uniqueDataMap = new Map();
     
+    // Förbättrad loggning för felsökning
+    console.log("Visar uppgifter:", {
+      showApproved,
+      pendingTasksCount: pendingTasks.length,
+      emailReportsCount: emailReports.length,
+      approvedTasksCount: approvedTasks.length
+    });
+    
     // Välj vilka kolumner och data att visa baserat på om vi visar godkända uppgifter eller ej
     if (showApproved) {
       // När vi visar godkända uppgifter, visa bara de godkända
@@ -707,38 +748,46 @@ const PendingTasks = () => {
         });
       }
     } else {
-      // När vi visar väntande uppgifter, visa bara OBEHANDLADE e-postrapporter och uppgifter
+      // När vi visar obehandlade uppgifter
       
-      // Lägg till obehandlade e-postrapporter
+      // Lägg till e-postrapporter först
       if (emailReports && emailReports.length > 0) {
-        // Filtrera för att endast inkludera rapporter som INTE har reviewedBy
-        const unreviewedReports = emailReports.filter(report => !report.reviewedBy);
-        logger.debug(`Visar ${unreviewedReports.length} av ${emailReports.length} e-postrapporter (endast obehandlade)`);
-        
-        unreviewedReports.forEach(report => {
+        logger.debug(`Lägger till ${emailReports.length} e-postrapporter till vyn`);
+        emailReports.forEach(report => {
           if (report && report.id) {
-            uniqueDataMap.set(report.id, {
+            logger.trace("Lägger till e-postrapport:", report);
+            
+            // Berika rapporten med mer information
+            const enhancedReport = {
               ...report,
               id: `email-${report.id}`,
-              type: 'email'
-            });
+              type: 'email',
+              approved: false,
+              // För konsistens med uppgifter
+              taskTitle: report.subject || 'Ingen rubrik'
+            };
+            
+            uniqueDataMap.set(report.id, enhancedReport);
           }
         });
       }
       
-      // Lägg till obehandlade uppgifter
+      // Lägg sedan till vanliga väntande uppgifter
       if (pendingTasks && pendingTasks.length > 0) {
-        // Filtrera för att endast inkludera uppgifter som INTE har reviewedBy
-        const unreviewedTasks = pendingTasks.filter(task => !task.reviewedBy);
-        logger.debug(`Visar ${unreviewedTasks.length} av ${pendingTasks.length} väntande uppgifter (endast obehandlade)`);
-        
-        unreviewedTasks.forEach(task => {
-          if (task && task.id) {
-            uniqueDataMap.set(task.id, {
-              ...task,
-              id: `task-${task.id}`,
-              type: 'task'
-            });
+        logger.debug(`Lägger till ${pendingTasks.length} vanliga väntande uppgifter till vyn`);
+        pendingTasks.forEach(pendingTask => {
+          if (pendingTask && pendingTask.id) {
+            logger.trace("Lägger till väntande uppgift:", pendingTask);
+            
+            // Berika uppgiften med mer information
+            const enhancedTask = {
+              ...pendingTask,
+              id: `pending-${pendingTask.id}`,
+              type: 'pending',
+              approved: false
+            };
+            
+            uniqueDataMap.set(pendingTask.id, enhancedTask);
           }
         });
       }
@@ -749,6 +798,7 @@ const PendingTasks = () => {
     
     // Logga för felsökning
     logger.debug(`Visar ${finalData.length} unika objekt, varav ${finalData.filter(item => item.approved).length} godkända`);
+    console.log("Slutliga data att visa:", finalData);
     
     return finalData;
   };
@@ -759,7 +809,13 @@ const PendingTasks = () => {
       return pendingTaskColumns;
     }
     
-    // Annars använd emailReportColumns för väntande uppgifter
+    // För e-postrapporter, använd emailReportColumns
+    if (emailReports && emailReports.length > 0 && (!pendingTasks || pendingTasks.length === 0)) {
+      return emailReportColumns;
+    }
+    
+    // För blandade vyer med både uppgifter och e-postrapporter, använd anpassade kolumner
+    // eller pendingTaskColumns som standard
     return emailReportColumns;
   };
 
@@ -784,6 +840,21 @@ const PendingTasks = () => {
     }
   };
 
+  // Lägg till en funktion för att kontrollera e-post
+  const checkEmails = async () => {
+    try {
+      setLoading(true);
+      await pendingTaskService.checkEmails();
+      // Ladda om data efter att e-post kontrollerats
+      await fetchData();
+    } catch (error) {
+      console.error("Fel vid kontroll av e-post:", error);
+      setError("Kunde inte kontrollera e-post: " + (error.message || "Okänt fel"));
+    } finally {
+      setLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-full">
@@ -796,75 +867,69 @@ const PendingTasks = () => {
   const isEmailReport = selectedTask && !selectedTask.task && selectedTask.name;
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 min-h-screen">
-      <div className="flex justify-between items-center mb-6">
-        <Title level="h1">
-          {t('pendingTasks.title')}
-        </Title>
+    <div className="container mx-auto px-4 py-8 min-h-screen dark:bg-gray-900">
+      <Title>{t('pendingTasks.title')}</Title>
+      
+      {error && (
+        <div className="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative dark:bg-red-900 dark:text-red-100 dark:border-red-800" role="alert">
+          <span className="block sm:inline">{error}</span>
+        </div>
+      )}
+      
+      <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-2 sm:space-y-0">
         <div className="flex space-x-2">
-          <div className="flex items-center mr-2">
-            <input
-              type="checkbox"
-              id="showApproved"
-              className="form-checkbox h-4 w-4 text-blue-600 transition duration-150 ease-in-out mr-2"
-              checked={showApproved}
-              onChange={handleShowApprovedChange}
-            />
-            <label htmlFor="showApproved" className="text-gray-700 dark:text-gray-300">
-              {t('pendingTasks.showApproved')}
-            </label>
+          <div className="relative inline-block">
+            <button 
+              onClick={handleShowApprovedChange}
+              className={`${showApproved ? 'bg-primary' : 'bg-gray-500'} text-white px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors hover:bg-opacity-90`}
+            >
+              {showApproved ? t('pendingTasks.showApproved') : t('pendingTasks.showPending')}
+            </button>
           </div>
+          
+          {/* Knapp för att skapa testuppgift */}
           <button
-            onClick={handleExportToSql}
-            disabled={isExporting}
-            className="flex items-center px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800 disabled:opacity-50"
+            onClick={handleCreateTestTask}
+            className="bg-green-600 text-white px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors hover:bg-green-700"
           >
-            <ArrowDownTrayIcon className="h-5 w-5 mr-2" />
-            {isExporting ? t('common.exporting') : t('common.export')}
+            Testa
+          </button>
+          
+          {/* Knapp för att ladda om data */}
+          <button
+            onClick={handleRefreshData}
+            className="bg-blue-600 text-white px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors hover:bg-blue-700"
+          >
+            Uppdatera
+          </button>
+        </div>
+        
+        <div className="flex space-x-2">
+          <button
+            onClick={() => setIsExporting(true)}
+            disabled={isExporting}
+            className={`flex items-center space-x-1 ${isExporting ? 'bg-gray-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700'} text-white px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors`}
+          >
+            <ArrowDownTrayIcon className="h-5 w-5" />
+            <span>{isExporting ? 'Exporterar...' : 'Exportera'}</span>
           </button>
           <button
-            onClick={async () => {
-              try {
-                setLoading(true);
-                await pendingTaskService.checkEmails();
-                fetchData();
-              } catch (err) {
-                logger.error('Fel vid läsning av felanmälnings-e-post:', err);
-                setError(t('pendingTasks.messages.emailCheckError'));
-              } finally {
-                setLoading(false);
-              }
-            }}
-            title={t('pendingTasks.actions.checkEmails')}
-            className="bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 flex items-center"
+            onClick={checkEmails}
+            className="flex items-center space-x-1 bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 transition-colors"
           >
-            <EnvelopeIcon className="h-5 w-5 mr-2" />
-            {t('pendingTasks.actions.checkEmails')}
+            <EnvelopeIcon className="h-5 w-5" />
+            <span>Kontrollera e-post</span>
           </button>
         </div>
       </div>
-      
-      {/* Felmeddelande */}
-      {error && (
-        <div className="bg-red-600 text-white p-3 mb-4 rounded-md">
-          {error}
-        </div>
-      )}
 
-      {getDisplayData().length === 0 ? (
-        <div className="text-center py-10">
-          <p className="text-gray-500 dark:text-gray-400">
-            {!showApproved ? t('pendingTasks.noTasks') : t('pendingTasks.noApprovedTasks')}
-          </p>
-        </div>
-      ) : (
-        <DataTable
-          columns={getColumns()}
-          data={getDisplayData()}
-          onRowClick={handleRowClick}
-          rowClassName={getRowClassName}
-        />
-      )}
+      <DataTable
+        columns={getColumns()}
+        data={getDisplayData()}
+        loading={loading}
+        onRowClick={handleRowClick}
+        getRowClassName={getRowClassName}
+      />
 
       {selectedTask && (
         <Modal

@@ -835,4 +835,45 @@ public class EmailListener {
             }
         }
     }
+
+    // Denna metod kan användas för att testa spara i databasen utan att behöva gå genom e-postprocessen
+    public void createTestTask() {
+        log.info("Skapar testuppgift i databasen...");
+        
+        try {
+            // Skapa ett enkelt PendingTask-objekt
+            PendingTask testTask = new PendingTask();
+            testTask.setName("Testperson");
+            testTask.setEmail("test@example.com");
+            testTask.setPhone("123-456789");
+            testTask.setAddress("Testgatan 1");
+            testTask.setApartment("123");
+            testTask.setDescription("Detta är en testfelanmälan för att verifiera att databasen fungerar.");
+            testTask.setStatus("NEW");
+            testTask.setReceived(LocalDateTime.now());
+            testTask.setDescriptionLanguage(Language.SV);
+            
+            // Lägg till ett ämne för att göra det tydligare i gränssnittet
+            testTask.setSubject("Testfelanmälan från manuell knapp");
+            
+            // Se till att vi INTE har något Task-objekt (skulle betyda att det inte är en e-postrapport)
+            testTask.setTask(null);
+            
+            // Se till att den inte har reviewedBy (skulle filtrera bort den från vyn)
+            testTask.setReviewedBy(null);
+            testTask.setReviewedAt(null);
+            
+            // Försök spara objektet i databasen
+            log.info("Sparar testuppgift i databasen...");
+            PendingTask savedTask = pendingTaskRepository.save(testTask);
+            
+            if (savedTask != null && savedTask.getId() != null) {
+                log.info("Testuppgift sparad framgångsrikt med ID: {}", savedTask.getId());
+            } else {
+                log.error("Testuppgift skapades men inget ID returnerades!");
+            }
+        } catch (Exception e) {
+            log.error("KRITISKT FEL vid skapande av testuppgift: {}", e.getMessage(), e);
+        }
+    }
 } 
