@@ -549,7 +549,7 @@ const Interests = ({ view = 'list' }) => {
     }
     
     // Applicera filter på rätt datakälla
-    return sourceData.filter(interest => {
+    const filteredData = sourceData.filter(interest => {
       // Status filter
       if (filters.status && interest.status !== filters.status) {
         return false;
@@ -572,6 +572,47 @@ const Interests = ({ view = 'list' }) => {
       
       return true;
     });
+
+    // Sortera data efter lägenhet (ort, adress, lägenhet)
+    const sortedData = [...filteredData].sort((a, b) => {
+      const addrA = parseAddress(a.apartment);
+      const addrB = parseAddress(b.apartment);
+      
+      // Jämför stad
+      if (addrA.city !== addrB.city) {
+        return addrA.city.localeCompare(addrB.city, 'sv');
+      }
+      
+      // Jämför gata
+      if (addrA.street !== addrB.street) {
+        return addrA.street.localeCompare(addrB.street, 'sv');
+      }
+      
+      // Jämför gatunummer
+      const numA = parseInt(addrA.number) || 0;
+      const numB = parseInt(addrB.number) || 0;
+      if (numA !== numB) {
+        return numA - numB;
+      }
+      
+      // Jämför lägenhetsnummer
+      const aptNumA = parseInt(addrA.apartmentNumber) || 0;
+      const aptNumB = parseInt(addrB.apartmentNumber) || 0;
+      if (aptNumA !== aptNumB) {
+        return aptNumA - aptNumB;
+      }
+      
+      // För bokade visningar, sortera efter datum (senaste datum först)
+      if (currentView === INTEREST_VIEWS.REVIEWED) {
+        const dateA = a.showingDateTime ? new Date(a.showingDateTime) : new Date(0);
+        const dateB = b.showingDateTime ? new Date(b.showingDateTime) : new Date(0);
+        return dateB - dateA; // Senaste datum först
+      }
+      
+      return 0;
+    });
+    
+    return sortedData;
   };
   
   // Hantera filterändringar
@@ -702,6 +743,35 @@ const Interests = ({ view = 'list' }) => {
     }
   };
 
+  // Parsera lägenhetsadresser för sortering
+  const parseAddress = (address) => {
+    if (!address) return { city: '', street: '', number: '', apartmentNumber: '' };
+    
+    const apartmentInfo = extractApartmentInfo(address);
+    if (!apartmentInfo) return { city: '', street: '', number: '', apartmentNumber: '' };
+    
+    // Extrahera stad från gata om möjligt
+    const streetParts = apartmentInfo.street.split(' ');
+    let city = '';
+    
+    // Anta att staden är första delen av gatuadressen om den är på formatet "Stad Gatan"
+    if (streetParts.length > 1) {
+      // Försök identifiera om första delen är en stad
+      const firstPart = streetParts[0].toLowerCase();
+      if (!firstPart.includes('gatan') && !firstPart.includes('vägen') && !firstPart.includes('tan')) {
+        city = streetParts[0];
+        apartmentInfo.street = streetParts.slice(1).join(' ');
+      }
+    }
+    
+    return {
+      city: city,
+      street: apartmentInfo.street,
+      number: apartmentInfo.number || '',
+      apartmentNumber: apartmentInfo.apartmentNumber || ''
+    };
+  };
+
   // Funktion för att formatera visningstid
   const formatShowingDateTime = (dateTimeString) => {
     if (!dateTimeString) return '-';
@@ -726,21 +796,84 @@ const Interests = ({ view = 'list' }) => {
       setIsLoading(true);
       
       // Hämta data för båda tabellerna
-      const unreviewedData = interests;
+      let unreviewedData = interests;
       // Inkludera alla granskade intresseanmälningar, inte bara bokningar
-      const reviewedData = currentView === INTEREST_VIEWS.UNREVIEWED ? 
-                           reviewedInterests.filter(interest => interest.status === 'SHOWING_SCHEDULED' || 
-                                                             interest.status === 'SHOWING_CONFIRMED' || 
-                                                             interest.status === 'SHOWING_COMPLETED' || 
-                                                             interest.status === 'SHOWING_CANCELLED' || 
-                                                             interest.status === 'SHOWING_DECLINED') :
-                           reviewedInterests; // Inkludera alla när vi redan är i granskade-vyn
+      let reviewedData = currentView === INTEREST_VIEWS.UNREVIEWED ? 
+                         reviewedInterests.filter(interest => interest.status === 'SHOWING_SCHEDULED' || 
+                                                           interest.status === 'SHOWING_CONFIRMED' || 
+                                                           interest.status === 'SHOWING_COMPLETED' || 
+                                                           interest.status === 'SHOWING_CANCELLED' || 
+                                                           interest.status === 'SHOWING_DECLINED') :
+                         reviewedInterests; // Inkludera alla när vi redan är i granskade-vyn
         
       if ((!unreviewedData || unreviewedData.length === 0) && (!reviewedData || reviewedData.length === 0)) {
         setError(t('interests.messages.noDataToExport'));
         setIsLoading(false); // Avsluta laddning om ingen data finns
         return;
       }
+      
+      // Sortera ogranskade intresseanmälningar efter lägenhet (ort, adress, lägenhetsnummer)
+      unreviewedData = [...unreviewedData].sort((a, b) => {
+        const addrA = parseAddress(a.apartment);
+        const addrB = parseAddress(b.apartment);
+        
+        // Jämför stad
+        if (addrA.city !== addrB.city) {
+          return addrA.city.localeCompare(addrB.city, 'sv');
+        }
+        
+        // Jämför gata
+        if (addrA.street !== addrB.street) {
+          return addrA.street.localeCompare(addrB.street, 'sv');
+        }
+        
+        // Jämför gatunummer
+        const numA = parseInt(addrA.number) || 0;
+        const numB = parseInt(addrB.number) || 0;
+        if (numA !== numB) {
+          return numA - numB;
+        }
+        
+        // Jämför lägenhetsnummer
+        const aptNumA = parseInt(addrA.apartmentNumber) || 0;
+        const aptNumB = parseInt(addrB.apartmentNumber) || 0;
+        return aptNumA - aptNumB;
+      });
+      
+      // Sortera bokade visningar efter lägenhet och datum (senaste datum först)
+      reviewedData = [...reviewedData].sort((a, b) => {
+        const addrA = parseAddress(a.apartment);
+        const addrB = parseAddress(b.apartment);
+        
+        // Jämför stad
+        if (addrA.city !== addrB.city) {
+          return addrA.city.localeCompare(addrB.city, 'sv');
+        }
+        
+        // Jämför gata
+        if (addrA.street !== addrB.street) {
+          return addrA.street.localeCompare(addrB.street, 'sv');
+        }
+        
+        // Jämför gatunummer
+        const numA = parseInt(addrA.number) || 0;
+        const numB = parseInt(addrB.number) || 0;
+        if (numA !== numB) {
+          return numA - numB;
+        }
+        
+        // Jämför lägenhetsnummer
+        const aptNumA = parseInt(addrA.apartmentNumber) || 0;
+        const aptNumB = parseInt(addrB.apartmentNumber) || 0;
+        if (aptNumA !== aptNumB) {
+          return aptNumA - aptNumB;
+        }
+        
+        // Slutligen jämför datum (senaste datum först)
+        const dateA = a.showingDateTime ? new Date(a.showingDateTime) : new Date(0);
+        const dateB = b.showingDateTime ? new Date(b.showingDateTime) : new Date(0);
+        return dateB - dateA; // Senaste datum först
+      });
       
       // Stilmall för HTML-exporten
       const styles = `
@@ -781,6 +914,12 @@ const Interests = ({ view = 'list' }) => {
             color: #6b7280;
             margin-top: 0.25rem;
           }
+          .section-header {
+            background-color: #e5e7eb;
+            font-weight: bold;
+            text-align: left;
+            padding: 0.5rem 1rem;
+          }
           .dark-mode .status-rejected {
             background-color: #ef4444;
             color: #fef2f2;
@@ -788,21 +927,82 @@ const Interests = ({ view = 'list' }) => {
           .dark-mode .secondary-text {
             color: #9ca3af;
           }
+          .dark-mode .section-header {
+            background-color: #374151;
+            color: #f9fafb;
+          }
           @media print {
             body {
               background-color: white;
               color: black;
             }
-            // ... existing code ...
-          </style>`;
+            .section-header {
+              background-color: #e5e7eb !important;
+              color: #333 !important;
+              -webkit-print-color-adjust: exact;
+            }
+          }
+        </style>`;
       
-      // Funktion för att skapa HTML för en tabell
+      // Funktion för att gruppera data efter lägenhet
+      const groupByApartment = (data) => {
+        const groups = {};
+        
+        data.forEach(interest => {
+          if (!interest.apartment) return;
+          
+          const address = parseAddress(interest.apartment);
+          const key = `${address.city}|${address.street}|${address.number}|${address.apartmentNumber}`;
+          
+          if (!groups[key]) {
+            groups[key] = {
+              displayAddress: interest.apartment,
+              address: address,
+              interests: []
+            };
+          }
+          
+          groups[key].interests.push(interest);
+        });
+        
+        // Sortera grupperna
+        return Object.values(groups).sort((a, b) => {
+          // Jämför stad
+          if (a.address.city !== b.address.city) {
+            return a.address.city.localeCompare(b.address.city, 'sv');
+          }
+          
+          // Jämför gata
+          if (a.address.street !== b.address.street) {
+            return a.address.street.localeCompare(b.address.street, 'sv');
+          }
+          
+          // Jämför gatunummer
+          const numA = parseInt(a.address.number) || 0;
+          const numB = parseInt(b.address.number) || 0;
+          if (numA !== numB) {
+            return numA - numB;
+          }
+          
+          // Jämför lägenhetsnummer
+          const aptNumA = parseInt(a.address.apartmentNumber) || 0;
+          const aptNumB = parseInt(b.address.apartmentNumber) || 0;
+          return aptNumA - aptNumB;
+        });
+      };
+      
+      // Funktion för att skapa HTML för en tabell med grupperad data
       const createTableHtml = (data, type) => {
         if (!data || data.length === 0) return '<p>Inga data att visa.</p>'; // Visa meddelande om ingen data
-
+        
+        // Gruppera data efter lägenhet
+        const groupedData = groupByApartment(data);
+        
+        if (groupedData.length === 0) return '<p>Inga data att visa.</p>';
+        
         let tableHtml = '<table>';
         
-        // Tabellhuvud baserat på typ
+        // Tabellhuvud
         tableHtml += '<thead><tr>';
         tableHtml += `<th>${t('interests.fields.name')}</th>`;
         tableHtml += `<th>${t('interests.fields.apartment')}</th>`;
@@ -817,44 +1017,63 @@ const Interests = ({ view = 'list' }) => {
         
         // Tabellkropp
         tableHtml += '<tbody>';
-        data.forEach(interest => {
-          tableHtml += '<tr>';
+        
+        // Gå igenom varje lägenhet och skapa grupper
+        groupedData.forEach(group => {
+          // Lägg till en sektionsrubrik för lägenheten
+          tableHtml += `<tr><td colspan="5" class="section-header">${group.displayAddress}</td></tr>`;
           
-          // Namn
-          tableHtml += `<td>
-            <div>${formatText(interest.name) || '-'}</div>
-            <div class="secondary-text">${formatText(interest.phone) || '-'}</div>
-          </td>`;
-          
-          // Lägenhet
-          tableHtml += `<td>${formatText(interest.apartment)?.substring(0, 30) || '-'}</td>`;
-          
-          // Nuvarande hyresgäst
-          const tenant = findCurrentTenant(interest.apartment);
-          tableHtml += '<td>';
-          if (tenant) {
-            tableHtml += `<div>${tenant.phone || '-'}</div>`;
-            tableHtml += `<div class="secondary-text">${tenant.firstName} ${tenant.lastName}</div>`;
-          } else {
-            tableHtml += 'Ingen boende';
+          // Sortera intressen inom gruppen efter datum (för bokade visningar)
+          let interests = group.interests;
+          if (type === 'booked') {
+            interests = interests.sort((a, b) => {
+              const dateA = a.showingDateTime ? new Date(a.showingDateTime) : new Date(0);
+              const dateB = b.showingDateTime ? new Date(b.showingDateTime) : new Date(0);
+              return dateB - dateA; // Senaste datum först
+            });
           }
-          tableHtml += '</td>';
+          
+          // Visa varje intresse för denna lägenhet
+          interests.forEach(interest => {
+            tableHtml += '<tr>';
+            
+            // Namn och telefon
+            tableHtml += `<td>
+              <div>${formatText(interest.name) || '-'}</div>
+              <div class="secondary-text">${formatText(interest.phone) || '-'}</div>
+            </td>`;
+            
+            // Lägenhet (visar kortare version inom grupperna)
+            tableHtml += `<td>${formatText(interest.apartment)?.substring(0, 30) || '-'}</td>`;
+            
+            // Nuvarande hyresgäst
+            const tenant = findCurrentTenant(interest.apartment);
+            tableHtml += '<td>';
+            if (tenant) {
+              tableHtml += `<div>${tenant.phone || '-'}</div>`;
+              tableHtml += `<div class="secondary-text">${tenant.firstName} ${tenant.lastName}</div>`;
+            } else {
+              tableHtml += 'Ingen boende';
+            }
+            tableHtml += '</td>';
 
-          // Kolumn beroende på typ
-          if (type === 'unreviewed') {
-            tableHtml += `<td>${formatText(interest.message)?.substring(0, 50) + (formatText(interest.message)?.length > 50 ? '...' : '') || '-'}</td>`;
-          } else if (type === 'booked') {
-            // Visa status med lämplig färg
-            const statusClass = getStatusClass(interest.status);
-            const statusText = getStatusText(interest.status);
-            tableHtml += `<td><span class="${statusClass}">${statusText}</span></td>`;
-          }
-          
-          // Mottagen
-          tableHtml += `<td>${formatDate(interest.received)}</td>`;
-          
-          tableHtml += '</tr>';
+            // Kolumn beroende på typ
+            if (type === 'unreviewed') {
+              tableHtml += `<td>${formatText(interest.message)?.substring(0, 50) + (formatText(interest.message)?.length > 50 ? '...' : '') || '-'}</td>`;
+            } else if (type === 'booked') {
+              // Visa status med lämplig färg
+              const statusClass = getStatusClass(interest.status);
+              const statusText = getStatusText(interest.status);
+              tableHtml += `<td><span class="${statusClass}">${statusText}</span></td>`;
+            }
+            
+            // Mottagen
+            tableHtml += `<td>${formatDate(interest.received)}</td>`;
+            
+            tableHtml += '</tr>';
+          });
         });
+        
         tableHtml += '</tbody></table>';
         
         return tableHtml;
@@ -1141,83 +1360,125 @@ const Interests = ({ view = 'list' }) => {
           <p className="text-gray-500 dark:text-gray-400">{t('interests.noInterests')}</p>
         </div>
       ) : (
-        <DataTable
-          columns={[
-            {
-              key: 'name',
-              label: t('interests.fields.name'),
-              render: (name, interest) => (
-                <div>
-                  <div>{formatText(name) || '-'}</div>
-                  <div className="text-sm text-gray-500 dark:text-gray-400">
-                    {formatText(interest.phone) || '-'}
-                  </div>
-                </div>
-              )
-            },
-            {
-              key: 'apartment',
-              label: t('interests.fields.apartment'),
-              render: (apartment) => formatText(apartment)?.substring(0, 30) || '-'
-            },
-            {
-              key: 'currentTenant',
-              label: 'Nuvarande hyresgäst',
-              render: (_, interest) => {
-                const tenant = findCurrentTenant(interest.apartment);
-                if (tenant) {
-                  return (
-                    <div>
-                      <div>{tenant.phone || '-'}</div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">
-                        {tenant.firstName} {tenant.lastName}
-                      </div>
-                    </div>
-                  );
-                }
-                return 'Ingen boende';
-              }
-            },
-            // Visa meddelande för obehandlade och status för behandlade intresseanmälningar
-            currentView === INTEREST_VIEWS.UNREVIEWED ? 
-            {
-              key: 'message',
-              label: t('interests.fields.message'),
-              render: (_, interest) => formatText(interest.message)?.substring(0, 50) + (formatText(interest.message)?.length > 50 ? '...' : '') || '-' 
-            } : 
-            {
-              key: 'status',
-              label: t('interests.fields.status'),
-              render: (_, interest) => (
-                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                  ${interest.status === 'NEW' ? 'bg-slate-200 text-slate-800' : 
-                    interest.status === 'REVIEWED' ? 'bg-green-200 text-green-800' : 
-                    interest.status === 'SHOWING_SCHEDULED' ? 'bg-purple-500 text-white' :
-                    interest.status === 'SHOWING_CONFIRMED' ? 'bg-blue-500 text-white' :
-                    interest.status === 'SHOWING_COMPLETED' ? 'bg-emerald-500 text-white' :
-                    interest.status === 'SHOWING_CANCELLED' ? 'bg-red-500 text-white' :
-                    interest.status === 'SHOWING_DECLINED' ? 'bg-yellow-500 text-white' :
-                    'bg-red-200 text-red-800'}`}>
-                  {interest.status === 'NEW' ? t('interests.status.NEW') : 
-                   interest.status === 'REVIEWED' ? t('interests.status.REVIEWED') : 
-                   interest.status === 'SHOWING_SCHEDULED' ? t('interests.status.SHOWING_SCHEDULED') :
-                   interest.status === 'SHOWING_CONFIRMED' ? t('interests.status.SHOWING_CONFIRMED') :
-                   interest.status === 'SHOWING_COMPLETED' ? t('interests.status.SHOWING_COMPLETED') :
-                   interest.status === 'SHOWING_CANCELLED' ? t('interests.status.SHOWING_CANCELLED') :
-                   interest.status === 'SHOWING_DECLINED' ? t('interests.status.SHOWING_DECLINED') :
-                   t('interests.status.REJECTED')}
-                </span>
-              )
-            },
-            {
-              key: 'received',
-              label: t('interests.fields.received'),
-              render: (received) => formatDate(received)
-            }
-          ]}
-          data={getDisplayData()}
-          onRowClick={handleRowClick}
-        />
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead className="bg-gray-50 dark:bg-gray-800">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  {t('interests.fields.name')}
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  {t('interests.fields.apartment')}
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Nuvarande hyresgäst
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  {currentView === INTEREST_VIEWS.UNREVIEWED 
+                    ? t('interests.fields.message') 
+                    : t('interests.fields.status')}
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  {t('interests.fields.received')}
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-700">
+              {(() => {
+                // Gruppera efter lägenhet
+                const displayData = getDisplayData();
+                const apartmentGroups = {};
+                
+                // Gruppera data efter lägenhet
+                displayData.forEach(interest => {
+                  if (!interest.apartment) return;
+                  
+                  const apartmentInfo = extractApartmentInfo(interest.apartment);
+                  if (!apartmentInfo) return;
+                  
+                  const key = `${apartmentInfo.street}-${apartmentInfo.number}-${apartmentInfo.apartmentNumber}`.toLowerCase();
+                  
+                  if (!apartmentGroups[key]) {
+                    apartmentGroups[key] = {
+                      displayAddress: interest.apartment,
+                      interests: []
+                    };
+                  }
+                  
+                  apartmentGroups[key].interests.push(interest);
+                });
+                
+                // Rendering av grupperade intresseanmälningar
+                return Object.entries(apartmentGroups).map(([key, group]) => (
+                  <React.Fragment key={key}>
+                    {/* Sektionsrubrik för lägenheten */}
+                    <tr className="bg-gray-100 dark:bg-gray-700">
+                      <td colSpan="5" className="px-6 py-2 text-sm font-bold text-gray-900 dark:text-gray-200">
+                        {group.displayAddress}
+                      </td>
+                    </tr>
+                    
+                    {/* Intresseanmälningar för denna lägenhet */}
+                    {group.interests.map((interest) => (
+                      <tr 
+                        key={interest.id} 
+                        className="hover:bg-gray-50 dark:hover:bg-gray-800 cursor-pointer transition-colors"
+                        onClick={() => handleRowClick(interest)}
+                      >
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200">
+                          <div>{formatText(interest.name) || '-'}</div>
+                          <div className="text-sm text-gray-500 dark:text-gray-400">
+                            {formatText(interest.phone) || '-'}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200">
+                          {formatText(interest.apartment)?.substring(0, 30) || '-'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200">
+                          {(() => {
+                            const tenant = findCurrentTenant(interest.apartment);
+                            if (tenant) {
+                              return (
+                                <div>
+                                  <div>{tenant.phone || '-'}</div>
+                                  <div className="text-sm text-gray-500 dark:text-gray-400">
+                                    {tenant.firstName} {tenant.lastName}
+                                  </div>
+                                </div>
+                              );
+                            }
+                            return 'Ingen boende';
+                          })()}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200">
+                          {currentView === INTEREST_VIEWS.UNREVIEWED ? (
+                            formatText(interest.message)?.substring(0, 50) + 
+                              (formatText(interest.message)?.length > 50 ? '...' : '') || '-'
+                          ) : (
+                            <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                              ${interest.status === 'NEW' ? 'bg-slate-200 text-slate-800' : 
+                                interest.status === 'REVIEWED' ? 'bg-green-200 text-green-800' : 
+                                interest.status === 'SHOWING_SCHEDULED' ? 'bg-purple-500 text-white' :
+                                interest.status === 'SHOWING_CONFIRMED' ? 'bg-blue-500 text-white' :
+                                interest.status === 'SHOWING_COMPLETED' ? 'bg-emerald-500 text-white' :
+                                interest.status === 'SHOWING_CANCELLED' ? 'bg-red-500 text-white' :
+                                interest.status === 'SHOWING_DECLINED' ? 'bg-yellow-500 text-white' :
+                                'bg-red-200 text-red-800'}`}>
+                              {getStatusText(interest.status)}
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200">
+                          {formatDate(interest.received)}
+                        </td>
+                      </tr>
+                    ))}
+                  </React.Fragment>
+                ));
+              })()}
+            </tbody>
+          </table>
+        </div>
       )}
 
       {/* Detaljmodal för intresseanmälan */}
