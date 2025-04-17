@@ -867,69 +867,78 @@ const PendingTasks = () => {
   const isEmailReport = selectedTask && !selectedTask.task && selectedTask.name;
 
   return (
-    <div className="container mx-auto px-4 py-8 min-h-screen dark:bg-gray-900">
-      <Title>{t('pendingTasks.title')}</Title>
-      
-      {error && (
-        <div className="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative dark:bg-red-900 dark:text-red-100 dark:border-red-800" role="alert">
-          <span className="block sm:inline">{error}</span>
-        </div>
-      )}
-      
-      <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-2 sm:space-y-0">
-        <div className="flex space-x-2">
-          <div className="relative inline-block">
-            <button 
-              onClick={handleShowApprovedChange}
-              className={`${showApproved ? 'bg-primary' : 'bg-gray-500'} text-white px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-colors hover:bg-opacity-90`}
-            >
-              {showApproved ? t('pendingTasks.showApproved') : t('pendingTasks.showPending')}
-            </button>
-          </div>
-          
-          {/* Knapp för att skapa testuppgift */}
-          <button
-            onClick={handleCreateTestTask}
-            className="bg-green-600 text-white px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors hover:bg-green-700"
-          >
-            Testa
-          </button>
-          
-          {/* Knapp för att ladda om data */}
-          <button
-            onClick={handleRefreshData}
-            className="bg-blue-600 text-white px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors hover:bg-blue-700"
-          >
-            Uppdatera
-          </button>
-        </div>
-        
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 min-h-screen">
+      <div className="flex justify-between items-center mb-6">
+        <Title level="h1">
+          {t('pendingTasks.title')}
+        </Title>
         <div className="flex space-x-2">
           <button
             onClick={() => setIsExporting(true)}
             disabled={isExporting}
-            className={`flex items-center space-x-1 ${isExporting ? 'bg-gray-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700'} text-white px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors`}
+            className={`flex items-center px-4 py-2 ${isExporting ? 'bg-gray-400 cursor-not-allowed' : 'bg-primary hover:bg-secondary'} text-white rounded-md`}
           >
-            <ArrowDownTrayIcon className="h-5 w-5" />
-            <span>{isExporting ? 'Exporterar...' : 'Exportera'}</span>
+            <ArrowDownTrayIcon className="h-5 w-5 mr-2" />
+            {isExporting ? t('common.exporting') : t('common.export')}
           </button>
           <button
-            onClick={checkEmails}
-            className="flex items-center space-x-1 bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 transition-colors"
+            onClick={async () => {
+              try {
+                setLoading(true);
+                await pendingTaskService.checkEmails();
+                fetchData();
+              } catch (err) {
+                logger.error('Fel vid läsning av felanmälnings-e-post:', err);
+                setError(t('pendingTasks.messages.emailCheckError'));
+              } finally {
+                setLoading(false);
+              }
+            }}
+            title={t('pendingTasks.actions.checkEmails')}
+            className="bg-gray-200 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600 flex items-center"
           >
-            <EnvelopeIcon className="h-5 w-5" />
-            <span>Kontrollera e-post</span>
+            <EnvelopeIcon className="h-5 w-5 mr-2" />
+            {t('pendingTasks.actions.checkEmails')}
           </button>
         </div>
       </div>
 
-      <DataTable
-        columns={getColumns()}
-        data={getDisplayData()}
-        loading={loading}
-        onRowClick={handleRowClick}
-        getRowClassName={getRowClassName}
-      />
+      <div className="mb-4 flex space-x-2">
+        <div className="flex items-center mr-2">
+          <input
+            type="checkbox"
+            id="showApproved"
+            className="form-checkbox h-4 w-4 text-blue-600 transition duration-150 ease-in-out mr-2"
+            checked={showApproved}
+            onChange={handleShowApprovedChange}
+          />
+          <label htmlFor="showApproved" className="text-gray-700 dark:text-gray-300">
+            {t('pendingTasks.showApproved')}
+          </label>
+        </div>
+      </div>
+      
+      {/* Felmeddelande */}
+      {error && (
+        <div className="bg-red-600 text-white p-3 mb-4 rounded-md">
+          {error}
+        </div>
+      )}
+
+      {getDisplayData().length === 0 ? (
+        <div className="text-center py-10">
+          <p className="text-gray-500 dark:text-gray-400">
+            {!showApproved ? t('pendingTasks.noTasks') : t('pendingTasks.noApprovedTasks')}
+          </p>
+        </div>
+      ) : (
+        <DataTable
+          columns={getColumns()}
+          data={getDisplayData()}
+          onRowClick={handleRowClick}
+          getRowClassName={getRowClassName}
+        />
+      )}
 
       {selectedTask && (
         <Modal
