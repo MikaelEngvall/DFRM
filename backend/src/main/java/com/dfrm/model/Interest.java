@@ -61,4 +61,8 @@ public class Interest {
     // Referens till uppgiften som skapas för visningen (nu optional)
     @DBRef
     private Task relatedTask;
+    
+    // Transient-fält för visningsdata som inte sparas i databasen
+    @org.springframework.data.annotation.Transient
+    private Showing showing;
 } 

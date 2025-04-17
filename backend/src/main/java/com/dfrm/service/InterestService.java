@@ -50,6 +50,36 @@ public class InterestService {
         return interestRepository.findAll();
     }
     
+    /**
+     * Hämtar alla intresseanmälningar och inkluderar visningsdata
+     * genom att koppla showing-objekten till intresseanmälningarna
+     * 
+     * @return Lista med intresseanmälningar med visningsdata
+     */
+    public List<Interest> getAllInterestsWithShowings() {
+        log.info("Hämtar alla intresseanmälningar med visningsdata");
+        List<Interest> interests = interestRepository.findAll();
+        
+        // För varje intresseanmälan, hitta tillhörande visning
+        for (Interest interest : interests) {
+            try {
+                // Hitta visningar kopplade till denna intresseanmälan
+                List<com.dfrm.model.Showing> showings = showingService.getShowingsByInterestId(interest.getId());
+                
+                // Om det finns visningar, koppla den första till intresseanmälan
+                if (showings != null && !showings.isEmpty()) {
+                    interest.setShowing(showings.get(0));
+                    log.debug("Kopplat visning till intresseanmälan {}: {}", interest.getId(), showings.get(0).getId());
+                }
+            } catch (Exception e) {
+                log.warn("Kunde inte hämta visningsdata för intresseanmälan {}: {}", interest.getId(), e.getMessage());
+            }
+        }
+        
+        log.info("Hämtade {} intresseanmälningar med visningsdata", interests.size());
+        return interests;
+    }
+    
     public Optional<Interest> getInterestById(String id) {
         return interestRepository.findById(id);
     }

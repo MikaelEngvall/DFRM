@@ -101,8 +101,18 @@ const Dashboard = () => {
 
   const fetchInterestStats = async () => {
     try {
-      // Hämta alla intresseanmälningar för att filtrera
-      const allInterests = await interestService.getAll(true);
+      // Hämta alla intresseanmälningar inklusive visningsdata
+      const allInterests = await interestService.getAllWithShowings(true);
+      console.log("Alla intresseanmälningar med visningsdata:", allInterests);
+      
+      // Kontrollera om intressena har fullständig information om visningar
+      // Vissa API-anrop kanske inte inkluderar showing-objektet
+      const interestsWithShowings = allInterests.filter(interest => interest.showing);
+      console.log("Intresseanmälningar med visningsobjekt:", interestsWithShowings);
+      
+      if (interestsWithShowings.length > 0) {
+        console.log("Exempel på visningsobjekt:", interestsWithShowings[0].showing);
+      }
       
       // Hämta antal nya intresseanmälningar (obehandlade)
       const newInterests = allInterests.filter(interest => 
@@ -114,18 +124,45 @@ const Dashboard = () => {
         interest.status === 'SHOWING_SCHEDULED'
       );
       
-      // Leta efter genomförda visningar (completed showings)
-      const completedInterests = allInterests.filter(interest => 
-        interest.status === 'SHOWING_SCHEDULED' && 
-        interest.showing && 
-        interest.showing.status === 'COMPLETED'
+      // Leta efter genomförda visningar på två sätt:
+      // 1. Intresseanmälningar som har status SHOWING_COMPLETED
+      // 2. Intresseanmälningar som har showing.status === 'COMPLETED'
+      const completedInterests1 = allInterests.filter(interest => 
+        interest.status === 'SHOWING_COMPLETED'
       );
       
-      // Uppdatera state med statistik (ta bort cancelled)
+      const completedInterests2 = allInterests.filter(interest => 
+        interest.showing && interest.showing.status === 'COMPLETED'
+      );
+      
+      console.log("Visningar med status SHOWING_COMPLETED:", completedInterests1);
+      console.log("Visningar med showing.status COMPLETED:", completedInterests2);
+      
+      // Använd den kombinerade listan för att räkna genomförda visningar
+      const completedInterestsIds = new Set();
+      
+      completedInterests1.forEach(interest => {
+        completedInterestsIds.add(interest.id);
+      });
+      
+      completedInterests2.forEach(interest => {
+        completedInterestsIds.add(interest.id);
+      });
+      
+      const completedCount = completedInterestsIds.size;
+      console.log("Genomförda visningar totalt:", completedCount);
+      
+      // Uppdatera state med statistik
       setInterestStats({
         new: newInterests?.length || 0,
         booked: bookedInterests?.length || 0,
-        completed: completedInterests?.length || 0
+        completed: completedCount
+      });
+      
+      console.log("Intressestatistik uppdaterad:", {
+        new: newInterests?.length || 0,
+        booked: bookedInterests?.length || 0,
+        completed: completedCount
       });
     } catch (err) {
       console.error('Error fetching interest stats:', err);

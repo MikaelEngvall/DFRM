@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.dfrm.model.Interest;
@@ -41,8 +42,13 @@ public class InterestController {
     private static final Logger log = LoggerFactory.getLogger(InterestController.class);
 
     @GetMapping
-    public List<Interest> getAllInterests() {
-        return interestService.getAllInterests();
+    public List<Interest> getAllInterests(@RequestParam(required = false, defaultValue = "false") boolean includeShowings) {
+        if (includeShowings) {
+            log.info("Hämtar alla intresseanmälningar med visningsinformation");
+            return interestService.getAllInterestsWithShowings();
+        } else {
+            return interestService.getAllInterests();
+        }
     }
 
     @GetMapping("/{id}")

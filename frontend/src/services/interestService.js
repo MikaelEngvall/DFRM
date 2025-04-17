@@ -63,6 +63,36 @@ export const interestService = {
     }
   },
   
+  // Ny funktion för att hämta alla intresseanmälningar med visningsdata
+  getAllWithShowings: async (bypassCache = false) => {
+    try {
+      // Använd cache om det finns
+      if (!bypassCache) {
+        const cachedData = getFromCache(CACHE_KEYS.INTERESTS_WITH_SHOWINGS);
+        if (cachedData) {
+          return cachedData;
+        }
+      }
+      
+      const timestamp = new Date().getTime(); // Lägg till timestamp för att förhindra caching
+      const response = await api.get('/api/interests', {
+        params: { includeShowings: true }
+      });
+      
+      // Spara datan i cache
+      saveToCache(CACHE_KEYS.INTERESTS_WITH_SHOWINGS, response.data);
+      return response.data;
+    } catch (error) {
+      logger.error('Fel vid hämtning av intresseanmälningar med visningsdata:', error);
+      // Om API-anrop misslyckas, försök använda cache även om bypassCache är true
+      const cachedData = getFromCache(CACHE_KEYS.INTERESTS_WITH_SHOWINGS);
+      if (cachedData) {
+        return cachedData;
+      }
+      throw error;
+    }
+  },
+  
   getForReview: async (bypassCache = false) => {
     try {
       // Alltid hämta färska data från API:et, oavsett bypassCache-värdet

@@ -21,6 +21,7 @@ export const CACHE_KEYS = {
   INTERESTS: 'cached_interests',
   INTERESTS_FOR_REVIEW: 'interests_for_review',
   REVIEWED_INTERESTS: 'reviewed_interests',
+  INTERESTS_WITH_SHOWINGS: 'interests_with_showings',
   EMAIL_REPORTS: 'cached_email_reports',
 };
 

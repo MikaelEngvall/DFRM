@@ -50,6 +50,17 @@ public class ShowingService {
         return showingRepository.findByAssignedToId(userId);
     }
     
+    /**
+     * Hämtar visningar kopplade till en viss intresseanmälan
+     * 
+     * @param interestId Intresseanmälans ID
+     * @return Lista med visningar kopplade till intresseanmälan
+     */
+    public List<Showing> getShowingsByInterestId(String interestId) {
+        log.debug("Hämtar visningar för intresseanmälan med ID: {}", interestId);
+        return showingRepository.findByRelatedInterestId(interestId);
+    }
+    
     public Showing createShowing(Showing showing) {
         // Sätt skapandedatum
         showing.setCreatedAt(LocalDateTime.now());
